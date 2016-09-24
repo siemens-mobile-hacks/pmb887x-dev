@@ -34,7 +34,8 @@ void _start() {
 				unsigned char xor = pmb8876_serial_getc();
 				serve_watchdog();
 				
-				unsigned char i, *data = (unsigned char *) addr, xor2 = 0;
+				unsigned int i;
+				unsigned char *data = (unsigned char *) addr, xor2 = 0;
 				for (i = 0; i < size; ++i) {
 					data[i] = pmb8876_serial_getc();
 					xor2 ^= data[i];
