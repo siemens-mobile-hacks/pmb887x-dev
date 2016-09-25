@@ -3,6 +3,7 @@ use strict;
 use Device::SerialPort;
 use Getopt::Long;
 use File::Basename qw|dirname|;
+use Time::HiRes qw|usleep|;
 no utf8;
 
 $| = 1;
@@ -90,6 +91,11 @@ while (1) {
 		if ($file) {
 			$c = readb($port);
 			if ($c == 0x0B) {
+				$port->read_char_time(100);
+				$port->read_const_time(200);
+				
+				loader_set_speed($port, 460800) or exit;
+				
 				my $addr = 0xA8000000;
 				print "Detected loader!\n";
 				
@@ -131,6 +137,32 @@ while (1) {
 	print ".";
 }
 
+sub loader_alive {
+	my ($port) = @_;
+	$port->write(".");
+	my $c = readb($port);
+	if ($c ne 0x4F) {
+		if ($c eq 0x45) {
+			warn "[loader_alive] Write error (CRC)\n";
+		} else {
+			warn sprintf("[loader_alive] Invalid answer 0x%02X\n", $c);
+		}
+		return 0;
+	}
+	return 1;
+}
+
+sub loader_set_speed {
+	my ($port, $speed) = @_;
+	$port->write(
+		"B".
+		chr(($speed >> 24) & 0xFF).chr(($speed >> 16) & 0xFF).chr(($speed >> 8) & 0xFF).chr($speed & 0xFF)
+	);
+	$port->baudrate($speed);
+	$port->write_settings;
+	return 1;
+}
+
 sub loader_exec_from_ram {
 	my ($port, $addr) = @_;
 	$port->write(
@@ -141,27 +173,38 @@ sub loader_exec_from_ram {
 }
 
 sub loader_write_ram {
-	my ($port, $addr, $buff) = @_;
+	my ($port, $dst_addr, $buff) = @_;
 	
-	my $chk;
-	my $size = length($buff);
-	for (my $i = 0; $i < $size; ++$i) {
-		$chk ^= ord(substr($buff, $i, 1));
+	my $buff_size = length($buff);
+	for (my $j = 0; $j < $buff_size; $j += 2048) {
+		my $tmp = substr($buff, $j, 2048);
+		
+		my $chk;
+		my $size = length($tmp);
+		for (my $i = 0; $i < $size; ++$i) {
+			$chk ^= ord(substr($tmp, $i, 1));
+		}
+		
+		my $addr = $dst_addr + $j;
+		printf("%02d%s [WRITE] %08X-%08X\n", int($j / $buff_size * 100), "%", $addr, $addr + $size);
+		
+		$port->write("W");
+		$port->write(chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF));
+		$port->write(chr(($size >> 24) & 0xFF).chr(($size >> 16) & 0xFF).chr(($size >> 8) & 0xFF).chr($size & 0xFF));
+		$port->write(chr($chk));
+		$port->write($tmp);
+		
+		my $c = readb($port);
+		if ($c ne 0x4F) {
+			if ($c eq 0x45) {
+				warn "[loader_write_ram] Write error (CRC)\n";
+			} else {
+				warn sprintf("[loader_write_ram] Invalid answer 0x%02X\n", $c);
+			}
+			return 0;
+		}
 	}
-	print $chk."\n";
-	$port->write("W");
-	$port->write(chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF));
-	$port->write(chr(($size >> 24) & 0xFF).chr(($size >> 16) & 0xFF).chr(($size >> 8) & 0xFF).chr($size & 0xFF));
-	$port->write(chr($chk));
-	$port->write($buff);
-	
-	my $c = readb($port);
-	
-	return 1 if ($c eq 0x4F);
-	return 0 if ($c eq 0x45);
-	
-	warn sprintf("Invalid answer 0x%02X\n", $c);
-	return 0;
+	return 1;
 }
 
 sub write_boot {

@@ -8,14 +8,38 @@ void _start() {
 	set_einit(1);
 	init_watchdog();
 	
-	pmb8876_serial_set_speed(UART_SPEED_115200);
 	pmb8876_serial_putc('\x0B');
+	pmb8876_serial_set_speed(UART_SPEED_115200);
 	
 	while (1) {
 		char cmd = pmb8876_serial_getc();
 		switch (cmd) {
 			case '.': // Keep alive
 				serve_watchdog();
+			break;
+			
+			case 'B': // Set speed
+			{
+				unsigned int speed = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
+				if (speed == 57600) {
+					pmb8876_serial_set_speed(UART_SPEED_57600);
+				} else if (speed == 115200) {
+					pmb8876_serial_set_speed(UART_SPEED_115200);
+				} else if (speed == 230400) {
+					pmb8876_serial_set_speed(UART_SPEED_230400);
+				} else if (speed == 460800) {
+					pmb8876_serial_set_speed(UART_SPEED_460800);
+				} else if (speed == 921600) {
+					pmb8876_serial_set_speed(UART_SPEED_921600);
+				} else if (speed == 1228800) {
+					pmb8876_serial_set_speed(UART_SPEED_1228800);
+				} else if (speed == 1600000) {
+					pmb8876_serial_set_speed(UART_SPEED_1600000);
+				} else if (speed == 1500000) {
+					pmb8876_serial_set_speed(UART_SPEED_1500000);
+				}
+				serve_watchdog();
+			}
 			break;
 			
 			case 'X': // Exec addr
