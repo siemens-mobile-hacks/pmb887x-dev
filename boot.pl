@@ -11,6 +11,7 @@ $| = 1;
 my $device = "/dev/ttyUSB3";
 my $speed = 115200;
 my $file;
+my $module;
 my $as_hex = 0;
 my $bootloader = dirname(__FILE__)."/bootloader/bootloader.bin";
 
@@ -19,7 +20,8 @@ GetOptions (
 	"speed=s" => \$speed, 
 	"boot=s" => \$bootloader, 
 	"hex" => \$as_hex, 
-	"exec=s" => \$file
+	"exec=s" => \$file, 
+	"module=s" => \$module
 );
 
 my $port = Device::SerialPort->new($device);
@@ -94,7 +96,8 @@ while (1) {
 				$port->read_char_time(100);
 				$port->read_const_time(200);
 				
-				loader_set_speed($port, 460800) or exit;
+				loader_set_speed($port, 921600) or exit;
+				loader_alive($port) or exit;
 				
 				my $addr = 0xA8000000;
 				print "Detected loader!\n";
@@ -120,6 +123,12 @@ while (1) {
 			}
 		}
 		
+		if ($module) {
+			require $module;
+			siemens_boot::boot_module_init($port);
+			exit(0);
+		}
+		
 		$port->read_char_time(1000);
 		$port->read_const_time(2000);
 		if ($as_hex) {
@@ -142,11 +151,7 @@ sub loader_alive {
 	$port->write(".");
 	my $c = readb($port);
 	if ($c ne 0x4F) {
-		if ($c eq 0x45) {
-			warn "[loader_alive] Write error (CRC)\n";
-		} else {
-			warn sprintf("[loader_alive] Invalid answer 0x%02X\n", $c);
-		}
+		warn sprintf("[loader_alive] Invalid answer 0x%02X\n", $c);
 		return 0;
 	}
 	return 1;
@@ -158,8 +163,20 @@ sub loader_set_speed {
 		"B".
 		chr(($speed >> 24) & 0xFF).chr(($speed >> 16) & 0xFF).chr(($speed >> 8) & 0xFF).chr($speed & 0xFF)
 	);
+	my $c = readb($port);
+	if ($c ne 0xCC) {
+		warn sprintf("[loader_set_speed 1] Invalid answer 0x%02X\n", $c);
+		return 0;
+	}
 	$port->baudrate($speed);
 	$port->write_settings;
+	$port->write("A");
+	
+	$c = readb($port);
+	if ($c ne 0xDD) {
+		warn sprintf("[loader_set_speed 2] Invalid answer 0x%02X\n", $c);
+		return 0;
+	}
 	return 1;
 }
 
