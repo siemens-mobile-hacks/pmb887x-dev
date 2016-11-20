@@ -1,10 +1,11 @@
 ENTRY(_start)
 SECTIONS {
 	.xuj : {
-		*(.xuj0)
+		KEEP(*(.xuj0))
 		*(.text)
+		*(.text*)
 		*(.rodata)
-		*(.xuj2)
+		KEEP(*(.xuj2))
 	}
 }
 MEMORY {

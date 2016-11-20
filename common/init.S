@@ -33,7 +33,7 @@
 ldr SP, stack_addr
 b _start
 
-stack_addr: .word 0x81EF0
+stack_addr: .word 0x81000
 
 .section .xuj2
 .align 4
