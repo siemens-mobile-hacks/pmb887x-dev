@@ -5,7 +5,7 @@ void pmb8876_serial_set_speed(unsigned int speed) {
 	REG(PMB8876_USART0_FDV) = ((speed << 16) >> 16);
 }
 
-void pmb8876_serial_print(char *data) {
+void pmb8876_serial_print(const char *data) {
 	while (*data)
 		pmb8876_serial_putc(*data++);
 }
@@ -20,6 +20,29 @@ char pmb8876_serial_getc() {
 	while (!(REG(PMB8876_USART0_FCSTAT) & 4));
 	REG(PMB8876_USART0_ICR) |= 4;
 	return REG(PMB8876_USART0_RXB) & 0xFF;
+}
+
+unsigned int get_cpsr() {
+	volatile unsigned int r;
+	asm volatile (" mrs %0, CPSR":"=r" (r): /* no inputs */ );
+	return r;
+}
+
+unsigned int set_cpsr(volatile unsigned int r) {
+	asm volatile (" msr CPSR, %0": /* no outputs */ :"r" (r));
+}
+
+const char *get_cpu_mode(unsigned int cpsr) {
+	switch (cpsr & 0x1f) {
+		case ARM_CPU_MODE_USR:	return "USR\n";
+		case ARM_CPU_MODE_FIQ:	return "FIQ\n";
+		case ARM_CPU_MODE_IRQ:	return "IRQ\n";
+		case ARM_CPU_MODE_SVC:	return "SVC\n";
+		case ARM_CPU_MODE_ABT:	return "ABT\n";
+		case ARM_CPU_MODE_UND:	return "UND\n";
+		case ARM_CPU_MODE_SYS:	return "SYS\n";
+		default:				return "UNK\n";
+	}
 }
 
 void init_sdram() {
@@ -94,6 +117,15 @@ void hexdump(unsigned char *data, unsigned int len) {
 	}
 }
 
+void memcpy(void *a, const void *b, unsigned int size) {
+	unsigned char *ap = (unsigned char *) a;
+	const unsigned char *bp = (const unsigned char *) b;
+	
+	unsigned int i = 0;
+	for (i = 0; i < size; ++i)
+		ap[i] = bp[i];
+}
+
 char to_hex(unsigned char b) {
 	if (b < 0xA)
 		return '0' + b;
@@ -154,4 +186,122 @@ void set_einit(char flag) {
 	wdc0 |= 2;
 	wdc0 |= flag;
 	REG(SCU_WDTCON0) = wdc0;
+}
+
+const char *itoa(unsigned int val, unsigned int base) {
+	static char buf[32] = {0};
+	unsigned int i = 30;
+	for (; val && i ; --i, val /= base)
+		buf[i] = "0123456789ABCDEF"[val % base];
+	return &buf[i + 1];
+}
+
+// (c) Dimadze
+// http://forum.allsiemens.com/viewtopic.php?t=61096&start=330
+unsigned int get_cpu_freq() {
+	unsigned char mul, div, pdiv, fsys, divh, mulh;
+	unsigned int  pll_osc, pll_con0, pll_con1, pll_con2;
+	
+	pll_osc  = REG(PLL_OSC);
+	pll_con0 = REG(PLL_CON0);
+	pll_con1 = REG(PLL_CON1);
+	pll_con2 = REG(PLL_CON2);
+	
+	div  = (pll_osc  & 0x0F000000) >> 24;
+	mul  = (pll_osc  & 0x003F0000) >> 16;
+	pdiv = (pll_con2 & 0x00000300) >> 8;
+	
+	divh = (pll_con0 & 0x00007800) >> 11;
+	mulh = (pll_con1 & 0x00600000) >> 21;
+	
+	fsys = ((26 * (mul + 1) ) / ( div + 1)) / 4;
+  
+	if (mulh > 1) { // Alt Check
+		if (divh > 0) {
+			if (pll_con2 & 0x00001000) { // High freq
+				return  ((fsys * 4 *  mulh) / ( pdiv + 1)) / divh;
+			} else {
+				switch (pdiv) {
+					case 0:
+						return  ((fsys * 4 *  mulh) * 1)   / divh;
+					case 1:
+						return  (((fsys * 4 *  mulh) * 7500) / 10000) / divh;
+					case 2:
+						return  (((fsys * 4 *  mulh) * 6250) / 10000) / divh;
+					case 3:
+						return  (((fsys * 4 *  mulh) * 5625) / 10000) / divh;
+					default:
+						return fsys;
+				} 
+			}
+		} else  {
+			// Low freq
+			return fsys;
+		}
+	} else {
+		// Normal freq
+		if (pll_con2 & 0x00001000) {
+			return  ((fsys * 4 *  mulh) / ( pdiv + 1));
+		} else {
+			switch (pdiv) {
+				case 0:
+					return  ( fsys * 4 *  mulh) * 1;
+				case 1:
+					return  ((fsys * 4 *  mulh) * 7500 ) / 10000;
+				case 2:
+					return  ((fsys * 4 *  mulh) * 6250 ) / 10000;
+				case 3:
+					return  ((fsys * 4 *  mulh) * 5625 ) / 10000;
+				default:
+					return fsys;
+			}
+		}
+	}
+}
+
+// AEABI
+unsigned int __udivmodsi4(unsigned int num, unsigned int den, unsigned int * rem_p) {
+	unsigned int quot = 0, qbit = 1;
+	
+	/* Left-justify denominator and count shift */
+	while ((int) den >= 0) {
+		den <<= 1;
+		qbit <<= 1;
+	}
+
+	while (qbit) {
+		if (den <= num) {
+			num -= den;
+			quot += qbit;
+		}
+		den >>= 1;
+		qbit >>= 1;
+	}
+
+	if (rem_p)
+		*rem_p = num;
+
+	return quot;
+}
+
+signed int __aeabi_idiv(signed int num, signed int den) {
+	signed int minus = 0;
+	signed int v;
+	
+	if (num < 0) {
+		num = -num;
+		minus = 1;
+	}
+	if (den < 0) {
+		den = -den;
+		minus ^= 1;
+	}
+	v = __udivmodsi4(num, den, 0);
+	if (minus)
+		v = -v;
+	return v;
+}
+
+unsigned int __aeabi_uidiv(unsigned int num, unsigned int den) {
+	return __udivmodsi4(num, den, 0);
 }

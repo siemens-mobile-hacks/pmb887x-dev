@@ -1,7 +1,5 @@
 #include "main.h"
 
-extern unsigned int *_cpu_vectors;
-
 void reset_addr();
 void undef_addr();
 void swi_addr();
@@ -39,8 +37,9 @@ void _start() {
 	vectors[14] = irq_test;
 	vectors[15] = fiq_test;
 	
-//	enable_irq(1);
-//	enable_fiq(1);
+	enable_irq(1);
+	enable_fiq(1);
+	
 	main();
 }
 
@@ -73,38 +72,32 @@ void main() {
 		}
 	}
 }
-void onerr() {
+void onerr(char c) {
 	while (1) {
-		pmb8876_serial_putc('E');
-		serve_watchdog();
+		pmb8876_serial_putc(c);
 	}
 }
 void reset_addr() {
-	onerr();
+	onerr(0xAA);
 }
 void undef_addr() {
-	onerr();
+	onerr(0xBB);
 }
 void swi_addr() {
 	
 }
 void prefetch_addr() {
-	onerr();
+	onerr(0xCC);
 }
 void abort_addr() {
-	onerr();
+	onerr(0xEE);
 }
 void reserved_addr() {
 	
 }
-void __attribute__((interrupt)) irq_test() {
-	//unsigned int irq_n = REG(0xF280001C);
-	// хуй пизда
-	//++irq_n;
-	REG(0xF2800014) = 1; // accept irq
+void __IRQ irq_test() {
+	onerr(0xFC);
 }
 void fiq_test() {
-	while (1) {
-		pmb8876_serial_putc('\xCC');
-	}
+	onerr(0xDD);
 }

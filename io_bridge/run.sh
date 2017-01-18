@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo perl ../boot.pl --module=test.pm --boot=io.bin
+sudo perl ../boot.pl --device=/dev/ttyUSB4 --module=io_bridge.pm --boot=io.bin

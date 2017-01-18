@@ -1,11 +1,11 @@
 INCLUDE=-I ../common
 C_SOURCES=../common/pmb8876.c main.c
 OBJECTS=init.o pmb8876.o main.o
-BIN_NAME=io
+BIN_NAME=irq
 
 all: clean
 # compile
-	arm-none-eabi-gcc -e _start -fvisibility=hidden -fdata-sections -ffunction-sections -c -fomit-frame-pointer -mcpu=arm926ej-s -nostartfiles -fno-builtin -nodefaultlibs -nostdlib -O0 -nostdinc $(INCLUDE) $(C_SOURCES)
+	arm-none-eabi-gcc -e _start -fvisibility=hidden -fdata-sections -ffunction-sections -c -fomit-frame-pointer -mcpu=arm926ej-s -nostdlib -nostdinc $(INCLUDE) -O0 $(C_SOURCES)
 	
 # init
 	arm-none-eabi-as -c -mcpu=arm926ej-s ../common/init.S -o init.o
