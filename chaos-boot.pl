@@ -4,6 +4,9 @@ use Device::SerialPort;
 use Getopt::Long;
 use File::Basename qw|dirname|;
 use Time::HiRes qw|usleep time|;
+use Linux::Termios2;
+use POSIX qw( :termios_h );
+use Data::Dumper;
 no utf8;
 
 $| = 1;
@@ -13,7 +16,7 @@ main();
 sub main {
 	my $device = "/dev/ttyUSB3";
 	my $boot_speed = 115200;
-	my $speed = 921600;
+	my $speed = 1600000;
 	my $bkey;
 	my $exec_file;
 	my $as_hex = 0;
@@ -40,7 +43,7 @@ sub main {
 	$port->read_const_time(100);
 
 	$port->write_settings;
-
+	
 	print "Please, short press red button!\n";
 
 	my $boot_ok = 0;
@@ -164,8 +167,7 @@ sub chaos_set_speed {
 	$port->write("H".chr($CHAOS_SPEEDS{$speed}));
 	my $c = readb($port);
 	if ($c == 0x68) {
-		$port->baudrate($speed);
-		$port->write_settings;
+		set_port_baudrate($port, $speed);
 		$port->write("A");
 		$c = readb($port);
 		if ($c == 0x48) {
@@ -173,7 +175,7 @@ sub chaos_set_speed {
 			return 1;
 		}
 	}
-	$port->baudrate($old_speed);
+	set_port_baudrate($port, $old_speed);
 	warn sprintf("[chaos_set_speed] Invalid answer 0x%02X", $c);
 	return 0;
 }
@@ -284,6 +286,15 @@ sub write_boot {
 	return 0;
 }
 
+sub set_port_baudrate {
+	my ($port, $baudrate) = @_;
+	my $termios = Linux::Termios2->new;
+	$termios->getattr($port->FILENO);
+	$termios->setospeed($baudrate);
+	$termios->setispeed($baudrate);
+	$termios->setattr($port->FILENO, TCSANOW);
+	return -1;
+}
 
 sub readb {
 	my ($port) = @_;

@@ -4,30 +4,32 @@ use Device::SerialPort;
 use Getopt::Long;
 use File::Basename qw|dirname|;
 use Time::HiRes qw|usleep|;
+use Linux::Termios2;
+use POSIX qw( :termios_h );
 no utf8;
 
 $| = 1;
 
 my $device = "/dev/ttyUSB3";
-my $speed = 115200;
-my $file;
+my $boot_speed = 115200;
+my $speed = 1600000;
 my $module;
 my $as_hex = 0;
 my $bootloader = dirname(__FILE__)."/bootloader/bootloader.bin";
 
 GetOptions (
 	"device=s" => \$device, 
+	"boot-speed=s" => \$boot_speed, 
 	"speed=s" => \$speed, 
 	"boot=s" => \$bootloader, 
 	"hex" => \$as_hex, 
-	"exec=s" => \$file, 
 	"module=s" => \$module
 );
 
 my $port = Device::SerialPort->new($device);
 die("open port error ($device)") if (!$port);
 
-$port->baudrate($speed);
+$port->baudrate($boot_speed);
 $port->databits(8);
 $port->parity("none");
 $port->stopbits(1);
@@ -90,42 +92,10 @@ while (1) {
 		print "boot size: ".length($boot)."\n";
 		write_boot($port, $boot);
 		
-		if ($file) {
-			$c = readb($port);
-			if ($c == 0x0B) {
-				$port->read_char_time(100);
-				$port->read_const_time(200);
-				
-				loader_set_speed($port, 921600) or exit;
-				loader_alive($port) or exit;
-				
-				my $addr = 0xA8000000;
-				print "Detected loader!\n";
-				
-				my $raw = "";
-				open(F, "<$file") or die("open($file): $!");
-				while (!eof(F)) {
-					my $buff;
-					read F, $buff, 2048;
-					$raw .= $buff;
-				}
-				close(F);
-				
-				# Пишем в раму
-				printf("Load $file to RAM (%08X)... (size=%d)\n", $addr, length($raw));
-				loader_write_ram($port, $addr, $raw) or die("load error");
-				
-				# Запускаем бинарь в раме
-				printf("Exec %08X...\n", $addr);
-				loader_exec_from_ram($port, $addr);
-			} else {
-				die("File loader not found");
-			}
-		}
-		
+		usleep(35000);
 		if ($module) {
 			require $module;
-			siemens_boot::boot_module_init($port);
+			siemens_boot::boot_module_init($port, $speed);
 			exit(0);
 		}
 		
@@ -157,71 +127,14 @@ sub loader_alive {
 	return 1;
 }
 
-sub loader_set_speed {
-	my ($port, $speed) = @_;
-	$port->write(
-		"B".
-		chr(($speed >> 24) & 0xFF).chr(($speed >> 16) & 0xFF).chr(($speed >> 8) & 0xFF).chr($speed & 0xFF)
-	);
-	my $c = readb($port);
-	if ($c ne 0xCC) {
-		warn sprintf("[loader_set_speed 1] Invalid answer 0x%02X\n", $c);
-		return 0;
-	}
-	$port->baudrate($speed);
-	$port->write_settings;
-	$port->write("A");
-	
-	$c = readb($port);
-	if ($c ne 0xDD) {
-		warn sprintf("[loader_set_speed 2] Invalid answer 0x%02X\n", $c);
-		return 0;
-	}
-	return 1;
-}
-
-sub loader_exec_from_ram {
-	my ($port, $addr) = @_;
-	$port->write(
-		"X".
-		chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF)
-	);
-	return 1;
-}
-
-sub loader_write_ram {
-	my ($port, $dst_addr, $buff) = @_;
-	
-	my $buff_size = length($buff);
-	for (my $j = 0; $j < $buff_size; $j += 2048) {
-		my $tmp = substr($buff, $j, 2048);
-		
-		my $chk;
-		my $size = length($tmp);
-		for (my $i = 0; $i < $size; ++$i) {
-			$chk ^= ord(substr($tmp, $i, 1));
-		}
-		
-		my $addr = $dst_addr + $j;
-		printf("%02d%s [WRITE] %08X-%08X\n", int($j / $buff_size * 100), "%", $addr, $addr + $size);
-		
-		$port->write("W");
-		$port->write(chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF));
-		$port->write(chr(($size >> 24) & 0xFF).chr(($size >> 16) & 0xFF).chr(($size >> 8) & 0xFF).chr($size & 0xFF));
-		$port->write(chr($chk));
-		$port->write($tmp);
-		
-		my $c = readb($port);
-		if ($c ne 0x4F) {
-			if ($c eq 0x45) {
-				warn "[loader_write_ram] Write error (CRC)\n";
-			} else {
-				warn sprintf("[loader_write_ram] Invalid answer 0x%02X\n", $c);
-			}
-			return 0;
-		}
-	}
-	return 1;
+sub set_port_baudrate {
+	my ($port, $baudrate) = @_;
+	my $termios = Linux::Termios2->new;
+	$termios->getattr($port->FILENO);
+	$termios->setospeed($baudrate);
+	$termios->setispeed($baudrate);
+	$termios->setattr($port->FILENO, TCSANOW);
+	return -1;
 }
 
 sub write_boot {

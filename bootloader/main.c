@@ -11,6 +11,7 @@ void _start() {
 	pmb8876_serial_putc('\x0B');
 	pmb8876_serial_set_speed(UART_SPEED_115200);
 	
+	int i;
 	while (1) {
 		char cmd = pmb8876_serial_getc();
 		switch (cmd) {
@@ -21,6 +22,10 @@ void _start() {
 			case 'B': // Set speed
 			{
 				unsigned int speed = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
+				pmb8876_serial_putc(0xCC);
+				
+				for (i = 0; i < 0xa000; ++i) asm("NOP");
+				
 				if (speed == 57600) {
 					pmb8876_serial_set_speed(UART_SPEED_57600);
 				} else if (speed == 115200) {
@@ -38,6 +43,10 @@ void _start() {
 				} else if (speed == 1500000) {
 					pmb8876_serial_set_speed(UART_SPEED_1500000);
 				}
+				while (pmb8876_serial_getc() != 'A');
+				
+				pmb8876_serial_putc(0xDD);
+				
 				serve_watchdog();
 			}
 			break;

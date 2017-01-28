@@ -6,7 +6,7 @@ use Device::SerialPort;
 require "test.pm";
 
 sub boot_module_init {
-	my $port = shift;
+	my ($port, $speed) = @_;
 	
 	$port->read_char_time(1000);
 	$port->read_const_time(1000);
