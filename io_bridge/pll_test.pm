@@ -17,11 +17,15 @@ sub boot_module_init {
 
 sub get_cpu_freq {
 	my $port = shift;
-	
 	my $pll_osc  = cmd_read($port, 0xF45000A0);
 	my $pll_con0 = cmd_read($port, 0xF45000A4);
 	my $pll_con1 = cmd_read($port, 0xF45000A8);
 	my $pll_con2 = cmd_read($port, 0xF45000AC);
+	
+	printf("pll_osc = %08X\n", $pll_osc);
+	printf("pll_con0 = %08X\n", $pll_con0);
+	printf("pll_con1 = %08X\n", $pll_con1);
+	printf("pll_con2 = %08X\n", $pll_con2);
 	
 	my $div  = ($pll_osc  & 0x0F000000) >> 24;
 	my $mul  = ($pll_osc  & 0x003F0000) >> 16;

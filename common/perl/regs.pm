@@ -32,19 +32,18 @@ sub get_regs {
 sub reg_name {
 	my $addr = shift;
 	my $value = shift;
-	
 	my $names = get_regs();
 	
 	my $add = "";
 	if ($addr >= 0xF4300020 && $addr <= 0xF43001E4) {
-		my $IS		= $value & 0x7;
-		my $OS		= ($value >> 3) & 0x7;
-		my $PS		= ($value >> 7) & 1;
-		my $DATA	= ($value >> 8) & 1;
-		my $DIR		= ($value >> 9) & 1;
-		my $PPEN	= ($value >> 11) & 1;
-		my $PDPU	= ($value >> 12) & 3;
-		my $ENAQ	= ($value >> 14) & 1;
+		my $IS		= $value & 7;
+		my $OS		= ($value >> 4) & 7;
+		my $PS		= ($value >> 8) & 1;
+		my $DATA	= ($value >> 9) & 1;
+		my $DIR		= ($value >> 10) & 1;
+		my $PPEN	= ($value >> 12) & 1;
+		my $PDPU	= ($value >> 13) & 3;
+		my $ENAQ	= ($value >> 15) & 1;
 		
 		my @gpio = ();
 		push @gpio, "PS=$PS";

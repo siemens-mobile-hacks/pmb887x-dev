@@ -4,6 +4,7 @@ use Data::Dumper;
 
 require "common/perl/regs.pm";
 
+my $add_names = grep { $_ eq "-n" } @ARGV;
 my $header = "";
 my $hash = [];
 my $regs = get_regs();
@@ -23,12 +24,14 @@ for my $val (@$regs) {
 	}
 }
 
-$header .= '
+if ($add_names) {
+	$header .= '
 struct PMB8876_REG_NAME {
 	const char name['.($name_len + 1).'];
 	unsigned int addr;
 	unsigned int addr_end;
 };
 struct PMB8876_REG_NAME PMB8876_REGS_NAMES[] = {'."\n\t".''.join(",\n\t", @$hash)."\n};\n";
+}
 
 print $header;

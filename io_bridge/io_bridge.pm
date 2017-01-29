@@ -28,15 +28,20 @@ sub boot_module_init {
 		
 		my $cmd = substr($buf, 0, 1);
 		if ($cmd eq "R") {
-			
 			my $addr = unpack("V", substr($buf, 1, 4));
+			my $from = unpack("V", substr($buf, 5, 4));
 			my $data = cmd_read($port, $addr, 1);
 			
 			reset_cmd();
 			print F "!".$data; # OK + data
 			
+			if ($addr == 0xF4300118 || $addr == 0xF4B00010) {
+				cmd_ping($port);
+				next;
+			}
+			
 			my $vv = unpack("V", $data);
-			printf("READ from %08X (%08X)%s\n", $addr, $vv, reg_name($addr, $vv));
+			printf("READ from %08X (%08X)%s (from %08X)\n", $addr, $vv, reg_name($addr, $vv), $from);
 			
 			$xuj = 1;
 			if ($addr >= 0xf4400000 && $addr <= 0xf440FFFF) {
@@ -46,6 +51,7 @@ sub boot_module_init {
 			reset_cmd();
 			my $addr = unpack("V", substr($buf, 1, 4));
 			my $value = unpack("V", substr($buf, 5, 4));
+			my $from = unpack("V", substr($buf, 9, 4));
 			
 			my $valid = 1;
 			if ($addr == 0xF430004C || $addr == 0xF4300050) {
@@ -58,7 +64,7 @@ sub boot_module_init {
 				$valid = 0;
 			}
 			
-			if ($addr >= 0xF4500000 && $addr <= 0xF4500FFF) {
+			if ($addr >= 0xF4500000 && $addr <= 0xF4500FFF && $addr != 0xF45000CC) {
 				# UART отваливается от смены частоты CPU, нужно что-то с этим делать...
 				$valid = 0;
 			}
@@ -73,10 +79,21 @@ sub boot_module_init {
 				$valid = 0;
 			}
 			
+			if ($addr == 0xF280029C) {
+				# 0x9B irq
+				$valid = 0;
+			}
+			
+			if ($addr == 0xF4300118 || $addr == 0xF4B00010) {
+				cmd_ping($port);
+				print F "!"; # OK
+				next;
+			}
+			
 #	if (offset == 0xf4400024 || offset == 0xf4400028 || offset == 0xf45000a8 || (offset >= 0xf6400000 && offset <= 0xf640ffff))
 #		return;
 			
-			printf("WRITE %08X to %08X%s%s\n", $value, $addr, reg_name($addr, $value), $valid ? "" : " | SKIP!!!!");
+			printf("WRITE %08X to %08X%s (from %08X)%s\n", $value, $addr, reg_name($addr, $value), $from, $valid ? "" : " | SKIP!!!!");
 			cmd_write($port, $addr, $value) if ($valid);
 			
 			print F "!"; # OK

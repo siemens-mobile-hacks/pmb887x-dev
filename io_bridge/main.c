@@ -96,7 +96,8 @@ void reserved_addr() {
 	
 }
 void __IRQ irq_test() {
-	onerr(0xFC);
+	// REG(0xF2800014) = 1;
+	onerr(REG(0xF280001C) & 0xFF);
 }
 void fiq_test() {
 	onerr(0xDD);

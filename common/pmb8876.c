@@ -66,8 +66,8 @@ void init_sdram() {
 void init_watchdog() {
 	unsigned int r0 = (REG(SCU_CHIPID) >> 8) & 0xFF;
 	
-	unsigned int r1 = PCL_62;
-	unsigned int r2 = PCL_62 - 0xCC;
+	unsigned int r1 = GPIO_DSPOUT1_PM_WADOG;
+	unsigned int r2 = GPIO_DSPOUT1_PM_WADOG - 0xCC;
 	
 	if (r0 == 0x14) {
 		r1 += 0x60;
@@ -108,7 +108,8 @@ void serve_watchdog() {
 	 __g_watchdog.time = now;
 }
 
-void hexdump(unsigned char *data, unsigned int len) {
+void hexdump(void *d, unsigned int len) {
+	unsigned char *data = (unsigned char *) d;
 	unsigned int i;
 	for (i = 0; i < len; ++i) {
 		pmb8876_serial_putc(to_hex((data[i] >> 4) & 0xF));
