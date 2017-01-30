@@ -17,6 +17,9 @@ sub main {
 	my $device = "/dev/ttyUSB3";
 	my $boot_speed = 115200;
 	my $speed = 1600000;
+	my $ign = 0;
+	my $dtr = 0;
+	my $rts = 0;
 	my $bkey;
 	my $exec_file;
 	my $as_hex = 0;
@@ -26,6 +29,9 @@ sub main {
 		"device=s" => \$device, 
 		"boot-speed=s" => \$boot_speed, 
 		"speed=s" => \$speed, 
+		"ign" => \$ign, 
+		"dtr" => \$dtr, 
+		"rts" => \$rts, 
 		"bkey=s" => \$bkey, 
 		"hex" => \$as_hex, 
 		"exec=s" => \$exec_file
@@ -35,23 +41,52 @@ sub main {
 	die("open port error ($device)") if (!$port);
 
 	$port->baudrate($boot_speed);
-	$port->databits(8);
-	$port->parity("none");
-	$port->stopbits(1);
-
+	
 	$port->read_char_time(0);
-	$port->read_const_time(100);
+	$port->read_const_time($ign ? 20 : 100);
 
+	$port->dtr_active($dtr);
+	$port->rts_active($rts);
+	
+	$SIG{INT} = $SIG{TERM} = sub {
+		$port->dtr_active(0);
+		$port->rts_active(0);
+		exit(0);
+	};
+	
 	$port->write_settings;
+	if ($ign) {
+		while (readb($port) != -1) { }
+	}
 	
 	print "Please, short press red button!\n";
-
+	
+	my $last_dtr_val = 0;
+	my $last_dtr = 0;
+	my $last_dtr_timeout = 0.5;
+	my $read_zero = 0;
 	my $boot_ok = 0;
 	while (1) {
+		if ($ign) {
+			if (time - $last_dtr > $last_dtr_timeout || $read_zero > 0) {
+				$last_dtr_val = 0 if ($read_zero > 0); # поверофнулся типа
+				
+				$last_dtr_timeout = $last_dtr_val ? 1.5 : 0.5;
+				$last_dtr_val = !$last_dtr_val;
+				$last_dtr = time;
+				$read_zero = 0;
+				$port->dtr_active($last_dtr_val);
+				
+				print "^" if ($last_dtr_val);
+			}
+		}
+		
 		$port->write("AT");
 		
 		my $c = readb($port);
 		if ($c == 0xB0 || $c == 0xC0) {
+			$port->dtr_active($dtr) if ($ign);
+			
 			print "\n";
 			print "SGOLD detected!\n" if ($c == 0xB0);
 			print "NewSGOLD detected!\n" if ($c == 0xC0);
@@ -106,8 +141,8 @@ sub main {
 				}
 			} else {
 				printf("Invalid answer: %02X\n", $c);
-				printf("Chaos bootloader not found!\n");
-				exit(1);
+				printf("Chaos bootloader not found!\n\n");
+				next;
 			}
 			
 			if ($as_hex) {
@@ -121,6 +156,8 @@ sub main {
 				}
 			}
 			last;
+		} elsif ($c == 0) {
+			++$read_zero;
 		}
 		print ".";
 	}
@@ -227,12 +264,20 @@ sub chaos_write_ram {
 			printf("#$i %02d%s [WRITE] %08X-%08X (%.02f Kbps)\r", int(($addr - $dst_addr) / $buff_size * 100), "%", $addr, $addr + $size, (($addr - $dst_addr) / 1024) / (time - $start));
 		}
 		
-		$port->write($block->[2]);
+		my $tries = 10;
+		while (1) {
+			$port->write($block->[2]);
 		
-		my $ok = $port->read(2);
-		if ($ok ne "OK") {
-			warn sprintf("\n[chaos_write_ram] Invalid answer '%02X%02X'", ord(substr($ok, 0, 1)), ord(substr($ok, 1, 1)));
-			return 0;
+			my $ok = $port->read(2);
+			if ($ok ne "OK") {
+				warn sprintf("\n[chaos_write_ram] Invalid answer '%02X%02X'", ord(substr($ok, 0, 1)), ord(substr($ok, 1, 1)));
+				if ($tries--) {
+					chaos_ping($port) || exit(1);
+					next;
+				}
+				exit(1);
+			}
+			last;
 		}
 		++$i;
 	}

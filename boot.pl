@@ -15,6 +15,9 @@ my $boot_speed = 115200;
 my $speed = 1600000;
 my $module;
 my $as_hex = 0;
+my $ign = 0;
+my $dtr = 0;
+my $rts = 0;
 my $bootloader = dirname(__FILE__)."/bootloader/bootloader.bin";
 
 GetOptions (
@@ -23,7 +26,10 @@ GetOptions (
 	"speed=s" => \$speed, 
 	"boot=s" => \$bootloader, 
 	"hex" => \$as_hex, 
-	"module=s" => \$module
+	"module=s" => \$module, 
+	"ign" => \$ign, 
+	"dtr" => \$dtr, 
+	"rts" => \$rts
 );
 
 my $port = Device::SerialPort->new($device);
@@ -34,12 +40,22 @@ $port->databits(8);
 $port->parity("none");
 $port->stopbits(1);
 
+$port->dtr_active($dtr);
+$port->rts_active($rts);
+
 $port->read_char_time(0);
-$port->read_const_time(100);
+$port->read_const_time($ign ? 20 : 100);
+
+$SIG{INT} = $SIG{TERM} = sub {
+	$port->dtr_active(0);
+	$port->rts_active(0);
+	exit(0);
+};
 
 $port->write_settings;
-
-
+if ($ign) {
+	while (readb($port) != -1) { }
+}
 print "Please, short press red button!\n";
 
 my $bootloaders = {
@@ -60,12 +76,30 @@ my $bootloaders = {
 	]
 };
 
+my $last_dtr_val = 0;
+my $last_dtr = 0;
+my $last_dtr_timeout = 0.5;
+my $read_zero = 0;
 my $boot_ok = 0;
 while (1) {
+	if ($ign) {
+		if (time - $last_dtr > $last_dtr_timeout || $read_zero > 0) {
+			$last_dtr_val = 0 if ($read_zero > 0); # поверофнулся типа
+			
+			$last_dtr_timeout = $last_dtr_val ? 1.5 : 0.5;
+			$last_dtr_val = !$last_dtr_val;
+			$last_dtr = time;
+			$read_zero = 0;
+			$port->dtr_active($last_dtr_val);
+			
+			print "^" if ($last_dtr_val);
+		}
+	}
 	$port->write("AT");
 	
 	my $c = readb($port);
 	if ($c == 0xB0 || $c == 0xC0) {
+		$port->dtr_active($dtr) if ($ign);
 		print "\n";
 		print "SGOLD detected!\n" if ($c == 0xB0);
 		print "NewSGOLD detected!\n" if ($c == 0xC0);
@@ -112,6 +146,8 @@ while (1) {
 			}
 		}
 		last;
+	} elsif ($c == 0) {
+		++$read_zero;
 	}
 	print ".";
 }
