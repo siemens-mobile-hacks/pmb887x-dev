@@ -126,8 +126,8 @@ while (1) {
 		print "boot size: ".length($boot)."\n";
 		write_boot($port, $boot);
 		
-		usleep(35000);
 		if ($module) {
+			usleep(35000);
 			require $module;
 			siemens_boot::boot_module_init($port, $speed);
 			exit(0);

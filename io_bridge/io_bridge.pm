@@ -69,6 +69,11 @@ sub boot_module_init {
 				$valid = 0;
 			}
 			
+			if ($addr == 0xF1000000 || $addr == 0xF1000010 || $addr == 0xF1000050 || $addr == 0xF1000014 || $addr == 0xF1000018) {
+				# USART0_CCL || USART0_CON || USART0_WHBCON
+				$valid = 0;
+			}
+			
 			if ($addr == 0xF4B00000) {
 				# Если сменить частоту клока - всё валится
 				$valid = 0;
