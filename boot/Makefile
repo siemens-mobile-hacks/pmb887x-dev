@@ -2,7 +2,7 @@ LD=arm-none-eabi-ld
 AS=arm-none-eabi-as
 OBJCOPY=arm-none-eabi-objcopy
 
-all: clean chaos_x85 pv_boot_x85
+all: clean pv_boot_x85
 
 chaos_x85:
 	$(AS) -c -march=armv5te -mcpu=arm926ej-s chaos_x85.S -o chaos_x85.o

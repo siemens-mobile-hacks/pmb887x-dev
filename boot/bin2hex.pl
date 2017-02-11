@@ -13,5 +13,6 @@ close F;
 sub bin2hex {
 	my $hex = shift;
 	$hex =~ s/([\W\w])/sprintf("%02X", ord($1))/ge;
+	$hex =~ s/(.{64})/$1\n/g;
 	return $hex;
 }
