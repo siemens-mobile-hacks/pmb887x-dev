@@ -264,7 +264,6 @@ sub main {
 						print "\n";
 					}
 					print "\n";
-					exit;
 				}
 				
 				# Запуск файла в RAM
