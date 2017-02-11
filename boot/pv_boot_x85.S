@@ -4,7 +4,7 @@
 @ FlashID(1) - 0089 (Intel), 880D,
 @ FlashID(2) - 0089 (Intel), 8819,
 @ FlashID(3) - 0089 (Intel), 881C,
-@ FlashID(3) - 0020 (Intel), 8819.
+@ FlashID(3) - 0020 (ST), 8819.
 
 .section .text
 .arm
