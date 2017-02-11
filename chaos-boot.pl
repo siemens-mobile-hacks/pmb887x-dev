@@ -776,7 +776,9 @@ sub mk_chaos_boot {
 		}
 	}
 	
+	$data =~ s/[\s:]//gim;
 	$data =~ s/D0010000/$MAX_SPEED_VAL/;
+	
 	return hex2bin($data);
 }
 
