@@ -23,29 +23,112 @@ $| = 1;
 main();
 
 sub main {
+	my $help = 0;
 	my $device = "/dev/ttyUSB3";
 	my $boot_speed = 115200;
-	my $speed = $MAX_SPEED;
+	my $speed = 1600000;
 	my $ign = 0;
 	my $dtr = 0;
 	my $rts = 0;
-	my $bkey;
+	my $flasher = [];
 	my $exec_file;
+	my $exec_addr = 0xA8008000;
 	my $as_hex = 0;
-	my $bootloader = dirname(__FILE__)."/bootloader/bootloader.bin";
-
-	GetOptions (
-		"device=s" => \$device, 
-		"boot-speed=s" => \$boot_speed, 
-		"speed=s" => \$speed, 
-		"ign" => \$ign, 
-		"dtr" => \$dtr, 
-		"rts" => \$rts, 
-		"bkey=s" => \$bkey, 
-		"hex" => \$as_hex, 
-		"exec=s" => \$exec_file
-	);
-
+	my $run_picocom = 0;
+	
+	my $err = get_argv_opts({
+		"device=s"		=> \$device, 
+		"boot-speed=s"	=> \$boot_speed, 
+		"speed=s"		=> \$speed, 
+		"ign"			=> \$ign, 
+		"dtr"			=> \$dtr, 
+		"rts"			=> \$rts, 
+		"\@flasher=s"	=> $flasher, 
+		"help"			=> \$help, 
+		"hex"			=> \$as_hex, 
+		"picocom"		=> \$run_picocom, 
+		"exec=s"		=> \$exec_file, 
+		"exec-addr=s"	=> \$exec_addr
+	});
+	
+	if ($speed eq "max") {
+		$speed = $MAX_SPEED;
+	}
+	
+	if ($err || $help) {
+		print "$err\n";
+		print join("\n", (
+			'Common options:',
+			'	--device=/dev/ttyUSB3    com port device',
+			'	--boot-speed=112500      boot speed',
+			'	--speed=1600000          speed after boot',
+			'	--ign                    autoignition',
+			'	--dtr                    up dtr pin (for noname DCA-500)',
+			'	--rts                    up dtr pin (for noname DCA-500)',
+			'',
+			'Exec options:',
+			'	--hex                    dump output as hex',
+			'	--picocom                run picocom after exec',
+			'	--exec-addr <file>       change exec addr (default: 0xA8008000)',
+			'	--exec <file>            upload and run <file>',
+			'',
+			'Flasher:',
+			'	--flasher read,<addr>,<size>,<file>        read <size> bytes in flash/ram at <addr> and save to <file>',
+			'	--flasher write,<addr>,<file>              write <file> to flash/ram at <addr>'
+		));
+		print "\n";
+		exit(1);
+	}
+	
+	my $parse_addr = sub  {
+		my $arg = shift;
+		if (defined($arg) && $arg =~ /^(0x)?([a-f0-9]+)$/i) {
+			return hex($2);
+		}
+		warn "Unknown hex value: $arg\n";
+		return;
+	};
+	
+	# Парсим и проверяем таски флешера заранее
+	my $flasher_tasks = [];
+	for my $task (@$flasher) {
+		my @args = split(/\s*,\s*/, $task);
+		my $cmd = lc($args[0]);
+		
+		if ($cmd eq "read") {
+			my ($addr, $size, $file) = ($parse_addr->($args[1]), $parse_addr->($args[2]), $args[3]);
+			
+			die "Unknown addr in command: `$task`\n"
+				if (!defined($addr));
+			die "Unknown size in command: `$task`\n"
+				if (!defined($size));
+			die "Unknown file in command: `$task`\n"
+				if (!defined($file));
+			
+			push @$flasher_tasks, {
+				cmd => $cmd, 
+				addr => $addr, 
+				size => $size, 
+				file => $file
+			};
+		} elsif ($cmd eq "write" or $cmd eq "erase") {
+			my ($addr, $file) = ($parse_addr->($args[1]), $args[2]);
+			
+			die "Unknown addr in command: `$task`\n"
+				if (!defined($addr));
+			die "Unknown file in command: `$task`\n"
+				if (!defined($file));
+			
+			push @$flasher_tasks, {
+				cmd => $cmd, 
+				addr => $addr, 
+				file => $file
+			};
+		} else {
+			die "Unknown flasher command: $task\n";
+		}
+	}
+	
 	my $port = Device::SerialPort->new($device);
 	die("open port error ($device)") if (!$port);
 
@@ -100,11 +183,11 @@ sub main {
 			print "SGOLD detected!\n" if ($c == 0xB0);
 			print "NewSGOLD detected!\n" if ($c == 0xC0);
 			
-			$port->read_char_time(5000);
-			$port->read_const_time(5000);
+			$port->read_char_time(200);
+			$port->read_const_time(200);
 			
 			print "Sending boot...\n";
-			my $boot = mk_chaos_boot($bkey);
+			my $boot = mk_chaos_boot();
 			write_boot($port, $boot);
 			
 			$c = readb($port);
@@ -116,7 +199,7 @@ sub main {
 				$c = readb($port);
 				
 				if ($c != 0xAA) {
-					print "Boot init error\n";
+					printf("Boot init error (answer=%02X)\n", $c);
 					exit(1);
 				}
 				
@@ -128,25 +211,72 @@ sub main {
 				chaos_keep_alive($port);
 				print "Chaos Bootloader - OK\n";
 				
+				# Мини-флешер
+				if (@$flasher) {
+					my $info = chaos_read_info($port);
+					die "Can't read phone info!\n" if (!$info);
+					
+					printf("Phone: %s %s, IMEI: %s, Flash: %d Mb (%04X:%04X)\n", $info->{vendor}, $info->{model}, $info->{imei}, 
+						$info->{flash}->{size} / 1024 / 1024, 
+						$info->{flash}->{type} & 0xFFFF, ($info->{flash}->{type} >> 16) & 0xFFFF);
+					
+					print "\n";
+					for my $task (@$flasher_tasks) {
+						# Чтение RAM и FLASH
+						if ($task->{cmd} eq "read") {
+							my $space_name = $task->{addr} >= $info->{flash}->{base} && $task->{addr} <= $info->{flash}->{base} + $info->{flash}->{size} ? "FLASH" : "RAM";
+							printf("Read %d bytes from %08X (%s) to '%s'\n", $task->{size}, $task->{addr}, $space_name, $task->{file});
+							
+							chaos_keep_alive($port);
+							my $res = chaos_read_ram($port, $task->{addr}, $task->{size}, 1024 * 3.5);
+							if (defined($res)) {
+								open (F, ">".$task->{file})
+									or die("open(".$task->{file}."): $!");
+								binmode F;
+								print F $res;
+								close F;
+							}
+						}
+						
+						# Запись RAM и FLASH
+						elsif ($task->{cmd} eq "write") {
+							# Адресное пространство флеша
+							if ($task->{addr} >= $info->{flash}->{base} && $task->{addr} <= $info->{flash}->{base} + $info->{flash}->{size}) {
+								die "NOT SUPPORTED YET :( PLZ, GO PINAT' MENYA IF YOU WANT THIS FEATURE\n";
+								
+								my $raw = read_file($task->{file});
+								
+								chaos_keep_alive($port);
+								chaos_write_flash($port, $task->{addr}, $raw, 1024 * 3.5);
+								printf("Write %s to FLASH (%08X)\n", $task->{file}, $task->{addr});
+							}
+							# Иначе считает адресным пространством RAM
+							else {
+								printf("Write %s to RAM (%08X)\n", $task->{file}, $task->{addr});
+								my $raw = read_file($task->{file});
+								
+								chaos_keep_alive($port);
+								chaos_write_ram($port, $task->{addr}, $raw, 1024 * 3.5);
+							}
+						} else {
+							die "Unknown flasher command: $task\n";
+						}
+						print "\n";
+					}
+					print "\n";
+					exit;
+				}
+				
 				# Запуск файла в RAM
 				if ($exec_file) {
-					my $addr = 0xA8008000;
-					
-					my $raw = "";
-					open(F, "<$exec_file") or die("open($exec_file): $!");
-					while (!eof(F)) {
-						my $buff;
-						read F, $buff, 2048;
-						$raw .= $buff;
-					}
-					close(F);
+					my $raw = read_file($exec_file);
 					chaos_keep_alive($port);
 					
-					printf("Load $exec_file to RAM (%08X)... (size=%d)\n", $addr, length($raw));
-					chaos_write_ram($port, $addr, $raw, 1024 * 3.5) or die("load error");
+					printf("Load $exec_file to RAM (%08X)... (size=%d)\n", $exec_addr, length($raw));
+					chaos_write_ram($port, $exec_addr, $raw, 1024 * 3.5) or die("load error");
 					
-					printf("Exec %08X...\n", $addr);
-					chaos_goto($port, $addr);
+					printf("Exec %08X...\n", $exec_addr);
+					chaos_goto($port, $exec_addr);
 				}
 			} else {
 				printf("Invalid answer: %02X\n", $c);
@@ -154,14 +284,21 @@ sub main {
 				next;
 			}
 			
+			if ($run_picocom) {
+				system("picocom -b $speed $device");
+				exit;
+			}
+			
 			if ($as_hex) {
-				while (($c = readb($port)) >= 0) {
-					my $str = chr($c);
-					printf("%s | %02X\n", ($str =~ /[[:print:]]/ ? "'".$str."'" : " ? "), $c);
+				while (($c = readb($port)) != 0) {
+					if ($c > -1) {
+						my $str = chr($c);
+						printf("%s | %02X\n", ($str =~ /[[:print:]]/ ? "'".$str."'" : " ? "), $c);
+					}
 				}
 			} else {
-				while (($c = readb($port)) >= 0) {
-					print chr($c);
+				while (($c = readb($port)) != 0) {
+					print chr($c) if ($c > -1);
 				}
 			}
 			last;
@@ -170,6 +307,150 @@ sub main {
 		}
 		print ".";
 	}
+}
+
+sub read_file {
+	my $file = shift;
+	
+	my $raw = "";
+	open(F, "<$file") or die("open($file): $!");
+	while (!eof(F)) {
+		my $buff;
+		read F, $buff, 2048;
+		$raw .= $buff;
+	}
+	close(F);
+	
+	return $raw;
+}
+
+sub get_argv_opts {
+	my $cfg = shift;
+	
+	my $args = {};
+	for my $k (keys %$cfg) {
+		my $arg = {ref => $cfg->{$k}};
+		if ($k =~ /^@(.*?)$/) {
+			$k = $1;
+			$arg->{array} = 1;
+		}
+		
+		if ($k =~ /^([^=]+)=(.*?)$/) {
+			$k = $1;
+			$arg->{with_value} = $2;
+		}
+		
+		$args->{$k} = $arg;
+	}
+	
+	for (my $opt_id = 0; $opt_id < scalar(@ARGV); ++$opt_id) {
+		my $opt = $ARGV[$opt_id];
+		my $opt_name;
+		my $opt_value;
+		
+		if ($opt =~ /^--([^=]+)=(.*?)$/) {
+			$opt_name = $1;
+			$opt_value = $2;
+		} elsif ($opt =~ /^--([^=]+)$/) {
+			$opt_name = $1;
+		}
+		
+		if (exists $args->{$opt_name}) {
+			my $arg = $args->{$opt_name};
+			
+			if ($arg->{with_value}) {
+				if (!defined($opt_value)) {
+					++$opt_id;
+					$opt_value = $ARGV[$opt_id] if (exists $ARGV[$opt_id]);
+				}
+				return "Argument $opt require value\n" if (!defined($opt_value));
+				
+				if ($arg->{with_value} eq "b") {
+					if ($opt_value eq "true") {
+						$opt_value = 1;
+					} elsif ($opt_value eq "false") {
+						$opt_value = 0;
+					} else {
+						$opt_value = int($opt_value) ? 1 : 0;
+					}
+				} elsif ($arg->{with_value} eq "i") {
+					if ($opt_value =~ /0x([a-f0-9]+)/) {
+						$opt_value = hex($1);
+					} else {
+						$opt_value = int($opt_value);
+					}
+				}
+			} else {
+				$opt_value = 1;
+			}
+			
+			if ($arg->{array}) {
+				push @{$arg->{ref}}, $opt_value;
+			} else {
+				${$arg->{ref}} = $opt_value;
+			}
+		} else {
+			return "Unknown option: $opt\n";
+		}
+	}
+	
+	return;
+}
+
+sub chaos_read_info {
+	my ($port) = @_;
+	$port->write("I");
+	
+	my ($count, $raw) = $port->read(128);
+	if ($count != 128) {
+		warn sprintf("[chaos_read_info] Invalid answer size (%d != 128)\n", $count);
+		return 0;
+	}
+	
+#	BYTE strModelName[16];					// - model
+#	BYTE strManufacturerName[16];			// - manufacturer
+#	BYTE strIMEI[16];						//- IMEI (in ASCII)
+#	BYTE reserved0[16];						// - (reserved)
+#	DWORD flashBaseAddr;					// - base address of flash (ROM)
+#	BYTE reserved1[12];						// - (reserved)
+#	DWORD flash0Type;						//flash1 IC Manufacturer (LOWORD) and device ID (HIWORD)
+#	BYTE flashSizePow;						// - N, CFI byte 27h. Size of flash = 2^N
+#	WORD writeBufferSize;					// - CFI bytes 2Ah-2Bh size of write-buffer (not used by program)
+#	BYTE flashRegionsNum;					// - CFI byte 2Ch - number of regions.
+#	WORD flashRegion0BlocksNumMinus1;		// - N, CFI number of blocks in 1st region = N+1
+#	WORD flashRegion0BlockSizeDiv256;		// - N, CFI size of blocks in 1st region = N*256
+#	WORD flashRegion1BlocksNumMinus1;		// - N, CFI number of blocks in 2nd region = N+1
+#	WORD flashRegion1BlockSizeDiv256;		// - N, CFI size of blocks in 2nd region = N*256
+#	BYTE reserved2[32];						// - (reserved)
+	
+	my ($model, $vendor, $imei, $hash, $flash_base, $reserved0, 
+		$flash_type, $flash_size, $flash_buffer_size, $flash_regions, 
+		$flash_region0_nblocsk, $flash_region0_size, $flash_region1_nblocsk, $flash_region1_size, $reserved1) = 
+			unpack("Z16 Z16 Z16 H32 V a12 V W v W v v v v a32", $raw);
+	
+	my $info = {
+		model => $model, 
+		vendor => $vendor, 
+		imei => $imei, 
+		hash => $hash, 
+		flash => {
+			base => $flash_base, 
+			type => $flash_type, 
+			size => 1 << $flash_size, 
+			write_buff_size => $flash_buffer_size, 
+			regions => $flash_regions, 
+			region0 => {
+				blocks => $flash_region0_nblocsk, 
+				size => $flash_region0_size
+			}, 
+			region1 => {
+				blocks => $flash_region1_nblocsk, 
+				size => $flash_region1_size
+			}
+		}
+	};
+	
+	return $info;
 }
 
 sub chaos_ping {
@@ -212,7 +493,9 @@ sub chaos_set_speed {
 	my $old_speed = $port->baudrate;
 	$port->write("H".chr($CHAOS_SPEEDS{$speed}));
 	my $c = readb($port);
+	my $step = 0;
 	if ($c == 0x68) {
+		++$step;
 		set_port_baudrate($port, $speed);
 		$port->write("A");
 		$c = readb($port);
@@ -222,20 +505,109 @@ sub chaos_set_speed {
 		}
 	}
 	set_port_baudrate($port, $old_speed);
-	warn sprintf("[chaos_set_speed] Invalid answer 0x%02X", $c);
+	warn sprintf("[chaos_set_speed] Invalid answer 0x%02X (step=%d)", $c, $step);
 	return 0;
 }
 
 sub chaos_goto {
 	my ($port, $addr) = @_;
 	
-	my $test = 0;
-	$port->write("G");
-	$port->write(chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF));
-	$port->write(chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF));
-	$port->write(chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF));
+	$addr = chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF);
 	
+	while (1) {
+		$port->write("G$addr$addr$addr");
+		my $data = $port->read(4);
+		
+		if (length($data) < 4) {
+			warn sprintf("[chaos_goto] Invalid answer 0x%s", bin2hex($data));
+			
+			if (ord(substr($data, 0, 1)) == 0xAA) { # CRC error
+				chaos_keep_alive($port);
+				next;
+			}
+			exit(1);
+		} else {
+			$data = substr($data, 3, 1).substr($data, 2, 1).substr($data, 1, 1).substr($data, 0, 1);
+			if ($data ne $addr) {
+				warn sprintf("[chaos_goto] Addr corrupted o_O 0x%s", bin2hex($data));
+			}
+		}
+		last;
+	}
 	return 1;
+}
+
+sub chaos_read_ram {
+	my ($port, $read_addr, $read_size, $chunk) = @_;
+	
+	# Сразу заранее нарежем на блоки
+	my @blocks = ();
+	for (my $j = 0; $j < $read_size; $j += $chunk) {
+		my $addr = $read_addr + $j;
+		my $size = $chunk > $read_size - $j ? $read_size - $j : $chunk;
+		
+		push @blocks, [
+			$addr, $size, 
+			"R".
+			chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF).
+			chr(($size >> 24) & 0xFF).chr(($size >> 16) & 0xFF).chr(($size >> 8) & 0xFF).chr($size & 0xFF)
+		];
+	}
+	
+	my $i = 0;
+	my $start = time;
+	my $buffer = "";
+	
+	for my $block (@blocks) {
+		my $addr = $block->[0];
+		my $size = $block->[1];
+		
+		if ($i % 10 == 0) {
+			printf("                                                    \r");
+			printf("#$i %02d%s [READ] %08X-%08X (%.02f Kbps)\r", int(($addr - $read_addr) / $read_size * 100), "%", $addr, $addr + $size, (($addr - $read_addr) / 1024) / (time - $start));
+		}
+		
+		my $tries = 10;
+		while (1) {
+			$port->write($block->[2]);
+		
+			my $buf = $port->read($block->[1] + 4);
+			my $ok = substr($buf, $block->[1], 2);
+			my $chk = (ord(substr($buf, $block->[1] + 3, 1)) << 8) | ord(substr($buf, $block->[1] + 2, 1));
+			
+			if ($ok ne "OK") {
+				warn sprintf("\n[chaos_read_ram] Invalid answer '%02X%02X'", ord(substr($ok, 0, 1)), ord(substr($ok, 1, 1)));
+				if ($tries--) {
+					chaos_ping($port) || exit(1);
+					next;
+				}
+				exit(1);
+			}
+			
+			$buf = substr($buf, 0, $block->[1]);
+			
+			my $own_chk = 0;
+			for (my $i = 0; $i < $block->[1]; ++$i) {
+				$own_chk ^= ord(substr($buf, $i, 1));
+			}
+			
+			if ($chk != $own_chk) {
+				warn sprintf("\n[chaos_read_ram] Invalid CRC %02X != %02X", $chk, $own_chk);
+				if ($tries--) {
+					chaos_ping($port) || exit(1);
+					next;
+				}
+				exit(1);
+			}
+			
+			$buffer .= $buf;
+			
+			last;
+		}
+		++$i;
+	}
+	
+	return $buffer;
 }
 
 sub chaos_write_ram {
@@ -273,7 +645,7 @@ sub chaos_write_ram {
 			printf("#$i %02d%s [WRITE] %08X-%08X (%.02f Kbps)\r", int(($addr - $dst_addr) / $buff_size * 100), "%", $addr, $addr + $size, (($addr - $dst_addr) / 1024) / (time - $start));
 		}
 		
-		my $tries = 10;
+		my $tries = 999999;
 		while (1) {
 			$port->write($block->[2]);
 		
@@ -281,7 +653,95 @@ sub chaos_write_ram {
 			if ($ok ne "OK") {
 				warn sprintf("\n[chaos_write_ram] Invalid answer '%02X%02X'", ord(substr($ok, 0, 1)), ord(substr($ok, 1, 1)));
 				if ($tries--) {
-					chaos_ping($port) || exit(1);
+					chaos_keep_alive($port);
+					next;
+				}
+				exit(1);
+			}
+			last;
+		}
+		++$i;
+	}
+	print "\n";
+	return 1;
+}
+
+sub chaos_write_flash {
+	my ($port, $dst_addr, $buff, $chunk) = @_;
+	
+	my @blocks = ();
+	my $buff_size = length($buff);
+	for (my $j = 0; $j < $buff_size; $j += $chunk) {
+		my $tmp = substr($buff, $j, $chunk);
+		
+		my $chk;
+		my $size = length($tmp);
+		for (my $i = 0; $i < $size; ++$i) {
+			$chk ^= ord(substr($tmp, $i, 1));
+		}
+		my $addr = $dst_addr + $j;
+		
+		push @blocks, [
+			$addr, $size, 
+			"F".
+			chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF).
+			chr(($size >> 24) & 0xFF).chr(($size >> 16) & 0xFF).chr(($size >> 8) & 0xFF).chr($size & 0xFF).
+			$tmp.chr($chk)
+		];
+	}
+	
+	my $get_error = sub {
+		my $ok = shift;
+		if ($ok eq "\xFF\xFF") {
+			return "Out of flash bounds!";
+		} elsif ($ok eq "\xBB\xBB") {
+			return "CRC error!";
+		}
+		return sprintf("Invalid answer '%02X%02X'", ord(substr($ok, 0, 1)), ord(substr($ok, 1, 1)));
+	};
+	
+	my $i = 0;
+	my $start = time;
+	for my $block (@blocks) {
+		my $addr = $block->[0];
+		my $size = $block->[1];
+		
+		if ($i % 10 == 0) {
+			printf("                                                    \r");
+			printf("#$i %02d%s [WRITE] %08X-%08X (%.02f Kbps)\r", int(($addr - $dst_addr) / $buff_size * 100), "%", $addr, $addr + $size, (($addr - $dst_addr) / 1024) / (time - $start));
+		}
+		
+		my $tries = 999999;
+		while (1) {
+			$port->write($block->[2]);
+		
+			my $ok = $port->read(2);
+			if ($ok eq "\x01\x01") { # Блок отправился!
+				$ok = $port->read(2);
+				if ($ok eq "\x02\x02") { # Блок удалился!
+					$ok = $port->read(2);
+					if ($ok eq "\x03\x03") { # Блок записался!
+						 last;
+					} else {
+						warn "\n[chaos_write_flash] ".$get_error->($ok)." (write)\n";
+						if ($tries--) {
+							chaos_keep_alive($port);
+							next;
+						}
+						exit(1);
+					}
+				} else {
+					warn "\n[chaos_write_flash] ".$get_error->($ok)." (erase)\n";
+					if ($tries--) {
+						chaos_keep_alive($port);
+						next;
+					}
+					exit(1);
+				}
+			} else {
+				warn "\n[chaos_write_flash] ".$get_error->($ok)." (send)\n";
+				if ($tries--) {
+					chaos_keep_alive($port);
 					next;
 				}
 				exit(1);
@@ -295,14 +755,16 @@ sub chaos_write_ram {
 }
 
 sub mk_chaos_boot {
-	my $bkey = shift;
-	# Тут не совсем бут Chaos'a. Тут бут PV. Но он, как я понял, модификация бута от Chaos
-	my $data = 
-		"08D04FE200000FE1C00080E300F021E10000A0E3A80100EB541B9FE57C0091E50100C0E3090000EA5349454D454E535F424F4F54434F44450300000000C20100".
-		($bkey || "00000000000000000000000000000000").
-		"7C0081E50800A0E3280081E50100A0E3950100EB410200EBA500A0E3720100EB7D0100EB550050E30200000A2E0050E35302000BF9FFFFEA980100EBAA00A0E3690100EB740100EB410050E35200A003FAFFFF0A480050E36200000A490050E36E00000A510050E32B00000A540050E32C00000A520050E34B00000A460050E3D300000A450050E37D00000A500050E36A00000A570050E30D00000A470050E31000000A4F0050E33300000A430050E33600000A580050E36B02000A457F4FE2560050E38E02000A2E0050E32C02000BDBFFFFEA3E0100EB0640A0E10750A0E12B0100EB140100EA390100EB070056E10000000BD0FFFFEA0600A0E13A0100EB2604A0E1380100EB2608A0E1360100EB260CA0E1340100EB06F0A0E11E0200EB1D0200EBFEFFFFEA290100EB040096E4041096E4010000E0010070E30000A0130100001A087057E2F7FFFF1ABBFFFFEA0E40A0E11E0100EB940000EB400E57E39700002A0610A0E1015A8FE2195D85E2A780A0E189005AE314FF2FE1F3FFFFEBC801001B89005AE3BB01000B030000EAEEFFFFEBC101001B89005AE3B401000B056B8FE2826F86E2000000EA080100EB0080A0E30100D6E4008028E00A0100EB017057E2FAFFFF1A4F00A0E3060100EB4B00A0E3040100EB0800A0E1020100EB0000A0E395FFFFEA0B0100EB0060A0E16800A0E3FC0000EBA00EA0E3010050E2FDFFFF1A0600A0E1CF0000EB020100EB410050E3FCFFFF1A4800A0E387FFFFEA066B8FE2E26F86E28070A0E30100D6E4ED0000EB017057E2FBFFFF1A80FFFFEAE30000EB590000EBA844A0E30710A0E10650A0E1040095E4040084E4041051E2FBFFFF1A5500A0E3DF0000EBF40000EB0080A0E1F20000EB0050A0E1A84488E2570000EAEE0000EB0060A0E1470000EB010000EB0D0000EB69FFFFEA0E90A0E189005AE31B00001A6000A0E3B000C6E1D000A0E3B000C6E10000A0E12000A0E3B000C6E1D000A0E3B000C6E119FF2FE10E90A0E10100A0E3C30000EB0100A0E3C10000EB89005AE31000001AA40100EB7000A0E3B000C6E1B000D6E1800010E3F9FFFF0A3A0010E35C00001AFF00A0E3B000C6E1140000EA0610A0E18000A0E3700100EB3000A0E36E0100EB19FF2FE1401BA0E3011041E2A02BA0E3012052E21500000AB000D6E1010050E1FAFFFF1AB000D6E1010050E1F7FFFF1AB000D6E1010050E1F4FFFF1A040000EB0200A0E39D0000EB0200A0E39B0000EB19FF2FE19000A0E3B000C6E10000A0E3B000C6E1F000A0E3B000C6E11EFF2FE1F7FFFFEB4500A0E3900000EB4500A0E323FFFFEAA00456E30200003AA80456E30000002A1EFF2FE1FF00A0E3870000EBFF00A0E31AFFFFEA7E0000EBF4FFFFEBA844A0E30750A0E1ACFFFFEB690000EBB7FFFFEBA884A0E389005AE32500001A064B8FE26B4F84E25500D4E50130A0E31330A0E1A330A0E10640A0E1A750A0E1580100EBE800A0E3B000C4E1B000D4E1800010E31200000A010043E2B000C4E10310A0E1B200D8E0B200C4E0011051E2FBFFFF1AD000A0E3B000C6E1B000D6E1800010E3FCFFFF0A3A0010E30400001A035055E0E9FFFF8AFF00A0E3B000C6E11F0000EA5000A0E3B000C6E1FF00A0E3B000C6E1CBFFFFEA0610A0E12000A0E3110100EB0640A0E1A750A0E1350100EB802BA0E3A000A0E3B000C4E1B200D8E0B000C4E1012052E2B4FFFF0AB010D4E1000051E1FAFFFF1AB010D4E1000051E1F7FFFF1AB010D4E1000051E1F4FFFF1A012082E2024084E2015055E2ECFFFF1A9FFFFFEB0300A0E3380000EB0300A0E3360000EB0080A0E30610A0E1A720A0E1B200D1E0008088E0012052E2FBFFFF1A0800A0E12D0000EB2804A0E12B0000EB4F00A0E3290000EB4B00A0E3BCFEFFEA1C108FE2001191E7F124A0E32108A0E1140082E50108A0E12008A0E1180082E51EFF2FE1D8011900D8010C00B401050092000000C3000000270100008A01000000000000D00100000E90A0E10080A0E3F80000EB1D0000EB008028E00100C4E4015055E2F9FFFF1A180000EB080050E10000001A19FF2FE1BB00A0E3070000EBBB00A0E39AFEFFEA0E90A0E1190000EB0060A0E1170000EB0070A0E119FF2FE1F124A0E3201092E5FF10C1E3011080E1201082E5681092E5021011E2FCFFFF0A701092E5021081E3701082E5D90000EAF114A0E3680091E5040010E2FBFFFF0A700091E5040080E3700081E5240091E5FF0000E21EFF2FE10E50A0E1F3FFFFEB004CA0E1F1FFFFEB004884E1EFFFFFEB004484E1EDFFFFEB000084E115FF2FE1B0349FE5241093E50E10C1E3F01081E3282093E50C2002E2021081E1241083E50D10C1E3021081E3010080E1240083E51EFF2FE10E70A0E1C50000EB014A8FE2074C84E20410A0E18020A0E30000A0E3040081E4042052E2FCFFFF1A0410A0E154049FE52020A0E37E0000EB4C049FE51020A0E37B0000EB44049FE51020A0E3780000EBA004A0E3400084E5A014A0E39000A0E3780000EBB0A0D1E1B0A5C4E17E0000EBB000D1E1B025D4E1020050E0B005C401B205C4012800000A9000A0E36D0000EBB200D1E1B205C4E1730000EB01005AE30F00000A04005AE30D00000A89005AE31D00001A445084E2406F81E2026086E20680A0E3440000EB745084E20280A0E3410000EB026086E20480A0E33E0000EB110000EA445084E20160A0E10680A0E3440000EB745084E20280A0E3410000EB806081E2785084E20480A0E33D0000EB785084E2000094E5010090E20200001A406F81E20480A0E3360000EB9800A0E3BA0AC1E10000A0E1542084E2BE04D1E10100C2E4543081E2B200D3E00100C2E4FF0003E27A0050E3FAFFFF1A420000EB5400D4E51A0050E31800000A7D0000EBFF1402E29800A0E3BA0AC1E10000A0E1B002D1E1510050E31000001A5400D4E5010080E25400C4E55720D4E5022184E0582082E25A3081E2B200D3E00100C2E4FF0003E27A0050E3FAFFFF1AB805D1E15720D4E5002082E05720C4E5260000EB17FF2FE19800A0E3000000EA9000A0E30E90A0E1170000EBB200D6E0B200C5E0018058E2FBFFFF1A1B0000EB19FF2FE19800A0E3000000EA8800A0E30E90A0E10C0000EBB200D6E0B200C5E0018058E2FBFFFF1A9000A0E3060000EBB010C1E119FF2FE10130D0E40130C1E4012052E2FBFFFF1A1EFF2FE1AA30A0E3A02E81E2BA3AC2E15530A0E3502E81E2B435C2E1A02E81E2BA0AC2E11EFF2FE1F000A0E389005AE3FF00A003B000C1E11EFF2FE1FC019FE5600090E52004A0E1FF0000E2FC119FE5CC2041E2140050E30100001A601081E2042082E2043082E20C4043E201C0A0E10100A0E3000082E51000A0E3000083E5500EA0E3000081E5400CA0E3510E80E3000084E5B8119FE500B091E5050000EAAC219FE5000092E50B1040E0800F51E30800003A00B0A0E100009CE5000BA0E100209CE5A00FE0E1802FC2E3010000E2800482E100008CE51EFF2FE1F014A0E370019FE5880081E56C019FE5C80081E50600A0E3400081E560019FE5500081E52300A0E3600081E554019FE5800081E5A00081E54C019FE5C00081E5E00081E51EFF2FE1F014A0E3A024A0E3212082E2190050E310208212802081E5A02081E540278202402782E2902081E5B02081E510019FE5D00081E5F00081E51EFF2FE1A874A0E3030B8FE2160E80E2041090E4042090E4043090E4044090E4045090E4406BA0E31EFF2FE1F4FFFFEB041087E4042087E4800817E30300001A043087E4044087E4045087E4F7FFFFEABBFFFFEB5500A0E3D3FEFFEBE8FFFFEB040097E4010050E11300001A040097E4020050E11000001A800817E35EFDFF1A016056E20300001AADFFFFEB5600A0E3C5FEFFEBDBFFFFEB040097E4030050E10500001A040097E4040050E10200001A040097E4050050E1E8FFFF0A4500A0E3B9FEFFEB0700A0E1B7FEFFEB2704A0E1B5FEFFEB2708A0E1B3FEFFEB270CA0E146FDFFEA000040F400E003A010E403A000E403A0180130F42000B0F4410000A800027230701C8900110000A000265200";
+	# Модифицированный бут chaos/PV (из boot)
+	my $data = "08D04FE200000FE1C00080E300F021E10000A0E3AE0100EB781B9FE57C0091E50100C0E3090000EA5349454D454E535F424F4F54434F44450300000000C20100000000000000000000000000000000007C0081E50800A0E3280081E50100A0E39B0100EB490200EBA500A0E3780100EB830100EB550050E30200000A2E0050E35B02000BF9FFFFEA9E0100EBAA00A0E36F0100EB7A0100EB410050E35200A003FAFFFF0A480050E36500000A490050E37100000A510050E32B00000A540050E32C00000A520050E34E00000A460050E3D800000A450050E38000000A500050E36D00000A570050E30D00000A470050E31000000A4F0050E33400000A430050E33800000A580050E37402000A457F4FE2560050E39702000A2E0050E33402000BDBFFFFEA440100EB0640A0E10750A0E1310100EB1A0100EA3F0100EB070056E10000000BD0FFFFEA0600A0E1400100EB2604A0E13E0100EB2608A0E13C0100EB260CA0E13A0100EB06F0A0E1260200EB250200EBFEFFFFEA2F0100EB040096E4041096E4010000E0010070E30000A0130100001A087057E2F7FFFF1ABBFFFFEA0E40A0E1240100EB990000EB010B57E39C00002A0610A0E1595D8FE20000A0E1A780A0E189005AE320005A1314FF2FE1F2FFFFEBCE01001B89005AE320005A13C001000B040000EAECFFFFEBC601001B89005AE320005A13B801000BFC608FE2156C86E2000000EA0B0100EB0080A0E30100D6E4008028E00D0100EB017057E2FAFFFF1A4F00A0E3090100EB4B00A0E3070100EB0800A0E1050100EB0000A0E392FFFFEA0E0100EB0060A0E16800A0E3FF0000EB0A0CA0E3010050E2FDFFFF1A0600A0E1D20000EB050100EB410050E3FCFFFF1A4800A0E384FFFFEA7C608FE21B6C86E28070A0E30100D6E4F00000EB017057E2FBFFFF1A7DFFFFEAE60000EB5B0000EB2A43A0E30710A0E10650A0E1040095E4040084E4041051E2FBFFFF1A5500A0E3E20000EBF70000EB0080A0E1F50000EB0050A0E12A4388E2590000EAF10000EB0060A0E1490000EB010000EB0E0000EB66FFFFEA0E90A0E189005AE320005A131C00001A6000A0E3B000C6E1D000A0E3B000C6E10000A0E12000A0E3B000C6E1D000A0E3B000C6E119FF2FE10E90A0E10100A0E3C50000EB0100A0E3C30000EB89005AE320005A131000001AA70100EB7000A0E3B000C6E1B000D6E1800010E3F9FFFF0A3A0010E35D00001AFF00A0E3B000C6E1140000EA0610A0E18000A0E3720100EB3000A0E3700100EB19FF2FE10118A0E3011041E20A29A0E3012052E21500000AB000D6E1010050E1FAFFFF1AB000D6E1010050E1F7FFFF1AB000D6E1010050E1F4FFFF1A040000EB0200A0E39E0000EB0200A0E39C0000EB19FF2FE19000A0E3B000C6E10000A0E3B000C6E1F000A0E3B000C6E11EFF2FE1F7FFFFEB4500A0E3910000EB4500A0E31EFFFFEA0A0256E30200003A2A0356E30000002A1EFF2FE1FF00A0E3880000EBFF00A0E315FFFFEA7F0000EBF4FFFFEB2A43A0E30750A0E1AAFFFFEB6A0000EBB6FFFFEB2A83A0E389005AE320005A132500001A94408FE2194C84E25500D4E50130A0E31330A0E1A330A0E10640A0E1A750A0E15A0100EBE800A0E3B000C4E1B000D4E1800010E31200000A010043E2B000C4E10310A0E1B200D8E0B200C4E0011051E2FBFFFF1AD000A0E3B000C6E1B000D6E1800010E3FCFFFF0A3A0010E30400001A035055E0E9FFFF8AFF00A0E3B000C6E11F0000EA5000A0E3B000C6E1FF00A0E3B000C6E1CAFFFFEA0610A0E12000A0E3120100EB0640A0E1A750A0E1370100EB0228A0E3A000A0E3B000C4E1B200D8E0B000C4E1012052E2B3FFFF0AB010D4E1000051E1FAFFFF1AB010D4E1000051E1F7FFFF1AB010D4E1000051E1F4FFFF1A012082E2024084E2015055E2ECFFFF1A9EFFFFEB0300A0E3380000EB0300A0E3360000EB0080A0E30610A0E1A720A0E1B200D1E0008088E0012052E2FBFFFF1A0800A0E12D0000EB2804A0E12B0000EB4F00A0E3290000EB4B00A0E3B6FEFFEA1C108FE2001191E7F124A0E32108A0E1140082E50108A0E12008A0E1180082E51EFF2FE1D8011900D8010C00B401050092000000C3000000270100008A01000000000000D00100000E90A0E10080A0E3FA0000EB1D0000EB008028E00100C4E4015055E2F9FFFF1A180000EB080050E10000001A19FF2FE1BB00A0E3070000EBBB00A0E394FEFFEA0E90A0E1190000EB0060A0E1170000EB0070A0E119FF2FE1F124A0E3201092E5FF10C1E3011080E1201082E5681092E5021011E2FCFFFF0A701092E5021081E3701082E5DB0000EAF114A0E3680091E5040010E2FBFFFF0A700091E5040080E3700081E5240091E5FF0000E21EFF2FE10E50A0E1F3FFFFEB004CA0E1F1FFFFEB004884E1EFFFFFEB004484E1EDFFFFEB000084E115FF2FE1BC349FE5241093E50E10C1E3F01081E3282093E50C2002E2021081E1241083E50D10C1E3021081E3010080E1240083E51EFF2FE10E70A0E1C70000EBE8408FE2164C84E20410A0E18020A0E30000A0E3040081E4042052E2FCFFFF1A0410A0E160049FE52020A0E37F0000EB58049FE51020A0E37C0000EB50049FE51020A0E3790000EB0A02A0E3400084E50A12A0E39000A0E3790000EBB0A0D1E1B0A5C4E17F0000EBB000D1E1B025D4E1020050E0B005C401B205C4012900000A9000A0E36E0000EBB200D1E1B205C4E1740000EB01005AE31000000A04005AE30E00000A89005AE320005A131D00001A445084E2016C81E2026086E20680A0E3440000EB745084E20280A0E3410000EB026086E20480A0E33E0000EB110000EA445084E20160A0E10680A0E3440000EB745084E20280A0E3410000EB806081E2785084E20480A0E33D0000EB785084E2000094E5010090E20200001A016C81E20480A0E3360000EB9800A0E3BA0AC1E10000A0E1542084E2BE04D1E10100C2E4543081E2B200D3E00100C2E4FF0003E27A0050E3FAFFFF1A420000EB5400D4E51A0050E31800000A7F0000EBFF1402E29800A0E3BA0AC1E10000A0E1B002D1E1510050E31000001A5400D4E5010080E25400C4E55720D4E5022184E0582082E25A3081E2B200D3E00100C2E4FF0003E27A0050E3FAFFFF1AB805D1E15720D4E5002082E05720C4E5260000EB17FF2FE19800A0E3000000EA9000A0E30E90A0E1170000EBB200D6E0B200C5E0018058E2FBFFFF1A1B0000EB19FF2FE19800A0E3000000EA8800A0E30E90A0E10C0000EBB200D6E0B200C5E0018058E2FBFFFF1A9000A0E3060000EBB010C1E119FF2FE10130D0E40130C1E4012052E2FBFFFF1A1EFF2FE1AA30A0E30A2C81E2BA3AC2E15530A0E3052C81E2B435C2E10A2C81E2BA0AC2E11EFF2FE1F000A0E389005AE320005A13FF00A003B000C1E11EFF2FE100029FE5600090E52004A0E1FF0000E200129FE5CC2041E2140050E30100001A601081E2042082E2043082E20C4043E201C0A0E10100A0E3000082E51000A0E3000083E5050CA0E3000081E50109A0E3510E80E3000084E5BC119FE500B091E5050000EAB0219FE5000092E50B1040E0020C51E30800003A00B0A0E100009CE5000BA0E100209CE5A00FE0E1022CC2E3010000E2800482E100008CE51EFF2FE10F12A0E374019FE5880081E570019FE5C80081E51900A0E3400081E564019FE5500081E53300A0E3600081E558019FE5800081E5A00081E550019FE5C00081E54C019FE5E00081E51EFF2FE10F12A0E30A22A0E3212082E2190050E310208212802081E5A02081E501248202012482E2902081E5B02081E518019FE5D00081E5F00081E51EFF2FE12A73A0E33C008FE20D0C80E2041090E4042090E4043090E4044090E4045090E40168A0E31EFF2FE1F4FFFFEB041087E4042087E4020517E30300001A043087E4044087E4045087E4F7FFFFEABAFFFFEB5500A0E3D0FEFFEBE8FFFFEB040097E4010050E11300001A040097E4020050E11000001A020517E355FDFF1A016056E20300001AACFFFFEB5600A0E3C2FEFFEBDBFFFFEB040097E4030050E10500001A040097E4040050E10200001A040097E4050050E1E8FFFF0A4500A0E3B6FEFFEB0700A0E1B4FEFFEB2704A0E1B2FEFFEB2708A0E1B0FEFFEB270CA0E13DFDFFEA000040F400E003A010E403A000E403A0180130F42000B0F4310000A80002723070A8FF0F110000A0000E52A20026528000265200";
 	$data =~ s/D0010000/$MAX_SPEED_VAL/;
 	return hex2bin($data);
+}
+
+sub bin2hex {
+	my $hex = shift;
+	$hex =~ s/([\W\w])/sprintf("%02X", ord($1))/ge;
+	return $hex;
 }
 
 sub hex2bin {

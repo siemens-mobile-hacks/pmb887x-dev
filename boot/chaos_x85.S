@@ -230,13 +230,16 @@ loc_2EC:
 	TST	R0, #0x80
 	BEQ	loc_2EC
 	TST	R0, #0x3A
-	BNE	loc_3B0
+	BNE	i_err
 	MOV	R0, #0xFF
 	STRH	R0, [R6]
+	
+	@ erase ack
 	MOV	R0, #2
 	BL	tx_byte
 	MOV	R0, #2
 	BL	tx_byte
+	
 	LDRB	R0, [R10,#0x55]
 	MOV	R3, #1
 	MOV	R3, R3,LSL R0
@@ -244,7 +247,7 @@ loc_2EC:
 	MOV	R4, R6
 	MOV	R5, R7,LSR#1
 
-loc_33C:
+i_xwl:
 	BL	serve_watchdog
 	LDRB	R0, [R10,#0x56]
 	CMP	R0, #2
@@ -255,22 +258,24 @@ loc_33C:
 	STRH	R0, [R4]
 	MOV	R1, R3
 
-loc_360:
+i_sl:
 	LDRH	R0, [R8],#2
 	STRH	R0, [R4],#2
 	SUBS	R1, R1,	#1
-	BNE	loc_360
+	BNE	i_sl
 	MOV	R0, #0xD0
 	STRH	R0, [R6]
 
-loc_378:
+i_wl:
 	LDRH	R0, [R6]
 	TST	R0, #0x80
-	BEQ	loc_378
+	BEQ	i_wl
+	
 	TST	R0, #0x3A
-	BNE	loc_3B0
+	BNE	i_err
+	
 	SUBS	R5, R5,	R3
-	BHI	loc_33C
+	BHI	i_xwl
 	MOV	R0, #0xFF
 	STRH	R0, [R6]
 	MOV	R0, #3
@@ -279,7 +284,7 @@ loc_378:
 	BL	tx_byte
 	B	loc_4B0
 
-loc_3B0:
+i_err:
 	MOV	R0, #0x50
 	STRH	R0, [R6]
 	MOV	R0, #0xFF
