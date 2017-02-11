@@ -3,7 +3,8 @@
 @ Model: SIEMENS SL75
 @ FlashID(1) - 0089 (Intel), 880D,
 @ FlashID(2) - 0089 (Intel), 8819,
-@ FlashID(3) - 0089 (Intel), 881C.
+@ FlashID(3) - 0089 (Intel), 881C,
+@ FlashID(3) - 0020 (Intel), 8819.
 
 .section .text
 .arm
@@ -151,12 +152,14 @@ _cmd_oc:
 		adrl r5, start+0x1800
 		mov r8,r7,LSR#1
 		cmp r10, #0x89
+		cmpne r10, #0x20
 		bx  r4
 @ ============= O
 cmd_otp:
 		bl  _cmd_oc
 		blne rd_otp_amd @ r1 - base@ r6 - OTP addr@ r5 - buf@ r8 - size
 		cmp r10, #0x89
+		cmpne r10, #0x20
 		bleq rd_otp_intel @ r1 - base@ r6 - OTP addr@ r5 - buf@ r8 - size
 		b tx_mem_buf
 @ ============= C
@@ -164,6 +167,7 @@ cmd_cfi:
 		bl  _cmd_oc
 		blne rd_cfi_amd @ r1 - base@ r6 - OTP addr@ r5 - buf@ r8 - size
 		cmp r10, #0x89
+		cmpne r10, #0x20
 		bleq rd_cfi_intel @ r1 - base@ r6 - OTP addr@ r5 - buf@ r8 - size
 tx_mem_buf:
 		adrl r6, start+0x1800
@@ -262,6 +266,7 @@ cmd_erase:
 erase_blk1:
 		mov r9,lr
 		cmp r10, #0x89
+		cmpne r10, #0x20
 		bne erase_amd1
 @ -------------------------
 erase_intel1:
@@ -293,6 +298,7 @@ erase_blk2:
 		mov r0, #0x01
 		bl tx_byte
 		cmp r10, #0x89
+		cmpne r10, #0x20
 		bne erase_amd2
 @ erase_intel2
 i_el:
@@ -414,6 +420,7 @@ cf_xx1:
 fwrite:
 		mov r8, #0xA8000000     @ R8 - src addrress
 		cmp r10, #0x89   @FlashID
+		cmpne r10, #0x20
 		bne fwritea
 @ ---------------------------
 fwritei:
@@ -759,6 +766,7 @@ ri_clr:
 		cmp r10, #0x04
 		beq Amd_OTP
 		cmp r10, #0x89
+		cmpne r10, #0x20
 		bne ri_cf
 @ -------------------------
 Intel_OTP:
@@ -980,6 +988,7 @@ send_flash_reset:
 @ uses r0, r1
 		mov  r0, #0xF0
 		cmp  r10,#0x0089
+		cmpne r10, #0x0020
 		moveq r0, #0xFF
 		strh r0, [r1]
 		bx lr
