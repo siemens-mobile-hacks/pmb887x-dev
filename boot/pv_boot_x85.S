@@ -1083,19 +1083,20 @@ init_F0_common:
 
 		mov r1, #0xF0000000
 		
+		
 		ldr r0, =0xA8000031
 		str r0, [r1,#0x88]  @ADDRSEL1
 		
 		ldr r0, =0x30720200
 		str r0, [r1,#0xC8]  @BUSCON1
 		
-		mov r0, #6
+		mov r0, #0x00000019
 		str r0, [r1,#0x40]  @SDRMREF0
 		
-		ldr r0, =0x891C70
+		ldr r0, =0x0FFFA870
 		str r0, [r1,#0x50]  @SDRMCON0
 		
-		mov r0, #0x23
+		mov r0, #0x00000033
 		str r0, [r1,#0x60]  @SDRMOD0
 
 		ldr r0, =0xA0000011
