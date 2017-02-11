@@ -6,14 +6,10 @@ B	start
 @ ---------------------------------------------------------------------------
 	.long 0, 0, 0, 0, 0, 0, 0, 0, 0
 	.ascii "SIEMENS_BOOTCODE"
-	.long 3, 115200
+	.long 3, 0
 	.long 0, 0, 0, 0 @ bootkey
 	.long 0, 0, 0, 0
 @ ---------------------------------------------------------------------------
-
-@ R9	- ??
-@ R12	- watchdog addr
-@ R11	- watchdog last time
 
 start:
 	MRS	R0, CPSR
@@ -39,91 +35,46 @@ start:
 	MOV	R0, #0xA5
 	BL	tx_byte
 
-startwait:
+loc_A4:
 	BL	rx_byte
 	CMP	R0, #0x41 @ 'A'
-	BEQ	stopwait
+	BEQ	loc_BC
 	CMP	R0, #0x2E @ '.'
 	BLEQ	serve_watchdog
-	B	startwait
+	B	loc_A4
 
-stopwait:
-	BL	init_F0_common
+loc_BC:
+	BL	sub_6F4
 	BL	sub_8E4
 
 cmd_ping:
 	MOV	R0, #0x52 @ 'R'
 	BL	tx_byte
 
-main_loop:
+loop:
 	BL	rx_byte
-	
 	CMP	R0, #0x41 @ 'A'
 	BEQ	cmd_ping
-	
 	CMP	R0, #0x48 @ 'H'
 	BEQ	cmd_speed
-	
 	CMP	R0, #0x49 @ 'I'
 	BEQ	cmd_info
-	
 	CMP	R0, #0x51 @ 'Q'
 	BEQ	cmd_quit
-	
 	CMP	R0, #0x54 @ 'T'
 	BEQ	cmd_test
-	
 	CMP	R0, #0x52 @ 'R'
 	BEQ	cmd_read
-	
 	CMP	R0, #0x46 @ 'F'
 	BEQ	cmd_flash
-	
 	CMP	R0, #0x43 @ 'C'
 	BEQ	read_cfi
-	
-	CMP	R0, #0x47 @ 'G'
-	BEQ	cmd_goto
-	
-	cmp r0, #0x57
-	beq cmd_write
-	
 	CMP	R0, #0x2E @ '.'
 	BLEQ	serve_watchdog
-	
-	B	main_loop
+	B	loop
 
-@ ============= W
-cmd_write:
-	bl  rx_r6_r7
-	mov r4, r6
-	mov r5, r7
-	bl  rx_memblk
-	
-	@ OK
-	MOV	R0, #0x4F
-	BL	tx_byte
-	MOV	R0, #0x4B
-	BL	tx_byte
-	
-	B	main_loop
-
-@ ============= G
-cmd_goto:
-	bl rx_r6_r7
-	mov  r0, r6
-	bl   tx_byte
-	mov  r0, r6, LSR#8
-	bl   tx_byte
-	mov  r0, r6, LSR#16
-	bl   tx_byte
-	mov  r0, r6, LSR#24
-	bl   tx_byte
-	mov  pc, r6
-
-@ ============= T
 cmd_test:
-	BL	rx_r6_r7
+	BL	sub_5B4
 
 loc_120:
 	LDMIA	R6!, {R0,R1}
@@ -136,20 +87,18 @@ loc_120:
 
 loc_13C:
 	BL	tx_byte
-	B	main_loop
+	B	loop
 
-@ ============= C
 read_cfi:
-	BL	rx_r6_r7
+	BL	sub_5B4
 	BL	sub_920
 	SUBS	R6, R10, #0x10
 	STR	R0, [R6]
 	MOV	R7, #4
 	B	loc_1E0
 
-@ ============= R
 cmd_read:
-	BL	rx_r6_r7
+	BL	sub_5B4
 	MOV	R8, #0
 
 loc_164:
@@ -166,9 +115,8 @@ loc_164:
 	BL	tx_byte
 	MOV	R0, #0
 	BL	tx_byte
-	B	main_loop
+	B	loop
 
-@ ============= H
 cmd_speed:
 	BL	rx_byte
 	MOV	R6, R0
@@ -188,28 +136,42 @@ loc_1C0:
 	BNE	loc_1C0
 	MOV	R0, #0x48
 	BL	tx_byte
-	B	main_loop
+	B	loop
 
-@ ============= I
 cmd_info:
 	MOV	R6, R10
-	MOV	R7, #128
+	MOV	R7, #0x80
 
 loc_1E0:
 	LDRB	R0, [R6],#1
 	BL	tx_byte
 	SUBS	R7, R7,	#1
 	BNE	loc_1E0
-	B	main_loop
+	B	loop
 
-@ ============= F
 cmd_flash:
-	BL	rx_r6_r7
+	BL	sub_5B4
 	MOV	R4, #0xA8000000
 	MOV	R5, R7
-	
-	BL rx_memblk
-	
+	MOV	R8, #0
+
+loc_204:
+	BL	serve_watchdog
+	BL	rx_byte
+	EOR	R8, R8,	R0
+	STRB	R0, [R4],#1
+	SUBS	R5, R5,	#1
+	BNE	loc_204
+	BL	rx_byte
+	CMP	R0, R8
+	BEQ	loc_23C
+	MOV	R0, #0xBB
+	BL	tx_byte
+	MOV	R0, #0xBB
+	BL	tx_byte
+	B	loop
+
+loc_23C:
 	MOV	R0, #0x40000
 	SUB	R0, R0, #1
 	
@@ -224,7 +186,7 @@ cmd_flash:
 	BL	tx_byte
 	MOV	R0, #0xFF
 	BL	tx_byte
-	B	main_loop
+	B	loop
 
 loc_274:
 	MOV	R8, #0xA8000000
@@ -243,7 +205,7 @@ loc_274:
 	BL	tx_byte
 	LDRH	R0, [R10,#0x52]
 	BL	tx_byte
-	B	main_loop
+	B	loop
 
 loc_2B8:
 	MOV	R0, #1
@@ -325,7 +287,7 @@ loc_3B0:
 	BL	tx_byte
 	MOV	R0, #0xFF
 	BL	tx_byte
-	B	main_loop
+	B	loop
 
 loc_3D0:
 	MOV	R0, #1
@@ -409,7 +371,7 @@ loc_4BC:
 	BL	tx_byte
 	MOV	R0, #0x4B @ 'K'
 	BL	tx_byte
-	B	main_loop
+	B	loop
 
 set_uart_speed:
 	ADR	R1, speeds_list
@@ -463,7 +425,7 @@ rx_byte:
 	AND	R0, R0,	#0xFF
 	BX	LR
 
-rx_word:
+sub_58C:
 	MOV	R3, LR
 	BL	rx_byte
 	MOV	R4, R0,LSL#24
@@ -475,20 +437,14 @@ rx_word:
 	ORR	R0, R4,	R0
 	BX	R3
 
-rx_r6_r7:
+sub_5B4:
 	MOV	R5, LR
-	
-	@ addr
-	BL	rx_word
+	BL	sub_58C
 	MOV	R6, R0
-	
 	CMP	R6, #0x10000000
 	ADDCS	R6, R0,	R9
-	
-	@ size
-	BL	rx_word
+	BL	sub_58C
 	MOV	R7, R0
-	
 	BX	R5
 
 set_einit:
@@ -571,9 +527,9 @@ loc_6E4:
 	CMP	R0, #1
 	BX	LR
 
-init_F0_common:
+sub_6F4:
 	MOV	R7, LR
-	MOV	R9, #0 @ WTF
+	MOV	R9, #0x10000000
 	MOV	R1, #0xF0000000
 	
 	MOV	R0, #0xA8000000  
@@ -589,7 +545,7 @@ init_F0_common:
 	MOV	R0, #0x23
 	STR	R0, [R1,#0x60]
 
-init_F0_part2:
+loc_72C:
 	MOV	R1, #0xF0000000
 	LDR	R0, =0xA0000011
 	STR	R0, [R1,#0x80]
@@ -623,13 +579,13 @@ loc_794:
 	MOV	R1, R10
 	MOV	R0, R6
 	MOV	R2, #0x20
-	BL	memcpy
+	BL	sub_960
 	MOV	R0, R4
 	MOV	R2, #0x10
-	BL	memcpy
+	BL	sub_960
 	MOV	R0, R5
 	MOV	R2, #0x10
-	BL	memcpy
+	BL	sub_960
 
 loc_7BC:
 	ADD	R1, R10, #0x40
@@ -665,7 +621,7 @@ loc_7C8:
 	BNE	loc_850
 	CMP	R5, #0xB2000000
 	MOVEQ	R9, #0x12000000
-	BEQ	init_F0_part2
+	BEQ	loc_72C
 	LDR	R6, =0xF0000090
 	BL	sub_608
 	BNE	loc_850
@@ -764,39 +720,12 @@ loc_934:
 	SUB	R6, R6,	R7
 	BX	LR
 
-memcpy:
+sub_960:
 	LDRB	R3, [R0],#1
 	STRB	R3, [R1],#1
 	SUBS	R2, R2,	#1
-	BNE	memcpy
+	BNE	sub_960
 	BX	LR
-
-@ -------------------
-rx_memblk:
-	MOV	R7, LR
-	MOV	R8, #0
-cf_r:
-	BL	serve_watchdog
-	BL	rx_byte
-	EOR	R8, R8,	R0
-	STRB	R0, [R4],#1
-	SUBS	R5, R5,	#1
-	BNE	cf_r
-	
-	BL	rx_byte
-	CMP	R0, R8 @ chk
-	BEQ	cf_chk_ok
-	
-	@ checksum error
-	MOV	R0, #0xBB
-	BL	tx_byte
-	MOV	R0, #0xBB
-	BL	tx_byte
-	B	main_loop
-
-cf_chk_ok:
-	BX R7
-@ -------------------
 
 sub_974:
 	MOV	R3, #0xAA
@@ -848,7 +777,7 @@ loc_9E0:
 	STR	R0, [R4]
 	LDR	R1, =0xF4B00000
 	LDR	R11, [R1,#0x20]
-	B	switch_watchdog
+	B	loc_A3C
 
 serve_watchdog:
 	LDR	R2, =0xF4B00000
@@ -857,12 +786,12 @@ serve_watchdog:
 	CMP	R1, #0x200
 	BCC	locret_A5C
 	MOV	R11, R0
-	B	switch_watchdog
+	B	loc_A3C
 
 cmd_quit:
-	BL	switch_watchdog
+	BL	loc_A3C
 
-switch_watchdog:
+loc_A3C:
 	LDR	R0, [R12]
 	MOV	R0, R0,LSL#22
 	LDR	R2, [R12]
