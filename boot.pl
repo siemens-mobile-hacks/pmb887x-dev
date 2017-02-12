@@ -1,7 +1,6 @@
 use warnings;
 use strict;
 use Device::SerialPort;
-use Getopt::Long;
 use File::Basename qw|dirname|;
 use Time::HiRes qw|usleep|;
 use Linux::Termios2;
@@ -20,7 +19,7 @@ my $dtr = 0;
 my $rts = 0;
 my $bootloader = dirname(__FILE__)."/bootloader/bootloader.bin";
 
-GetOptions (
+get_argv_opts({
 	"device=s" => \$device, 
 	"boot-speed=s" => \$boot_speed, 
 	"speed=s" => \$speed, 
@@ -30,7 +29,7 @@ GetOptions (
 	"ign" => \$ign, 
 	"dtr" => \$dtr, 
 	"rts" => \$rts
-);
+});
 
 my $port = Device::SerialPort->new($device);
 die("open port error ($device)") if (!$port);
@@ -201,6 +200,78 @@ sub write_boot {
 	return 0;
 }
 
+sub get_argv_opts {
+	my $cfg = shift;
+	
+	my $args = {};
+	for my $k (keys %$cfg) {
+		my $arg = {ref => $cfg->{$k}};
+		if ($k =~ /^@(.*?)$/) {
+			$k = $1;
+			$arg->{array} = 1;
+		}
+		
+		if ($k =~ /^([^=]+)=(.*?)$/) {
+			$k = $1;
+			$arg->{with_value} = $2;
+		}
+		
+		$args->{$k} = $arg;
+	}
+	
+	for (my $opt_id = 0; $opt_id < scalar(@ARGV); ++$opt_id) {
+		my $opt = $ARGV[$opt_id];
+		my $opt_name;
+		my $opt_value;
+		
+		if ($opt =~ /^--([^=]+)=(.*?)$/) {
+			$opt_name = $1;
+			$opt_value = $2;
+		} elsif ($opt =~ /^--([^=]+)$/) {
+			$opt_name = $1;
+		}
+		
+		if (exists $args->{$opt_name}) {
+			my $arg = $args->{$opt_name};
+			
+			if ($arg->{with_value}) {
+				if (!defined($opt_value)) {
+					++$opt_id;
+					$opt_value = $ARGV[$opt_id] if (exists $ARGV[$opt_id]);
+				}
+				return "Argument $opt require value\n" if (!defined($opt_value));
+				
+				if ($arg->{with_value} eq "b") {
+					if ($opt_value eq "true") {
+						$opt_value = 1;
+					} elsif ($opt_value eq "false") {
+						$opt_value = 0;
+					} else {
+						$opt_value = int($opt_value) ? 1 : 0;
+					}
+				} elsif ($arg->{with_value} eq "i") {
+					if ($opt_value =~ /0x([a-f0-9]+)/) {
+						$opt_value = hex($1);
+					} else {
+						$opt_value = int($opt_value);
+					}
+				}
+			} else {
+				$opt_value = 1;
+			}
+			
+			if ($arg->{array}) {
+				push @{$arg->{ref}}, $opt_value;
+			} else {
+				${$arg->{ref}} = $opt_value;
+			}
+		} else {
+			return "Unknown option: $opt\n";
+		}
+	}
+	
+	return;
+}
 
 sub readb {
 	my ($port) = @_;
