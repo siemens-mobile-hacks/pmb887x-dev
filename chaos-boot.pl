@@ -24,15 +24,15 @@ main();
 
 sub main {
 	my $help = 0;
-	my $device = "/dev/ttyUSB3";
+	my $device = "/dev/ttyUSB0";
 	my $boot_speed = 115200;
 	my $speed = 1600000;
 	my $ign = 0;
 	my $dtr = 0;
 	my $rts = 0;
 	my $flasher = [];
-	my $exec_file;
-	my $exec_addr = "0xA8008000";
+	my $exec_file = "../siemens-linux/kernel/arch/arm/boot/Image";
+	my $exec_addr = 0xA8008000;
 	my $as_hex = 0;
 	my $run_picocom = 0;
 	
