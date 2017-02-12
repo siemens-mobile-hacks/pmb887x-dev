@@ -32,7 +32,7 @@ sub main {
 	my $rts = 0;
 	my $flasher = [];
 	my $exec_file;
-	my $exec_addr = 0xA8008000;
+	my $exec_addr = "0xA8008000";
 	my $as_hex = 0;
 	my $run_picocom = 0;
 	
@@ -50,6 +50,8 @@ sub main {
 		"exec=s"		=> \$exec_file, 
 		"exec-addr=s"	=> \$exec_addr
 	});
+	
+	$exec_addr = parse_addr($exec_addr);
 	
 	if ($speed eq "max") {
 		$speed = $MAX_SPEED;
@@ -80,15 +82,6 @@ sub main {
 		exit(1);
 	}
 	
-	my $parse_addr = sub  {
-		my $arg = shift;
-		if (defined($arg) && $arg =~ /^(0x)?([a-f0-9]+)$/i) {
-			return hex($2);
-		}
-		warn "Unknown hex value: $arg\n";
-		return;
-	};
-	
 	# Парсим и проверяем таски флешера заранее
 	my $flasher_tasks = [];
 	for my $task (@$flasher) {
@@ -96,7 +89,7 @@ sub main {
 		my $cmd = lc($args[0]);
 		
 		if ($cmd eq "read") {
-			my ($addr, $size, $file) = ($parse_addr->($args[1]), $parse_addr->($args[2]), $args[3]);
+			my ($addr, $size, $file) = (parse_addr($args[1]), parse_addr($args[2]), $args[3]);
 			
 			die "Unknown addr in command: `$task`\n"
 				if (!defined($addr));
@@ -112,7 +105,7 @@ sub main {
 				file => $file
 			};
 		} elsif ($cmd eq "write" or $cmd eq "erase") {
-			my ($addr, $file) = ($parse_addr->($args[1]), $args[2]);
+			my ($addr, $file) = (parse_addr($args[1]), $args[2]);
 			
 			die "Unknown addr in command: `$task`\n"
 				if (!defined($addr));
@@ -780,6 +773,15 @@ sub mk_chaos_boot {
 	$data =~ s/D0010000/$MAX_SPEED_VAL/;
 	
 	return hex2bin($data);
+}
+
+sub parse_addr {
+	my $arg = shift;
+	if (defined($arg) && $arg =~ /^(0x)?([a-f0-9]+)$/i) {
+		return hex($2);
+	}
+	warn "Unknown hex value: $arg\n";
+	return;
 }
 
 sub bin2hex {
