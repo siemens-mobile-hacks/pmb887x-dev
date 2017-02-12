@@ -134,14 +134,18 @@ while (1) {
 		
 		$port->read_char_time(1000);
 		$port->read_const_time(2000);
+		
 		if ($as_hex) {
-			while (($c = readb($port)) >= 0) {
-				my $str = chr($c);
-				printf("%s | %02X\n", ($str =~ /[[:print:]]/ ? "'".$str."'" : " ? "), $c);
+			while (1) {
+				$c = readb($port);
+				if ($c > -1) {
+					my $str = chr($c);
+					printf("%s | %02X\n", ($str =~ /[[:print:]]/ ? "'".$str."'" : " ? "), $c);
+				}
 			}
 		} else {
-			while (($c = readb($port)) >= 0) {
-				print chr($c);
+			while (($c = readb($port)) != 0) {
+				print chr($c) if ($c > -1);
 			}
 		}
 		last;
