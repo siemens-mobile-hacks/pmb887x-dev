@@ -9,23 +9,64 @@ sub get_regs {
 	if (!$pmb8876_regs) {
 		$pmb8876_regs = [];
 		
+		my $last_reg;
+		
 		open FFF, dirname(__FILE__)."/../../regs.txt";
 		while (my $line = <FFF>) {
 			next if ($line =~ /^\s*#/); # вся линия - комментарий
-			$line =~ s/^\s+|\s+$//g;
 			
-			my @values = split(/[\t]+/, $line);
-			if (scalar(@values) >= 2) {
-				my $val = [$values[0]];
-				if ($values[1] =~ /0x([a-f0-9]+)-0x([a-f0-9]+)/i) {
-					push @$pmb8876_regs, [$values[0], hex $1, hex $2];
-				} elsif ($values[1] =~ /0x([a-f0-9]+)/i) {
-					push @$pmb8876_regs, [$values[0], hex $1];
+			if ($line =~ /^\t/) { # Описание последнего регистра
+				$line =~ s/^\s+|\s+$//g;
+				
+				my @values = split(/[\t]+/, $line);
+				if (scalar(@values) >= 3) {
+					my $val = ((1 << $values[2]) - 1) << $values[1];
+					
+					$last_reg->{bits} |= $val;
+					
+					my $v = {shift => int($values[1]), mask => int($values[2]), name => $values[0]};
+					for my $v2 (@{$last_reg->{desc}}) {
+						my $val1 = ((1 << $v->{mask}) - 1) << $v->{shift};
+						my $val2 = ((1 << $v2->{mask}) - 1) << $v2->{shift};
+						
+						if ($val1 & $val2) {
+							warn "WARN: bit value ".$v->{name}." overlaps some bits in ".$v2->{name}." for ".$last_reg->{name}." !\n";
+						}
+					}
+					
+					push @{$last_reg->{desc}}, $v;
+				} else {
+					die "Invalid descr for ".$last_reg->{name}.": '$line'\n";
+				}
+			} else { # Адрес регистра
+				$line =~ s/^\s+|\s+$//g;
+				
+				my @values = split(/[\t]+/, $line);
+				if (scalar(@values) >= 2) {
+					my $val = [$values[0]];
+					if ($values[1] =~ /0x([a-f0-9]+)-0x([a-f0-9]+)/i) {
+						push @$pmb8876_regs, {
+							name => $values[0], 
+							addr => hex $1, 
+							addr_end => hex $2, 
+							bits => 0, 
+							desc => []
+						};
+					} elsif ($values[1] =~ /0x([a-f0-9]+)/i) {
+						push @$pmb8876_regs, {
+							name => $values[0], 
+							addr => hex $1, 
+							bits => 0, 
+							desc => []
+						};
+					}
+					$last_reg = $pmb8876_regs->[scalar(@$pmb8876_regs) - 1];
 				}
 			}
 		}
 		close FFF;
 	}
+	
 	return $pmb8876_regs;
 }
 
@@ -33,6 +74,19 @@ sub reg_name {
 	my $addr = shift;
 	my $value = shift;
 	my $names = get_regs();
+	
+	my $reg_def = "";
+	my $def = "";
+	for my $v (@$names) {
+		if ($v->{addr} == $addr && !$v->{addr_end}) {
+			$reg_def = $v;
+			last;
+		} elsif ($v->{addr_end} && $v->{addr} <= $addr && $addr <= $v->{addr_end}) {
+			$reg_def = $v;
+		}
+	}
+	
+	return "" if (!$reg_def);
 	
 	my $add = "";
 	if ($addr >= 0xF4300020 && $addr <= 0xF43001E4) {
@@ -65,17 +119,28 @@ sub reg_name {
 			push @gpio, "ENAQ=1";
 		}
 		$add = " [".join("; ", @gpio)."]";
-	}
-	
-	my $def = "";
-	for my $v (@$names) {
-		if ($v->[1] == $addr && !$v->[2]) {
-			return " (".$v->[0].")".$add;
-		} elsif ($v->[2] && $v->[1] <= $addr && $addr <= $v->[2]) {
-			$def = " (".$v->[0].")".$add;
+	} elsif ($reg_def) {
+		my $known = 0;
+		my $values = [];
+		for my $v (@{$reg_def->{desc}}) {
+			my $mask = ((1 << $v->{mask}) - 1);
+			my $val = ($value >> $v->{shift}) & $mask;
+			$known |= $mask << $v->{shift};
+			
+			if ($v->{mask} == 1) {
+				if ($val) {
+					push @$values, $v->{name};
+				}
+			} else {
+				push @$values, $v->{name}."(0x".sprintf("%02X", $val).")";
+			}
+		}
+		if (@$values) {
+			$add = ": ".join(" | ", @$values);
 		}
 	}
-	return $def;
+	
+	return " (".$reg_def->{name}.")".$add;
 }
 
 1;

@@ -1,3 +1,9 @@
+#	REG_NAME	0xREG_ADDR
+#		REG_BIT_NAME	SHIFT	VALUE_BITS
+#		REG_BIT_NAME	SHIFT	VALUE_BITS
+#		REG_BIT_NAME	SHIFT	VALUE_BITS
+#		REG_BIT_NAME	SHIFT	VALUE_BITS	
+
 # Примерные адресные простреснтва для подсистем, регистры которых найдены частично
 PCL_*		0xf4300000-0xf4300200
 SIM_*		0xF000C010-0xF000C110
@@ -12,6 +18,7 @@ DSP??_*		0xF6401000-0xF6401FFF
 GPTU0_*		0xF4900000-0xF49000FF
 GPTU1_*		0xF4A00000-0xF4A000FF
 RTC_*		0xF4700000-0xF47000F4
+I2C_*		0xF7600000-0xF760FFFF
 FLASH_*		0xA0000000-0xA7FFFFFF
 RAM_*		0xA8000000-0xA9FFFFFF
 
@@ -23,43 +30,193 @@ PLL_CON2	0xF45000AC
 PLL_STAT	0xF45000B0
 PLL_ICR		0xF45000CC
 
+0b0000001000000000
+
 # USART0
 USART0_CLC			0xF1000000
+	SMC_CLK_DIV		16	8
+	RMC_CLK_DIV		8	8
+	FSOE			5	1	/* Fast shut off enable (1: enable; 0: disable) */
+	SBWE			4	1	/* Suspend bit write enable (1: enable; 0: disable) */
+	EDIS			3	1	/* External request disable (1: disable; 0: enable) */
+	SPEN			2	1	/* Suspend bit enable (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
 USART0_PISEL		0xF1000004
 USART0_ID			0xF1000008
 USART0_CON			0xF1000010
+	CON_R			15	1	/* Baud rate generator run control (0: disable; 1: enable) */
+	LB				14	1	/* Loopback mode (0: disable; 1: enable) */
+	BRS				13	1	/* Baudrate selection (0: Pre-scaler /2; 1: Pre-scaler / 3) */
+	ODD				12	1	/* Parity selection (0: even; 1: odd)  */
+	FDE				11	1	/* Fraction divider enable (0: disable; 1: enable) */
+	OE				10	1	/* Overrun error flag */
+	FE				9	1	/* Framing error flag */
+	PE				8	1	/* Parity error flag */
+	OEN				7	1	/* Overrun check enable (0: ignore; 1: check) */
+	FEN				6	1	/* Framing error check (0: ignore; 1: check) */
+	PEN				5	1	/* Parity check enable (0: ignore; 1: check) */
+	REN				4	1	/* Receiver bit enable (0: disable; 1: enable) */
+	STP				3	1	/* Number of stop bits (0: 1 stop bit; 1: two stop bits) */
 USART0_BG			0xF1000014
 USART0_FDV			0xF1000018
 USART0_PMW			0xF100001C
+	IRPW			8	1	/* IrDA Pulse Width Selection */
+	PW_VALUE		0	8	/* IrDA Pulse Width Value */
 USART0_TXB			0xF1000020
 USART0_RXB			0xF1000024
 USART0_ABCON		0xF1000030
+	RXINV				11	1	/* Receive invert enable (0: disable; 1: enable) */
+	TXINV				10	1	/* Transmit invert enable (0: disable; 1: enable) */
+	ABEM_ECHO_DET		8	1	/* Autobaud echo mode enabled during detection */
+	ABEM_ECHO_ALWAYS	9	1	/* Autobaud echo mode always enabled */
+	FCDETEN				4	1	/* Fir char of two byte frame detect */
+	ABDETEN				3	1	/* Autobaud detection interrupt enable (0: dis; 1: en) */
+	ABSTEN				2	1	/* Start of autobaud detect interrupt (0: dis; 1: en) */
+	AUREN				1	1	/* Auto control of CON.REN (too complex for here) */
+	ABEN				0	1	/* Autobaud detection enable */
 USART0_ABSTAT		0xF1000034
+	DETWAIT			4	1	/* Autobaud detect is waiting */
+	SCCDET			3	1	/* Second character with capital letter detected */
+	SCSDET			2	1	/* Second character with small letter detected */
+	FCCDET			1	1	/* First character with capital letter detected */
+	FCSDET			0	1	/* First character with small letter detected */
 USART0_RXFCON		0xF1000040
+	RXFITL			8	4	/* Receive FIFO interrupt trigger level */
+	RXTMEN			2	1	/* Receive FIFO transparent mode enable */
+	RXFFLU			1	1	/* Receive FIFO flush */
+	RXFEN			0	1	/* Receive FIFO enable */
 USART0_TXFCON		0xF1000044
+	TXFITL			8	4	/* Transmit FIFO interrupt trigger level */
+	TXTMEN			2	1	/* Transmit FIFO transparent mode enable */
+	TXFFLU			1	1	/* Transmit FIFO flush */
+	TXFEN			0	1	/* Transmit FIFO enable */
 USART0_FSTAT		0xF1000048
+	TXFFL			8	4	/* Transmit FIFO filling level mask */
+	RXFFL			0	4	/* Receive FIFO filling level mask */
 USART0_WHBCON		0xF1000050
+	SETOE			13	1	/* Set overrun error flag */
+	SETFE			12	1	/* Set framing error flag */
+	SETPE			11	1	/* Set parity error flag */
+	CLROE			10	1	/* Clear overrun error flag */
+	CLRFE			9	1	/* Clear framing error flag */
+	CLRPE			8	1	/* Clear parity error flag */
+	SETREN			5	1	/* Set receiver enable bit */
+	CLRREN			4	1	/* Clear receiver enable bit */
 USART0_FCSTAT		0xF1000068
+	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
+	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
 USART0_ICR			0xF1000070
+	TMO				7	1	/* RX timeout interrupt mask */
+	CTS				6	1	/* CTS interrupt mask */
+	ABDET			5	1	/* Autobaud detected interrupt mask */
+	ABSTART			4	1	/* Autobaud start interrupt mask */
+	ERR				3	1	/* Error interrupt mask */
+	RX				2	1	/* Receive interrupt mask */
+	TB				1	1	/* Transmit buffer interrupt mask */
+	TX				0	1	/* Transmit interrupt mask */
+USART0_ISR			0xF1000074
+	TMO				7	1	/* RX timeout interrupt mask */
+	CTS				6	1	/* CTS interrupt mask */
+	ABDET			5	1	/* Autobaud detected interrupt mask */
+	ABSTART			4	1	/* Autobaud start interrupt mask */
+	ERR				3	1	/* Error interrupt mask */
+	RX				2	1	/* Receive interrupt mask */
+	TB				1	1	/* Transmit buffer interrupt mask */
+	TX				0	1	/* Transmit interrupt mask */
 
-# USART2
+# USART1
 USART1_CLC			0xF1800000
+	SMC_CLK_DIV		16	8
+	RMC_CLK_DIV		8	8
+	FSOE			5	1	/* Fast shut off enable (1: enable; 0: disable) */
+	SBWE			4	1	/* Suspend bit write enable (1: enable; 0: disable) */
+	EDIS			3	1	/* External request disable (1: disable; 0: enable) */
+	SPEN			2	1	/* Suspend bit enable (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
 USART1_PISEL		0xF1800004
 USART1_ID			0xF1800008
 USART1_CON			0xF1800010
+	CON_R			15	1	/* Baud rate generator run control (0: disable; 1: enable) */
+	LB				14	1	/* Loopback mode (0: disable; 1: enable) */
+	BRS				13	1	/* Baudrate selection (0: Pre-scaler /2; 1: Pre-scaler / 3) */
+	ODD				12	1	/* Parity selection (0: even; 1: odd)  */
+	FDE				11	1	/* Fraction divider enable (0: disable; 1: enable) */
+	OE				10	1	/* Overrun error flag */
+	FE				9	1	/* Framing error flag */
+	PE				8	1	/* Parity error flag */
+	OEN				7	1	/* Overrun check enable (0: ignore; 1: check) */
+	FEN				6	1	/* Framing error check (0: ignore; 1: check) */
+	PEN				5	1	/* Parity check enable (0: ignore; 1: check) */
+	REN				4	1	/* Receiver bit enable (0: disable; 1: enable) */
+	STP				3	1	/* Number of stop bits (0: 1 stop bit; 1: two stop bits) */
 USART1_BG			0xF1800014
 USART1_FDV			0xF1800018
 USART1_PMW			0xF180001C
+	IRPW			8	1	/* IrDA Pulse Width Selection */
+	PW_VALUE		0	8	/* IrDA Pulse Width Value */
 USART1_TXB			0xF1800020
 USART1_RXB			0xF1800024
 USART1_ABCON		0xF1800030
+	RXINV				11	1	/* Receive invert enable (0: disable; 1: enable) */
+	TXINV				10	1	/* Transmit invert enable (0: disable; 1: enable) */
+	ABEM_ECHO_DET		8	1	/* Autobaud echo mode enabled during detection */
+	ABEM_ECHO_ALWAYS	9	1	/* Autobaud echo mode always enabled */
+	FCDETEN				4	1	/* Fir char of two byte frame detect */
+	ABDETEN				3	1	/* Autobaud detection interrupt enable (0: dis; 1: en) */
+	ABSTEN				2	1	/* Start of autobaud detect interrupt (0: dis; 1: en) */
+	AUREN				1	1	/* Auto control of CON.REN (too complex for here) */
+	ABEN				0	1	/* Autobaud detection enable */
 USART1_ABSTAT		0xF1800034
+	DETWAIT			4	1	/* Autobaud detect is waiting */
+	SCCDET			3	1	/* Second character with capital letter detected */
+	SCSDET			2	1	/* Second character with small letter detected */
+	FCCDET			1	1	/* First character with capital letter detected */
+	FCSDET			0	1	/* First character with small letter detected */
 USART1_RXFCON		0xF1800040
+	RXFITL			8	4	/* Receive FIFO interrupt trigger level */
+	RXTMEN			2	1	/* Receive FIFO transparent mode enable */
+	RXFFLU			1	1	/* Receive FIFO flush */
+	RXFEN			0	1	/* Receive FIFO enable */
 USART1_TXFCON		0xF1800044
+	TXFITL			8	4	/* Transmit FIFO interrupt trigger level */
+	TXTMEN			2	1	/* Transmit FIFO transparent mode enable */
+	TXFFLU			1	1	/* Transmit FIFO flush */
+	TXFEN			0	1	/* Transmit FIFO enable */
 USART1_FSTAT		0xF1800048
+	TXFFL			8	4	/* Transmit FIFO filling level mask */
+	RXFFL			0	4	/* Receive FIFO filling level mask */
 USART1_WHBCON		0xF1800050
+	SETOE			13	1	/* Set overrun error flag */
+	SETFE			12	1	/* Set framing error flag */
+	SETPE			11	1	/* Set parity error flag */
+	CLROE			10	1	/* Clear overrun error flag */
+	CLRFE			9	1	/* Clear framing error flag */
+	CLRPE			8	1	/* Clear parity error flag */
+	SETREN			5	1	/* Set receiver enable bit */
+	CLRREN			4	1	/* Clear receiver enable bit */
 USART1_FCSTAT		0xF1800068
+	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
+	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
 USART1_ICR			0xF1800070
+	TMO			7	1	/* RX timeout interrupt mask */
+	CTS			6	1	/* CTS interrupt mask */
+	ABDET		5	1	/* Autobaud detected interrupt mask */
+	ABSTART		4	1	/* Autobaud start interrupt mask */
+	ERR			3	1	/* Error interrupt mask */
+	RX			2	1	/* Receive interrupt mask */
+	TB			1	1	/* Transmit buffer interrupt mask */
+	TX			0	1	/* Transmit interrupt mask */
+USART1_ISR			0xF1800074
+	TMO			7	1	/* RX timeout interrupt mask */
+	CTS			6	1	/* CTS interrupt mask */
+	ABDET		5	1	/* Autobaud detected interrupt mask */
+	ABSTART		4	1	/* Autobaud start interrupt mask */
+	ERR			3	1	/* Error interrupt mask */
+	RX			2	1	/* Receive interrupt mask */
+	TB			1	1	/* Transmit buffer interrupt mask */
+	TX			0	1	/* Transmit interrupt mask */
 
 # SSC0
 SSC0_CLC		0xF1100000
@@ -271,7 +428,7 @@ PCL_73						0xF4300144
 PCL_74						0xF4300148
 PCL_75						0xF430014C
 PCL_76						0xF4300150
-PCL_77						0xF4300154
+GPIO_MMC_CD					0xF4300154
 GPIO_CIF_D0					0xF4300158
 GPIO_CIF_D1					0xF430015C
 GPIO_CIF_D2					0xF4300160
@@ -288,7 +445,6 @@ GPIO_CLKOUT2				0xF4300184
 GPIO_MMC_CMD				0xF43001C0
 GPIO_MMC_DAT				0xF43001C4
 GPIO_MMC_CLK				0xF43001C8
-GPIO_MMC_CD					0xF4300156
 
 GPIO_I2S1_CLK1				0xF43001E0 
 GPIO_CIF_PD					0xF43001E4

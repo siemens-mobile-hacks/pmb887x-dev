@@ -15,10 +15,10 @@ static main() {
 ';
 
 for my $val (@$regs) {
-	if (scalar(@$val) == 2) {
-		my $name = $val->[0];
+	if (!$val->{addr_end}) {
+		my $name = $val->{name};
 		$name =~ s/\[(\d+)\]/_$1/;
-		printf("\tMakeName (0x%08X, \"%s\");\n", $val->[1], $name);
+		printf("\tMakeName (0x%08X, \"%s\");\n", $val->{addr}, $name);
 	}
 }
 print '}
