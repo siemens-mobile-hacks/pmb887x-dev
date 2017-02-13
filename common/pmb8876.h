@@ -3,7 +3,7 @@
 #include "pmb8876_regs.h"
 #include "gpio.h"
 
-#define REG(addr)								(*( unsigned int *) (addr))
+#define REG(addr)								(*(volatile unsigned int *) (addr))
 #define SET_BIT(value, v, shift, mask)			(value) = (((value) & ~(mask << shift)) | ((v & mask) << shift))
 #define GET_BIT(value, shift, mask)				(((value) >> shift) & mask)
 

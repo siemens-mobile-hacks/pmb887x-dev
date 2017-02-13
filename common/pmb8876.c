@@ -118,13 +118,15 @@ void hexdump(void *d, unsigned int len) {
 	}
 }
 
-void memcpy(void *a, const void *b, unsigned int size) {
+void *memcpy(void *a, const void *b, unsigned int size) {
 	unsigned char *ap = (unsigned char *) a;
 	const unsigned char *bp = (const unsigned char *) b;
 	
 	unsigned int i = 0;
 	for (i = 0; i < size; ++i)
 		ap[i] = bp[i];
+
+	return ((char *)a) + size;
 }
 
 char to_hex(unsigned char b) {
