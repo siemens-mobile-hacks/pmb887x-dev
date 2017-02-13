@@ -30,8 +30,6 @@ PLL_CON2	0xF45000AC
 PLL_STAT	0xF45000B0
 PLL_ICR		0xF45000CC
 
-0b0000001000000000
-
 # USART0
 USART0_CLC			0xF1000000
 	SMC_CLK_DIV		16	8
@@ -58,6 +56,7 @@ USART0_CON			0xF1000010
 	PEN				5	1	/* Parity check enable (0: ignore; 1: check) */
 	REN				4	1	/* Receiver bit enable (0: disable; 1: enable) */
 	STP				3	1	/* Number of stop bits (0: 1 stop bit; 1: two stop bits) */
+	M				0	3	/* ASC Mode Control. */
 USART0_BG			0xF1000014
 USART0_FDV			0xF1000018
 USART0_PMW			0xF100001C
@@ -295,46 +294,364 @@ I2C_WHBSYSCON	0xF4800020
 
 # EBU
 EBU_CLC				0xF0000000
+	DISS		1	1	/* EBU disable status bit */
+	DISR		0	1	/* EBU module */
 EBU_ID				0xF0000008
+	MOD			8	24	/* EBU Module Identification Number. */
+	REV			0	8	/* EBU Module Revision Number. */
 EBU_CON				0xF0000010
+	BUSCLK		24	2	/* Clock generation */
+	GLOBALCS	16	8	/* Global chip select signal */
+	TOUTC		8	8	/* Time-out control */
+	ARBMODE		6	2	/* Arbitration mode */
+	ARBSYNC		5	1	/* Arbitration evaluation */
+	EXTLOCK		4	1	/* Lock external bus */
+	EXTACC		3	1	/* External access FPI-bus */
+	EXTSVM		2	1	/* Perform master in */
+	EXTRECON	1	1	/* External reconfiguration */
 EBU_BFCON			0xF0000020
+	EXTCLOCK	6	2	/* Frequency of external clock */
+	WAITFUNC	5	1	/* Function of WAIT input */
+	FBBMSEL		4	1	/* Flash burst buffer */
+	FETBLEN		0	4	/* Fetch burst length */
 EBU_ADDRSEL0		0xF0000080
+	BASE		12	20	/* Base Address */
+	ALTSEG		8	4	/* Alternate Segment */
+	MASK		4	4	/* Address Mask */
+	ALTENAB		1	1	/* Alternate Segment Comparison */
+	REGENAB		0	1	/* Memory Region */
 EBU_ADDRSEL1		0xF0000088
+	BASE		12	20	/* Base Address */
+	ALTSEG		8	4	/* Alternate Segment */
+	MASK		4	4	/* Address Mask */
+	ALTENAB		1	1	/* Alternate Segment Comparison */
+	REGENAB		0	1	/* Memory Region */
 EBU_ADDRSEL2		0xF0000090
+	BASE		12	20	/* Base Address */
+	ALTSEG		8	4	/* Alternate Segment */
+	MASK		4	4	/* Address Mask */
+	ALTENAB		1	1	/* Alternate Segment Comparison */
+	REGENAB		0	1	/* Memory Region */
 EBU_ADDRSEL3		0xF0000098
+	BASE		12	20	/* Base Address */
+	ALTSEG		8	4	/* Alternate Segment */
+	MASK		4	4	/* Address Mask */
+	ALTENAB		1	1	/* Alternate Segment Comparison */
+	REGENAB		0	1	/* Memory Region */
 EBU_ADDRSEL4		0xF00000A0
+	BASE		12	20	/* Base Address */
+	ALTSEG		8	4	/* Alternate Segment */
+	MASK		4	4	/* Address Mask */
+	ALTENAB		1	1	/* Alternate Segment Comparison */
+	REGENAB		0	1	/* Memory Region */
 EBU_ADDRSEL5		0xF00000A8
+	BASE		12	20	/* Base Address */
+	ALTSEG		8	4	/* Alternate Segment */
+	MASK		4	4	/* Address Mask */
+	ALTENAB		1	1	/* Alternate Segment Comparison */
+	REGENAB		0	1	/* Memory Region */
 EBU_ADDRSEL6		0xF00000B0
+	BASE		12	20	/* Base Address */
+	ALTSEG		8	4	/* Alternate Segment */
+	MASK		4	4	/* Address Mask */
+	ALTENAB		1	1	/* Alternate Segment Comparison */
+	REGENAB		0	1	/* Memory Region */
 EBU_BUSCON0			0xF00000C0
+	WRITE		31	1	/* Write protection */
+	AGEN		28	3	/* Address generation */
+	XCMDDELAY	26	2	/* External command delay */
+	WAIT		24	2	/* External wait state */
+	PORTW		22	2	/* Port width */
+	BCGEN		20	2	/* Signal timing mode */
+	WAITINV		19	1	/* Reversed polarity at WAIT */
+	PRE			18	1	/* Prefetch mechanism */
+	DLOAD		17	1	/* Data upload */
+	ENDIAN		16	1	/* Endian mode */
+	CMULT		13	3	/* Cycle multiplier */
+	AALIGN		9	1	/* Address alignment */
+	WPRE		8	1	/* Weak prefetch */
+	MULTMAP		0	7	/* Multiplier map */
 EBU_BUSCON1			0xF00000C8
+	WRITE		31	1	/* Write protection */
+	AGEN		28	3	/* Address generation */
+	XCMDDELAY	26	2	/* External command delay */
+	WAIT		24	2	/* External wait state */
+	PORTW		22	2	/* Port width */
+	BCGEN		20	2	/* Signal timing mode */
+	WAITINV		19	1	/* Reversed polarity at WAIT */
+	PRE			18	1	/* Prefetch mechanism */
+	DLOAD		17	1	/* Data upload */
+	ENDIAN		16	1	/* Endian mode */
+	CMULT		13	3	/* Cycle multiplier */
+	AALIGN		9	1	/* Address alignment */
+	WPRE		8	1	/* Weak prefetch */
+	MULTMAP		0	7	/* Multiplier map */
 EBU_BUSCON2			0xF00000D0
+	WRITE		31	1	/* Write protection */
+	AGEN		28	3	/* Address generation */
+	XCMDDELAY	26	2	/* External command delay */
+	WAIT		24	2	/* External wait state */
+	PORTW		22	2	/* Port width */
+	BCGEN		20	2	/* Signal timing mode */
+	WAITINV		19	1	/* Reversed polarity at WAIT */
+	PRE			18	1	/* Prefetch mechanism */
+	DLOAD		17	1	/* Data upload */
+	ENDIAN		16	1	/* Endian mode */
+	CMULT		13	3	/* Cycle multiplier */
+	AALIGN		9	1	/* Address alignment */
+	WPRE		8	1	/* Weak prefetch */
+	MULTMAP		0	7	/* Multiplier map */
 EBU_BUSCON3			0xF00000D8
+	WRITE		31	1	/* Write protection */
+	AGEN		28	3	/* Address generation */
+	XCMDDELAY	26	2	/* External command delay */
+	WAIT		24	2	/* External wait state */
+	PORTW		22	2	/* Port width */
+	BCGEN		20	2	/* Signal timing mode */
+	WAITINV		19	1	/* Reversed polarity at WAIT */
+	PRE			18	1	/* Prefetch mechanism */
+	DLOAD		17	1	/* Data upload */
+	ENDIAN		16	1	/* Endian mode */
+	CMULT		13	3	/* Cycle multiplier */
+	AALIGN		9	1	/* Address alignment */
+	WPRE		8	1	/* Weak prefetch */
+	MULTMAP		0	7	/* Multiplier map */
 EBU_BUSCON4			0xF00000E0
+	WRITE		31	1	/* Write protection */
+	AGEN		28	3	/* Address generation */
+	XCMDDELAY	26	2	/* External command delay */
+	WAIT		24	2	/* External wait state */
+	PORTW		22	2	/* Port width */
+	BCGEN		20	2	/* Signal timing mode */
+	WAITINV		19	1	/* Reversed polarity at WAIT */
+	PRE			18	1	/* Prefetch mechanism */
+	DLOAD		17	1	/* Data upload */
+	ENDIAN		16	1	/* Endian mode */
+	CMULT		13	3	/* Cycle multiplier */
+	AALIGN		9	1	/* Address alignment */
+	WPRE		8	1	/* Weak prefetch */
+	MULTMAP		0	7	/* Multiplier map */
 EBU_BUSCON5			0xF00000E8
+	WRITE		31	1	/* Write protection */
+	AGEN		28	3	/* Address generation */
+	XCMDDELAY	26	2	/* External command delay */
+	WAIT		24	2	/* External wait state */
+	PORTW		22	2	/* Port width */
+	BCGEN		20	2	/* Signal timing mode */
+	WAITINV		19	1	/* Reversed polarity at WAIT */
+	PRE			18	1	/* Prefetch mechanism */
+	DLOAD		17	1	/* Data upload */
+	ENDIAN		16	1	/* Endian mode */
+	CMULT		13	3	/* Cycle multiplier */
+	AALIGN		9	1	/* Address alignment */
+	WPRE		8	1	/* Weak prefetch */
+	MULTMAP		0	7	/* Multiplier map */
 EBU_BUSCON6			0xF00000F0
+	WRITE		31	1	/* Write protection */
+	AGEN		28	3	/* Address generation */
+	XCMDDELAY	26	2	/* External command delay */
+	WAIT		24	2	/* External wait state */
+	PORTW		22	2	/* Port width */
+	BCGEN		20	2	/* Signal timing mode */
+	WAITINV		19	1	/* Reversed polarity at WAIT */
+	PRE			18	1	/* Prefetch mechanism */
+	DLOAD		17	1	/* Data upload */
+	ENDIAN		16	1	/* Endian mode */
+	CMULT		13	3	/* Cycle multiplier */
+	AALIGN		9	1	/* Address alignment */
+	WPRE		8	1	/* Weak prefetch */
+	MULTMAP		0	7	/* Multiplier map */
 EBU_SDRMREF0		0xF0000040
+	AUTOSELFR		13	1	/* Automatic self refresh */
+	SELFREN			12	1	/* Self refresh entry */
+	SELFRENST		11	1	/* Self refresh entry status */
+	SELFREX			10	1	/* Self refresh exit */
+	SELFREXST		9	1	/* Self refresh exit status */
+	REFRESHR		6	3	/* Number of refresh commands */
+	REFRESHC		0	6	/* Refresh counter period */
+EBU_SDRMREF1		0xF0000048
+	AUTOSELFR		13	1	/* Automatic self refresh */
+	SELFREN			12	1	/* Self refresh entry */
+	SELFRENST		11	1	/* Self refresh entry status */
+	SELFREX			10	1	/* Self refresh exit */
+	SELFREXST		9	1	/* Self refresh exit status */
+	REFRESHR		6	3	/* Number of refresh commands */
+	REFRESHC		0	6	/* Refresh counter period */
 EBU_SDRMCON0		0xF0000050
+	BANKM		22	3	/* Mask for bank tag */
+	PAGEM		19	3	/* Mask for page tag */
+	CRC			16	3	/* Row cycle time counter */
+	CRCD		14	2	/* Row to column delay counter */
+	AWIDTH		12	2	/* Width of column address */
+	CRP			10	2	/* Row precharge time counter */
+	CRSC		8	2	/* Mode register setup time */
+	CRFSH		4	4	/* Refresh commands counter */
+	CRAS		0	4	/* Row to precharge delay counter */
+EBU_SDRMCON1		0xF0000058
+	BANKM		22	3	/* Mask for bank tag */
+	PAGEM		19	3	/* Mask for page tag */
+	CRC			16	3	/* Row cycle time counter */
+	CRCD		14	2	/* Row to column delay counter */
+	AWIDTH		12	2	/* Width of column address */
+	CRP			10	2	/* Row precharge time counter */
+	CRSC		8	2	/* Mode register setup time */
+	CRFSH		4	4	/* Refresh commands counter */
+	CRAS		0	4	/* Row to precharge delay counter */
 EBU_SDRMOD0			0xF0000060
+	OPMODE		7	7	/* Operation Mode */
+	CASLAT		4	3	/* CAS latency */
+	BTYP		3	1	/* Burst type */
+	BURSTL		0	3	/* Burst length */
+EBU_SDRMOD1			0xF0000068
+	OPMODE		7	7	/* Operation Mode */
+	CASLAT		4	3	/* CAS latency */
+	BTYP		3	1	/* Burst type */
+	BURSTL		0	3	/* Burst length */
+EBU_SDRSTAT0		0xF0000070
+	SDRM_BUSY	1	1	/* SDRAM Busy */
+	REFERR		0	1	/* SDRAM Refresh Error */
+EBU_SDRSTAT1		0xF0000078
+	SDRM_BUSY	1	1	/* SDRAM Busy */
+	REFERR		0	1	/* SDRAM Refresh Error */
 EBU_BUSAP0			0xF0000100
+	ADDRC		30	2	/* Address Cycles */
+	AHOLDC		28	2	/* Multiplexed accesses */
+	CMDDELAY	25	3	/* Programmed command */
+	WAITRDC		22	3	/* Programmed for read accesses */
+	WAITWRC		19	3	/* Programmed for wait accesses */
+	BURSTC		16	3	/* During burst accesses */
+	DATAC		14	2	/* Write accesses */
+	RDRECOVC	11	3	/* After read accesses */
+	WRRECOVC	8	3	/* After write accesses */
+	DTARDWR		4	4	/* Between read and write accesses */
+	DTACS		0	4	/* Between different regions */
 EBU_BUSAP1			0xF0000108
+	ADDRC		30	2	/* Address Cycles */
+	AHOLDC		28	2	/* Multiplexed accesses */
+	CMDDELAY	25	3	/* Programmed command */
+	WAITRDC		22	3	/* Programmed for read accesses */
+	WAITWRC		19	3	/* Programmed for wait accesses */
+	BURSTC		16	3	/* During burst accesses */
+	DATAC		14	2	/* Write accesses */
+	RDRECOVC	11	3	/* After read accesses */
+	WRRECOVC	8	3	/* After write accesses */
+	DTARDWR		4	4	/* Between read and write accesses */
+	DTACS		0	4	/* Between different regions */
 EBU_BUSAP2			0xF0000110
+	ADDRC		30	2	/* Address Cycles */
+	AHOLDC		28	2	/* Multiplexed accesses */
+	CMDDELAY	25	3	/* Programmed command */
+	WAITRDC		22	3	/* Programmed for read accesses */
+	WAITWRC		19	3	/* Programmed for wait accesses */
+	BURSTC		16	3	/* During burst accesses */
+	DATAC		14	2	/* Write accesses */
+	RDRECOVC	11	3	/* After read accesses */
+	WRRECOVC	8	3	/* After write accesses */
+	DTARDWR		4	4	/* Between read and write accesses */
+	DTACS		0	4	/* Between different regions */
 EBU_BUSAP3			0xF0000118
+	ADDRC		30	2	/* Address Cycles */
+	AHOLDC		28	2	/* Multiplexed accesses */
+	CMDDELAY	25	3	/* Programmed command */
+	WAITRDC		22	3	/* Programmed for read accesses */
+	WAITWRC		19	3	/* Programmed for wait accesses */
+	BURSTC		16	3	/* During burst accesses */
+	DATAC		14	2	/* Write accesses */
+	RDRECOVC	11	3	/* After read accesses */
+	WRRECOVC	8	3	/* After write accesses */
+	DTARDWR		4	4	/* Between read and write accesses */
+	DTACS		0	4	/* Between different regions */
 EBU_BUSAP4			0xF0000120
+	ADDRC		30	2	/* Address Cycles */
+	AHOLDC		28	2	/* Multiplexed accesses */
+	CMDDELAY	25	3	/* Programmed command */
+	WAITRDC		22	3	/* Programmed for read accesses */
+	WAITWRC		19	3	/* Programmed for wait accesses */
+	BURSTC		16	3	/* During burst accesses */
+	DATAC		14	2	/* Write accesses */
+	RDRECOVC	11	3	/* After read accesses */
+	WRRECOVC	8	3	/* After write accesses */
+	DTARDWR		4	4	/* Between read and write accesses */
+	DTACS		0	4	/* Between different regions */
 EBU_BUSAP5			0xF0000128
+	ADDRC		30	2	/* Address Cycles */
+	AHOLDC		28	2	/* Multiplexed accesses */
+	CMDDELAY	25	3	/* Programmed command */
+	WAITRDC		22	3	/* Programmed for read accesses */
+	WAITWRC		19	3	/* Programmed for wait accesses */
+	BURSTC		16	3	/* During burst accesses */
+	DATAC		14	2	/* Write accesses */
+	RDRECOVC	11	3	/* After read accesses */
+	WRRECOVC	8	3	/* After write accesses */
+	DTARDWR		4	4	/* Between read and write accesses */
+	DTACS		0	4	/* Between different regions */
 EBU_BUSAP6			0xF0000130
+	ADDRC		30	2	/* Address Cycles */
+	AHOLDC		28	2	/* Multiplexed accesses */
+	CMDDELAY	25	3	/* Programmed command */
+	WAITRDC		22	3	/* Programmed for read accesses */
+	WAITWRC		19	3	/* Programmed for wait accesses */
+	BURSTC		16	3	/* During burst accesses */
+	DATAC		14	2	/* Write accesses */
+	RDRECOVC	11	3	/* After read accesses */
+	WRRECOVC	8	3	/* After write accesses */
+	DTARDWR		4	4	/* Between read and write accesses */
+	DTACS		0	4	/* Between different regions */
 EBU_EMUAS			0xF0000160
+	BASE		12	20	/* Base address */
+	ALTSEG		8	4	/* Alternate segment */
+	MASK		4	4	/* Address mask */
+	ALTENAB		1	1	/* Alternate segment comparison */
+	REGENAB		0	1	/* Memory region */
 EBU_EMUBC			0xF0000168
+	WR			31	1	/* Write protection */
+	AGEN		28	3	/* Address generation */
+	XCMDDELAY	26	2	/* External command delay */
+	WAIT		24	2	/* External wait state */
+	PORTW		22	2	/* Port width */
+	BCGEN		20	2	/* Signal timing mode */
+	WAITINV		19	1	/* Reversed polarity at WAIT */
+	PRE			18	1	/* Prefetch mechanism */
+	DLOAD		17	1	/* Data upload */
+	ENDIAN		16	1	/* Endian mode */
+	CMULT		13	3	/* Cycle multiplier */
+	AALIGN		9	1	/* Address alignment */
+	WPRE		8	1	/* Weak prefetch */
+	MULTMAP		0	7	/* Multiplier map */
 EBU_EMUBAP			0xF0000170
+	ADDRC		30	2	/* Address Cycles */
+	AHOLDC		28	2	/* Multiplexed accesses */
+	CMDDELAY	25	3	/* Programmed command */
+	WAITRDC		22	3	/* Programmed for read accesses */
+	WAITWRC		19	3	/* Programmed for wait accesses */
+	BURSTC		16	3	/* During burst accesses */
+	DATAC		14	2	/* Write accesses */
+	RDRECOVC	11	3	/* After read accesses */
+	WRRECOVC	8	3	/* After write accesses */
+	DTARDWR		4	4	/* Between read and write accesses */
+	DTACS		0	4	/* Between different regions */
 EBU_EMUOVL			0xF0000178
+	OVERLAY		0	8	/* Overlay chip select */
 EBU_USERCON			0xF0000190
 
 # SCU
 SCU_BASE			0xf4400000
 SCU_RST_CTRL_ST		0xF4400018
 SCU_WDTCON0			0xf4400024
+	WDTREL		16	16	/* Reload Value for the Watchdog Timer. */
+	WDTPW		8	8	/* User-Definable Password Field for Access to WDT_CON0. */
+	WDTHPW1		4	4	/* Hardware Password 1. */
+	WDTHPW0		2	2	/* Hardware Password 0. */
+	WDTLCK		1	1	/* Lock bit to Control Access to WDT_CON0. */
+	ENDINIT		0	1	/* End-of-Initialization Control Bit. */
 SCU_WDTCON1			0xf4400028
+	WDTDR		3	1	/* Watchdog Timer Disable Request Control Bit. */
+	WDTIR		2	1	/* Watchdog Timer Input Frequency Request Control Bit. */
 SCU_PLLCLC			0xF4400044
 SCU_CHIPID			0xf4400060
+	MOD_NUMBER		16	16	/* SCU Module Identification Number. */
+	MOD_32B			8	8	/* Indicates a 32-bit ID register. */
+	REV_NUMBER		0	8	/* SCU Module Revision Number. */
 SCU_RTCIF			0xF4400064
 SCU_CHIPID			0xf4400060
 SCU_ROMAMCR			0xf440007C
@@ -451,7 +768,12 @@ GPIO_CIF_PD					0xF43001E4
 
 # STM
 STM_CLC		0xF4B00000
+	DISS		1	1	/* STM Disable Status Bit. */
+	DISR		0	1	/* STM Disable Request Bit. */
 STM_ID		0xF4B00008
+	MOD			16	16	/* System Timer Module Identification Number. */
+	MOD_32B		8	8	/* Indicates a 32-bit ID register. */
+	REV			0	8	/* System Timer Module Revision Number. */
 STM_0		0xF4B00010
 STM_1		0xF4B00014
 STM_2		0xF4B00018
@@ -460,73 +782,516 @@ STM_4		0xF4B00020
 STM_5		0xF4B00024
 STM_6		0xF4B00028
 
-# GPTU1
-GPTU1_SRC0			0xF4A000FC	
-GPTU1_SRC1			0xF4A000F8	
-GPTU1_SRC2			0xF4A000F4	
-GPTU1_SRC3			0xF4A000F0	
-GPTU1_SRC4			0xF4A000EC	
-GPTU1_SRC5			0xF4A000E8	
-GPTU1_SRC6			0xF4A000E4	
-GPTU1_SRC7			0xF4A000E0	
-GPTU1_SRSEL			0xF4A000DC	
-GPTU1_T012RUN		0xF4A00060	
-GPTU1_T2RC1			0xF4A0005C	
-GPTU1_T2RC0			0xF4A00058	
-GPTU1_T2			0xF4A00054	
-GPTU1_T1RCBA		0xF4A00050	
-GPTU1_T1RDCBA		0xF4A0004C	
-GPTU1_T1CBA			0xF4A00048	
-GPTU1_T1DCBA		0xF4A00044	
-GPTU1_T0RCBA		0xF4A00040	
-GPTU1_T0RDCBA		0xF4A0003C	
-GPTU1_T0CBA			0xF4A00038	
-GPTU1_T0DCBA		0xF4A00034	
-GPTU1_OUT			0xF4A00030	
-GPTU1_OSEL			0xF4A0002C	
-GPTU1_T2ES			0xF4A00028	
-GPTU1_T2BIS			0xF4A00024	
-GPTU1_T2AIS			0xF4A00020	
-GPTU1_T2RCCON		0xF4A0001C	
-GPTU1_T2CON			0xF4A00018	
-GPTU1_T01OTS		0xF4A00014	
-GPTU1_T01IRS		0xF4A00010	
-GPTU1_ID			0xF4A00008	
-GPTU1_CLC			0xF4A00000	
-
-# GPTU0
-GPTU0_SRC0			0xF49000FC	
-GPTU0_SRC1			0xF49000F8	
-GPTU0_SRC2			0xF49000F4	
-GPTU0_SRC3			0xF49000F0	
-GPTU0_SRC4			0xF49000EC	
-GPTU0_SRC5			0xF49000E8	
-GPTU0_SRC6			0xF49000E4	
-GPTU0_SRC7			0xF49000E0	
-GPTU0_SRSEL			0xF49000DC	
-GPTU0_T012RUN		0xF4900060	
-GPTU0_T2RC1			0xF490005C	
-GPTU0_T2RC0			0xF4900058	
-GPTU0_T2			0xF4900054	
-GPTU0_T1RCBA		0xF4900050	
-GPTU0_T1RDCBA		0xF490004C	
-GPTU0_T1CBA			0xF4900048	
-GPTU0_T1DCBA		0xF4900044	
-GPTU0_T0RCBA		0xF4900040	
-GPTU0_T0RDCBA		0xF490003C	
-GPTU0_T0CBA			0xF4900038	
-GPTU0_T0DCBA		0xF4900034	
-GPTU0_OUT			0xF4900030	
-GPTU0_OSEL			0xF490002C	
-GPTU0_T2ES			0xF4900028	
-GPTU0_T2BIS			0xF4900024	
-GPTU0_T2AIS			0xF4900020	
-GPTU0_T2RCCON		0xF490001C	
-GPTU0_T2CON			0xF4900018	
-GPTU0_T01OTS		0xF4900014	
-GPTU0_T01IRS		0xF4900010	
-GPTU0_ID			0xF4900008	
-GPTU0_CLC			0xF4900000	
+GPTU0_CLC		0xF4900000
+	RMC			8	8	/* GPTU Clock Divider for Normal Mode */
+	FSOE		5	1	/* GPTU Fast Shut-Off Enable. */
+	SBWE		4	1	/* GPTU Suspend Bit Write Enable */
+	EDIS		3	1	/* GPTU External Request Disable */
+	SPEN		2	1	/* GPTU Suspend Enable Bit */
+	DISS		1	1	/* GPTU Disable Status Bit */
+	DISR		0	1	/* GPTU Disable Request Bit */
+GPTU0_ID		0xF4900008
+	MOD_NUMBER		16	16	/* GPTU Module Identification Number. */
+	MOD_32B		8	8	/* Indicates 32-bit Module GPTUx_ID format */
+	MOD_REV		0	8	/* GPTU Module Revision Number. */
+GPTU0_T01IRS		0xF4900010
+	T01IN1		30	2	/* T0 and T1 Global Input CNT1 Selection */
+	T01IN0		28	2	/* T0 and T1 Global Input CNT0 Selection */
+	T1INC		25	1	/* T1 Carry Input Selection */
+	T0INC		24	1	/* T0 Carry Input Selection */
+	T1DREL		23	1	/* T1D Reload Source Selection */
+	T1CREL		22	1	/* T1C Reload Source Selection */
+	T1BREL		21	1	/* T1B Reload Source Selection */
+	T1AREL		20	1	/* T1A Reload Source Selection */
+	T0DREL		19	1	/* T0D Reload Source Selection */
+	T0CREL		18	1	/* T0C Reload Source Selection */
+	T0BREL		17	1	/* T0B Reload Source Selection */
+	T0AREL		16	1	/* T0A Reload Source Selection */
+	T1DINS		14	2	/* T1D Input Selection */
+	T1CINS		12	2	/* T1C Input Selection */
+	T1BINS		10	2	/* T1B Input Selection */
+	T1AINS		8	2	/* T1A Input Selection */
+	T0DINS		6	2	/* T0D Input Selection */
+	T0CINS		4	2	/* T0C Input Selection */
+	T0BINS		2	2	/* T0B Input Selection */
+	T0AINS		0	2	/* T0A Input Selection */
+GPTU0_T01OTS		0xF4900014
+	SSR11		26	2	/* T1 Service Request 1 Source Selection. */
+	SSR10		24	2	/* T1 Service Request 0 Source Selection */
+	STRG11		22	2	/* T1 Trigger Output 1 Source Selection */
+	STRG10		20	2	/* T1 Trigger Output 0 Source Selection */
+	SOUT11		18	2	/* T1 Output 1 Source Selection */
+	SOUT10		16	2	/* T1 Output 0 Source Selection */
+	SSR01		10	2	/* T0 Service Request 1 Source Selection */
+	SSR00		8	2	/* T0 Service Request 0 Source Selection */
+	STRG01		6	2	/* T0 Trigger Output 1 Source Selection */
+	STRG00		4	2	/* T0 Trigger Output 0 Source Selection */
+	SOUT01		2	2	/* T0 Output 1 Source Selection */
+	SOUT00		0	2	/* T0 Output 0 Source Selection */
+GPTU0_T2CON		0xF4900018
+	T2BDIR		28	1	/* Timer T2B Direction Status Bit. */
+	T2BCOS		24	1	/* Timer T2B One-Shot Control. */
+	T2BCOV		22	2	/* Timer T2B Overflow/Underflow Generation Control. */
+	T2BCCLR		20	2	/* Timer T2B Clear Control. */
+	T2BCDIR		18	2	/* Timer T2B Direction Control. */
+	T2BCSRC		16	2	/* Timer T2B Count Input Source Control. */
+	T2SPLIT		15	1	/* Timer T2 Split Control. */
+	T2ADIR		12	1	/* Timer T2A Direction Status Bit. */
+	T2ACOS		8	1	/* Timer T2A One-Shot Control. */
+	T2ACOV		6	2	/* Timer T2A Overflow/Underflow Generation Control */
+	T2ACCLR		4	2	/* Timer T2A Clear Control */
+	T2ACDIR		2	2	/* Timer T2A Direction Control */
+	T2ACSRC		0	2	/* Timer T2A Count Input Source Control */
+GPTU0_T2RCCON		0xF490001C
+	T2BMRC1		20	3	/* Timer T2B Reload/Capture 1 Mode Control */
+	T2BMRC0		16	3	/* Timer T2B Reload/Capture 0 Mode Control */
+	T2AMRC1		4	3	/* Timer T2A Reload/Capture 1 Mode Control */
+	T2AMRC0		0	3	/* Timer T2A Reload/Capture 0 Mode Control */
+GPTU0_T2AIS		0xF4900020
+	T2AIRC1		24	3	/* Timer T2A External Reload/Capture 1 Input Selection */
+	T2AIRC0		20	3	/* Timer T2A External Reload/Capture 0 Input Selection */
+	T2AICLR		16	3	/* Timer T2A External Clear Input Selection */
+	T2AIUD		12	3	/* Timer T2A External Up/Down Input Selection */
+	T2AISTP		8	3	/* Timer T2A External Stop Input Selection */
+	T2AISTR		4	3	/* Timer T2A External Start Input Selection */
+	T2AICNT		0	3	/* Timer T2A External Count Input Selection */
+GPTU0_T2BIS		0xF4900024
+	T2BIRC1		24	3	/* Timer T2B External Reload/Capture 1 Input Selection */
+	T2BIRC0		20	3	/* Timer T2B External Reload/Capture 0 Input Selection */
+	T2BICLR		16	3	/* Timer T2B External Clear Input Selection */
+	T2BIUD		12	3	/* Timer T2B External Up/Down Input Selection */
+	T2BISTP		8	3	/* Timer T2B External Stop Input Selection */
+	T2BISTR		4	3	/* Timer T2B External Start Input Selection */
+	T2BICNT		0	3	/* Timer T2B External Count Input Selection */
+GPTU0_T2ES		0xF4900028
+	T2BERC1		28	2	/* Timer T2B External Reload/Capture 1 Input Active Edge Selection */
+	T2BERC0		26	2	/* Timer T2B External Reload/Capture 0 Input Active Edge Selection */
+	T2BECLR		24	2	/* Timer T2B External Clear Input Active Edge Selection */
+	T2BEUD		22	2	/* Timer T2B External Up/Down Input Active Edge Selection */
+	T2BESTP		20	2	/* Timer T2B External Stop Input Active Edge Selection */
+	T2BESTR		18	2	/* Timer T2B External Start Input Active Edge Selection */
+	T2BECNT		16	2	/* Timer T2B External Count Input Active Edge Selection */
+	T2AERC1		12	2	/* Timer T2A External Reload/Capture 1 Input Active Edge Selection */
+	T2AERC0		10	2	/* Timer T2A External Reload/Capture 0 Input Active Edge Selection */
+	T2AECLR		8	2	/* Timer T2A External Clear Input Active Edge Selection */
+	T2AEUD		6	2	/* Timer T2A External Up/Down Input Active Edge Selection */
+	T2AESTP		4	2	/* Timer T2A External Stop Input Active Edge Selection */
+	T2AESTR		2	2	/* Timer T2A External Start Input Active Edge Selection */
+	T2AECNT		0	2	/* Timer T2A External Count Input Active Edge Selection */
+GPTU0_OSEL		0xF490002C
+	GTSO7		28	3	/* GPTU Output 7 Source Selection */
+	GTSO6		24	3	/* GPTU Output 6 Source Selection */
+	GTSO5		20	3	/* GPTU Output 5 Source Selection */
+	GTSO4		16	3	/* GPTU Output 4 Source Selection */
+	GTSO3		12	3	/* GPTU Output 3 Source Selection */
+	GTSO2		8	3	/* GPTU Output 2 Source Selection */
+	GTSO1		4	3	/* GPTU Output 1 Source Selection */
+	GTSO0		0	3	/* GPTU Output 0 Source Selection */
+GPTU0_OUT		0xF4900030
+	SETO7		23	1	/* GPTU Output 7 Set Bit */
+	SETO6		22	1	/* GPTU Output 6 Set Bit */
+	SETO5		21	1	/* GPTU Output 5 Set Bit */
+	SETO4		20	1	/* GPTU Output 4 Set Bit */
+	SETO3		19	1	/* GPTU Output 3 Set Bit */
+	SETO2		18	1	/* GPTU Output 2 Set Bit */
+	SETO1		17	1	/* GPTU Output 1 Set Bit */
+	SETO0		16	1	/* GPTU Output 0 Set Bit */
+	CLRO7		15	1	/* GPTU Output 7 Clear Bit */
+	CLRO6		14	1	/* GPTU Output 6 Clear Bit */
+	CLRO5		13	1	/* GPTU Output 5 Clear Bit */
+	CLRO4		12	1	/* GPTU Output 4 Clear Bit */
+	CLRO3		11	1	/* GPTU Output 3 Clear Bit */
+	CLRO2		10	1	/* GPTU Output 2 Clear Bit */
+	CLRO1		9	1	/* GPTU Output 1 Clear Bit */
+	CLRO0		8	1	/* GPTU Output 0 Clear Bit */
+	OUT7		7	1	/* GPTU Output State Bit 7 */
+	OUT6		6	1	/* GPTU Output State Bit 6 */
+	OUT5		5	1	/* GPTU Output State Bit 5 */
+	OUT4		4	1	/* GPTU Output State Bit 4 */
+	OUT3		3	1	/* GPTU Output State Bit 3 */
+	OUT2		2	1	/* GPTU Output State Bit 2 */
+	OUT1		1	1	/* GPTU Output State Bit 1 */
+	OUT0		0	1	/* GPTU Output State Bit 0 */
+GPTU0_T0DCBA		0xF4900034
+	T0D			24	8
+	T0C			16	8
+	T0B			8	8
+	T0A			0	8
+GPTU0_T0CBA		0xF4900038
+	T0C			16	8
+	T0B			8	8
+	T0A			0	8
+GPTU0_T0RDCBA		0xF490003C
+	T0RD		24	8
+	T0RC		16	8
+	T0RB		8	8
+	T0RA		0	8
+GPTU0_T0RCBA		0xF4900040
+	T0RC		16	8
+	T0RB		8	8
+	T0RA		0	8
+GPTU0_T1DCBA		0xF4900044
+	T1D			24	8
+	T1C			16	8
+	T1B			8	8
+	T1A			0	8
+GPTU0_T1CBA		0xF4900048
+	T1C			16	8
+	T1B			8	8
+	T1A			0	8
+GPTU0_T1RDCBA		0xF490004C
+	T1RD		24	8
+	T1RC		16	8
+	T1RB		8	8
+	T1RA		0	8
+GPTU0_T1RCBA		0xF4900050
+	T1RC		16	8
+	T1RB		8	8
+	T1RA		0	8
+GPTU0_T2		0xF4900054
+	T2B			16	16	/* T2B Contents */
+	T2A			0	16	/* T2A Contents */
+GPTU0_T2RC0		0xF4900058
+	T2BRC0		16	16	/* T2B Reload/Capture Value */
+	T2ARC0		0	16	/* T2A Reload/Capture Value */
+GPTU0_T2RC1		0xF490005C
+	T2BRC1		16	16	/* T2B Reload/Capture Value */
+	T2ARC1		0	16	/* T2A Reload/Capture Value */
+GPTU0_T012RUN		0xF4900060
+	T2BCLRR		14	1	/* Timer T2B Run Clear Bit. */
+	T2BSETR		13	1	/* Timer T2B Run Set Bit. */
+	T2BRUN		12	1	/* Timer T2B Run Status Bit. */
+	T2ACLRR		10	1	/* Timer T2A Run Clear Bit. */
+	T2ASETR		9	1	/* Timer T2A Run Set Bit. */
+	T2ARUN		8	1	/* Timer T2A Run Status Bit. */
+	T1DRUN		7	1	/* Timer T1D Run Control. */
+	T1CRUN		6	1	/* Timer T1C Run Control. */
+	T1BRUN		5	1	/* Timer T1B Run Control. */
+	T1ARUN		4	1	/* Timer T1A Run Control. */
+	T0DRUN		3	1	/* Timer T0D Run Control. */
+	T0CRUN		2	1	/* Timer T0C Run Control. */
+	T0BRUN		1	1	/* Timer T0B Run Control. */
+	T0ARUN		0	1	/* Timer T0D Run Control. */
+GPTU0_SRSEL		0xF49000DC
+	SSR0		28	4	/* GPTU Service Request Node 0 Source Selection */
+	SSR1		24	4	/* GPTU Service Request Node 1 Source Selection */
+	SSR2		20	4	/* GPTU Service Request Node 2 Source Selection */
+	SSR3		16	4	/* GPTU Service Request Node 3 Source Selection */
+	SSR4		12	4	/* GPTU Service Request Node 4 Source Selection */
+	SSR5		8	4	/* GPTU Service Request Node 5 Source Selection */
+	SSR6		4	4	/* GPTU Service Request Node 6 Source Selection */
+	SSR7		0	4	/* GPTU Service Request Node 7 Source Selection */
+GPTU0_SRC7		0xF49000E0
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU0_SRC6		0xF49000E4
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU0_SRC5		0xF49000E8
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU0_SRC4		0xF49000EC
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU0_SRC3		0xF49000F0
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU0_SRC2		0xF49000F4
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU0_SRC1		0xF49000F8
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU0_SRC0		0xF49000FC
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU1_CLC		0xF4A00000
+	RMC			8	8	/* GPTU Clock Divider for Normal Mode */
+	FSOE		5	1	/* GPTU Fast Shut-Off Enable. */
+	SBWE		4	1	/* GPTU Suspend Bit Write Enable */
+	EDIS		3	1	/* GPTU External Request Disable */
+	SPEN		2	1	/* GPTU Suspend Enable Bit */
+	DISS		1	1	/* GPTU Disable Status Bit */
+	DISR		0	1	/* GPTU Disable Request Bit */
+GPTU1_ID		0xF4A00008
+	MOD_NUMBER		16	16	/* GPTU Module Identification Number. */
+	MOD_32B		8	8	/* Indicates 32-bit Module GPTUx_ID format */
+	MOD_REV		0	8	/* GPTU Module Revision Number. */
+GPTU1_T01IRS		0xF4A00010
+	T01IN1		30	2	/* T0 and T1 Global Input CNT1 Selection */
+	T01IN0		28	2	/* T0 and T1 Global Input CNT0 Selection */
+	T1INC		25	1	/* T1 Carry Input Selection */
+	T0INC		24	1	/* T0 Carry Input Selection */
+	T1DREL		23	1	/* T1D Reload Source Selection */
+	T1CREL		22	1	/* T1C Reload Source Selection */
+	T1BREL		21	1	/* T1B Reload Source Selection */
+	T1AREL		20	1	/* T1A Reload Source Selection */
+	T0DREL		19	1	/* T0D Reload Source Selection */
+	T0CREL		18	1	/* T0C Reload Source Selection */
+	T0BREL		17	1	/* T0B Reload Source Selection */
+	T0AREL		16	1	/* T0A Reload Source Selection */
+	T1DINS		14	2	/* T1D Input Selection */
+	T1CINS		12	2	/* T1C Input Selection */
+	T1BINS		10	2	/* T1B Input Selection */
+	T1AINS		8	2	/* T1A Input Selection */
+	T0DINS		6	2	/* T0D Input Selection */
+	T0CINS		4	2	/* T0C Input Selection */
+	T0BINS		2	2	/* T0B Input Selection */
+	T0AINS		0	2	/* T0A Input Selection */
+GPTU1_T01OTS		0xF4A00014
+	SSR11		26	2	/* T1 Service Request 1 Source Selection. */
+	SSR10		24	2	/* T1 Service Request 0 Source Selection */
+	STRG11		22	2	/* T1 Trigger Output 1 Source Selection */
+	STRG10		20	2	/* T1 Trigger Output 0 Source Selection */
+	SOUT11		18	2	/* T1 Output 1 Source Selection */
+	SOUT10		16	2	/* T1 Output 0 Source Selection */
+	SSR01		10	2	/* T0 Service Request 1 Source Selection */
+	SSR00		8	2	/* T0 Service Request 0 Source Selection */
+	STRG01		6	2	/* T0 Trigger Output 1 Source Selection */
+	STRG00		4	2	/* T0 Trigger Output 0 Source Selection */
+	SOUT01		2	2	/* T0 Output 1 Source Selection */
+	SOUT00		0	2	/* T0 Output 0 Source Selection */
+GPTU1_T2CON		0xF4A00018
+	T2BDIR		28	1	/* Timer T2B Direction Status Bit. */
+	T2BCOS		24	1	/* Timer T2B One-Shot Control. */
+	T2BCOV		22	2	/* Timer T2B Overflow/Underflow Generation Control. */
+	T2BCCLR		20	2	/* Timer T2B Clear Control. */
+	T2BCDIR		18	2	/* Timer T2B Direction Control. */
+	T2BCSRC		16	2	/* Timer T2B Count Input Source Control. */
+	T2SPLIT		15	1	/* Timer T2 Split Control. */
+	T2ADIR		12	1	/* Timer T2A Direction Status Bit. */
+	T2ACOS		8	1	/* Timer T2A One-Shot Control. */
+	T2ACOV		6	2	/* Timer T2A Overflow/Underflow Generation Control */
+	T2ACCLR		4	2	/* Timer T2A Clear Control */
+	T2ACDIR		2	2	/* Timer T2A Direction Control */
+	T2ACSRC		0	2	/* Timer T2A Count Input Source Control */
+GPTU1_T2RCCON		0xF4A0001C
+	T2BMRC1		20	3	/* Timer T2B Reload/Capture 1 Mode Control */
+	T2BMRC0		16	3	/* Timer T2B Reload/Capture 0 Mode Control */
+	T2AMRC1		4	3	/* Timer T2A Reload/Capture 1 Mode Control */
+	T2AMRC0		0	3	/* Timer T2A Reload/Capture 0 Mode Control */
+GPTU1_T2AIS		0xF4A00020
+	T2AIRC1		24	3	/* Timer T2A External Reload/Capture 1 Input Selection */
+	T2AIRC0		20	3	/* Timer T2A External Reload/Capture 0 Input Selection */
+	T2AICLR		16	3	/* Timer T2A External Clear Input Selection */
+	T2AIUD		12	3	/* Timer T2A External Up/Down Input Selection */
+	T2AISTP		8	3	/* Timer T2A External Stop Input Selection */
+	T2AISTR		4	3	/* Timer T2A External Start Input Selection */
+	T2AICNT		0	3	/* Timer T2A External Count Input Selection */
+GPTU1_T2BIS		0xF4A00024
+	T2BIRC1		24	3	/* Timer T2B External Reload/Capture 1 Input Selection */
+	T2BIRC0		20	3	/* Timer T2B External Reload/Capture 0 Input Selection */
+	T2BICLR		16	3	/* Timer T2B External Clear Input Selection */
+	T2BIUD		12	3	/* Timer T2B External Up/Down Input Selection */
+	T2BISTP		8	3	/* Timer T2B External Stop Input Selection */
+	T2BISTR		4	3	/* Timer T2B External Start Input Selection */
+	T2BICNT		0	3	/* Timer T2B External Count Input Selection */
+GPTU1_T2ES		0xF4A00028
+	T2BERC1		28	2	/* Timer T2B External Reload/Capture 1 Input Active Edge Selection */
+	T2BERC0		26	2	/* Timer T2B External Reload/Capture 0 Input Active Edge Selection */
+	T2BECLR		24	2	/* Timer T2B External Clear Input Active Edge Selection */
+	T2BEUD		22	2	/* Timer T2B External Up/Down Input Active Edge Selection */
+	T2BESTP		20	2	/* Timer T2B External Stop Input Active Edge Selection */
+	T2BESTR		18	2	/* Timer T2B External Start Input Active Edge Selection */
+	T2BECNT		16	2	/* Timer T2B External Count Input Active Edge Selection */
+	T2AERC1		12	2	/* Timer T2A External Reload/Capture 1 Input Active Edge Selection */
+	T2AERC0		10	2	/* Timer T2A External Reload/Capture 0 Input Active Edge Selection */
+	T2AECLR		8	2	/* Timer T2A External Clear Input Active Edge Selection */
+	T2AEUD		6	2	/* Timer T2A External Up/Down Input Active Edge Selection */
+	T2AESTP		4	2	/* Timer T2A External Stop Input Active Edge Selection */
+	T2AESTR		2	2	/* Timer T2A External Start Input Active Edge Selection */
+	T2AECNT		0	2	/* Timer T2A External Count Input Active Edge Selection */
+GPTU1_OSEL		0xF4A0002C
+	GTSO7		28	3	/* GPTU Output 7 Source Selection */
+	GTSO6		24	3	/* GPTU Output 6 Source Selection */
+	GTSO5		20	3	/* GPTU Output 5 Source Selection */
+	GTSO4		16	3	/* GPTU Output 4 Source Selection */
+	GTSO3		12	3	/* GPTU Output 3 Source Selection */
+	GTSO2		8	3	/* GPTU Output 2 Source Selection */
+	GTSO1		4	3	/* GPTU Output 1 Source Selection */
+	GTSO0		0	3	/* GPTU Output 0 Source Selection */
+GPTU1_OUT		0xF4A00030
+	SETO7		23	1	/* GPTU Output 7 Set Bit */
+	SETO6		22	1	/* GPTU Output 6 Set Bit */
+	SETO5		21	1	/* GPTU Output 5 Set Bit */
+	SETO4		20	1	/* GPTU Output 4 Set Bit */
+	SETO3		19	1	/* GPTU Output 3 Set Bit */
+	SETO2		18	1	/* GPTU Output 2 Set Bit */
+	SETO1		17	1	/* GPTU Output 1 Set Bit */
+	SETO0		16	1	/* GPTU Output 0 Set Bit */
+	CLRO7		15	1	/* GPTU Output 7 Clear Bit */
+	CLRO6		14	1	/* GPTU Output 6 Clear Bit */
+	CLRO5		13	1	/* GPTU Output 5 Clear Bit */
+	CLRO4		12	1	/* GPTU Output 4 Clear Bit */
+	CLRO3		11	1	/* GPTU Output 3 Clear Bit */
+	CLRO2		10	1	/* GPTU Output 2 Clear Bit */
+	CLRO1		9	1	/* GPTU Output 1 Clear Bit */
+	CLRO0		8	1	/* GPTU Output 0 Clear Bit */
+	OUT7		7	1	/* GPTU Output State Bit 7 */
+	OUT6		6	1	/* GPTU Output State Bit 6 */
+	OUT5		5	1	/* GPTU Output State Bit 5 */
+	OUT4		4	1	/* GPTU Output State Bit 4 */
+	OUT3		3	1	/* GPTU Output State Bit 3 */
+	OUT2		2	1	/* GPTU Output State Bit 2 */
+	OUT1		1	1	/* GPTU Output State Bit 1 */
+	OUT0		0	1	/* GPTU Output State Bit 0 */
+GPTU1_T0DCBA		0xF4A00034
+	T0D			24	8
+	T0C			16	8
+	T0B			8	8
+	T0A			0	8
+GPTU1_T0CBA		0xF4A00038
+	T0C			16	8
+	T0B			8	8
+	T0A			0	8
+GPTU1_T0RDCBA		0xF4A0003C
+	T0RD		24	8
+	T0RC		16	8
+	T0RB		8	8
+	T0RA		0	8
+GPTU1_T0RCBA		0xF4A00040
+	T0RC		16	8
+	T0RB		8	8
+	T0RA		0	8
+GPTU1_T1DCBA		0xF4A00044
+	T1D			24	8
+	T1C			16	8
+	T1B			8	8
+	T1A			0	8
+GPTU1_T1CBA		0xF4A00048
+	T1C			16	8
+	T1B			8	8
+	T1A			0	8
+GPTU1_T1RDCBA		0xF4A0004C
+	T1RD		24	8
+	T1RC		16	8
+	T1RB		8	8
+	T1RA		0	8
+GPTU1_T1RCBA		0xF4A00050
+	T1RC		16	8
+	T1RB		8	8
+	T1RA		0	8
+GPTU1_T2		0xF4A00054
+	T2B			16	16	/* T2B Contents */
+	T2A			0	16	/* T2A Contents */
+GPTU1_T2RC0		0xF4A00058
+	T2BRC0		16	16	/* T2B Reload/Capture Value */
+	T2ARC0		0	16	/* T2A Reload/Capture Value */
+GPTU1_T2RC1		0xF4A0005C
+	T2BRC1		16	16	/* T2B Reload/Capture Value */
+	T2ARC1		0	16	/* T2A Reload/Capture Value */
+GPTU1_T012RUN		0xF4A00060
+	T2BCLRR		14	1	/* Timer T2B Run Clear Bit. */
+	T2BSETR		13	1	/* Timer T2B Run Set Bit. */
+	T2BRUN		12	1	/* Timer T2B Run Status Bit. */
+	T2ACLRR		10	1	/* Timer T2A Run Clear Bit. */
+	T2ASETR		9	1	/* Timer T2A Run Set Bit. */
+	T2ARUN		8	1	/* Timer T2A Run Status Bit. */
+	T1DRUN		7	1	/* Timer T1D Run Control. */
+	T1CRUN		6	1	/* Timer T1C Run Control. */
+	T1BRUN		5	1	/* Timer T1B Run Control. */
+	T1ARUN		4	1	/* Timer T1A Run Control. */
+	T0DRUN		3	1	/* Timer T0D Run Control. */
+	T0CRUN		2	1	/* Timer T0C Run Control. */
+	T0BRUN		1	1	/* Timer T0B Run Control. */
+	T0ARUN		0	1	/* Timer T0D Run Control. */
+GPTU1_SRSEL		0xF4A000DC
+	SSR0		28	4	/* GPTU Service Request Node 0 Source Selection */
+	SSR1		24	4	/* GPTU Service Request Node 1 Source Selection */
+	SSR2		20	4	/* GPTU Service Request Node 2 Source Selection */
+	SSR3		16	4	/* GPTU Service Request Node 3 Source Selection */
+	SSR4		12	4	/* GPTU Service Request Node 4 Source Selection */
+	SSR5		8	4	/* GPTU Service Request Node 5 Source Selection */
+	SSR6		4	4	/* GPTU Service Request Node 6 Source Selection */
+	SSR7		0	4	/* GPTU Service Request Node 7 Source Selection */
+GPTU1_SRC7		0xF4A000E0
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR			14	1	/* Service Request Node Request Clear Bit */
+	SRR		13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU1_SRC6		0xF4A000E4
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU1_SRC5		0xF4A000E8
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU1_SRC4		0xF4A000EC
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU1_SRC3		0xF4A000F0
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU1_SRC2		0xF4A000F4
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU1_SRC1		0xF4A000F8
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
+GPTU1_SRC0		0xF4A000FC
+	SETR		15	1	/* Service Request Node Request Set Bit */
+	CLRR		14	1	/* Service Request Node Request Clear Bit */
+	SRR			13	1	/* Service Request Node Service Request Bit */
+	SRE			12	1	/* Service request node enable */
+	TOS			10	2	/* Type of service for node */
+	SRPN		0	8	/* Service request node priority number */
 
 # IRQ
 FIQ_ACK				0xF2800008 # сюда пишется 1 в конце fiq_handler
