@@ -11,16 +11,16 @@ my $regs = get_regs();
 my $name_len = 0;
 
 for my $val (@$regs) {
-	if (scalar(@$val) == 2) {
-		my $name = $val->[0];
+	if (!$val->{addr_end}) {
+		my $name = $val->{name};
 		$name =~ s/\[(\d+)\]/_$1/;
 		
-		$header .= sprintf("#define %s 0x%08X\n", $name, $val->[1]);
-		push @$hash, sprintf("{\"%s\", 0x%08X, 0}", $val->[0], $val->[1]);
+		$header .= sprintf("#define %s 0x%08X\n", $name, $val->{addr});
+		push @$hash, sprintf("{\"%s\", 0x%08X, 0}", $val->{name}, $val->{addr});
 		
-		$name_len = length($val->[0]) if ($name_len < length($val->[0]));
-	} elsif (scalar(@$val) == 3) {
-		push @$hash, sprintf("{\"%s\", 0x%08X, 0x%08X}", $val->[0], $val->[1], $val->[2]);
+		$name_len = length($val->{name}) if ($name_len < length($val->{name}));
+	} else {
+		push @$hash, sprintf("{\"%s\", 0x%08X, 0x%08X}", $val->{name}, $val->{addr}, $val->{addr_end});
 	}
 }
 
