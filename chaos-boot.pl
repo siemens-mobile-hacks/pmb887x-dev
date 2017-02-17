@@ -32,7 +32,7 @@ sub main {
 	my $rts = 0;
 	my $flasher = [];
 	my $exec_file = "../siemens-linux/kernel/arch/arm/boot/Image";
-	my $exec_addr = 0xA8008000;
+	my $exec_addr = '0xA8008000';
 	my $as_hex = 0;
 	my $run_picocom = 0;
 	
