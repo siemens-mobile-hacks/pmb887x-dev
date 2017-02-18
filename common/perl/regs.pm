@@ -10,12 +10,26 @@ sub get_regs {
 		$pmb8876_regs = [];
 		
 		my $last_reg;
+		my $last_reg_field;
 		
 		open FFF, dirname(__FILE__)."/../../regs.txt";
 		while (my $line = <FFF>) {
 			next if ($line =~ /^\s*#/); # вся линия - комментарий
 			
-			if ($line =~ /^\t/) { # Описание последнего регистра
+			if ($line =~ /^\t\t/) { # Описание значений регистра
+				$line =~ s/^\s+|\s+$//g;
+				my @values = split(/[\t]+/, $line);
+				
+				if ($values[0] =~ /^0b[01]+$/i) {
+					$values[0] = eval(lc($values[0]));
+				} elsif ($values[0] =~ /^0x[A-F0-9]+$/i) {
+					$values[0] = hex($values[0]);
+				} else {
+					$values[0] = int($values[0]);
+				}
+				
+				$last_reg_field->{values}->{$values[0]} = $values[1];
+			} elsif ($line =~ /^\t/) { # Описание последнего регистра
 				$line =~ s/^\s+|\s+$//g;
 				
 				my @values = split(/[\t]+/, $line);
@@ -24,7 +38,7 @@ sub get_regs {
 					
 					$last_reg->{bits} |= $val;
 					
-					my $v = {shift => int($values[1]), mask => int($values[2]), name => $values[0]};
+					my $v = {shift => int($values[1]), mask => int($values[2]), name => $values[0], values => {}};
 					for my $v2 (@{$last_reg->{desc}}) {
 						my $val1 = ((1 << $v->{mask}) - 1) << $v->{shift};
 						my $val2 = ((1 << $v2->{mask}) - 1) << $v2->{shift};
@@ -33,6 +47,8 @@ sub get_regs {
 							warn "WARN: bit value ".$v->{name}." overlaps some bits in ".$v2->{name}." for ".$last_reg->{name}." !\n";
 						}
 					}
+					
+					$last_reg_field = $v;
 					
 					push @{$last_reg->{desc}}, $v;
 				} else {
@@ -132,9 +148,14 @@ sub reg_name {
 					push @$values, $v->{name};
 				}
 			} else {
-				push @$values, $v->{name}."(0x".sprintf("%02X", $val).")";
+				push @$values, $v->{name}."(0x".sprintf("%02X", $val).")".($v->{values}->{$val} ? '='.$v->{values}->{$val} : "");
 			}
 		}
+		
+		if ($known && ($value & ~$known)) {
+			push @$values, "UNKNOWN(".sprintf("0b%08b", $value & ~$known).")";
+		}
+		
 		if (@$values) {
 			$add = ": ".join(" | ", @$values);
 		}
