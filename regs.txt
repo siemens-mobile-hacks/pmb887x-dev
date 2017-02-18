@@ -927,6 +927,11 @@ GPIO_CIF_PD					0xF43001E4
 
 # STM
 STM_CLC		0xF4B00000
+	RMC			8	3
+	FSOE		5	1
+	SBWE		4	1
+	EDIS		3	1
+	SPEN		2	1
 	DISS		1	1	/* STM Disable Status Bit. */
 	DISR		0	1	/* STM Disable Request Bit. */
 STM_ID		0xF4B00008
