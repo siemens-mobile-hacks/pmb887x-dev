@@ -30,6 +30,12 @@ PLL_CON2	0xF45000AC
 PLL_STAT	0xF45000B0
 PLL_ICR		0xF45000CC
 
+# GSM_TPU
+GSM_TPU_CLC		0xF6400000
+	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC			8	6
+
 # MultiMedia Card Interface (MCI) Controller
 MMCI_POWER			0xF7301000
 	CTRL			0	2
