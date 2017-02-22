@@ -34,7 +34,18 @@ PLL_ICR		0xF45000CC
 GSM_TPU_CLC		0xF6400000
 	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
 	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	6
+	RMC			8	7
+
+DMA_CLC		0xF7100000
+	FSOE			5	1
+	SBWE			4	1
+	SPEN			2	1
+	DISS			1	1
+	DISR			0	1
+DMA_ID		0xF7100008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 
 # MultiMedia Card Interface (MCI) Controller
 MMCI_POWER			0xF7301000
