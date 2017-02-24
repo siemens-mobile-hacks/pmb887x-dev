@@ -28,7 +28,7 @@ __arm int emualate_ldr_str_sub(CONTEXT *context)
     //unsigned char cond;
  
     char i, l, b, h, w, s, u, p;
-    char rn, rd, rm;
+    unsigned char rn, rd, rm;
  
     cpsr = context->s.cpsr;
     

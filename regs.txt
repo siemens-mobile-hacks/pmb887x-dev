@@ -35,6 +35,9 @@ GSM_TPU_CLC		0xF6400000
 	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
 	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
 	RMC			8	7
+GSM_TPU_CON		0xF64000F8
+	ENABLE		12	1
+	RESET		14	1
 
 DMA_CLC		0xF7100000
 	FSOE			5	1
@@ -831,6 +834,7 @@ SCU_CHIPID			0xf4400060
 SCU_RTCIF			0xF4400064
 SCU_CHIPID			0xf4400060
 SCU_ROMAMCR			0xf440007C
+SCU_DMA				0xF4400084
 
 # PCL
 PCL_CLC						0xf4300000
@@ -1480,7 +1484,11 @@ IRQ_ACK				0xF2800014 # сюда пишется 1 в конце irq_handler
 FIQ_CURRENT_NUM		0xF2800018 # тут текущий номер интеррапта в fiq_handler
 IRQ_CURRENT_NUM		0xF280001C # тут текущий номер интеррапта в irq_handler
 
-# Регистры приоритетов для каждого интеррапта (0 - отключает прерывание)
+# Регистры приоритетов для каждого интеррапта
+IRQS_PRIO		0xF2800030-0xF28000AB
+	PRIORITY	0	8
+	FIQ			8	1
+
 IRQ_000			0xF2800030
 IRQ_001			0xF2800034
 IRQ_002			0xF2800038

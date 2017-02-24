@@ -153,6 +153,5 @@ int main() {
 	pmb8876_serial_print("init - OK\r\n");
 	
 	GBS_StartTimerProc(&start_delayed_tmr, 216 / 2, start_delayed);
-	
 	return 0;
 }
