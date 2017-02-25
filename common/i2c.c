@@ -2,12 +2,17 @@
 #include <gpio.h>
 #include "i2c.h"
 
-// from: https://github.com/felias-fogg/SoftI2CMaster
+// from: https://github.com/todbot/SoftI2CMaster
 
 /* I2C */
 void i2c_init() {
 	REG(GPIO_I2C_SCL) = PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	OPENDRAIN,	PULLUP,		NO_ENAQ);
 	REG(GPIO_I2C_SDA) = PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	OPENDRAIN,	PULLUP,		NO_ENAQ);
+	
+	i2c_sda_hi();
+	i2c_scl_hi();
+    
+    i2c_delay();
 }
 
 void i2c_start_read(unsigned char addr) {
@@ -104,7 +109,7 @@ void i2c_smbus_write_byte(unsigned int addr, unsigned char reg, unsigned char va
 
 unsigned char i2c_smbus_read_byte(unsigned int addr, unsigned char reg) {
 	unsigned char value = 0;
-	i2c_smbus_read(addr, reg, 1, &value);
+	i2c_smbus_read(addr, reg, 2, &value);
 	return value;
 }
 
@@ -119,9 +124,14 @@ void i2c_smbus_write(unsigned int addr, unsigned char reg, unsigned int size, un
 
 void i2c_smbus_read(unsigned int addr, unsigned char reg, unsigned int size, unsigned char *value) {
 	unsigned int i;
-	i2c_start_read(addr);
+	
+	i2c_start_write(addr);
 	i2c_write(reg);
+	i2c_stop();
+	
+	i2c_start_read(addr);
 	for (i = 0; i < size; ++i)
 		value[i] = i2c_read(0);
+	i2c_read(1); // <-- хз правильно или нет, но читает только с этим
 	i2c_stop();
 }

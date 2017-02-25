@@ -28,6 +28,7 @@ void _start() {
 	
 	i2c_init();
 	
+	dump_all_regs();
 	test_vibra();
 	test_backlight();
 	test_pickoff_sound();
@@ -41,6 +42,20 @@ void mdelay(unsigned int popugays) {
 	popugays <<= 6;
 	while (popugays--)
 		serve_watchdog();
+}
+
+void dump_all_regs() {
+	int i;
+	
+	pmb8876_serial_print("Dump all Dialog registers...\n");
+	for (i = 0; i <= 0xFF; ++i) {
+		unsigned int v = i2c_smbus_read_byte(D1601AA_I2C_ADDR, i);
+		hexdump(&i, 1);
+		pmb8876_serial_print(": ");
+		hexdump(&v, 1);
+		pmb8876_serial_print("\n");
+		serve_watchdog();
+	}
 }
 
 void test_vibra() {
