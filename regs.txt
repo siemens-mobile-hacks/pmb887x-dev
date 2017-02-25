@@ -281,9 +281,15 @@ USART0_WHBCON		0xF1000050
 	CLRPE			8	1	/* Clear parity error flag */
 	SETREN			5	1	/* Set receiver enable bit */
 	CLRREN			4	1	/* Clear receiver enable bit */
-USART0_FCSTAT		0xF1000068
+USART0_WHBABCON		0xF1000054
+USART0_WHBABSTAT	0xF1000058
+USART0_FCCON		0xF100005C
+USART0_FCSTAT		0xF1000060
 	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
 	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
+USART0_IMSC			0xF1000064
+USART0_RIS			0xF1000068
+USART0_MIS			0xF100006C
 USART0_ICR			0xF1000070
 	TMO				7	1	/* RX timeout interrupt mask */
 	CTS				6	1	/* CTS interrupt mask */
@@ -302,6 +308,7 @@ USART0_ISR			0xF1000074
 	RX				2	1	/* Receive interrupt mask */
 	TB				1	1	/* Transmit buffer interrupt mask */
 	TX				0	1	/* Transmit interrupt mask */
+USART0_TMO			0xF100007C
 
 # USART1
 USART1_CLC			0xF1800000
@@ -329,6 +336,7 @@ USART1_CON			0xF1800010
 	PEN				5	1	/* Parity check enable (0: ignore; 1: check) */
 	REN				4	1	/* Receiver bit enable (0: disable; 1: enable) */
 	STP				3	1	/* Number of stop bits (0: 1 stop bit; 1: two stop bits) */
+	M				0	3	/* ASC Mode Control. */
 USART1_BG			0xF1800014
 USART1_FDV			0xF1800018
 USART1_PMW			0xF180001C
@@ -374,27 +382,34 @@ USART1_WHBCON		0xF1800050
 	CLRPE			8	1	/* Clear parity error flag */
 	SETREN			5	1	/* Set receiver enable bit */
 	CLRREN			4	1	/* Clear receiver enable bit */
-USART1_FCSTAT		0xF1800068
+USART1_WHBABCON		0xF1800054
+USART1_WHBABSTAT	0xF1800058
+USART1_FCCON		0xF180005C
+USART1_FCSTAT		0xF1800060
 	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
 	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
+USART1_IMSC			0xF1800064
+USART1_RIS			0xF1800068
+USART1_MIS			0xF180006C
 USART1_ICR			0xF1800070
-	TMO			7	1	/* RX timeout interrupt mask */
-	CTS			6	1	/* CTS interrupt mask */
-	ABDET		5	1	/* Autobaud detected interrupt mask */
-	ABSTART		4	1	/* Autobaud start interrupt mask */
-	ERR			3	1	/* Error interrupt mask */
-	RX			2	1	/* Receive interrupt mask */
-	TB			1	1	/* Transmit buffer interrupt mask */
-	TX			0	1	/* Transmit interrupt mask */
+	TMO				7	1	/* RX timeout interrupt mask */
+	CTS				6	1	/* CTS interrupt mask */
+	ABDET			5	1	/* Autobaud detected interrupt mask */
+	ABSTART			4	1	/* Autobaud start interrupt mask */
+	ERR				3	1	/* Error interrupt mask */
+	RX				2	1	/* Receive interrupt mask */
+	TB				1	1	/* Transmit buffer interrupt mask */
+	TX				0	1	/* Transmit interrupt mask */
 USART1_ISR			0xF1800074
-	TMO			7	1	/* RX timeout interrupt mask */
-	CTS			6	1	/* CTS interrupt mask */
-	ABDET		5	1	/* Autobaud detected interrupt mask */
-	ABSTART		4	1	/* Autobaud start interrupt mask */
-	ERR			3	1	/* Error interrupt mask */
-	RX			2	1	/* Receive interrupt mask */
-	TB			1	1	/* Transmit buffer interrupt mask */
-	TX			0	1	/* Transmit interrupt mask */
+	TMO				7	1	/* RX timeout interrupt mask */
+	CTS				6	1	/* CTS interrupt mask */
+	ABDET			5	1	/* Autobaud detected interrupt mask */
+	ABSTART			4	1	/* Autobaud start interrupt mask */
+	ERR				3	1	/* Error interrupt mask */
+	RX				2	1	/* Receive interrupt mask */
+	TB				1	1	/* Transmit buffer interrupt mask */
+	TX				0	1	/* Transmit interrupt mask */
+USART1_TMO			0xF180007C
 
 # SSC0
 SSC0_CLC		0xF1100000
@@ -891,7 +906,7 @@ PCL_39						0xF43000BC
 PCL_40						0xF43000C0
 PCL_41						0xF43000C4
 PCL_42						0xF43000C8
-GPIO_TOUT0_LED_FL_OFF		0xF43000CC
+GPIO_LED_FL_OFF				0xF43000CC
 GPIO_TOUT1_PM_CHARGE_UC		0xF43000D0 # вкл/выкл зарядку аккумулятора
 PCL_45						0xF43000D4
 PCL_46						0xF43000D8
@@ -911,7 +926,7 @@ GPIO_RF_CLK					0xF430010C
 PCL_60						0xF4300110
 PCL_61						0xF4300114
 GPIO_DSPOUT1_PM_WADOG		0xF4300118 # внешний watchdog
-GPIO_DSPIN1_LED_FL_EN		0xF430011C
+GPIO_LED_FL_EN				0xF430011C
 PCL_64						0xF4300120
 PCL_65						0xF4300124
 PCL_66						0xF4300128
