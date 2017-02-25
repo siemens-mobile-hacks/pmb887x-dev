@@ -2,42 +2,12 @@
 #include <gpio.h>
 #include "i2c.h"
 
+// from: https://github.com/felias-fogg/SoftI2CMaster
+
 /* I2C */
 void i2c_init() {
 	REG(GPIO_I2C_SCL) = PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	OPENDRAIN,	PULLUP,		NO_ENAQ);
 	REG(GPIO_I2C_SDA) = PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	OPENDRAIN,	PULLUP,		NO_ENAQ);
-}
-
-static void i2c_scl_lo() {
-	unsigned int reg = REG(GPIO_I2C_SCL);
-	pmb8876_gpio_reg_set_pdpu(reg, PMB8876_GPIO_PDPU_NONE);
-	pmb8876_gpio_reg_set_data(reg, 0);
-	pmb8876_gpio_reg_set_dir(reg, PMB8876_GPIO_DIR_OUT);
-	REG(GPIO_I2C_SCL) = reg;
-}
-
-static void i2c_scl_hi() {
-	unsigned int reg = REG(GPIO_I2C_SCL);
-	pmb8876_gpio_reg_set_pdpu(reg, PMB8876_GPIO_PDPU_PULLUP);
-	pmb8876_gpio_reg_set_data(reg, 0);
-	pmb8876_gpio_reg_set_dir(reg, PMB8876_GPIO_DIR_IN);
-	REG(GPIO_I2C_SCL) = reg;
-}
-
-static void i2c_sda_lo() {
-	unsigned int reg = REG(GPIO_I2C_SDA);
-	pmb8876_gpio_reg_set_pdpu(reg, PMB8876_GPIO_PDPU_NONE);
-	pmb8876_gpio_reg_set_data(reg, 0);
-	pmb8876_gpio_reg_set_dir(reg, PMB8876_GPIO_DIR_OUT);
-	REG(GPIO_I2C_SDA) = reg;
-}
-
-static void i2c_sda_hi() {
-	unsigned int reg = REG(GPIO_I2C_SDA);
-	pmb8876_gpio_reg_set_pdpu(reg, PMB8876_GPIO_PDPU_PULLUP);
-	pmb8876_gpio_reg_set_data(reg, 0);
-	pmb8876_gpio_reg_set_dir(reg, PMB8876_GPIO_DIR_IN);
-	REG(GPIO_I2C_SDA) = reg;
 }
 
 void i2c_start_read(unsigned char addr) {
@@ -87,7 +57,7 @@ void i2c_writebit(unsigned int c) {
 	if (c > 0)
 		i2c_sda_lo();
 	
-    i2c_delay();
+	i2c_delay();
 }
 
 unsigned int i2c_readbit() {

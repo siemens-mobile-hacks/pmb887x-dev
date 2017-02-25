@@ -17,6 +17,22 @@ static inline void i2c_delay() {
 	asm volatile("NOP"); // Хватает o_O
 }
 
+static inline void i2c_scl_lo() {
+	REG(GPIO_I2C_SCL) = PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	OPENDRAIN,	NONE,	NO_ENAQ);
+}
+
+static inline void i2c_scl_hi() {
+	REG(GPIO_I2C_SCL) = PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	IN,		LOW,	OPENDRAIN,	PULLUP,	NO_ENAQ);
+}
+
+static inline void i2c_sda_lo() {
+	REG(GPIO_I2C_SDA) = PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	OPENDRAIN,	NONE,	NO_ENAQ);
+}
+
+static inline void i2c_sda_hi() {
+	REG(GPIO_I2C_SDA) = PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	IN,		LOW,	OPENDRAIN,	PULLUP,	NO_ENAQ);
+}
+
 static void i2c_scl_lo();
 static void i2c_scl_hi();
 static void i2c_sda_lo();
