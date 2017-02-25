@@ -97,10 +97,31 @@ unsigned char i2c_read(unsigned char ack) {
     return res;
 }
 
-/* I2C SMBUS*/
-int i2c_smbus_write_byte(unsigned int addr, unsigned char reg, unsigned char value) {
+/* I2C SMBUS */
+void i2c_smbus_write_byte(unsigned int addr, unsigned char reg, unsigned char value) {
+	i2c_smbus_write(addr, reg, 1, &value);
+}
+
+unsigned char i2c_smbus_read_byte(unsigned int addr, unsigned char reg) {
+	unsigned char value = 0;
+	i2c_smbus_read(addr, reg, 1, &value);
+	return value;
+}
+
+void i2c_smbus_write(unsigned int addr, unsigned char reg, unsigned int size, unsigned char *value) {
+	unsigned int i;
 	i2c_start_write(addr);
 	i2c_write(reg);
-	i2c_write(value);
+	for (i = 0; i < size; ++i)
+		i2c_write(value[i]);
+	i2c_stop();
+}
+
+void i2c_smbus_read(unsigned int addr, unsigned char reg, unsigned int size, unsigned char *value) {
+	unsigned int i;
+	i2c_start_read(addr);
+	i2c_write(reg);
+	for (i = 0; i < size; ++i)
+		value[i] = i2c_read(0);
 	i2c_stop();
 }

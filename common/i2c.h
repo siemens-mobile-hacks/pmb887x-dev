@@ -40,4 +40,7 @@ static void i2c_sda_hi();
 static void i2c_delay();
 
 /* SMBUS */
-int i2c_smbus_write_byte(unsigned int addr, unsigned char reg, unsigned char value);
+void i2c_smbus_write_byte(unsigned int addr, unsigned char reg, unsigned char value);
+unsigned char i2c_smbus_read_byte(unsigned int addr, unsigned char reg);
+void i2c_smbus_write(unsigned int addr, unsigned char reg, unsigned int size, unsigned char *value);
+void i2c_smbus_read(unsigned int addr, unsigned char reg, unsigned int size, unsigned char *value);

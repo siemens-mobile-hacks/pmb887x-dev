@@ -71,7 +71,11 @@ void test_pickoff_sound() {
 void test_backlight() {
 	int ret, lcd_control = 0, i;
 	
-	lcd_control |= D1601AA_LED2_EN; // Даём питалово
+	// Отключаем вспышку, что бы после подачи VBOOT (D1601AA_LED2_EN) она не включилась
+	REG(GPIO_LED_FL_EN) = PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	PUSHPULL,	NONE,	NO_ENAQ);
+	
+	// Даём питалово
+	lcd_control |= D1601AA_LED2_EN;
 	
 	// ================= DISPLAY =================
 	pmb8876_serial_print("Testing i2c LCD backlight...\n");
