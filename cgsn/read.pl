@@ -31,7 +31,7 @@ sub main {
 		"dump"			=> \$dump, 
 	});
 	
-	if ($err || $help || !$file) {
+	if ($err || $help || !$size || !($file || $dump)) {
 		print "$err\n";
 		print join("\n", (
 			'Common options:',
