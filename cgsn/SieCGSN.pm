@@ -268,7 +268,7 @@ sub readMem($$$) {
 	my $max_size = 128;
 	while ($size > 0) {
 		my $chunk = $size < $max_size ? $size : $max_size;
-		my $res = send_at(sprintf("AT+CGSN:%08X,%08X\r", $addr, $chunk), 1000);
+		my $res = $self->sendAt(sprintf("AT+CGSN:%08X,%08X\r", $addr, $chunk), 1000);
 		if ($res && $res->{code}) {
 			my $chk = ord(substr($res->{data}, 0, 1));
 			my $data = substr($res->{data}, 1, $chunk);

@@ -91,14 +91,17 @@ sub reg_name {
 	my $value = shift;
 	my $names = get_regs();
 	
-	my $reg_def = "";
+	my $reg_def;
+	my $reg_desc;
 	my $def = "";
 	for my $v (@$names) {
 		if ($v->{addr} == $addr && !$v->{addr_end}) {
 			$reg_def = $v;
+			$reg_desc = $v->{desc} if ($v && @{$v->{desc}});
 			last;
 		} elsif ($v->{addr_end} && $v->{addr} <= $addr && $addr <= $v->{addr_end}) {
 			$reg_def = $v;
+			$reg_desc = $v->{desc} if ($v && @{$v->{desc}});
 		}
 	}
 	
@@ -135,10 +138,10 @@ sub reg_name {
 			push @gpio, "ENAQ=1";
 		}
 		$add = " [".join("; ", @gpio)."]";
-	} elsif ($reg_def) {
+	} elsif ($reg_desc) {
 		my $known = 0;
 		my $values = [];
-		for my $v (@{$reg_def->{desc}}) {
+		for my $v (@{$reg_desc}) {
 			my $mask = ((1 << $v->{mask}) - 1);
 			my $val = ($value >> $v->{shift}) & $mask;
 			$known |= $mask << $v->{shift};

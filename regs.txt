@@ -221,6 +221,9 @@ USART0_CLC			0xF1000000
 	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
 USART0_PISEL		0xF1000004
 USART0_ID			0xF1000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 USART0_CON			0xF1000010
 	CON_R			15	1	/* Baud rate generator run control (0: disable; 1: enable) */
 	LB				14	1	/* Loopback mode (0: disable; 1: enable) */
@@ -322,6 +325,9 @@ USART1_CLC			0xF1800000
 	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
 USART1_PISEL		0xF1800004
 USART1_ID			0xF1800008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 USART1_CON			0xF1800010
 	CON_R			15	1	/* Baud rate generator run control (0: disable; 1: enable) */
 	LB				14	1	/* Loopback mode (0: disable; 1: enable) */
@@ -413,8 +419,14 @@ USART1_TMO			0xF180007C
 
 # SSC0
 SSC0_CLC		0xF1100000
+	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC			8	7
 SSC0_PISEL		0xF1100004
 SSC0_ID			0xF1100008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 SSC0_CON		0xF1100010
 SSC0_BR			0xF1100014
 SSC0_SSOC		0xF1100018
@@ -429,8 +441,14 @@ SSC0_FSTAT		0xF1100038
 
 # SSC2
 SSC2_CLC		0xF1B00000
+	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC			8	7
 SSC2_PISEL		0xF1B00004
 SSC2_ID			0xF1B00008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 SSC2_CON		0xF1B00010
 SSC2_BR			0xF1B00014
 SSC2_SSOC		0xF1B00018
@@ -445,8 +463,14 @@ SSC2_FSTAT		0xF1B00038
 
 # USB
 USB_CLC			0xF2200000
+	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC			8	7
 USB_PISEL		0xF2200004
 USB_ID			0xF2200008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 USB_DCR			0xF2200010
 USB_DSR			0xF2200014
 USB_EPSTL		0xF2200018
@@ -479,8 +503,14 @@ USB_EPIRST3		0xF2200078
 
 # I2C
 I2C_CLC			0xF4800000
+	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC			8	7
 I2C_PISEL		0xF4800004
 I2C_ID			0xF4800008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 I2C_SYSCON		0xF4800010
 I2C_BUSCON		0xF4800014
 I2C_RTB			0xF4800018
@@ -491,8 +521,9 @@ EBU_CLC				0xF0000000
 	DISS		1	1	/* EBU disable status bit */
 	DISR		0	1	/* EBU module */
 EBU_ID				0xF0000008
-	MOD			8	24	/* EBU Module Identification Number. */
-	REV			0	8	/* EBU Module Revision Number. */
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 EBU_CON				0xF0000010
 	BUSCLK		24	2	/* Clock generation */
 	GLOBALCS	16	8	/* Global chip select signal */
@@ -829,7 +860,14 @@ EBU_EMUOVL			0xF0000178
 EBU_USERCON			0xF0000190
 
 # SCU
-SCU_BASE			0xf4400000
+SCU_CLC				0xf4400000
+	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC			8	7
+SCU_ID				0xf4400008
+	MOD_NUMBER		16	16	/* SCU Module Identification Number. */
+	MOD_32B			8	8	/* Indicates a 32-bit ID register. */
+	REV_NUMBER		0	8	/* SCU Module Revision Number. */
 SCU_RST_CTRL_ST		0xF4400018
 SCU_WDTCON0			0xf4400024
 	WDTREL		16	16	/* Reload Value for the Watchdog Timer. */
@@ -843,17 +881,19 @@ SCU_WDTCON1			0xf4400028
 	WDTIR		2	1	/* Watchdog Timer Input Frequency Request Control Bit. */
 SCU_PLLCLC			0xF4400044
 SCU_CHIPID			0xf4400060
-	MOD_NUMBER		16	16	/* SCU Module Identification Number. */
-	MOD_32B			8	8	/* Indicates a 32-bit ID register. */
-	REV_NUMBER		0	8	/* SCU Module Revision Number. */
 SCU_RTCIF			0xF4400064
-SCU_CHIPID			0xf4400060
 SCU_ROMAMCR			0xf440007C
 SCU_DMA				0xF4400084
 
 # PCL
 PCL_CLC						0xf4300000
+	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC			8	7
 PCL_ID						0xf4300008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 MON_CR1						0xf4300010
 MON_CR2						0xf4300014
 MON_CR3						0xf4300018
@@ -992,8 +1032,8 @@ GPTU0_CLC		0xF4900000
 	DISR		0	1	/* GPTU Disable Request Bit */
 GPTU0_ID		0xF4900008
 	MOD_NUMBER		16	16	/* GPTU Module Identification Number. */
-	MOD_32B		8	8	/* Indicates 32-bit Module GPTUx_ID format */
-	MOD_REV		0	8	/* GPTU Module Revision Number. */
+	MOD_32B			8	8	/* Indicates 32-bit Module GPTUx_ID format */
+	MOD_REV			0	8	/* GPTU Module Revision Number. */
 GPTU0_T01IRS		0xF4900010
 	T01IN1		30	2	/* T0 and T1 Global Input CNT1 Selection */
 	T01IN0		28	2	/* T0 and T1 Global Input CNT0 Selection */
@@ -1247,8 +1287,8 @@ GPTU1_CLC		0xF4A00000
 	DISR		0	1	/* GPTU Disable Request Bit */
 GPTU1_ID		0xF4A00008
 	MOD_NUMBER		16	16	/* GPTU Module Identification Number. */
-	MOD_32B		8	8	/* Indicates 32-bit Module GPTUx_ID format */
-	MOD_REV		0	8	/* GPTU Module Revision Number. */
+	MOD_32B			8	8	/* Indicates 32-bit Module GPTUx_ID format */
+	MOD_REV			0	8	/* GPTU Module Revision Number. */
 GPTU1_T01IRS		0xF4A00010
 	T01IN1		30	2	/* T0 and T1 Global Input CNT1 Selection */
 	T01IN0		28	2	/* T0 and T1 Global Input CNT0 Selection */
@@ -1494,13 +1534,17 @@ GPTU1_SRC0		0xF4A000FC
 	SRPN		0	8	/* Service request node priority number */
 
 # IRQ
+IRQ_ID			0xF2800000
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 FIQ_ACK				0xF2800008 # сюда пишется 1 в конце fiq_handler
 IRQ_ACK				0xF2800014 # сюда пишется 1 в конце irq_handler
 FIQ_CURRENT_NUM		0xF2800018 # тут текущий номер интеррапта в fiq_handler
 IRQ_CURRENT_NUM		0xF280001C # тут текущий номер интеррапта в irq_handler
 
 # Регистры приоритетов для каждого интеррапта
-IRQS_PRIO		0xF2800030-0xF28000AB
+IRQS_PRIO		0xF2800030-0xF28002D4
 	PRIORITY	0	8
 	FIQ			8	1
 
@@ -1674,8 +1718,13 @@ IRQ_158			0xF28002A8
 
 # CAPCOM0
 CAPCOM0_CLC					0xF4000000
+	DISS			1	1	/* STM Status Bit. */
+	DISR			0	1	/* STM Request Bit. */
 CAPCOM0_CCPISEL				0xF4000004
-CAPCOM0_CCID				0xF4000008
+CAPCOM0_ID					0xF4000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 CAPCOM0_ZERO1				0xF400000C
 CAPCOM0_T01CON				0xF4000010
 CAPCOM0_CCM0				0xF4000014
@@ -1740,8 +1789,13 @@ CAPCOM0_T0IC				0xF40000FC
 
 # CAPCOM1
 CAPCOM1_CLC					0xF4000000
-CAPCOM1_CCPISEL				0xF4000004
-CAPCOM1_CCID				0xF4000008
+	DISS			1	1	/* STM Status Bit. */
+	DISR			0	1	/* STM Request Bit. */
+CAPCOM1_PISEL				0xF4000004
+CAPCOM1_ID					0xF4000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 CAPCOM1_ZERO1				0xF400000C
 CAPCOM1_T01CON				0xF4000010
 CAPCOM1_CCM0				0xF4000014
