@@ -1,5 +1,16 @@
 #include "pmb8876.h"
 
+
+struct watchdog {
+	unsigned int addr;
+	unsigned int time;
+	unsigned int cnt;
+} __g_watchdog;
+
+__attribute__ ((weak))
+unsigned int max_wd_time = 1;
+
+
 void pmb8876_serial_set_speed(unsigned int speed) {
 	REG(PMB8876_USART0_BG) = ((speed >> 16));
 	REG(PMB8876_USART0_FDV) = ((speed << 16) >> 16);
@@ -63,7 +74,7 @@ void init_sdram() {
 	REG(EBU_BUSCON4) = 0x80522600;
 }
 
-void init_watchdog() {
+static void _init_watchdog(int noinit) {
 	unsigned int r0 = (REG(SCU_CHIPID) >> 8) & 0xFF;
 	
 	unsigned int r1 = GPIO_DSPOUT1_PM_WADOG;
@@ -76,18 +87,33 @@ void init_watchdog() {
 	unsigned int r3 = r2 - 0x4;
 	unsigned int r4 = r3 - 0x0c;
 	
-	REG(r2) = 1;
-	REG(r3) = 0x10;
-	REG(r1) = 0x500;
-	REG(r4) = 0x4000 | 0x510;
+	if( !noinit ) {
+	    REG(r2) = 1;
+	    REG(r3) = 0x10;
+	    REG(r1) = 0x500;
+	    REG(r4) = 0x4000 | 0x510;
+	}
 	
-	__g_watchdog.time = REG(STM_4);
+	__g_watchdog.time = 0;
 	__g_watchdog.addr = r1;
+	__g_watchdog.cnt  = 0;
 	
-	switch_watchdog();
+	if( !noinit )
+	    switch_watchdog();
+}
+
+void init_watchdog() {
+    init_watchdog(0);
+}
+
+void init_watchdog_noinit() {
+    init_watchdog(1);
 }
 
 void switch_watchdog() {
+	if( __g_watchdog.cnt > max_wd_time )
+		return;
+	
 	unsigned int r2 = REG(__g_watchdog.addr);
 	unsigned int r0 = r2 << 22;
 	r0 = r0 >> 31;
@@ -96,8 +122,9 @@ void switch_watchdog() {
 	r0 = r0 << 9;
 	
 	r2 = r2 & ~0x200;
-	
 	REG(__g_watchdog.addr) = r0 | r2;
+	
+	__g_watchdog.cnt++;
 }
 
 void serve_watchdog() {
@@ -116,6 +143,15 @@ void hexdump(void *d, unsigned int len) {
 		pmb8876_serial_putc(to_hex(data[i] & 0xF));
 		pmb8876_serial_putc(' ');
 	}
+}
+
+
+void *memset(void *a, int c, int size) {
+    char *s = (char *)a;
+    while(size--)
+	*s++ = c;
+    
+    return s;
 }
 
 void *memcpy(void *a, const void *b, unsigned int size) {

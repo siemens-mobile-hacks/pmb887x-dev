@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef __PMB8876_H__
+#define __PMB8876_H__
 
 #include "pmb8876_regs.h"
 #include "gpio.h"
@@ -65,10 +67,6 @@ enum {
 
 extern unsigned int _cpu_vectors;
 
-struct watchdog {
-	unsigned int addr;
-	unsigned int time;
-} __g_watchdog;
 
 enum {
 	UART_SPEED_57600 = 0x001901d8, 
@@ -93,6 +91,7 @@ unsigned int get_cpsr();
 unsigned int set_cpsr(volatile unsigned int r);
 
 // watchdog
+void init_watchdog_noinit();
 void init_watchdog();
 void switch_watchdog();
 void serve_watchdog();
@@ -118,3 +117,5 @@ const char *get_cpu_mode(unsigned int cpsr);
 unsigned int __udivmodsi4(unsigned int num, unsigned int den, unsigned int * rem_p);
 signed int __aeabi_idiv(signed int num, signed int den);
 unsigned int __aeabi_uidiv(unsigned int num, unsigned int den);
+
+#endif /* __PMB8876_H__ */
