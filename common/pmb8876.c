@@ -8,7 +8,7 @@ struct watchdog {
 } __g_watchdog;
 
 __attribute__ ((weak))
-unsigned int max_wd_time = 1;
+unsigned int max_wd_time = 0;
 
 
 void pmb8876_serial_set_speed(unsigned int speed) {
@@ -111,7 +111,7 @@ void init_watchdog_noinit() {
 }
 
 void switch_watchdog() {
-	if( __g_watchdog.cnt > max_wd_time )
+	if( max_wd_time && __g_watchdog.cnt > max_wd_time )
 		return;
 	
 	unsigned int r2 = REG(__g_watchdog.addr);
