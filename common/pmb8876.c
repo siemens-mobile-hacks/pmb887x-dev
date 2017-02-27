@@ -103,11 +103,11 @@ static void _init_watchdog(int noinit) {
 }
 
 void init_watchdog() {
-    init_watchdog(0);
+    _init_watchdog(0);
 }
 
 void init_watchdog_noinit() {
-    init_watchdog(1);
+    _init_watchdog(1);
 }
 
 void switch_watchdog() {
