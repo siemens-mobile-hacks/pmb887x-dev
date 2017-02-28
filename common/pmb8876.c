@@ -94,7 +94,7 @@ static void _init_watchdog(int noinit) {
 	    REG(r4) = 0x4000 | 0x510;
 	}
 	
-	__g_watchdog.time = 0;
+	__g_watchdog.time = noinit? 0 : REG(STM_4);
 	__g_watchdog.addr = r1;
 	__g_watchdog.cnt  = 0;
 	
