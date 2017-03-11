@@ -30,6 +30,23 @@ PLL_CON2	0xF45000AC
 PLL_STAT	0xF45000B0
 PLL_ICR		0xF45000CC
 
+# I2C
+I2C_CLC			0xF7600000
+	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC			8	7
+I2C_TX_LEN		0xF7600034
+	LEN			0	8
+I2C_RX_LEN		0xF760002C
+	LEN			0	8
+I2C_FCSTAT		0xF7600080
+I2C_TX_FIFO		0xF7608000
+	READ		0	1
+	ADDR		1	7
+	REG			8	8
+	VAL			16	8
+I2C_RX_FIFO		0xF760C000
+
 # GSM_TPU
 GSM_TPU_CLC		0xF6400000
 	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
@@ -40,6 +57,7 @@ GSM_TPU_CON		0xF64000F8
 	RESET		14	1
 
 DMA_CLC		0xF7100000
+	RMC				8	7
 	FSOE			5	1
 	SBWE			4	1
 	SPEN			2	1
@@ -287,6 +305,10 @@ USART0_WHBCON		0xF1000050
 USART0_WHBABCON		0xF1000054
 USART0_WHBABSTAT	0xF1000058
 USART0_FCCON		0xF100005C
+	RTS_TRIGGER		8	6	/* RTS receive FIFO trigger level */
+	RTS				4	1	/* RTS control bit */
+	RTSEN			1	1	/* CTS enable (0: disable; 1: enable) */
+	CTSEN			0	1	/* RTS enbled (0: disable; 1: enable) */
 USART0_FCSTAT		0xF1000060
 	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
 	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
@@ -391,6 +413,10 @@ USART1_WHBCON		0xF1800050
 USART1_WHBABCON		0xF1800054
 USART1_WHBABSTAT	0xF1800058
 USART1_FCCON		0xF180005C
+	RTS_TRIGGER		8	6	/* RTS receive FIFO trigger level */
+	RTS				4	1	/* RTS control bit */
+	RTSEN			1	1	/* CTS enable (0: disable; 1: enable) */
+	CTSEN			0	1	/* RTS enbled (0: disable; 1: enable) */
 USART1_FCSTAT		0xF1800060
 	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
 	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
@@ -860,29 +886,38 @@ EBU_EMUOVL			0xF0000178
 EBU_USERCON			0xF0000190
 
 # SCU
-SCU_CLC				0xf4400000
+SCU_CLC				0xF4400000
 	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
 	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
 	RMC			8	7
-SCU_ID				0xf4400008
+SCU_ID				0xF4400008
 	MOD_NUMBER		16	16	/* SCU Module Identification Number. */
 	MOD_32B			8	8	/* Indicates a 32-bit ID register. */
 	REV_NUMBER		0	8	/* SCU Module Revision Number. */
+SCU_RST_UNK			0xF4400010
+	BOARD_TYPE		16	3
+	BOOT_TYPE		28	4
+		0b0001	BOOT_TYPE_2_FW
+		0b0100	BOOT_TYPE_1_FW
+		0b1000	BOOT_TYPE_3_UART
 SCU_RST_CTRL_ST		0xF4400018
-SCU_WDTCON0			0xf4400024
+
+SCU_WDTCON0			0xF4400024
 	WDTREL		16	16	/* Reload Value for the Watchdog Timer. */
 	WDTPW		8	8	/* User-Definable Password Field for Access to WDT_CON0. */
 	WDTHPW1		4	4	/* Hardware Password 1. */
 	WDTHPW0		2	2	/* Hardware Password 0. */
 	WDTLCK		1	1	/* Lock bit to Control Access to WDT_CON0. */
 	ENDINIT		0	1	/* End-of-Initialization Control Bit. */
-SCU_WDTCON1			0xf4400028
+SCU_WDTCON1			0xF4400028
 	WDTDR		3	1	/* Watchdog Timer Disable Request Control Bit. */
 	WDTIR		2	1	/* Watchdog Timer Input Frequency Request Control Bit. */
 SCU_PLLCLC			0xF4400044
-SCU_CHIPID			0xf4400060
+SCU_CHIPID			0xF4400060
 SCU_RTCIF			0xF4400064
 SCU_ROMAMCR			0xf440007C
+SCU_BOOT_FLAG		0xF4400078
+	BOOT_OK			0	1
 SCU_DMA				0xF4400084
 
 # PCL
@@ -1541,8 +1576,17 @@ IRQ_ID			0xF2800000
 FIQ_ACK				0xF2800008 # сюда пишется 1 в конце fiq_handler
 IRQ_ACK				0xF2800014 # сюда пишется 1 в конце irq_handler
 FIQ_CURRENT_NUM		0xF2800018 # тут текущий номер интеррапта в fiq_handler
+	NUM				0	8
 IRQ_CURRENT_NUM		0xF280001C # тут текущий номер интеррапта в irq_handler
-
+	NUM				0	8
+		0x1A		USART1_TX
+		0x1B		USART1_TBUF
+		0x1C		USART1_RX
+		0x1D		USART1_ERR
+		0x1E		USART1_CTS
+		0x1F		USART1_ABDET
+		0x20		USART1_ABSTART
+		0x21		USART1_TMO
 # Регистры приоритетов для каждого интеррапта
 IRQS_PRIO		0xF2800030-0xF28002D4
 	PRIORITY	0	8
@@ -1577,14 +1621,17 @@ IRQ_022			0xF2800088
 IRQ_023			0xF280008C
 IRQ_024			0xF2800090
 IRQ_025			0xF2800094
-IRQ_026			0xF2800098
-IRQ_027			0xF280009C
-IRQ_028			0xF28000A0
-IRQ_029			0xF28000A4
-IRQ_030			0xF28000A8
-IRQ_031			0xF28000AC
-IRQ_032			0xF28000B0
-IRQ_033			0xF28000B4
+
+# USART1
+IRQ_026_USART1_TX			0xF2800098
+IRQ_027_USART1_TBUF			0xF280009C
+IRQ_028_USART1_RX			0xF28000A0
+IRQ_029_USART1_ERR			0xF28000A4
+IRQ_030_USART1_CTS			0xF28000A8
+IRQ_031_USART1_ABDET		0xF28000AC
+IRQ_032_USART1_ABSTART		0xF28000B0
+IRQ_033_USART1_TMO			0xF28000B4
+
 IRQ_034			0xF28000B8
 IRQ_035			0xF28000BC
 IRQ_036			0xF28000C0
@@ -1675,8 +1722,8 @@ IRQ_115			0xF28001FC
 IRQ_116			0xF2800200
 IRQ_117			0xF2800204
 IRQ_118			0xF2800208
-IRQ_119			0xF280020C
-IRQ_120			0xF2800210
+IRQ_119_GSM_TPU0		0xF280020C
+IRQ_120_GSM_TPU1		0xF2800210
 IRQ_121			0xF2800214
 IRQ_122			0xF2800218
 IRQ_123			0xF280021C
