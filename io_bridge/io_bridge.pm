@@ -26,27 +26,28 @@ sub boot_module_init {
 		seek F, 0, 0;
 		read(F, $buf, 128);
 		
+		my $irq = -1;
 		my $cmd = substr($buf, 0, 1);
 		if ($cmd eq "R") {
 			my $addr = unpack("V", substr($buf, 1, 4));
 			my $from = unpack("V", substr($buf, 5, 4));
-			my $data = cmd_read($port, $addr, 1);
+			my $data = cmd_read($port, $addr, 1, sub {
+				$irq = shift;
+			});
+			
+			my $ack = $irq != -1 ? '+' : '!';
 			
 			reset_cmd();
-			print F "!".$data; # OK + data
-			
-			if ($addr == 0xF4300118 || $addr == 0xF4B00010) {
-				cmd_ping($port);
-				next;
-			}
+			print F $ack.$data; # OK + data
+			print F chr($irq) if ($irq != -1); # IRQ_N
 			
 			my $vv = unpack("V", $data);
-			printf("READ from %08X (%08X)%s (from %08X)\n", $addr, $vv, reg_name($addr, $vv), $from);
 			
-			$xuj = 1;
-			if ($addr >= 0xf4400000 && $addr <= 0xf440FFFF) {
-				$xuj = 0;
+			if ($addr != 0xF4300118 && $addr != 0xF4B00010 && $addr != 0xF64000F8) {
+				printf("READ from %08X (%08X)%s (from %08X)\n", $addr, $vv, reg_name($addr, $vv), $from);
 			}
+			
+			$xuj = 0;
 		} elsif ($cmd eq "W") {
 			reset_cmd();
 			my $addr = unpack("V", substr($buf, 1, 4));
@@ -69,8 +70,8 @@ sub boot_module_init {
 				$valid = 0;
 			}
 			
-			if ($addr == 0xF1000000 || $addr == 0xF1000010 || $addr == 0xF1000050 || $addr == 0xF1000014 || $addr == 0xF1000018) {
-				# USART0_CCL || USART0_CON || USART0_WHBCON
+			if (($addr & 0xFFFFF000) == 0xF1000000) {
+				# Запрещаем ломать нам USART0
 				$valid = 0;
 			}
 			
@@ -81,29 +82,42 @@ sub boot_module_init {
 			
 			if ($addr == 0xF280020C) {
 				# 0x77 irq
-				$valid = 0;
+		#		$valid = 0;
 			}
 			
 			if ($addr == 0xF280029C) {
 				# 0x9B irq
+		#		$valid = 0;
+			}
+			
+			if ($addr == 0xF4300118) {
+				# PM_WADOG
 				$valid = 0;
 			}
 			
-			if ($addr == 0xF4300118 || $addr == 0xF4B00010) {
-				cmd_ping($port);
-				print F "!"; # OK
-				next;
+			if ($addr != 0xF4300118 && $addr != 0xF4B00010 && $addr != 0xF64000F8) {
+				printf("WRITE %08X to %08X%s (from %08X)%s\n", $value, $addr, reg_name($addr, $value), $from, $valid ? "" : " | SKIP!!!!");
 			}
 			
-#	if (offset == 0xf4400024 || offset == 0xf4400028 || offset == 0xf45000a8 || (offset >= 0xf6400000 && offset <= 0xf640ffff))
-#		return;
+			if ($valid) {
+				cmd_write($port, $addr, $value, sub {
+					$irq = shift;
+				});
+			} else {
+				cmd_ping($port, sub {
+					$irq = shift;
+				});
+			}
 			
-			printf("WRITE %08X to %08X%s (from %08X)%s\n", $value, $addr, reg_name($addr, $value), $from, $valid ? "" : " | SKIP!!!!");
-			cmd_write($port, $addr, $value) if ($valid);
+			my $ack = $irq != -1 ? '+' : '!';
+			print F $ack; # OK
+			print F chr($irq) if ($irq != -1); # IRQ_N
 			
-			print F "!"; # OK
-		} else {
-			cmd_ping($port);
+			$xuj = 0;
+		} elsif ($xuj) {
+			cmd_ping($port, sub {
+				$irq = shift;
+			});
 		}
 		
 #		cmd_ping($port);
@@ -111,9 +125,4 @@ sub boot_module_init {
 #		printf("%08X\n", cmd_read($port, 0x80000));
 	}
 	close F;
-	
-	my $c;
-	while (($c = readb($port)) >= 0) {
-		print chr($c);
-	}
 }

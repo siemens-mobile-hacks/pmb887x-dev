@@ -2,64 +2,18 @@
 .align 4
 .extern _start
 
-@ all access?
-@ MRS		R2, CPSR
-@ MRS		R1, CPSR
-@ ORR		R1, R1,#0xC0
-@ MSR		CPSR_c, R1
-@ MOV		R0, #0xFFFFFFFF
-@ MCR		p15, 0, R0, c3, c0 
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ NOP
-@ MSR	   CPSR_c,R2
-
-@ Init SP
-@ MSR     CPSR_c, #0xDB
-@ LDR     SP, sp_addr_undef_mode
-
-@ MSR     CPSR_c, #0xD7
-@ LDR     SP, sp_addr_abt_mode
-
-@ MSR     CPSR_c, #0xD1
-@ LDR     SP, sp_addr_fiq_mode
-
-MSR     CPSR_c, #0xD2
-LDR     SP, sp_addr_irq_mode
-
-@ MSR     CPSR_c, #0xD3
-@ LDR     SP, sp_addr_svc_mode
-
-MSR     CPSR_c, #0xDF
-LDR     SP, sp_addr_sys_mode
+ldr sp, =sp_addr_sys_mode
+mrs r0, cpsr
+bic r1, r0, #0x1f
+orr r1, r1, #0x12
+msr cpsr, r1
+ldr sp, =sp_addr_irq_mode
+msr cpsr, r0
 
 b _start
 
-stack_addr: .word 0x81000
-
-sp_addr_sys_mode: .word 0x81400
-sp_addr_irq_mode: .word 0x81800
-
-@ SIEMENS
-@ sp_addr_sys_mode: .word 0x82A4C ; 0x80
-@ sp_addr_und_mode: .word 0x82ACC ; 0x80
-@ sp_addr_abt_mode: .word 0x82B4C ; 0x100
-@ sp_addr_fiq_mode: .word 0x82C4C ; 0x400
-@ sp_addr_irq_mode: .word 0x8304C ; 0x200
-@ sp_addr_svc_mode: .word 0x8324C ; ???
+sp_addr_sys_mode: .word 0x97800
+sp_addr_irq_mode: .word 0x82000
 
 .section .xuj2
 .align 4

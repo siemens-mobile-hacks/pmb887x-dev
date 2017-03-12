@@ -21,6 +21,10 @@ void pmb8876_serial_print(const char *data) {
 		pmb8876_serial_putc(*data++);
 }
 
+char pmb8876_serial_has_byte() {
+	return REG(PMB8876_USART0_FCSTAT) & 4;
+}
+
 void pmb8876_serial_putc(char c) {
 	REG(PMB8876_USART0_TXB) = c;
 	while (!(REG(PMB8876_USART0_FCSTAT) & 2));

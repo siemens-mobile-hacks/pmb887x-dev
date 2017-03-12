@@ -1,6 +1,6 @@
 INCLUDE=-I ../common
-C_SOURCES=../common/pmb8876.c main.c
-OBJECTS=init.o pmb8876.o main.o
+C_SOURCES=../common/pmb8876.c main.c ../common/i2c.c
+OBJECTS=init.o pmb8876.o main.o i2c.o
 BIN_NAME=io
 
 all: clean
@@ -8,7 +8,7 @@ all: clean
 	arm-none-eabi-gcc -e _start -fvisibility=hidden -fdata-sections -ffunction-sections -c -fomit-frame-pointer -mcpu=arm926ej-s -nostartfiles -fno-builtin -nodefaultlibs -nostdlib -O0 -nostdinc $(INCLUDE) $(C_SOURCES)
 	
 # init
-	arm-none-eabi-as -c -mcpu=arm926ej-s ../common/init.S -o init.o
+	arm-none-eabi-gcc -c -mcpu=arm926ej-s ../common/init.S -o init.o
 	
 # link
 	arm-none-eabi-ld --gc-sections $(OBJECTS) -o "$(BIN_NAME).elf" -T "../common/linker.ld"
