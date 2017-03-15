@@ -69,6 +69,7 @@ extern unsigned int _cpu_vectors;
 
 
 enum {
+	UART_SPEED_12000 = 0x003f00f2, 
 	UART_SPEED_57600 = 0x001901d8, 
 	UART_SPEED_115200 = 0x000c01d8, 
 	UART_SPEED_230400 = 0x000501b4, 
@@ -99,6 +100,7 @@ void serve_watchdog();
 // utils
 char to_hex(unsigned char b);
 void hexdump(void *data, unsigned int len);
+void hexnum(void *d, unsigned int len);
 const char *itoa(unsigned int val, unsigned int base);
 void exec_address(unsigned int addr);
 

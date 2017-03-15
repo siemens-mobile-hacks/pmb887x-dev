@@ -139,6 +139,15 @@ void serve_watchdog() {
 	 __g_watchdog.time = now;
 }
 
+void hexnum(void *d, unsigned int len) {
+	unsigned char *data = (unsigned char *) d;
+	unsigned int i;
+	for (i = len; i-->0; ) {
+		pmb8876_serial_putc(to_hex((data[i] >> 4) & 0xF));
+		pmb8876_serial_putc(to_hex(data[i] & 0xF));
+	}
+}
+
 void hexdump(void *d, unsigned int len) {
 	unsigned char *data = (unsigned char *) d;
 	unsigned int i;
@@ -149,12 +158,10 @@ void hexdump(void *d, unsigned int len) {
 	}
 }
 
-
 void *memset(void *a, int c, int size) {
     char *s = (char *)a;
     while(size--)
 	*s++ = c;
-    
     return s;
 }
 
