@@ -24,7 +24,7 @@ void _start() {
 	vectors[14] = loop;
 	vectors[15] = loop;
 	
-	unsigned int addr, v;
+	unsigned int addr, v, irq_ok = 0;
 	for (addr = 0xF0000000; addr <= 0xFFFF0000; addr += 0x100) {
 		v = 0xFFFFFFFF;
 		v = REG(addr);
@@ -102,7 +102,7 @@ void _start() {
 			v = 0xFFFFFFFF;
 			v = REG(addr + i);
 			
-			if (v != 0xFFFFFFFF && v != 0x00000000 && v != 0xDEADDEAD && v != 0x0031C011) {
+			if (v != 0xFFFFFFFF && v != 0x00000000 && v != 0xDEADDEAD) {
 				unsigned int MOD_REV = v & 0xFF;
 				unsigned int MOD_32B = (v >> 8) & 0xFF;
 				unsigned int MOD_NUM = (v >> 16) & 0xFFFF;
@@ -115,6 +115,12 @@ void _start() {
 				unsigned int id_addr = addr + i;
 				
 				if (MOD_32B ? MOD_32B == 0xC0 : i != 0 && id_addr != 0xF0000208 && (addr & 0xFFF00000) != 0xF6400000 && MOD_REV && !(v & 0xFFFF0000)) {
+					if (MOD_32B == 0xC0 && MOD_NUM == 0x31) {
+						if (irq_ok)
+							break;
+						irq_ok = 1;
+					}
+					
 					hexnum(&id_addr, 4);
 					pmb8876_serial_print(": ");
 					
