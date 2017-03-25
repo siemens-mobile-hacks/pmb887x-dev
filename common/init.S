@@ -8,6 +8,10 @@ bic r1, r0, #0x1f
 orr r1, r1, #0x12
 msr cpsr, r1
 ldr sp, =sp_addr_irq_mode
+bic r1, r0, #0x1f
+orr r1, r1, #0x17
+msr cpsr, r1
+ldr sp, =sp_addr_irq_mode
 msr cpsr, r0
 
 b _start

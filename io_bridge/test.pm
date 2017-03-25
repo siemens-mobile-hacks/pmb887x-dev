@@ -8,7 +8,18 @@ require "../common/perl/regs.pm";
 
 sub cmd_write {
 	my ($port, $addr, $value, $irq_handler) = @_;
-	$port->write("W".chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF).
+	return cmd_write_unaligned($port, $addr, 4, $value, $irq_handler);
+}
+
+sub cmd_write_unaligned {
+	my ($port, $addr, $size, $value, $irq_handler) = @_;
+	
+	my $cmd = "W"; # 4
+	$cmd = "O" if ($size == 3);
+	$cmd = "w" if ($size == 2);
+	$cmd = "o" if ($size == 1);
+	
+	$port->write($cmd.chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF).
 		chr(($value >> 24) & 0xFF).chr(($value >> 16) & 0xFF).chr(($value >> 8) & 0xFF).chr($value & 0xFF));
 	my ($count, $ack) = $port->read(1);
 	if ($count != 1) {
@@ -24,7 +35,18 @@ sub cmd_write {
 
 sub cmd_read {
 	my ($port, $addr, $raw, $irq_handler) = @_;
-	$port->write("R".chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF));
+	return cmd_read_unaligned($port, $addr, 4, $raw, $irq_handler);
+}
+
+sub cmd_read_unaligned {
+	my ($port, $addr, $size, $raw, $irq_handler) = @_;
+	
+	my $cmd = "R"; # 4
+	$cmd = "I" if ($size == 3);
+	$cmd = "r" if ($size == 2);
+	$cmd = "i" if ($size == 1);
+	
+	$port->write($cmd.chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF));
 	my ($count, $data) = $port->read(5);
 	if ($count != 5) {
 		printf("%02X\n", ord(substr($data, 0, 1)));

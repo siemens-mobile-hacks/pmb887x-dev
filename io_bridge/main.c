@@ -22,7 +22,10 @@ void _start() {
 	i2c_init();
 	i2c_smbus_write_byte(0x31, 0xE, 0b11);
 	
-	pmb8876_serial_set_speed(UART_SPEED_115200);
+	pmb8876_serial_set_speed(UART_SPEED_460800);
+	while (pmb8876_serial_getc() != 'O');
+	while (pmb8876_serial_getc() != 'K');
+	pmb8876_serial_putc('.');
 	
 	REG(0xF4400078) = 0;
 	
@@ -54,13 +57,21 @@ int command_handler(int irq) {
 			pmb8876_serial_putc(irq ? ',' : '.');
 			
 			return 1;
-		} else if (c == 'R') {
+		} else if (c == 'R' || c == 'r' || c == 'I' || c == 'i') { // 4, 2, 3, 1 bytes
 			serve_watchdog();
 			addr = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
 			if (addr == IRQ_CURRENT_NUM) {
 				value = current_irq;
 			} else {
-				value = REG(addr);
+				if (c == 'R') { // 4
+					value = REG(addr);
+				} else if (c == 'r') { // 2
+					value = REG_SHORT(addr);
+				} else if (c == 'I') { // 3
+					value = REG_SHORT(addr) << 8 | REG_BYTE(addr);
+				} else if (c == 'i') { // 1
+					value = REG_BYTE(addr);
+				}
 			}
 			pmb8876_serial_putc((value >> 0 ) & 0xFF);
 			pmb8876_serial_putc((value >> 8 ) & 0xFF);
@@ -70,12 +81,22 @@ int command_handler(int irq) {
 			serve_watchdog();
 			
 			return 1;
-		} else if (c == 'W') {
+		} else if (c == 'W' || c == 'w' || c == 'O' || c == 'o') { // 4, 2, 3, 1 bytes
 			serve_watchdog();
 			addr = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
 			value = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
 			
-			REG(addr) = value;
+			if (c == 'W') { // 4
+				REG(addr) = value;
+			} else if (c == 'w') { // 2
+				REG_SHORT(addr) = value & 0xFFFF;
+			} else if (c == 'O') { // 3
+				REG_BYTE(addr) = value & 0xFF;
+				REG_SHORT(addr) = (value >> 8) & 0xFFFF;
+			} else if (c == 'o') { // 1
+				REG_BYTE(addr) = value & 0xFF;
+			}
+			
 			pmb8876_serial_putc(irq ? '!' : ';');
 			serve_watchdog();
 			

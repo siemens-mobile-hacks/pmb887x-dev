@@ -130,6 +130,7 @@ sub getDeviceKey {
 
 sub execBin($$$$) {
 	my ($self, $addr, $bin, @in_regs) = @_;
+	$bin = hex2bin($bin) if (ref($bin) eq "ARRAY");
 	$self->writeMem($addr, $bin);
 	return $self->exec($addr, @in_regs);
 }
@@ -171,13 +172,13 @@ sub exec($$$) {
 			};
 		} else {
 			printf("ERROR: Exec addr %08X: ACK err (received ack=%02X)\n", $addr, $ack);
-			print bin2hex($res->{data})."\n";
+			print $self->bin2hex($res->{data})."\n";
 			exit(1);
 		}
 	} else {
 		if ($res) {
 			printf("ERROR: Exec addr %08X: AT CMD ERR\n", $addr);
-			print bin2hex($res->{data})."\n";
+			print $self->bin2hex($res->{data})."\n";
 			exit(1);
 		} else {
 			printf("ERROR: Exec addr %08X: AT SEND ERR (NO ANSWER :()\n", $addr);
@@ -188,7 +189,7 @@ sub exec($$$) {
 
 sub writeWord($$$) {
 	my ($self, $addr, $data) = @_;
-	return $self->writeMem($addr, int2bin([$data]));
+	return $self->writeMem($addr, $self->int2bin([$data]));
 }
 
 sub writeMem($$$) {
@@ -217,26 +218,32 @@ sub writeMem($$$) {
 	my $offset = 0;
 	my $max_size = 128;
 	while ($size > 0) {
-		my $chunk = $size < $max_size ? $size : $max_size;
-		my $res = $self->sendAt(sprintf("AT+CGSN*%08X%s\r", $addr, bin2hex(substr($data, $offset, $chunk))), 1000);
-		if ($res && $res->{code}) {
-			my $chk = ord(substr($res->{data}, 0, 1));
-			if ($chk != 0xA1) {
-				printf("ERROR: Write mem %08X, %08X ACK err (received ack=%02X)\n", $addr, $chunk, $chk);
-				print bin2hex($res->{data})."\n";
-				exit(1);
-			}
-		} else {
-			if ($res) {
-				printf("ERROR: Write mem %08X, %08X AT CMD ERR\n", $addr, $chunk);
-				print bin2hex($res->{data})."\n";
-				exit(1);
+		my $tries = 5;
+		while (1) {
+			my $chunk = $size < $max_size ? $size : $max_size;
+			my $res = $self->sendAt(sprintf("AT+CGSN*%08X%s\r", $addr, $self->bin2hex(substr($data, $offset, $chunk))), 1000);
+			if ($res && $res->{code}) {
+				my $chk = ord(substr($res->{data}, 0, 1));
+				if ($chk != 0xA1) {
+					printf("ERROR: Write mem %08X, %08X ACK err (received ack=%02X)\n", $addr, $chunk, $chk);
+					print "ANSWER: ".$self->bin2hex($res->{data})."\n";
+					exit(1) if (!$tries--);
+					next;
+				}
 			} else {
-				printf("ERROR: Write mem %08X, %08X AT SEND ERR (NO ANSWER :()\n", $addr, $chunk);
-				exit(1);
+				if ($res) {
+					printf("ERROR: Write mem %08X, %08X AT CMD ERR\n", $addr, $chunk);
+					print "ANSWER: ".$self->bin2hex($res->{data})."\n";
+					exit(1) if (!$tries--);
+					next;
+				} else {
+					next if ($tries--);
+					printf("ERROR: Write mem %08X, %08X AT SEND ERR (NO ANSWER :()\n", $addr, $chunk);
+					exit(1);
+				}
 			}
+			last;
 		}
-		
 		$offset += $max_size;
 		$addr += $max_size;
 		$size -= $max_size;
@@ -267,35 +274,43 @@ sub readMem($$$) {
 	my $buffer = "";
 	my $max_size = 128;
 	while ($size > 0) {
-		my $chunk = $size < $max_size ? $size : $max_size;
-		my $res = $self->sendAt(sprintf("AT+CGSN:%08X,%08X\r", $addr, $chunk), 1000);
-		if ($res && $res->{code}) {
-			my $chk = ord(substr($res->{data}, 0, 1));
-			my $data = substr($res->{data}, 1, $chunk);
-			
-			if ($chk == 0xA1) {
-				if ($chunk == length($data)) {
-				#	printf("%08X: %s\n", $addr, bin2hex($data));
-					$buffer .= $data;
+		my $tries = 5;
+		while (1) {
+			my $chunk = $size < $max_size ? $size : $max_size;
+			my $res = $self->sendAt(sprintf("AT+CGSN:%08X,%08X\r", $addr, $chunk), 2000);
+			if ($res && $res->{code}) {
+				my $chk = ord(substr($res->{data}, 0, 1));
+				my $data = substr($res->{data}, 1, $chunk);
+				
+				if ($chk == 0xA1) {
+					if ($chunk == length($data)) {
+					#	printf("%08X: %s\n", $addr, $self->bin2hex($data));
+						$buffer .= $data;
+					} else {
+						printf("ERROR: Read mem %08X, %08X size err (received=%08X)\n", $addr, $chunk, length($data));
+						print "ANSWER: ".$self->bin2hex($res->{data})."\n";
+						exit(1) if (!$tries--);
+						next;
+					}
 				} else {
-					printf("ERROR: Read mem %08X, %08X size err (received=%08X)\n", $addr, $chunk, length($data));
-					print bin2hex($res->{data})."\n";
-					exit(1);
+					printf("ERROR: Read mem %08X, %08X ACK err (received ack=%02X)\n", $addr, $chunk, $chk);
+					print $self->bin2hex($res->{data})."\n";
+					exit(1) if (!$tries--);
+					next;
 				}
 			} else {
-				printf("ERROR: Read mem %08X, %08X ACK err (received ack=%02X)\n", $addr, $chunk, $chk);
-				print bin2hex($res->{data})."\n";
-				exit(1);
+				if ($res) {
+					printf("ERROR: Read mem %08X, %08X AT CMD ERR\n", $addr, $chunk);
+					print "ANSWER: ".$self->bin2hex($res->{data})."\n";
+					exit(1) if (!$tries--);
+					next;
+				} else {
+					next if ($tries--);
+					printf("ERROR: Read mem %08X, %08X AT SEND ERR (NO ANSWER :()\n", $addr, $chunk);
+					exit(1);
+				}
 			}
-		} else {
-			if ($res) {
-				printf("ERROR: Read mem %08X, %08X AT CMD ERR\n", $addr, $chunk);
-				print bin2hex($res->{data})."\n";
-				exit(1);
-			} else {
-				printf("ERROR: Read mem %08X, %08X AT SEND ERR (NO ANSWER :()\n", $addr, $chunk);
-				exit(1);
-			}
+			last;
 		}
 		$addr += $max_size;
 		$size -= $max_size;
@@ -382,7 +397,7 @@ sub _parseIni {
 	my $ini = shift;
 	my $hash = {};
 	my $ref;
-	for my $line (split(/(\r\n|\n|\r)/, read_file($ini))) {
+	for my $line (split(/(\r\n|\n|\r)/, $ini)) {
 		$line =~ s/;.*?$//g; # комментарии
 		$line =~ s/^\s+|\s+$//g;
 		
@@ -413,7 +428,7 @@ sub hex2addr {
 }
 
 sub int2bin {
-	my $arr = shift;
+	my ($self, $arr) = @_;
 	my $bin = "";
 	for my $i (@$arr) {
 		$bin .= pack("V", $i);
@@ -422,7 +437,7 @@ sub int2bin {
 }
 
 sub bin2hex {
-	my $hex = shift;
+	my ($self, $hex) = @_;
 	$hex =~ s/([\W\w])/sprintf("%02X", ord($1))/ge;
 	return $hex;
 }

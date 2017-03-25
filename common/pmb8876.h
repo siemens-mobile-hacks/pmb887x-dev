@@ -6,6 +6,9 @@
 #include "gpio.h"
 
 #define REG(addr)								(*(volatile unsigned int *) (addr))
+#define REG_BYTE(addr)							(*(volatile unsigned char *) (addr))
+#define REG_SHORT(addr)							(*(volatile unsigned short *) (addr))
+
 #define SET_BIT(value, v, shift, mask)			(value) = (((value) & ~(mask << shift)) | ((v & mask) << shift))
 #define GET_BIT(value, shift, mask)				(((value) >> shift) & mask)
 

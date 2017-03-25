@@ -4,21 +4,39 @@
 #		REG_BIT_NAME	SHIFT	VALUE_BITS
 #		REG_BIT_NAME	SHIFT	VALUE_BITS	
 
+WTF_COND_0	0xA8D95BA4
+WTF_COND_1	0xA8D95BC8
+
 # Примерные адресные простреснтва для подсистем, регистры которых найдены частично
-PCL_*		0xf4300000-0xf4300200
-SIM_*		0xF000C010-0xF000C110
-PCL_*		0xf4300000-0xf4300200
-EBU_*		0xF0000000-0xF0000200
-SCU_*		0xf4400000-0xf4400200
-PCL_*		0xf4300000-0xf4300200
-STM_*		0xF4B00000-0xF4B00100
-PLL_*		0xF4500000-0xF4500FFF
-GSM_TPU_*	0xF6400000-0xF6400FFF
-DSP??_*		0xF6401000-0xF6401FFF
-GPTU0_*		0xF4900000-0xF49000FF
-GPTU1_*		0xF4A00000-0xF4A000FF
-RTC_*		0xF4700000-0xF47000F4
+EBU_*		0xF0000000-0xF000FFFF
+USART0_*	0xF1000000-0xF100FFFF
+SSC0_*		0xF1100000-0xF110FFFF
+SIM_*		0xF1300000-0xF130FFFF
+USART1_*	0xF1800000-0xF180FFFF
+USB_*		0xF2200000-0xF220FFFF
+DMA_*		0xF3000000-0xF300FFFF
+CAPCOM0_*	0xF4000000-0xF400FFFF
+CAPCOM0_*	0xF4100000-0xF410FFFF
+PCL_*		0xF4300000-0xF430FFFF
+SCU_*		0xF4400000-0xF440FFFF
+GPTU0_*		0xF4900000-0xF490FFFF
+GPTU1_*		0xF4A00000-0xF4A0FFFF
+STM_*		0xF4B00000-0xF4B0FFFF
+AMCPWR		0xF4C00000-0xF4C0FFFF
+KEYPAD		0xF4D00000-0xF4D0FFFF
+MODEM		0xF6000000-0xF600FFFF
+GPRS_CHIP	0xF6200000-0xF620FFFF
+GSMFRM		0xF6300000-0xF630FFFF
+GSM_TPU		0xF6400000-0xF640FFFF
+CIF_*		0xF7000000-0xF700FFFF
+DIF_*		0xF7100000-0xF710FFFF
+F00F_*		0xF7200000-0xF720FFFF
+MCI_*		0xF7300000-0xF7301000
+AMBA_MCI_*	0xF7301000-0xF730FFFF
+F048_*		0xF7400000-0xF740FFFF
+F051_*		0xF7500000-0xF750FFFF
 I2C_*		0xF7600000-0xF760FFFF
+MMICIF_*	0xF8000000-0xF80FFFFF
 FLASH_*		0xA0000000-0xA7FFFFFF
 RAM_*		0xA8000000-0xA9FFFFFF
 
@@ -56,19 +74,725 @@ GSM_TPU_CON		0xF64000F8
 	ENABLE		12	1
 	RESET		14	1
 
-DMA_CLC		0xF7100000
+DMA_INT_STATUS			0xF3000000	/* Status of the DMA interrupts after masking */
+	CH0			0	1
+	CH1			1	1
+	CH2			2	1
+	CH3			3	1
+	CH4			4	1
+	CH5			5	1
+	CH6			6	1
+	CH7			7	1
+DMA_TC_STATUS			0xF3000004	/* Interrupt terminal count request status */
+	CH0			0	1
+	CH1			1	1
+	CH2			2	1
+	CH3			3	1
+	CH4			4	1
+	CH5			5	1
+	CH6			6	1
+	CH7			7	1
+DMA_TC_CLEAR			0xF3000008	/* Terminal count request clear. */
+	CH0			0	1
+	CH1			1	1
+	CH2			2	1
+	CH3			3	1
+	CH4			4	1
+	CH5			5	1
+	CH6			6	1
+	CH7			7	1
+DMA_ERR_STATUS			0xF300000C	/* Interrupt error status */
+	CH0			0	1
+	CH1			1	1
+	CH2			2	1
+	CH3			3	1
+	CH4			4	1
+	CH5			5	1
+	CH6			6	1
+	CH7			7	1
+DMA_ERR_CLEAR			0xF3000010	/* Interrupt error clear. */
+	CH0			0	1
+	CH1			1	1
+	CH2			2	1
+	CH3			3	1
+	CH4			4	1
+	CH5			5	1
+	CH6			6	1
+	CH7			7	1
+DMA_RAW_TC_STATUS		0xF3000014	/* Status of the terminal count interrupt prior to masking */
+	CH0			0	1
+	CH1			1	1
+	CH2			2	1
+	CH3			3	1
+	CH4			4	1
+	CH5			5	1
+	CH6			6	1
+	CH7			7	1
+DMA_RAW_ERR_CLEAR		0xF3000018	/* Status of the error interrupt prior to masking */
+	CH0			0	1
+	CH1			1	1
+	CH2			2	1
+	CH3			3	1
+	CH4			4	1
+	CH5			5	1
+	CH6			6	1
+	CH7			7	1
+DMA_EN_CHAN				0xF300001C	/* Channel enable status */
+	CH0			0	1
+	CH1			1	1
+	CH2			2	1
+	CH3			3	1
+	CH4			4	1
+	CH5			5	1
+	CH6			6	1
+	CH7			7	1
+DMA_SOFT_BREQ			0xF3000020	/* Software burst request. */
+	CH0_0			0	1
+	CH0_1			1	1
+	CH1_0			2	1
+	CH1_1			3	1
+	CH2_0			4	1
+	CH2_1			5	1
+	CH3_0			6	1
+	CH3_1			7	1
+	CH4_0			8	1
+	CH4_1			9	1
+	CH5_0			10	1
+	CH5_1			11	1
+	CH6_0			12	1
+	CH6_1			13	1
+	CH7_0			14	1
+	CH7_1			15	1
+DMA_SOFT_SREQ			0xF3000024	/* Software single request. */
+	CH0_0			0	1
+	CH0_1			1	1
+	CH1_0			2	1
+	CH1_1			3	1
+	CH2_0			4	1
+	CH2_1			5	1
+	CH3_0			6	1
+	CH3_1			7	1
+	CH4_0			8	1
+	CH4_1			9	1
+	CH5_0			10	1
+	CH5_1			11	1
+	CH6_0			12	1
+	CH6_1			13	1
+	CH7_0			14	1
+	CH7_1			15	1
+DMA_SOFT_LBREQ			0xF3000028	/* Software last burst request. */
+	CH0_0			0	1
+	CH0_1			1	1
+	CH1_0			2	1
+	CH1_1			3	1
+	CH2_0			4	1
+	CH2_1			5	1
+	CH3_0			6	1
+	CH3_1			7	1
+	CH4_0			8	1
+	CH4_1			9	1
+	CH5_0			10	1
+	CH5_1			11	1
+	CH6_0			12	1
+	CH6_1			13	1
+	CH7_0			14	1
+	CH7_1			15	1
+DMA_SOFT_LSREQ			0xF300002C	/* Software last single request. */
+	CH0_0			0	1
+	CH0_1			1	1
+	CH1_0			2	1
+	CH1_1			3	1
+	CH2_0			4	1
+	CH2_1			5	1
+	CH3_0			6	1
+	CH3_1			7	1
+	CH4_0			8	1
+	CH4_1			9	1
+	CH5_0			10	1
+	CH5_1			11	1
+	CH6_0			12	1
+	CH6_1			13	1
+	CH7_0			14	1
+	CH7_1			15	1
+DMA_CONFIG				0xF3000030	/* Configuration Register */
+	ENABLE			0	1	/* DMAC Enable */
+	M1				1	1	/* AHB Master 1 endianness configuration */
+		0	LE
+		1	BE
+	M2				2	1	/* AHB Master 2 endianness configuration */
+		0	LE
+		1	BE
+DMA_SYNC				0xF3000034	/* Synchronization Register */
+	CH0_0			0	1
+	CH0_1			1	1
+	CH1_0			2	1
+	CH1_1			3	1
+	CH2_0			4	1
+	CH2_1			5	1
+	CH3_0			6	1
+	CH3_1			7	1
+	CH4_0			8	1
+	CH4_1			9	1
+	CH5_0			10	1
+	CH5_1			11	1
+	CH6_0			12	1
+	CH6_1			13	1
+	CH7_0			14	1
+	CH7_1			15	1
+
+# DMA Channel 0
+DMA_CH0_SRC_ADDR		0xF3000100
+DMA_CH0_DST_ADDR		0xF3000104
+DMA_CH0_LLI				0xF3000108
+	LM				0	1	/* AHB master select for loading the next LLI */
+		0	AHB1
+		1	AHB2
+	LLI				2	29	/* Linked list item */
+DMA_CH0_CONTROL			0xF300010C
+	TRANSFER_SZIE	0	12	/* Transfer size. */
+	SB_SIZE			12	3	/* Source burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	DB_SIZE			15	3	/* Destination burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	S_WIDTH			18	3	/* Source transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	D_WIDTH			21	3	/* Destination transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	S				24	1	/* Source AHB master select */
+		0	AHB1
+		1	AHB2
+	D				25	1	/* Destination AHB master select */
+		0	AHB1
+		1	AHB2
+	SI				26	1	/* Source increment. */
+	DI				27	1	/* Destination increment. */
+	PROTECTION		28	3	/* Protection. */
+	I				31	1	/* Terminal count interrupt enable bit. */
+DMA_CH0_CONFIG			0xF3000110
+	ENABLE			0	1	/* Channel enable. */
+	SRC_PERIPH		1	4	/* Source peripheral. */
+	DST_PERIPH		5	6	/* Destination peripheral. */
+	FLOW_CTRL		11	3	/* Flow control and transfer type */
+		0b000	DMA__MEMORY_TO_MEMORY
+		0b001	DMA__MEMORY_TO_PERIPHERAL
+		0b010	DMA__PERIPHERAL_TO_MEMORY
+		0b011	DMA__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b100	DST_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b101	DST_PERIPHERAL__MEMORY_TO_PERIPHERAL
+		0b110	DST_PERIPHERAL__PERIPHERAL_TO_MEMORY
+		0b111	SRC_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+	INT_MASK_ERR	14	1	/* Interrupt error mask. */
+	INT_MASK_TC		15	1	/* Terminal count interrupt mask. */
+	LOCK			16	1	/* Lock. */
+	ACTIVE			17	1	/* Active. */
+	HALT			18	1	/* Halt. */
+# DMA Channel 1
+DMA_CH1_SRC_ADDR		0xF3000120
+DMA_CH1_DST_ADDR		0xF3000124
+DMA_CH1_LLI				0xF3000128
+	LM				0	1	/* AHB master select for loading the next LLI */
+		0	AHB1
+		1	AHB2
+	LLI				2	29	/* Linked list item */
+DMA_CH1_CONTROL			0xF300012C
+	TRANSFER_SZIE	0	12	/* Transfer size. */
+	SB_SIZE			12	3	/* Source burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	DB_SIZE			15	3	/* Destination burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	S_WIDTH			18	3	/* Source transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	D_WIDTH			21	3	/* Destination transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	S				24	1	/* Source AHB master select */
+		0	AHB1
+		1	AHB2
+	D				25	1	/* Destination AHB master select */
+		0	AHB1
+		1	AHB2
+	SI				26	1	/* Source increment. */
+	DI				27	1	/* Destination increment. */
+	PROTECTION		28	3	/* Protection. */
+	I				31	1	/* Terminal count interrupt enable bit. */
+DMA_CH1_CONFIG			0xF3000130
+	ENABLE			0	1	/* Channel enable. */
+	SRC_PERIPH		1	4	/* Source peripheral. */
+	DST_PERIPH		5	6	/* Destination peripheral. */
+	FLOW_CTRL		11	3	/* Flow control and transfer type */
+		0b000	DMA__MEMORY_TO_MEMORY
+		0b001	DMA__MEMORY_TO_PERIPHERAL
+		0b010	DMA__PERIPHERAL_TO_MEMORY
+		0b011	DMA__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b100	DST_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b101	DST_PERIPHERAL__MEMORY_TO_PERIPHERAL
+		0b110	DST_PERIPHERAL__PERIPHERAL_TO_MEMORY
+		0b111	SRC_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+	INT_MASK_ERR	14	1	/* Interrupt error mask. */
+	INT_MASK_TC		15	1	/* Terminal count interrupt mask. */
+	LOCK			16	1	/* Lock. */
+	ACTIVE			17	1	/* Active. */
+	HALT			18	1	/* Halt. */
+
+# DMA Channel 2
+DMA_CH2_SRC_ADDR		0xF3000140
+DMA_CH2_DST_ADDR		0xF3000144
+DMA_CH2_LLI				0xF3000148
+	LM				0	1	/* AHB master select for loading the next LLI */
+		0	AHB1
+		1	AHB2
+	LLI				2	29	/* Linked list item */
+DMA_CH2_CONTROL			0xF300014C
+	TRANSFER_SZIE	0	12	/* Transfer size. */
+	SB_SIZE			12	3	/* Source burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	DB_SIZE			15	3	/* Destination burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	S_WIDTH			18	3	/* Source transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	D_WIDTH			21	3	/* Destination transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	S				24	1	/* Source AHB master select */
+		0	AHB1
+		1	AHB2
+	D				25	1	/* Destination AHB master select */
+		0	AHB1
+		1	AHB2
+	SI				26	1	/* Source increment. */
+	DI				27	1	/* Destination increment. */
+	PROTECTION		28	3	/* Protection. */
+	I				31	1	/* Terminal count interrupt enable bit. */
+DMA_CH2_CONFIG			0xF3000150
+	ENABLE			0	1	/* Channel enable. */
+	SRC_PERIPH		1	4	/* Source peripheral. */
+	DST_PERIPH		5	6	/* Destination peripheral. */
+	FLOW_CTRL		11	3	/* Flow control and transfer type */
+		0b000	DMA__MEMORY_TO_MEMORY
+		0b001	DMA__MEMORY_TO_PERIPHERAL
+		0b010	DMA__PERIPHERAL_TO_MEMORY
+		0b011	DMA__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b100	DST_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b101	DST_PERIPHERAL__MEMORY_TO_PERIPHERAL
+		0b110	DST_PERIPHERAL__PERIPHERAL_TO_MEMORY
+		0b111	SRC_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+	INT_MASK_ERR	14	1	/* Interrupt error mask. */
+	INT_MASK_TC		15	1	/* Terminal count interrupt mask. */
+	LOCK			16	1	/* Lock. */
+	ACTIVE			17	1	/* Active. */
+	HALT			18	1	/* Halt. */
+
+# DMA Channel 3
+DMA_CH3_SRC_ADDR		0xF3000160
+DMA_CH3_DST_ADDR		0xF3000164
+DMA_CH3_LLI				0xF3000168
+	LM				0	1	/* AHB master select for loading the next LLI */
+		0	AHB1
+		1	AHB2
+	LLI				2	29	/* Linked list item */
+DMA_CH3_CONTROL			0xF300016C
+	TRANSFER_SZIE	0	12	/* Transfer size. */
+	SB_SIZE			12	3	/* Source burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	DB_SIZE			15	3	/* Destination burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	S_WIDTH			18	3	/* Source transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	D_WIDTH			21	3	/* Destination transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	S				24	1	/* Source AHB master select */
+		0	AHB1
+		1	AHB2
+	D				25	1	/* Destination AHB master select */
+		0	AHB1
+		1	AHB2
+	SI				26	1	/* Source increment. */
+	DI				27	1	/* Destination increment. */
+	PROTECTION		28	3	/* Protection. */
+	I				31	1	/* Terminal count interrupt enable bit. */
+DMA_CH3_CONFIG			0xF3000170
+	ENABLE			0	1	/* Channel enable. */
+	SRC_PERIPH		1	4	/* Source peripheral. */
+	DST_PERIPH		5	6	/* Destination peripheral. */
+	FLOW_CTRL		11	3	/* Flow control and transfer type */
+		0b000	DMA__MEMORY_TO_MEMORY
+		0b001	DMA__MEMORY_TO_PERIPHERAL
+		0b010	DMA__PERIPHERAL_TO_MEMORY
+		0b011	DMA__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b100	DST_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b101	DST_PERIPHERAL__MEMORY_TO_PERIPHERAL
+		0b110	DST_PERIPHERAL__PERIPHERAL_TO_MEMORY
+		0b111	SRC_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+	INT_MASK_ERR	14	1	/* Interrupt error mask. */
+	INT_MASK_TC		15	1	/* Terminal count interrupt mask. */
+	LOCK			16	1	/* Lock. */
+	ACTIVE			17	1	/* Active. */
+	HALT			18	1	/* Halt. */
+
+# DMA Channel 4
+DMA_CH4_SRC_ADDR		0xF3000180
+DMA_CH4_DST_ADDR		0xF3000184
+DMA_CH4_LLI				0xF3000188
+	LM				0	1	/* AHB master select for loading the next LLI */
+		0	AHB1
+		1	AHB2
+	LLI				2	29	/* Linked list item */
+DMA_CH4_CONTROL			0xF300018C
+	TRANSFER_SZIE	0	12	/* Transfer size. */
+	SB_SIZE			12	3	/* Source burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	DB_SIZE			15	3	/* Destination burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	S_WIDTH			18	3	/* Source transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	D_WIDTH			21	3	/* Destination transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	S				24	1	/* Source AHB master select */
+		0	AHB1
+		1	AHB2
+	D				25	1	/* Destination AHB master select */
+		0	AHB1
+		1	AHB2
+	SI				26	1	/* Source increment. */
+	DI				27	1	/* Destination increment. */
+	PROTECTION		28	3	/* Protection. */
+	I				31	1	/* Terminal count interrupt enable bit. */
+DMA_CH4_CONFIG			0xF3000190
+	ENABLE			0	1	/* Channel enable. */
+	SRC_PERIPH		1	4	/* Source peripheral. */
+	DST_PERIPH		5	6	/* Destination peripheral. */
+	FLOW_CTRL		11	3	/* Flow control and transfer type */
+		0b000	DMA__MEMORY_TO_MEMORY
+		0b001	DMA__MEMORY_TO_PERIPHERAL
+		0b010	DMA__PERIPHERAL_TO_MEMORY
+		0b011	DMA__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b100	DST_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b101	DST_PERIPHERAL__MEMORY_TO_PERIPHERAL
+		0b110	DST_PERIPHERAL__PERIPHERAL_TO_MEMORY
+		0b111	SRC_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+	INT_MASK_ERR	14	1	/* Interrupt error mask. */
+	INT_MASK_TC		15	1	/* Terminal count interrupt mask. */
+	LOCK			16	1	/* Lock. */
+	ACTIVE			17	1	/* Active. */
+	HALT			18	1	/* Halt. */
+
+# DMA Channel 5
+DMA_CH5_SRC_ADDR		0xF30001A0
+DMA_CH5_DST_ADDR		0xF30001A4
+DMA_CH5_LLI				0xF30001A8
+	LM				0	1	/* AHB master select for loading the next LLI */
+		0	AHB1
+		1	AHB2
+	LLI				2	29	/* Linked list item */
+DMA_CH5_CONTROL			0xF30001AC
+	TRANSFER_SZIE	0	12	/* Transfer size. */
+	SB_SIZE			12	3	/* Source burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	DB_SIZE			15	3	/* Destination burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	S_WIDTH			18	3	/* Source transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	D_WIDTH			21	3	/* Destination transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	S				24	1	/* Source AHB master select */
+		0	AHB1
+		1	AHB2
+	D				25	1	/* Destination AHB master select */
+		0	AHB1
+		1	AHB2
+	SI				26	1	/* Source increment. */
+	DI				27	1	/* Destination increment. */
+	PROTECTION		28	3	/* Protection. */
+	I				31	1	/* Terminal count interrupt enable bit. */
+DMA_CH5_CONFIG			0xF30001B0
+	ENABLE			0	1	/* Channel enable. */
+	SRC_PERIPH		1	4	/* Source peripheral. */
+	DST_PERIPH		5	6	/* Destination peripheral. */
+	FLOW_CTRL		11	3	/* Flow control and transfer type */
+		0b000	DMA__MEMORY_TO_MEMORY
+		0b001	DMA__MEMORY_TO_PERIPHERAL
+		0b010	DMA__PERIPHERAL_TO_MEMORY
+		0b011	DMA__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b100	DST_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b101	DST_PERIPHERAL__MEMORY_TO_PERIPHERAL
+		0b110	DST_PERIPHERAL__PERIPHERAL_TO_MEMORY
+		0b111	SRC_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+	INT_MASK_ERR	14	1	/* Interrupt error mask. */
+	INT_MASK_TC		15	1	/* Terminal count interrupt mask. */
+	LOCK			16	1	/* Lock. */
+	ACTIVE			17	1	/* Active. */
+	HALT			18	1	/* Halt. */
+
+# DMA Channel 6
+DMA_CH6_SRC_ADDR		0xF30001C0
+DMA_CH6_DST_ADDR		0xF30001C4
+DMA_CH6_LLI				0xF30001C8
+	LM				0	1	/* AHB master select for loading the next LLI */
+		0	AHB1
+		1	AHB2
+	LLI				2	29	/* Linked list item */
+DMA_CH6_CONTROL			0xF30001CC
+	TRANSFER_SZIE	0	12	/* Transfer size. */
+	SB_SIZE			12	3	/* Source burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	DB_SIZE			15	3	/* Destination burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	S_WIDTH			18	3	/* Source transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	D_WIDTH			21	3	/* Destination transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	S				24	1	/* Source AHB master select */
+		0	AHB1
+		1	AHB2
+	D				25	1	/* Destination AHB master select */
+		0	AHB1
+		1	AHB2
+	SI				26	1	/* Source increment. */
+	DI				27	1	/* Destination increment. */
+	PROTECTION		28	3	/* Protection. */
+	I				31	1	/* Terminal count interrupt enable bit. */
+DMA_CH6_CONFIG			0xF30001D0
+	ENABLE			0	1	/* Channel enable. */
+	SRC_PERIPH		1	4	/* Source peripheral. */
+	DST_PERIPH		5	6	/* Destination peripheral. */
+	FLOW_CTRL		11	3	/* Flow control and transfer type */
+		0b000	DMA__MEMORY_TO_MEMORY
+		0b001	DMA__MEMORY_TO_PERIPHERAL
+		0b010	DMA__PERIPHERAL_TO_MEMORY
+		0b011	DMA__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b100	DST_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b101	DST_PERIPHERAL__MEMORY_TO_PERIPHERAL
+		0b110	DST_PERIPHERAL__PERIPHERAL_TO_MEMORY
+		0b111	SRC_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+	INT_MASK_ERR	14	1	/* Interrupt error mask. */
+	INT_MASK_TC		15	1	/* Terminal count interrupt mask. */
+	LOCK			16	1	/* Lock. */
+	ACTIVE			17	1	/* Active. */
+	HALT			18	1	/* Halt. */
+
+# DMA Channel 7
+DMA_CH7_SRC_ADDR		0xF30001E0
+DMA_CH7_DST_ADDR		0xF30001E4
+DMA_CH7_LLI				0xF30001E8
+	LM				0	1	/* AHB master select for loading the next LLI */
+		0	AHB1
+		1	AHB2
+	LLI				2	29	/* Linked list item */
+DMA_CH7_CONTROL			0xF30001EC
+	TRANSFER_SZIE	0	12	/* Transfer size. */
+	SB_SIZE			12	3	/* Source burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	DB_SIZE			15	3	/* Destination burst size */
+		0b000	SZ_1
+		0b001	SZ_4
+		0b010	SZ_8
+		0b011	SZ_16
+		0b100	SZ_32
+		0b101	SZ_64
+		0b110	SZ_128
+		0b111	SZ_256
+	S_WIDTH			18	3	/* Source transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	D_WIDTH			21	3	/* Destination transfer width */
+		0b000	BYTE
+		0b001	WORD
+		0b010	DWORD
+	S				24	1	/* Source AHB master select */
+		0	AHB1
+		1	AHB2
+	D				25	1	/* Destination AHB master select */
+		0	AHB1
+		1	AHB2
+	SI				26	1	/* Source increment. */
+	DI				27	1	/* Destination increment. */
+	PROTECTION		28	3	/* Protection. */
+	I				31	1	/* Terminal count interrupt enable bit. */
+DMA_CH7_CONFIG			0xF30001F0
+	ENABLE			0	1	/* Channel enable. */
+	SRC_PERIPH		1	4	/* Source peripheral. */
+	DST_PERIPH		5	6	/* Destination peripheral. */
+	FLOW_CTRL		11	3	/* Flow control and transfer type */
+		0b000	DMA__MEMORY_TO_MEMORY
+		0b001	DMA__MEMORY_TO_PERIPHERAL
+		0b010	DMA__PERIPHERAL_TO_MEMORY
+		0b011	DMA__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b100	DST_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+		0b101	DST_PERIPHERAL__MEMORY_TO_PERIPHERAL
+		0b110	DST_PERIPHERAL__PERIPHERAL_TO_MEMORY
+		0b111	SRC_PERIPHERAL__SRC_PERIPHERAL_TO_DST_PERIPHERAL
+	INT_MASK_ERR	14	1	/* Interrupt error mask. */
+	INT_MASK_TC		15	1	/* Terminal count interrupt mask. */
+	LOCK			16	1	/* Lock. */
+	ACTIVE			17	1	/* Active. */
+	HALT			18	1	/* Halt. */
+
+DMA_PERIPH_ID0		0xF3000FE0
+	PARTNUMBER0		0	8
+DMA_PERIPH_ID1		0xF3000FE4
+	PARTNUMBER1		0	4
+	DESIGNER0		4	8
+DMA_PERIPH_ID2		0xF3000FE8
+	DESIGNER1		0	4
+	REVISION		4	8
+DMA_PERIPH_ID3		0xF3000FEC
+	CONFIGURATION	0	8
+DMA_PCELL_ID0		0xF3000FF0
+DMA_PCELL_ID1		0xF3000FF4
+DMA_PCELL_ID2		0xF3000FF8
+DMA_PCELL_ID3		0xF3000FFC
+
+DIF_CLC		0xF7100000
 	RMC				8	7
 	FSOE			5	1
 	SBWE			4	1
 	SPEN			2	1
 	DISS			1	1
 	DISR			0	1
-DMA_ID		0xF7100008
+DIF_ID		0xF7100008
 	MOD_NUMBER		16	16
 	MOD_32B			8	8
 	MOD_REV			0	8
 
 # MultiMedia Card Interface (MCI) Controller
+# MCI
+MCI_CLC		0xF7300000
+	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC			8	7
+MCI_ID		0xF7200008
 MMCI_POWER			0xF7301000
 	CTRL			0	2
 		0b00	POWER_OFF
@@ -465,33 +1189,131 @@ SSC0_RXFCON		0xF1100030
 SSC0_TXFCON		0xF1100034
 SSC0_FSTAT		0xF1100038
 
-# SSC2
-SSC2_CLC		0xF1B00000
+# SIM
+SIM_CLC		0xF1300000
 	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
 	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
 	RMC			8	7
-SSC2_PISEL		0xF1B00004
-SSC2_ID			0xF1B00008
+SIM_ID			0xF1300008
 	MOD_NUMBER		16	16
 	MOD_32B			8	8
 	MOD_REV			0	8
-SSC2_CON		0xF1B00010
-SSC2_BR			0xF1B00014
-SSC2_SSOC		0xF1B00018
-SSC2_SSOTC		0xF1B0001C
-SSC2_TB			0xF1B00020
-SSC2_RB			0xF1B00024
-SSC2_STAT		0xF1B00028
-SSC2_EFM		0xF1B0002C
-SSC2_RXFCON		0xF1B00030
-SSC2_TXFCON		0xF1B00034
-SSC2_FSTAT		0xF1B00038
+
+# AMCPWR
+AMCPWR_CLC		0xF4C00000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+AMCPWR_ID		0xF4C00008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# KEYPAD
+KEYPAD_CLC		0xF4D00000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+KEYPAD_ID		0xF4D00008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# MODEM
+MODEM_CLC		0xF6000000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+MODEM_ID		0xF6000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# GPRS_CHIP
+GPRS_CHIP_CLC		0xF6200000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+GPRS_CHIP_ID		0xF6200008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# GSM_FRM
+GSM_FRM_CLC		0xF6300000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+GSM_FRM_ID		0xF6300008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# CIF
+CIF_CLC		0xF7000000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+CIF_ID		0xF7000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# DIF
+DIF_CLC		0xF7100000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+DIF_ID		0xF7100008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# DEV_F00F
+DEV_F00F_CLC	0xF7200000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+DEV_F00F_ID		0xF7200008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# DEV_F048
+DEV_F048_CLC	0xF7400000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+DEV_F048_ID		0xF7400008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# DEV_F051
+DEV_F051_CLC	0xF7500000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+DEV_F051_ID		0xF7500008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+# MMICIF
+MMICIF_CLC		0xF8000000
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+MMICIF_ID		0xF8000004
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
 
 # USB
 USB_CLC			0xF2200000
-	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	7
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
 USB_PISEL		0xF2200004
 USB_ID			0xF2200008
 	MOD_NUMBER		16	16

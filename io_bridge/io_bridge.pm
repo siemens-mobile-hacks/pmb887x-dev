@@ -11,10 +11,30 @@ sub boot_module_init {
 	$port->read_char_time(1000);
 	$port->read_const_time(1000);
 	
+	::set_port_baudrate($port, 460800);
+	$port->write("OK");
+	while ($port->read(1) ne ".") {
+		$port->write("OK");
+	}
+	print "OK\n";
+	
+	cmd_ping($port);
+	
 	my $buf;
 	open F, "+>/dev/shm/siemens_io_sniff" or die("$!");
 	binmode F;
 	chmod 0666, "/dev/shm/siemens_io_sniff";
+	
+	my %cmd_to_size = (
+		R => 4, 
+		W => 4, 
+		r => 2, 
+		w => 2, 
+		I => 3, 
+		O => 3, 
+		i => 1, 
+		o => 1
+	);
 	
 	sub reset_cmd {
 		truncate F, 0;
@@ -28,10 +48,10 @@ sub boot_module_init {
 		
 		my $irq = -1;
 		my $cmd = substr($buf, 0, 1);
-		if ($cmd eq "R") {
+		if ($cmd eq "R" || $cmd eq "r" || $cmd eq "I" || $cmd eq "i") {
 			my $addr = unpack("V", substr($buf, 1, 4));
 			my $from = unpack("V", substr($buf, 5, 4));
-			my $data = cmd_read($port, $addr, 1, sub {
+			my $data = cmd_read_unaligned($port, $addr, $cmd_to_size{$cmd}, 1, sub {
 				$irq = shift;
 			});
 			
@@ -44,11 +64,12 @@ sub boot_module_init {
 			my $vv = unpack("V", $data);
 			
 			if ($addr != 0xF4300118 && $addr != 0xF4B00010 && $addr != 0xF64000F8) {
-				printf("READ from %08X (%08X)%s (from %08X)\n", $addr, $vv, reg_name($addr, $vv), $from);
+				printf("READ%s from %08X (%08X)%s (from %08X)\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
+					$addr, $vv, reg_name($addr, $vv), $from);
 			}
 			
 			$xuj = 0;
-		} elsif ($cmd eq "W") {
+		} elsif ($cmd eq "W" || $cmd eq "w" || $cmd eq "O" || $cmd eq "o") {
 			reset_cmd();
 			my $addr = unpack("V", substr($buf, 1, 4));
 			my $value = unpack("V", substr($buf, 5, 4));
@@ -96,11 +117,12 @@ sub boot_module_init {
 			}
 			
 			if ($addr != 0xF4300118 && $addr != 0xF4B00010 && $addr != 0xF64000F8) {
-				printf("WRITE %08X to %08X%s (from %08X)%s\n", $value, $addr, reg_name($addr, $value), $from, $valid ? "" : " | SKIP!!!!");
+				printf("WRITE%s %08X to %08X%s (from %08X)%s\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
+					$value, $addr, reg_name($addr, $value), $from, $valid ? "" : " | SKIP!!!!");
 			}
 			
 			if ($valid) {
-				cmd_write($port, $addr, $value, sub {
+				cmd_write_unaligned($port, $addr, $cmd_to_size{$cmd}, $value, sub {
 					$irq = shift;
 				});
 			} else {
