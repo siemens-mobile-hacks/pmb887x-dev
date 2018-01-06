@@ -10,3 +10,4 @@ void test_vibra();
 void test_pickoff_sound();
 void test_backlight();
 void mdelay(unsigned int popugays);
+void dump_all_regs();

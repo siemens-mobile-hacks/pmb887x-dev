@@ -290,8 +290,6 @@ void main() {
 	
 	volatile int i;
 	void **vectors = (void **) 0;
-	for (i = 0; i < 8; ++i)
-		vectors[i] = (void *)(&_cpu_vectors)[i];
 	vectors[8] = reset_addr;
 	vectors[9] = undef_addr;
 	vectors[10] = swi_addr;

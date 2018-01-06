@@ -1,6 +1,8 @@
 #pragma once
 
 /* I2C */
+void i2c_init();
+
 void i2c_start();
 void i2c_stop();
 

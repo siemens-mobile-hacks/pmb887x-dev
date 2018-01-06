@@ -1,39 +1,6 @@
 #include <printf.h>
 #include "main.h"
 
-
-#if 0
-#define USART0_BASE		0xF1000000
-#define USART1_BASE		0xF1800000
-
-#define USART0_CLC		USART0_BASE		/* Clock Control Register */
-#define USART0_ID		USART0_BASE + 0x08	/* Module Identification Register */
-#define USART0_CON		USART0_BASE + 0x10	/* Control Register */
-#define USART0_BG		USART0_BASE + 0x14	/* Baudrate Timer Reload Register */
-#define USART0_FDV		USART0_BASE + 0x18	/* Fractional Divider Register */
-#define USART0_TXB		USART0_BASE + 0x20	/* Transmit Buffer */
-#define USART0_RXB		USART0_BASE + 0x24	/* Receive Buffer */
-#define USART0_ABCON		USART0_BASE + 0x30	/* Autobaud control register */
-#define USART0_ABSTAT		USART0_BASE + 0x34	/* Autobaud status register */
-#define USART0_RXFCON		USART0_BASE + 0x40	/* Receive FIFO control register */
-#define USART0_TXFCON		USART0_BASE + 0x44	/* Transmit FIFO control register */
-#define USART0_FSTAT		USART0_BASE + 0x48	/* FIFO status register */
-#define USART0_WHBCON		USART0_BASE + 0x50	/* Write hardware modified control register */
-#define USART0_WHBABCON		USART0_BASE + 0x54	/* Write hardware modified autobaud control register */
-#define USART0_WHBABSTAT	USART0_BASE + 0x58	/* Write hardware modified autobaud status register */
-#define USART0_FCCON		USART0_BASE + 0x5C	/* Flowcontrol control register */
-#define USART0_FCSTAT		USART0_BASE + 0x60	/* Flowcontrol status register */
-#define USART0_IMSC		USART0_BASE + 0x64	/* Interrupt mask control register */
-#define USART0_RIS		USART0_BASE + 0x68	/* Raw interrupt status register */
-#define USART0_MIS		USART0_BASE + 0x6C	/* Masked interrupt status register */
-#define	USART0_ICR		USART0_BASE + 0x70	/* Interrupt clear register */
-#define USART0_ISR		USART0_BASE + 0x74	/* Interrupt set register */
-#define USART0_TMO		USART0_BASE + 0x7C	/* Timeout detection control register */
-#endif
-#define USART0_FCCON		0xF1000000 + 0x5C	/* Flowcontrol control register */
-#define USART0_IMSC		0xF1000000 + 0x64
-#define USART0_ISR		0xF1000000 + 0x74
-
 #define CLC_SMC_CLK_DIV(x)	((x << 16) & 0xFF0000)
 #define CLC_RMC_CLK_DIV(x)	((x <<  8) & 0x00FF00)
 #define CLC_FSOE		(1 << 5)	/* Fast shut off enable (1: enable; 0: disable) */
@@ -199,12 +166,10 @@ void __IRQ fiq_test() {
 
 
 void main() {
-	init_watchdog();
+	init_watchdog_noinit();
 	
 	int i;
 	void **vectors = (void **) 0;
-	for (i = 0; i < 8; ++i)
-		vectors[i] = (&_cpu_vectors)[i];
 	vectors[8] = reset_addr;
 	vectors[9] = undef_addr;
 	vectors[10] = swi_addr;

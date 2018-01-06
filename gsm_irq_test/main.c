@@ -1,11 +1,6 @@
 #include <printf.h>
 #include "main.h"
 
-
-/* stack */
-char stack_top[512 * 1024];
-char irq_stack_top[512 * 1024];
-
 /* register */
 #define PMB8876_GSM_TPU_CON		0xF64000F8
 
@@ -76,12 +71,10 @@ void __IRQ fiq_test() {
 
 
 void main() {
-	init_watchdog();
+	init_watchdog_noinit();
 	
 	int i;
 	void **vectors = (void **) 0;
-	for (i = 0; i < 8; ++i)
-		vectors[i] = (&_cpu_vectors)[i];
 	vectors[8] = reset_addr;
 	vectors[9] = undef_addr;
 	vectors[10] = swi_addr;

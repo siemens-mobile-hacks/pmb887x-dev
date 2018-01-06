@@ -7,5 +7,5 @@ void __init_vectors() {
 	
 	void **vectors = (void **) 0;
 	for (int i = 0; i < 16; ++i)
-		vectors[i] = (&_cpu_vectors)[i];
+		vectors[i] = (void *) (&_cpu_vectors)[i];
 }

@@ -109,6 +109,7 @@ void pmb8876_serial_set_speed(unsigned int speed);
 void pmb8876_serial_putc(char c);
 char pmb8876_serial_getc();
 void pmb8876_serial_print(const char *data);
+char pmb8876_serial_has_byte();
 
 // CPU
 unsigned int get_cpu_freq();

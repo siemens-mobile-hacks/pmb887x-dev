@@ -6,7 +6,7 @@ void send_flash_cmd(unsigned char cmd);
 void send_flash_reset();
 unsigned short read_otp_reg(unsigned int reg);
 
-void _start() {
+void main() {
 	init_sdram();
 	enable_irq(0);
 	enable_fiq(0);
@@ -17,8 +17,6 @@ void _start() {
 	
 	int i;
 	void **vectors = (void **) 0;
-	for (i = 0; i < 8; ++i)
-		vectors[i] = (void *) (&_cpu_vectors)[i];
 	vectors[8] = reset_addr;
 	vectors[9] = undef_addr;
 	vectors[10] = loop;

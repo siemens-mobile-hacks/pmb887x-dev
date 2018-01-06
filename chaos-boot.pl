@@ -35,6 +35,7 @@ sub main {
 	my $exec_addr = '0xA8008000';
 	my $as_hex = 0;
 	my $run_picocom = 0;
+	my $read_OTP = 0;
 	
 	my $err = get_argv_opts({
 		"device=s"		=> \$device, 
@@ -48,7 +49,8 @@ sub main {
 		"hex"			=> \$as_hex, 
 		"picocom"		=> \$run_picocom, 
 		"exec=s"		=> \$exec_file, 
-		"exec-addr=s"	=> \$exec_addr
+		"exec-addr=s"	=> \$exec_addr, 
+		"dump-otp"		=> \$read_OTP
 	});
 	
 	$exec_addr = parse_addr($exec_addr);
@@ -203,6 +205,12 @@ sub main {
 				}
 				chaos_keep_alive($port);
 				print "Chaos Bootloader - OK\n";
+				
+				if ($read_OTP) {
+					my $opt = chaos_read_opt($port);
+					print "OTP(".length($opt)."): ".bin2hex($opt)."\n";
+					exit;
+				}
 				
 				# Мини-флешер
 				if (@$flasher) {
@@ -389,6 +397,11 @@ sub get_argv_opts {
 	return;
 }
 
+sub chaos_read_opt {
+	my ($port) = @_;
+	return chaos_read_ram($port, 0xA0000000, 0x200, 4, "O");
+}
+
 sub chaos_read_info {
 	my ($port) = @_;
 	$port->write("I");
@@ -530,7 +543,9 @@ sub chaos_goto {
 }
 
 sub chaos_read_ram {
-	my ($port, $read_addr, $read_size, $chunk) = @_;
+	my ($port, $read_addr, $read_size, $chunk, $cmd) = @_;
+	
+	$cmd = $cmd || 'R';
 	
 	# Сразу заранее нарежем на блоки
 	my @blocks = ();
@@ -540,7 +555,7 @@ sub chaos_read_ram {
 		
 		push @blocks, [
 			$addr, $size, 
-			"R".
+			"$cmd".
 			chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF).
 			chr(($size >> 24) & 0xFF).chr(($size >> 16) & 0xFF).chr(($size >> 8) & 0xFF).chr($size & 0xFF)
 		];
@@ -562,8 +577,11 @@ sub chaos_read_ram {
 		my $tries = 10;
 		while (1) {
 			$port->write($block->[2]);
-		
-			my $buf = $port->read($block->[1] + 4);
+			
+			my $buf = $port->read($block->[1] + 4) || "";
+			
+			print "\n\n\nLN=".length($buf)."\n\n\n";
+			
 			my $ok = substr($buf, $block->[1], 2);
 			my $chk = (ord(substr($buf, $block->[1] + 3, 1)) << 8) | ord(substr($buf, $block->[1] + 2, 1));
 			

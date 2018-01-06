@@ -22,7 +22,7 @@ void _start() {
 	i2c_init();
 	i2c_smbus_write_byte(0x31, 0xE, 0b11);
 	
-	pmb8876_serial_set_speed(UART_SPEED_460800);
+	pmb8876_serial_set_speed(UART_SPEED_614400);
 	while (pmb8876_serial_getc() != 'O');
 	while (pmb8876_serial_getc() != 'K');
 	pmb8876_serial_putc('.');
@@ -31,8 +31,6 @@ void _start() {
 	
 	int i;
 	void **vectors = (void **) 0;
-	for (i = 0; i < 8; ++i)
-		vectors[i] = (&_cpu_vectors)[i];
 	vectors[8] = inf_loop;
 	vectors[9] = undef_addr;
 	vectors[10] = swi_handler;
