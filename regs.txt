@@ -49,21 +49,141 @@ PLL_STAT	0xF45000B0
 PLL_ICR		0xF45000CC
 
 # I2C
-I2C_CLC			0xF7600000
-	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	7
-I2C_TX_LEN		0xF7600034
-	LEN			0	8
-I2C_RX_LEN		0xF760002C
-	LEN			0	8
-I2C_FCSTAT		0xF7600080
-I2C_TX_FIFO		0xF7608000
+I2C_CLC				0xF7600000	/* Clock Control Register */
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	RMC				8	7
+I2C_ID				0xF7600008	/* Module Identification Register */
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+I2C_RUNCTRL			0xF7600010	/* RUN Control Register */
+	RUN				0	1	/* Enable I2C-bus Interface */
+I2C_ENDDCTRL		0xF7600014	/* End Data Control Register */
+	SETRSC			0	1	/* Set Restart Condition */
+	SETEND			1	1	/* Set End of Transmission */
+I2C_FDIVCFG			0xF7600018	/* Fractional Divider Configuration Register */
+	DEC				0	11	/* Decrement Value of Fractional Divider */
+	INC				16	8	/* Increment Value of Fractional Divider */
+I2C_FDIVHIGHCFG		0xF760001C	/* Fractional Divider High-speed Mode Configuration Register */
+	DEC				0	11	/* Decrement Value of Fractional Divider */
+	INC				16	8	/* Increment Value of Fractional Divider */
+I2C_ADDRCFG			0xF7600020	/* Address Configuration Register */
+	ADR				0	10	/* I2C-bus Device Address */
+	TBAM			16	1	/* Ten Bit Address Mode */
+	GCE				17	1	/* General Call Enable */
+	MCE				18	1	/* Master Code Enable */
+	MnS				19	1	/* Master / not Slave */
+	SONA			20	1	/* Stop on Not-acknowledge */
+	SOPE			21	1	/* Stop on Packet End */
+I2C_BUSSTAT			0xF7600024	/* Bus Status Register */
+	BS				0	2	/* Bus Status */
+	RnW				2	1	/* Read/not Write */
+I2C_FIFOCFG			0xF7600028	/* FIFO Configuration Register */
+	RXBS			0	2	/* RX Burst Size */
+	TXBS			4	2	/* TX Burst Size */
+	RXFA			8	2	/* RX FIFO Alignment */
+	TXFA			12	2	/* TX FIFO Alignment */
+	RXFC			16	1	/* RX FIFO Flow Control */
+	TXFC			17	1	/* TX FIFO Flow Control */
+I2C_MRPSCTRL		0xF760002C	/* Maximum Received Packet Size Control Register */
+	SIZE			0	14	/* Maximum Received Packet Size */
+I2C_RPSSTAT			0xF7600030	/* Received Packet Size Status Registe */
+	SIZE			0	14	/* Received Packet Size */
+I2C_TPSCTRL			0xF7600034	/* Transmit Packet Size Control Register */
+	TX_SIZE			0	14	/* Transmit Packet Size */
+I2C_FFSSTAT			0xF7600038	/* Filled FIFO Stages Status Register */
+	FFS				0	6	/* Filled FIFO Stages */
+I2C_TIMCFG			0xF7600040	/* Timing Configuration Register */
+	SDA_DEL_HD_DAT		0	6	/* SDA Delay Stages for Data Hold Time */
+	HS_SDA_DEL_HD_DAT	6	3	/* SDA Delay Stages for Data Hold Time in High-speed Mode */
+	SCL_DEL_HD_STA		9	3	/* SCL Delay Stages for Hold Time Start (Restart) Bit */
+	EN_SCL_LOW_LEN		14	1	/* Enable Direct Configuration of SCL Low Period Length in Fast Mode */
+	FS_SCL_LOW			15	1	/* Set Fast Mode SCL Low Period Timing */
+	HS_SDA_DEL			16	3	/* SDA Delay Stages for Start/Stop bit in High-speed Mode */
+	SCL_LOW_LEN			24	8	/* SCL Low Length in Fast Mode */
+I2C_ERRIRQSM		0xF7600060	/* Error Interrupt Request Source Mask Register */
+	RXF_UFL			0	1	/* RX FIFO Underflow */
+	RXF_OFL			1	1	/* RX FIFO Overflow */
+	TXF_UFL			2	1	/* TX FIFO Underflow */
+	TXF_OFL			3	1	/* TX FIFO Overflow */
+I2C_ERRIRQSS		0xF7600064	/* Error Interrupt Request Source Status Register */
+	RXF_UFL			0	1	/* RX FIFO Underflow */
+	RXF_OFL			1	1	/* RX FIFO Overflow */
+	TXF_UFL			2	1	/* TX FIFO Underflow */
+	TXF_OFL			3	1	/* TX FIFO Overflow */
+I2C_ERRIRQSC		0xF7600068	/* Error Interrupt Request Source Clear Register */
+	RXF_UFL			0	1	/* RX FIFO Underflow */
+	RXF_OFL			1	1	/* RX FIFO Overflow */
+	TXF_UFL			2	1	/* TX FIFO Underflow */
+	TXF_OFL			3	1	/* TX FIFO Overflow */
+I2C_PIRQSM			0xF7600070	/* Protocol Interrupt Request Source Mask Register */
+	AM				0	1	/* Address Match */
+	GC				1	1	/* General Call */
+	MC				2	1	/* Master Code */
+	AL				3	1	/* Arbitration Lost */
+	NACK			4	1	/* Not-acknowledge Received */
+	TX_END			5	1	/* Transmission End */
+	RX				6	1	/* Receive Mode */
+I2C_PIRQSS			0xF7600074	/* Protocol Interrupt Request Source Status Register */
+	AM				0	1	/* Address Match */
+	GC				1	1	/* General Call */
+	MC				2	1	/* Master Code */
+	AL				3	1	/* Arbitration Lost */
+	NACK			4	1	/* Not-acknowledge Received */
+	TX_END			5	1	/* Transmission End */
+	RX				6	1	/* Receive Mode */
+I2C_PIRQSC			0xF7600078	/* Protocol Interrupt Request Source Clear Register */
+	AM				0	1	/* Address Match */
+	GC				1	1	/* General Call */
+	MC				2	1	/* Master Code */
+	AL				3	1	/* Arbitration Lost */
+	NACK			4	1	/* Not-acknowledge Received */
+	TX_END			5	1	/* Transmission End */
+	RX				6	1	/* Receive Mode */
+I2C_RIS				0xF7600080	/* Raw Interrupt Status Register */
+	LSREQ_INT		0	1	/* Last Single Request Interrupt */
+	SREQ_INT		1	1	/* Single Request Interrupt */
+	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
+	BREQ_INT		3	1	/* Burst Request Interrupt */
+	I2C_ERR_INT		4	1	/* I2C Error Interrupt */
+	I2C_P_INT		5	1	/* I2C Protocol Interrupt */
+I2C_IMSC			0xF7600084	/* Interrupt Mask Control Register */
+	LSREQ_INT		0	1	/* Last Single Request Interrupt */
+	SREQ_INT		1	1	/* Single Request Interrupt */
+	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
+	BREQ_INT		3	1	/* Burst Request Interrupt */
+	I2C_ERR_INT		4	1	/* I2C Error Interrupt */
+	I2C_P_INT		5	1	/* I2C Protocol Interrupt */
+I2C_MIS				0xF7600088	/* Masked Interrupt Status Register */
+	LSREQ_INT		0	1	/* Last Single Request Interrupt */
+	SREQ_INT		1	1	/* Single Request Interrupt */
+	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
+	BREQ_INT		3	1	/* Burst Request Interrupt */
+	I2C_ERR_INT		4	1	/* I2C Error Interrupt */
+	I2C_P_INT		5	1	/* I2C Protocol Interrupt */
+I2C_ICR				0xF760008C	/* Interrupt Clear Register */
+	LSREQ_INT		0	1	/* Last Single Request Interrupt */
+	SREQ_INT		1	1	/* Single Request Interrupt */
+	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
+	BREQ_INT		3	1	/* Burst Request Interrupt */
+I2C_ISR				0xF7600090	/* Interrupt Set Register */
+	LSREQ_INT		0	1	/* Last Single Request Interrupt */
+	SREQ_INT		1	1	/* Single Request Interrupt */
+	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
+	BREQ_INT		3	1	/* Burst Request Interrupt */
+	I2C_ERR_INT		4	1	/* I2C Error Interrupt */
+	I2C_P_INT		5	1	/* I2C Protocol Interrupt */
+I2C_TXD				0xF7608000	/* Transmission Data Register */
 	READ		0	1
 	ADDR		1	7
 	REG			8	8
 	VAL			16	8
-I2C_RX_FIFO		0xF760C000
+I2C_RXD				0xF760C000	/* Reception Data Register */
+	READ		0	1
+	ADDR		1	7
+	REG			8	8
+	VAL			16	8
 
 # GSM_TPU
 GSM_TPU_CLC		0xF6400000
@@ -793,7 +913,10 @@ MCI_CLC		0xF7300000
 	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
 	RMC			8	7
 MCI_ID		0xF7200008
-MMCI_POWER			0xF7301000
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+MCI_POWER			0xF7301000
 	CTRL			0	2
 		0b00	POWER_OFF
 		0b01	RESERVED
@@ -802,40 +925,44 @@ MMCI_POWER			0xF7301000
 	VOLTAGE			2	4
 	OPENDRAIN		6	1
 	ROD				7	1
-MMCI_CLOCK			0xF7301004
+MCI_CLOCK			0xF7301004
 	CLKDIV			0	8	/* MCLCLK frequency = MCLK / [2x(ClkDiv+1)]. */
 	ENABLE			8	1
 	PWRSAVE			9	1
 	BYPASS			10	1
 	WIDEBUS			11	1
-MMCI_ARGUMENT		0xF7301008
+MCI_ARGUMENT		0xF7301008
 	CMDARG			0	32
-MMCI_COMMAND		0xF730100C
+MCI_COMMAND		0xF730100C
 	CMDINDEX		0	6
 	RESPONSE		6	1
 	LONGRSP			7	1
 	INTERRUPT		8	1
 	PENDING			9	1
 	ENABLE			10	1
-MMCI_RESPCMD		0xF7301010
+MCI_RESPCMD		0xF7301010
 	CMDINDEX		0	6
-MMCI_RESPONSE0		0xF7301014
-MMCI_RESPONSE1		0xF7301018
-MMCI_RESPONSE2		0xF730101C
-MMCI_RESPONSE3		0xF7301020
-MMCI_DATATIMER		0xF7301024
+MCI_RESPONSE0		0xF7301014
+MCI_RESPONSE1		0xF7301018
+MCI_RESPONSE2		0xF730101C
+MCI_RESPONSE3		0xF7301020
+MCI_DATATIMER		0xF7301024
 	TIMER			0	32
-MMCI_DATALENGTH		0xF7301028
+MCI_DATALENGTH		0xF7301028
 	LENGTH			0	16
-MMCI_DATACTRL		0xF730102C
+MCI_DATACTRL		0xF730102C
 	EMABLE			0	1
-	DIRECTION		1	1
+	DIRECTION		1	1	/* 0 = From controller to card, 1 = From card to controller */
+		0	WRITE
+		1	READ
 	MODE			2	1
+		0	BLCOK
+		1	STREAM
 	DMAENABLE		3	1
 	BLOCKSIZE		4	4
-MMCI_DATACNT		0xF7301030
+MCI_DATACNT		0xF7301030
 	COUNT			0	16
-MMCI_STATUS			0xF7301034
+MCI_STATUS			0xF7301034
 	CMDCRCFAIL		0	1	/* Command response received (CRC check failed) */
 	DATACRCFAIL		1	1	/* Data block sent/received (CRC check failed) */
 	CMDTIMEOUT		2	1	/* Command response timeout */
@@ -858,7 +985,7 @@ MMCI_STATUS			0xF7301034
 	RXFIFOEMPTY		19	1	/* Receive FIFO empty */
 	TXDATAAVLBL		20	1	/* Data available in transmit FIFO */
 	RXDATAAVLBL		21	1	/* Data available in receive FIFO */
-MMCI_CLEAR			0xF7301038
+MCI_CLEAR			0xF7301038
 	CMDCRCFAILCLR	0	1
 	DATACRCFAILCLR	1	1
 	CMDTIMEOUTCLR	2	1
@@ -870,7 +997,7 @@ MMCI_CLEAR			0xF7301038
 	DATAENDCLR		8	1
 	STARTBITERRCLR	9	1
 	DATABLOCKENDCLR	10	1
-MMCI_MASK0			0xF730103C
+MCI_MASK0			0xF730103C
 	CMDCRCFAILMASK			0	1
 	DATACRCFAILMASK			1	1
 	CMDTIMEOUTMASK			2	1
@@ -893,7 +1020,7 @@ MMCI_MASK0			0xF730103C
 	RXFIFOEMPTYMASK			19	1
 	TXDATAAVLBLMASK			20	1
 	RXDATAAVLBLMASK			21	1
-MMCI_MASK1			0xF7301040
+MCI_MASK1			0xF7301040
 	CMDCRCFAILMASK			0	1
 	DATACRCFAILMASK			1	1
 	CMDTIMEOUTMASK			2	1
@@ -916,26 +1043,26 @@ MMCI_MASK1			0xF7301040
 	RXFIFOEMPTYMASK			19	1
 	TXDATAAVLBLMASK			20	1
 	RXDATAAVLBLMASK			21	1
-MMCI_SELECT			0xF7301044
+MCI_SELECT			0xF7301044
 	SDCARD			0	4
-MMCI_FIFOCNT		0xF7301048
+MCI_FIFOCNT		0xF7301048
 	COUNT			0	16
-MMCI_FIFO_0			0xF7301080
-MMCI_FIFO_1			0xF7301084
-MMCI_FIFO_2			0xF7301088
-MMCI_FIFO_3			0xF730108C
-MMCI_FIFO_4			0xF7301090
-MMCI_FIFO_5			0xF7301094
-MMCI_FIFO_6			0xF7301098
-MMCI_FIFO_7			0xF730109C
-MMCI_FIFO_8			0xF73010A0
-MMCI_FIFO_9			0xF73010A4
-MMCI_FIFO_10		0xF73010A8
-MMCI_FIFO_11		0xF73010AC
-MMCI_FIFO_12		0xF73010B0
-MMCI_FIFO_13		0xF73010B4
-MMCI_FIFO_14		0xF73010B8
-MMCI_FIFO_15		0xF73010BC
+MCI_FIFO_0			0xF7301080
+MCI_FIFO_1			0xF7301084
+MCI_FIFO_2			0xF7301088
+MCI_FIFO_3			0xF730108C
+MCI_FIFO_4			0xF7301090
+MCI_FIFO_5			0xF7301094
+MCI_FIFO_6			0xF7301098
+MCI_FIFO_7			0xF730109C
+MCI_FIFO_8			0xF73010A0
+MCI_FIFO_9			0xF73010A4
+MCI_FIFO_10		0xF73010A8
+MCI_FIFO_11		0xF73010AC
+MCI_FIFO_12		0xF73010B0
+MCI_FIFO_13		0xF73010B4
+MCI_FIFO_14		0xF73010B8
+MCI_FIFO_15		0xF73010BC
 MCI_PERIPH_ID0		0xF7301FE0
 	PARTNUMBER0		0	8
 MCI_PERIPH_ID1		0xF7301FE4
@@ -947,9 +1074,9 @@ MCI_PERIPH_ID2		0xF7301FE8
 MCI_PERIPH_ID3		0xF7301FEC
 	CONFIGURATION	0	8
 MCI_PCELL_ID0		0xF7301FF0
-MCI_PCELL_ID1		0XF7301FF4
-MCI_PCELL_ID2		0XF7301FF8
-MCI_PCELL_ID3		0XF7301FFC
+MCI_PCELL_ID1		0xF7301FF4
+MCI_PCELL_ID2		0xF7301FF8
+MCI_PCELL_ID3		0xF7301FFC
 
 # USART0
 USART0_CLC			0xF1000000
@@ -1348,21 +1475,6 @@ USB_EPIRST0		0xF220006C
 USB_EPIRST1		0xF2200070
 USB_EPIRST2		0xF2200074
 USB_EPIRST3		0xF2200078
-
-# I2C
-I2C_CLC			0xF4800000
-	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	7
-I2C_PISEL		0xF4800004
-I2C_ID			0xF4800008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-I2C_SYSCON		0xF4800010
-I2C_BUSCON		0xF4800014
-I2C_RTB			0xF4800018
-I2C_WHBSYSCON	0xF4800020
 
 # EBU
 EBU_CLC				0xF0000000
@@ -2401,6 +2513,15 @@ FIQ_CURRENT_NUM		0xF2800018 # тут текущий номер интеррап�
 	NUM				0	8
 IRQ_CURRENT_NUM		0xF280001C # тут текущий номер интеррапта в irq_handler
 	NUM				0	8
+		0x04		USART0_TX
+		0x05		USART0_TBUF
+		0x06		USART0_RX
+		0x07		USART0_ERR
+		0x08		USART0_CTS
+		0x09		USART0_ABDET
+		0x0A		USART0_ABSTART
+		0x0B		USART0_TMO
+
 		0x1A		USART1_TX
 		0x1B		USART1_TBUF
 		0x1C		USART1_RX
@@ -2409,6 +2530,18 @@ IRQ_CURRENT_NUM		0xF280001C # тут текущий номер интеррап�
 		0x1F		USART1_ABDET
 		0x20		USART1_ABSTART
 		0x21		USART1_TMO
+
+		0x23		DMA
+		0x24		DMA_CH0
+		0x25		DMA_CH1
+		0x26		DMA_CH2
+		0x27		DMA_CH3
+		0x28		DMA_CH4
+		0x29		DMA_CH5
+		0x2A		DMA_CH6
+		0x2B		DMA_CH7
+
+		0x77		GSM_TIM
 # Регистры приоритетов для каждого интеррапта
 IRQS_PRIO		0xF2800030-0xF28002D4
 	PRIORITY	0	8
@@ -2455,15 +2588,15 @@ IRQ_032_USART1_ABSTART		0xF28000B0
 IRQ_033_USART1_TMO			0xF28000B4
 
 IRQ_034			0xF28000B8
-IRQ_035			0xF28000BC
-IRQ_036			0xF28000C0
-IRQ_037			0xF28000C4
-IRQ_038			0xF28000C8
-IRQ_039			0xF28000CC
-IRQ_040			0xF28000D0
-IRQ_041			0xF28000D4
-IRQ_042			0xF28000D8
-IRQ_043			0xF28000DC
+IRQ_035_DMA				0xF28000BC
+IRQ_036_DMA_CH0			0xF28000C0
+IRQ_037_DMA_CH1			0xF28000C4
+IRQ_038_DMA_CH2			0xF28000C8
+IRQ_039_DMA_CH3			0xF28000CC
+IRQ_040_DMA_CH4			0xF28000D0
+IRQ_041_DMA_CH5			0xF28000D4
+IRQ_042_DMA_CH6			0xF28000D8
+IRQ_043_DMA_CH7			0xF28000DC
 IRQ_044			0xF28000E0
 IRQ_045			0xF28000E4
 IRQ_046			0xF28000E8
