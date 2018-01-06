@@ -68,9 +68,6 @@ enum {
 // STM
 #define STM_4    0xF4B00020
 
-extern unsigned int _cpu_vectors;
-
-
 enum {
 	UART_SPEED_12000 = 0x003f00f2, 
 	UART_SPEED_57600 = 0x001901d8, 

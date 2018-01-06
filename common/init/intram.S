@@ -14,9 +14,10 @@ __enter_reset:
 	msr cpsr, r1
 	ldr sp, =sp_addr_irq_mode
 	msr cpsr, r0
+	
 	bl __init_vectors
 	bl main
-	
+
 endless_loop:
 	b	endless_loop
 
@@ -39,5 +40,5 @@ _cpu_vectors:
 	irq_addr:       .word 0
 	fiq_addr:       .word 0
 
-sp_addr_sys_mode: .word 0x97800
-sp_addr_irq_mode: .word 0x82000
+sp_addr_sys_mode:	.word 0x97800
+sp_addr_irq_mode:	.word 0x82000

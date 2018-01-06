@@ -204,7 +204,6 @@ void disable_interrapts() {
 }
 
 void disable_first_whatchdog() {
-	REG(SCU_ROMAMCR) &= ~1;
 	REG(SCU_WDTCON1) = 0x8;
 }
 

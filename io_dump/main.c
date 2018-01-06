@@ -5,26 +5,23 @@
 extern void da_handler();
 const char *get_mod_name(unsigned int id);
 
-void _start() {
+void main() {
 	set_einit(0);
 	disable_first_whatchdog();
 	set_einit(1);
 	init_watchdog();
 	
-	int i;
 	void **vectors = (void **) 0;
-	for (i = 0; i < 8; ++i)
-		vectors[i] = (void *) (&_cpu_vectors)[i];
-	vectors[8] = da_handler;
-	vectors[9] = da_handler;
-	vectors[10] = loop;
-	vectors[11] = da_handler;
-	vectors[12] = da_handler;
-	vectors[13] = loop;
-	vectors[14] = loop;
-	vectors[15] = loop;
+	vectors[8] = (void *) da_handler;
+	vectors[9] = (void *) da_handler;
+	vectors[10] = (void *) loop;
+	vectors[11] = (void *) da_handler;
+	vectors[12] = (void *) da_handler;
+	vectors[13] = (void *) loop;
+	vectors[14] = (void *) loop;
+	vectors[15] = (void *) loop;
 	
-	unsigned int addr, v, irq_ok = 0;
+	unsigned int addr, v, irq_ok = 0, i;
 	for (addr = 0xF0000000; addr <= 0xFFFF0000; addr += 0x100) {
 		v = 0xFFFFFFFF;
 		v = REG(addr);
