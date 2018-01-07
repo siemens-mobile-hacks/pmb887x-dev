@@ -137,7 +137,7 @@ for my $struct (values %$structs) {
 		my $addr = $d->[1] || $start;
 		
 		printf("#define\t%s_BASE\t(0x%08X)\n", $name, $addr);
-		print "#define\t$name\t((".$struct->{data}->{name}."_TypeDef *) ".$name."_BASE)\n\n";
+		print "#define\t$name\t((volatile ".$struct->{data}->{name}."_TypeDef *) ".$name."_BASE)\n\n";
 	}
 	
 	print "typedef struct {\n";

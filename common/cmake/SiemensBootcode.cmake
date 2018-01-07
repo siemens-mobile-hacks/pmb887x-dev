@@ -47,3 +47,14 @@ CMAKE_FORCE_CXX_COMPILER(${CMAKE_CXX_COMPILER} GNU)
 include_directories(${COMMON_PATH})
 add_executable ("${OUTPUT_NAME}.elf" ${SOURCES} ${HEADERS})
 add_custom_command(TARGET "${OUTPUT_NAME}.elf" POST_BUILD COMMAND arm-none-eabi-objcopy -O binary "${OUTPUT_NAME}.elf" "${OUTPUT_NAME}.bin")
+
+if (UNIX)
+	ADD_CUSTOM_TARGET (distclean)
+	SET(cmake_files Makefile CMakeFiles CMakeCache.txt cmake_install.cmake "${OUTPUT_NAME}.elf" "${OUTPUT_NAME}.bin")
+	ADD_CUSTOM_COMMAND(
+		DEPENDS clean
+		COMMAND rm
+		ARGS -Rf ${cmake_files}
+		TARGET distclean
+	)
+endif()
