@@ -28,7 +28,7 @@ sub main {
 	my $boot_speed = 115200;
 	my $speed = 1600000;
 	my $ign = 0;
-	my $dtr = 0;
+	my $dtr = -1;
 	my $rts = 0;
 	my $flasher = [];
 	my $exec_file = "../siemens-linux/kernel/arch/arm/boot/Image";
@@ -36,12 +36,14 @@ sub main {
 	my $as_hex = 0;
 	my $run_picocom = 0;
 	my $read_OTP = 0;
+	my $ign2 = 0;
 	
 	my $err = get_argv_opts({
 		"device=s"		=> \$device, 
 		"boot-speed=s"	=> \$boot_speed, 
 		"speed=s"		=> \$speed, 
 		"ign"			=> \$ign, 
+		"ign2"			=> \$ign2, 
 		"dtr"			=> \$dtr, 
 		"rts"			=> \$rts, 
 		"\@flasher=s"	=> $flasher, 
@@ -52,6 +54,10 @@ sub main {
 		"exec-addr=s"	=> \$exec_addr, 
 		"dump-otp"		=> \$read_OTP
 	});
+	
+	$ign = 2 if ($ign2);
+	
+	$dtr = ($ign == 2) if ($dtr == -1);
 	
 	$exec_addr = parse_addr($exec_addr);
 	
@@ -66,7 +72,7 @@ sub main {
 			'	--device=/dev/ttyUSB3    com port device',
 			'	--boot-speed=112500      boot speed',
 			'	--speed=1600000          speed after boot',
-			'	--ign                    autoignition',
+			'	--ign                    autoignition (1=normal, 2=vova7890 lazy ass ignition)',
 			'	--dtr                    up dtr pin (for noname DCA-500)',
 			'	--rts                    up dtr pin (for noname DCA-500)',
 			'',
@@ -131,12 +137,17 @@ sub main {
 	
 	$port->read_char_time(0);
 	$port->read_const_time($ign ? 20 : 100);
-
-	$port->dtr_active($dtr);
-	$port->rts_active($rts);
+	
+	if ($ign) {
+		$port->dtr_active($ign == 2);
+		$port->rts_active($rts);
+	} else {
+		$port->dtr_active($dtr);
+		$port->rts_active($rts);
+	}
 	
 	$SIG{INT} = $SIG{TERM} = sub {
-		$port->dtr_active(0);
+		$port->dtr_active($ign == 2);
 		$port->rts_active(0);
 		exit(0);
 	};
@@ -162,7 +173,7 @@ sub main {
 				$last_dtr_val = !$last_dtr_val;
 				$last_dtr = time;
 				$read_zero = 0;
-				$port->dtr_active($last_dtr_val);
+				$port->dtr_active($ign == 2 ? !$last_dtr_val : $last_dtr_val);
 				
 				print "^" if ($last_dtr_val);
 			}
