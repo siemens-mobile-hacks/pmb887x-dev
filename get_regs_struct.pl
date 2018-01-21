@@ -11,6 +11,20 @@ my $name_len = 0;
 
 my $rules = [
 	{
+		prefix	=> "STM_", 
+		name	=> "STM", 
+		define	=> [
+			["STM"]
+		], 
+		arrays	=> [
+			{
+				regexp	=> qr/STM_(\d+)$/, 
+				name	=> "TIM", 
+				index	=> sub { return $1 }
+			}
+		]
+	}, 
+	{
 		prefix	=> "MCI_", 
 		name	=> "MCI", 
 		define	=> [
