@@ -122,5 +122,6 @@ const char *get_cpu_mode(unsigned int cpsr);
 unsigned int __udivmodsi4(unsigned int num, unsigned int den, unsigned int * rem_p);
 signed int __aeabi_idiv(signed int num, signed int den);
 unsigned int __aeabi_uidiv(unsigned int num, unsigned int den);
+unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsigned long long *rem);
 
 #endif /* __PMB8876_H__ */
