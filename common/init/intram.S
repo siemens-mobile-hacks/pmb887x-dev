@@ -15,8 +15,7 @@ __enter_reset:
 	ldr sp, =sp_addr_irq_mode
 	msr cpsr, r0
 	
-	bl __init_vectors
-	bl main
+	bl __reset_handler
 
 endless_loop:
 	b	endless_loop

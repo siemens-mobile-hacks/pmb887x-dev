@@ -15,8 +15,9 @@ sub boot_module_init {
 	$port->read_char_time(1000);
 	$port->read_const_time(1000);
 	
-	::set_port_baudrate($port, 614400);
+	::set_port_baudrate($port, 1228800);
 	$port->write("OK");
+	print "Wait for ack...\n";
 	while ($port->read(1) ne ".") {
 		$port->write("OK");
 	}
@@ -37,7 +38,7 @@ sub boot_module_init {
 		if (!$sock_io || !$sock_io->connected) {
 			$sock_io = new IO::Socket::UNIX (
 				Type => SOCK_STREAM(), 
-				Peer => "/dev/shm/siemens_io_sniff_socket", 
+				Peer => "/dev/shm/pmb8876_io_bridge.sock", 
 				Blocking => 0
 			);
 			--$ok;
@@ -47,7 +48,7 @@ sub boot_module_init {
 		if (!$sock_irq || !$sock_irq->connected) {
 			$sock_irq = new IO::Socket::UNIX (
 				Type => SOCK_STREAM(), 
-				Peer => "/dev/shm/siemens_irq_sniff_socket", 
+				Peer => "/dev/shm/pmb8876_io_bridge_irq.sock", 
 				Blocking => 1
 			);
 			--$ok;
@@ -73,10 +74,18 @@ sub boot_module_init {
 	
 	$select->add($sock_io);
 	
+	my $last_irq = -1;
+	
 	my $write_irq = sub {
 		my $irq = shift;
-		if (syswrite($sock_irq, chr($irq)) != 1) {
-			die("write irq error: $!\n");
+		
+		if ($last_irq != $irq) {
+			$last_irq = $irq;
+			
+			print "IRQ: 0x".sprintf("%02X", $irq)."\n" if ($irq);
+			if (syswrite($sock_irq, chr($irq)) != 1) {
+				die("write irq error: $!\n");
+			}
 		}
 	};
 	
@@ -94,10 +103,9 @@ sub boot_module_init {
 	while (1) {
 		my $buf = "";
 		my $errors = 0;
-		my $irq = -1;
 		
 		while (1) {
-			my @ready = $select->can_read(1);
+			my @ready = $select->can_read(0);
 			my $fh = shift @ready;
 			if ($fh) {
 				my $len = sysread($fh, my $tmp, 1024);
@@ -119,10 +127,7 @@ sub boot_module_init {
 				
 				die "Read error (too long)" if ($errors > 10);
 			} else {
-				cmd_ping($port, sub {
-					$irq = shift;
-					$write_irq->($irq);
-				});
+				cmd_ping($port, $write_irq);
 			}
 		}
 		
@@ -130,25 +135,13 @@ sub boot_module_init {
 		if ($cmd eq "R" || $cmd eq "r" || $cmd eq "I" || $cmd eq "i") {
 			my $addr = unpack("V", substr($buf, 1, 4));
 			my $from = unpack("V", substr($buf, 5, 4));
-			my $data = cmd_read_unaligned($port, $addr, $cmd_to_size{$cmd}, 1, sub {
-				$irq = shift;
-			#	$write_irq->($irq);
-			});
+			my $data = cmd_read_unaligned($port, $addr, $cmd_to_size{$cmd}, 1, $write_irq);
 			
-		#	if ($addr == 0xF6400034) { # Костыль от l1bbcsg
-		#		$data = "\x76\x08\x00\x00";
-		#	}
-			
-		#	$irq = -1; # test
-			
-			my $ack = (($irq != -1) ? '+' : '!');
-			
-			syswrite($sock_io, $ack.$data);
-			syswrite($sock_io, chr($irq)) if ($irq != -1); # IRQ_N
+			syswrite($sock_io, '!'.$data);
 			
 			my $vv = unpack("V", $data);
 			
-			if ($addr != 0xF4300118 && $addr != 0xF4B00010 && $addr != 0xF64000F8) {
+			if ($addr != 0xF4300118) {
 				printf("READ%s from %08X (%08X)%s (from %08X)\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
 					$addr, $vv, reg_name($addr, $vv), $from) if ($LOG_IO);
 			}
@@ -183,52 +176,25 @@ sub boot_module_init {
 				$valid = 0;
 			}
 			
-			if ($addr == 0xF280020C) {
-				# 0x77 irq
-		#		$valid = 0;
-			}
-			
-			if ($addr == 0xF280029C) {
-				# 0x9B irq
-		#		$valid = 0;
-			}
-			
 			if ($addr == 0xF4300118) {
 				# PM_WADOG
 				$valid = 0;
 			}
 			
-			if ($addr == 0xF6400028) {
-				# $gsm_tpu_cnt = $value;
-			}
-			
-			if ($addr != 0xF4300118 && $addr != 0xF4B00010 && $addr != 0xF64000F8) {
+			if ($addr != 0xF4300118) {
 				printf("WRITE%s %08X to %08X%s (from %08X)%s\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
 					$value, $addr, reg_name($addr, $value), $from, $valid ? "" : " | SKIP!!!!") if ($LOG_IO);
 			}
 			
 			if ($valid) {
-				cmd_write_unaligned($port, $addr, $cmd_to_size{$cmd}, $value, sub {
-					$irq = shift;
-			#		$write_irq->($irq);
-				});
+				cmd_write_unaligned($port, $addr, $cmd_to_size{$cmd}, $value, $write_irq);
 			} else {
-				cmd_ping($port, sub {
-					$irq = shift;
-			#		$write_irq->($irq);
-				});
+				cmd_ping($port, $write_irq);
 			}
 			
-		#	$irq = -1; # test
-			
-			my $ack = $irq != -1 ? '+' : '!';
-			syswrite($sock_io, $ack); # OK
-			syswrite($sock_io, chr($irq)) if ($irq != -1); # IRQ_N
+			syswrite($sock_io, '!'); # OK
 		} else {
-			cmd_ping($port, sub {
-				$irq = shift;
-				$write_irq->($irq);
-			});
+			cmd_ping($port, $write_irq);
 		}
 	}
 }

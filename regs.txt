@@ -4,10 +4,6 @@
 #		REG_BIT_NAME	SHIFT	VALUE_BITS
 #		REG_BIT_NAME	SHIFT	VALUE_BITS	
 
-WTF_COND_0	0xA8D95BA4
-WTF_COND_1	0xA8D95BC8
-
-# Примерные адресные простреснтва для подсистем, регистры которых найдены частично
 EBU_*		0xF0000000-0xF000FFFF
 USART0_*	0xF1000000-0xF100FFFF
 SSC0_*		0xF1100000-0xF110FFFF
@@ -40,159 +36,203 @@ MMICIF_*	0xF8000000-0xF80FFFFF
 FLASH_*		0xA0000000-0xA7FFFFFF
 RAM_*		0xA8000000-0xA9FFFFFF
 
-# PLL
-PLL_OSC		0xF45000A0
-PLL_CON0	0xF45000A4
-PLL_CON1	0xF45000A8
-PLL_CON2	0xF45000AC
-PLL_STAT	0xF45000B0
-PLL_ICR		0xF45000CC
-
-# I2C
-I2C_CLC				0xF7600000	/* Clock Control Register */
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-I2C_ID				0xF7600008	/* Module Identification Register */
+# AMCPWR
+AMCPWR_CLC		0xF4C00000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+AMCPWR_ID		0xF4C00008
 	MOD_NUMBER		16	16
 	MOD_32B			8	8
 	MOD_REV			0	8
-I2C_RUNCTRL			0xF7600010	/* RUN Control Register */
-	RUN				0	1	/* Enable I2C-bus Interface */
-I2C_ENDDCTRL		0xF7600014	/* End Data Control Register */
-	SETRSC			0	1	/* Set Restart Condition */
-	SETEND			1	1	/* Set End of Transmission */
-I2C_FDIVCFG			0xF7600018	/* Fractional Divider Configuration Register */
-	DEC				0	11	/* Decrement Value of Fractional Divider */
-	INC				16	8	/* Increment Value of Fractional Divider */
-I2C_FDIVHIGHCFG		0xF760001C	/* Fractional Divider High-speed Mode Configuration Register */
-	DEC				0	11	/* Decrement Value of Fractional Divider */
-	INC				16	8	/* Increment Value of Fractional Divider */
-I2C_ADDRCFG			0xF7600020	/* Address Configuration Register */
-	ADR				0	10	/* I2C-bus Device Address */
-	TBAM			16	1	/* Ten Bit Address Mode */
-	GCE				17	1	/* General Call Enable */
-	MCE				18	1	/* Master Code Enable */
-	MnS				19	1	/* Master / not Slave */
-	SONA			20	1	/* Stop on Not-acknowledge */
-	SOPE			21	1	/* Stop on Packet End */
-I2C_BUSSTAT			0xF7600024	/* Bus Status Register */
-	BS				0	2	/* Bus Status */
-	RnW				2	1	/* Read/not Write */
-I2C_FIFOCFG			0xF7600028	/* FIFO Configuration Register */
-	RXBS			0	2	/* RX Burst Size */
-	TXBS			4	2	/* TX Burst Size */
-	RXFA			8	2	/* RX FIFO Alignment */
-	TXFA			12	2	/* TX FIFO Alignment */
-	RXFC			16	1	/* RX FIFO Flow Control */
-	TXFC			17	1	/* TX FIFO Flow Control */
-I2C_MRPSCTRL		0xF760002C	/* Maximum Received Packet Size Control Register */
-	SIZE			0	14	/* Maximum Received Packet Size */
-I2C_RPSSTAT			0xF7600030	/* Received Packet Size Status Registe */
-	SIZE			0	14	/* Received Packet Size */
-I2C_TPSCTRL			0xF7600034	/* Transmit Packet Size Control Register */
-	TX_SIZE			0	14	/* Transmit Packet Size */
-I2C_FFSSTAT			0xF7600038	/* Filled FIFO Stages Status Register */
-	FFS				0	6	/* Filled FIFO Stages */
-I2C_TIMCFG			0xF7600040	/* Timing Configuration Register */
-	SDA_DEL_HD_DAT		0	6	/* SDA Delay Stages for Data Hold Time */
-	HS_SDA_DEL_HD_DAT	6	3	/* SDA Delay Stages for Data Hold Time in High-speed Mode */
-	SCL_DEL_HD_STA		9	3	/* SCL Delay Stages for Hold Time Start (Restart) Bit */
-	EN_SCL_LOW_LEN		14	1	/* Enable Direct Configuration of SCL Low Period Length in Fast Mode */
-	FS_SCL_LOW			15	1	/* Set Fast Mode SCL Low Period Timing */
-	HS_SDA_DEL			16	3	/* SDA Delay Stages for Start/Stop bit in High-speed Mode */
-	SCL_LOW_LEN			24	8	/* SCL Low Length in Fast Mode */
-I2C_ERRIRQSM		0xF7600060	/* Error Interrupt Request Source Mask Register */
-	RXF_UFL			0	1	/* RX FIFO Underflow */
-	RXF_OFL			1	1	/* RX FIFO Overflow */
-	TXF_UFL			2	1	/* TX FIFO Underflow */
-	TXF_OFL			3	1	/* TX FIFO Overflow */
-I2C_ERRIRQSS		0xF7600064	/* Error Interrupt Request Source Status Register */
-	RXF_UFL			0	1	/* RX FIFO Underflow */
-	RXF_OFL			1	1	/* RX FIFO Overflow */
-	TXF_UFL			2	1	/* TX FIFO Underflow */
-	TXF_OFL			3	1	/* TX FIFO Overflow */
-I2C_ERRIRQSC		0xF7600068	/* Error Interrupt Request Source Clear Register */
-	RXF_UFL			0	1	/* RX FIFO Underflow */
-	RXF_OFL			1	1	/* RX FIFO Overflow */
-	TXF_UFL			2	1	/* TX FIFO Underflow */
-	TXF_OFL			3	1	/* TX FIFO Overflow */
-I2C_PIRQSM			0xF7600070	/* Protocol Interrupt Request Source Mask Register */
-	AM				0	1	/* Address Match */
-	GC				1	1	/* General Call */
-	MC				2	1	/* Master Code */
-	AL				3	1	/* Arbitration Lost */
-	NACK			4	1	/* Not-acknowledge Received */
-	TX_END			5	1	/* Transmission End */
-	RX				6	1	/* Receive Mode */
-I2C_PIRQSS			0xF7600074	/* Protocol Interrupt Request Source Status Register */
-	AM				0	1	/* Address Match */
-	GC				1	1	/* General Call */
-	MC				2	1	/* Master Code */
-	AL				3	1	/* Arbitration Lost */
-	NACK			4	1	/* Not-acknowledge Received */
-	TX_END			5	1	/* Transmission End */
-	RX				6	1	/* Receive Mode */
-I2C_PIRQSC			0xF7600078	/* Protocol Interrupt Request Source Clear Register */
-	AM				0	1	/* Address Match */
-	GC				1	1	/* General Call */
-	MC				2	1	/* Master Code */
-	AL				3	1	/* Arbitration Lost */
-	NACK			4	1	/* Not-acknowledge Received */
-	TX_END			5	1	/* Transmission End */
-	RX				6	1	/* Receive Mode */
-I2C_RIS				0xF7600080	/* Raw Interrupt Status Register */
-	LSREQ_INT		0	1	/* Last Single Request Interrupt */
-	SREQ_INT		1	1	/* Single Request Interrupt */
-	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
-	BREQ_INT		3	1	/* Burst Request Interrupt */
-	I2C_ERR_INT		4	1	/* I2C Error Interrupt */
-	I2C_P_INT		5	1	/* I2C Protocol Interrupt */
-I2C_IMSC			0xF7600084	/* Interrupt Mask Control Register */
-	LSREQ_INT		0	1	/* Last Single Request Interrupt */
-	SREQ_INT		1	1	/* Single Request Interrupt */
-	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
-	BREQ_INT		3	1	/* Burst Request Interrupt */
-	I2C_ERR_INT		4	1	/* I2C Error Interrupt */
-	I2C_P_INT		5	1	/* I2C Protocol Interrupt */
-I2C_MIS				0xF7600088	/* Masked Interrupt Status Register */
-	LSREQ_INT		0	1	/* Last Single Request Interrupt */
-	SREQ_INT		1	1	/* Single Request Interrupt */
-	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
-	BREQ_INT		3	1	/* Burst Request Interrupt */
-	I2C_ERR_INT		4	1	/* I2C Error Interrupt */
-	I2C_P_INT		5	1	/* I2C Protocol Interrupt */
-I2C_ICR				0xF760008C	/* Interrupt Clear Register */
-	LSREQ_INT		0	1	/* Last Single Request Interrupt */
-	SREQ_INT		1	1	/* Single Request Interrupt */
-	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
-	BREQ_INT		3	1	/* Burst Request Interrupt */
-I2C_ISR				0xF7600090	/* Interrupt Set Register */
-	LSREQ_INT		0	1	/* Last Single Request Interrupt */
-	SREQ_INT		1	1	/* Single Request Interrupt */
-	LBREQ_INT		2	1	/* Last Burst Request Interrupt */
-	BREQ_INT		3	1	/* Burst Request Interrupt */
-	I2C_ERR_INT		4	1	/* I2C Error Interrupt */
-	I2C_P_INT		5	1	/* I2C Protocol Interrupt */
-I2C_TXD				0xF7608000	/* Transmission Data Register */
-	READ		0	1
-	ADDR		1	7
-	REG			8	8
-	VAL			16	8
-I2C_RXD				0xF760C000	/* Reception Data Register */
-	READ		0	1
-	ADDR		1	7
-	REG			8	8
-	VAL			16	8
 
-# GSM_TPU
-GSM_TPU_CLC		0xF6400000
-	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	7
-GSM_TPU_CON		0xF64000F8
-	ENABLE		12	1
-	RESET		14	1
+
+# CAPCOM0
+CAPCOM0_CLC					0xF4000000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+CAPCOM0_CCPISEL				0xF4000004
+CAPCOM0_ID					0xF4000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+CAPCOM0_ZERO1				0xF400000C
+CAPCOM0_T01CON				0xF4000010
+CAPCOM0_CCM0				0xF4000014
+CAPCOM0_CCM1				0xF4000018
+CAPCOM0_RESERVED1[0]		0xF400001C
+CAPCOM0_RESERVED1[1]		0xF4000020
+CAPCOM0_CCOUT				0xF4000024
+CAPCOM0_CCIOC				0xF4000028
+CAPCOM0_CCSEE				0xF400002C
+CAPCOM0_CCSEM				0xF4000030
+CAPCOM0_CCDRM				0xF4000034
+CAPCOM0_RESERVED3[0]		0xF4000038
+CAPCOM0_RESERVED3[1]		0xF400003C
+CAPCOM0_T0					0xF4000040
+CAPCOM0_T0REL				0xF4000044
+CAPCOM0_T1					0xF4000048
+CAPCOM0_T1REL				0xF400004C
+CAPCOM0_CC0					0xF4000050
+CAPCOM0_CC1					0xF4000054
+CAPCOM0_CC2					0xF4000058
+CAPCOM0_CC3					0xF400005C
+CAPCOM0_CC4					0xF4000060
+CAPCOM0_CC5					0xF4000064
+CAPCOM0_CC6					0xF4000068
+CAPCOM0_CC7					0xF400006C
+CAPCOM0_RESERVED5[0]		0xF4000070
+CAPCOM0_RESERVED5[1]		0xF4000074
+CAPCOM0_RESERVED5[2]		0xF4000078
+CAPCOM0_RESERVED5[3]		0xF400007C
+CAPCOM0_RESERVED5[4]		0xF4000080
+CAPCOM0_RESERVED5[5]		0xF4000084
+CAPCOM0_RESERVED5[6]		0xF4000088
+CAPCOM0_RESERVED5[7]		0xF400008C
+CAPCOM0_ZERO2				0xF4000090
+CAPCOM0_ZERO3				0xF4000094
+CAPCOM0_ZERO4				0xF4000098
+CAPCOM0_ZERO5				0xF400009C
+CAPCOM0_RESERVED13[0]		0xF40000A0
+CAPCOM0_RESERVED13[1]		0xF40000A4
+CAPCOM0_RESERVED13[2]		0xF40000A8
+CAPCOM0_RESERVED13[3]		0xF40000AC
+CAPCOM0_RESERVED13[4]		0xF40000B0
+CAPCOM0_RESERVED13[5]		0xF40000B4
+CAPCOM0_RESERVED13[6]		0xF40000B8
+CAPCOM0_RESERVED13[7]		0xF40000BC
+CAPCOM0_RESERVED13[8]		0xF40000C0
+CAPCOM0_RESERVED13[9]		0xF40000C4
+CAPCOM0_RESERVED13[10]		0xF40000C8
+CAPCOM0_RESERVED13[11]		0xF40000CC
+CAPCOM0_RESERVED13[12]		0xF40000D0
+CAPCOM0_RESERVED13[13]		0xF40000D4
+CAPCOM0_CC7IC				0xF40000D8
+CAPCOM0_CC6IC				0xF40000DC
+CAPCOM0_CC5IC				0xF40000E0
+CAPCOM0_CC4IC				0xF40000E4
+CAPCOM0_CC3IC				0xF40000E8
+CAPCOM0_CC2IC				0xF40000EC
+CAPCOM0_CC1IC				0xF40000F0
+CAPCOM0_CC0IC				0xF40000F4
+CAPCOM0_T1IC				0xF40000F8
+CAPCOM0_T0IC				0xF40000FC
+
+
+# CAPCOM1
+CAPCOM1_CLC					0xF4000000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+CAPCOM1_PISEL				0xF4000004
+CAPCOM1_ID					0xF4000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+CAPCOM1_ZERO1				0xF400000C
+CAPCOM1_T01CON				0xF4000010
+CAPCOM1_CCM0				0xF4000014
+CAPCOM1_CCM1				0xF4000018
+CAPCOM1_RESERVED1[0]		0xF400001C
+CAPCOM1_RESERVED1[1]		0xF4000020
+CAPCOM1_CCOUT				0xF4000024
+CAPCOM1_CCIOC				0xF4000028
+CAPCOM1_CCSEE				0xF400002C
+CAPCOM1_CCSEM				0xF4000030
+CAPCOM1_CCDRM				0xF4000034
+CAPCOM1_RESERVED3[0]		0xF4000038
+CAPCOM1_RESERVED3[1]		0xF400003C
+CAPCOM1_T0					0xF4000040
+CAPCOM1_T0REL				0xF4000044
+CAPCOM1_T1					0xF4000048
+CAPCOM1_T1REL				0xF400004C
+CAPCOM1_CC0					0xF4000050
+CAPCOM1_CC1					0xF4000054
+CAPCOM1_CC2					0xF4000058
+CAPCOM1_CC3					0xF400005C
+CAPCOM1_CC4					0xF4000060
+CAPCOM1_CC5					0xF4000064
+CAPCOM1_CC6					0xF4000068
+CAPCOM1_CC7					0xF400006C
+CAPCOM1_RESERVED5[0]		0xF4000070
+CAPCOM1_RESERVED5[1]		0xF4000074
+CAPCOM1_RESERVED5[2]		0xF4000078
+CAPCOM1_RESERVED5[3]		0xF400007C
+CAPCOM1_RESERVED5[4]		0xF4000080
+CAPCOM1_RESERVED5[5]		0xF4000084
+CAPCOM1_RESERVED5[6]		0xF4000088
+CAPCOM1_RESERVED5[7]		0xF400008C
+CAPCOM1_ZERO2				0xF4000090
+CAPCOM1_ZERO3				0xF4000094
+CAPCOM1_ZERO4				0xF4000098
+CAPCOM1_ZERO5				0xF400009C
+CAPCOM1_RESERVED13[0]		0xF40000A0
+CAPCOM1_RESERVED13[1]		0xF40000A4
+CAPCOM1_RESERVED13[2]		0xF40000A8
+CAPCOM1_RESERVED13[3]		0xF40000AC
+CAPCOM1_RESERVED13[4]		0xF40000B0
+CAPCOM1_RESERVED13[5]		0xF40000B4
+CAPCOM1_RESERVED13[6]		0xF40000B8
+CAPCOM1_RESERVED13[7]		0xF40000BC
+CAPCOM1_RESERVED13[8]		0xF40000C0
+CAPCOM1_RESERVED13[9]		0xF40000C4
+CAPCOM1_RESERVED13[10]		0xF40000C8
+CAPCOM1_RESERVED13[11]		0xF40000CC
+CAPCOM1_RESERVED13[12]		0xF40000D0
+CAPCOM1_RESERVED13[13]		0xF40000D4
+CAPCOM1_CC7IC				0xF40000D8
+CAPCOM1_CC6IC				0xF40000DC
+CAPCOM1_CC5IC				0xF40000E0
+CAPCOM1_CC4IC				0xF40000E4
+CAPCOM1_CC3IC				0xF40000E8
+CAPCOM1_CC2IC				0xF40000EC
+CAPCOM1_CC1IC				0xF40000F0
+CAPCOM1_CC0IC				0xF40000F4
+CAPCOM1_T1IC				0xF40000F8
+CAPCOM1_T0IC				0xF40000FC
+
+
+# CIF
+CIF_CLC		0xF7000000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+CIF_ID		0xF7000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+
+DIF_CLC		0xF7100000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+DIF_ID		0xF7100008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
 
 DMA_INT_STATUS			0xF3000000	/* Status of the DMA interrupts after masking */
 	CH0			0	1
@@ -894,592 +934,16 @@ DMA_PCELL_ID1		0xF3000FF4
 DMA_PCELL_ID2		0xF3000FF8
 DMA_PCELL_ID3		0xF3000FFC
 
-DIF_CLC		0xF7100000
-	RMC				8	7
-	FSOE			5	1
-	SBWE			4	1
-	SPEN			2	1
-	DISS			1	1
-	DISR			0	1
-DIF_ID		0xF7100008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# MultiMedia Card Interface (MCI) Controller
-# MCI
-MCI_CLC		0xF7300000
-	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	7
-MCI_ID		0xF7200008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-MCI_POWER			0xF7301000
-	CTRL			0	2
-		0b00	POWER_OFF
-		0b01	RESERVED
-		0b10	POWER_UP
-		0b11	POWER_ON
-	VOLTAGE			2	4
-	OPENDRAIN		6	1
-	ROD				7	1
-MCI_CLOCK			0xF7301004
-	CLKDIV			0	8	/* MCLCLK frequency = MCLK / [2x(ClkDiv+1)]. */
-	ENABLE			8	1
-	PWRSAVE			9	1
-	BYPASS			10	1
-	WIDEBUS			11	1
-MCI_ARGUMENT		0xF7301008
-	CMDARG			0	32
-MCI_COMMAND		0xF730100C
-	CMDINDEX		0	6
-	RESPONSE		6	1
-	LONGRSP			7	1
-	INTERRUPT		8	1
-	PENDING			9	1
-	ENABLE			10	1
-MCI_RESPCMD		0xF7301010
-	CMDINDEX		0	6
-MCI_RESPONSE0		0xF7301014
-MCI_RESPONSE1		0xF7301018
-MCI_RESPONSE2		0xF730101C
-MCI_RESPONSE3		0xF7301020
-MCI_DATATIMER		0xF7301024
-	TIMER			0	32
-MCI_DATALENGTH		0xF7301028
-	LENGTH			0	16
-MCI_DATACTRL		0xF730102C
-	EMABLE			0	1
-	DIRECTION		1	1	/* 0 = From controller to card, 1 = From card to controller */
-		0	WRITE
-		1	READ
-	MODE			2	1
-		0	BLCOK
-		1	STREAM
-	DMAENABLE		3	1
-	BLOCKSIZE		4	4
-MCI_DATACNT		0xF7301030
-	COUNT			0	16
-MCI_STATUS			0xF7301034
-	CMDCRCFAIL		0	1	/* Command response received (CRC check failed) */
-	DATACRCFAIL		1	1	/* Data block sent/received (CRC check failed) */
-	CMDTIMEOUT		2	1	/* Command response timeout */
-	DATATIMEOUT		3	1	/* Data timeout */
-	TXUNDERRUN		4	1	/* Transmit FIFO underrun error */
-	RXOVERRUN		5	1	/* Receive FIFO overrun error */
-	CMDRESPEND		6	1	/* Command response received (CRC check passed) */
-	CMDSENT			7	1	/* Command sent (no response required) */
-	DATAEND			8	1	/* Data end (data counter is zero) */
-	STARTBITERR		9	1	/* Start bit not detected on all data signals in wide bus mode */
-	DATABLOCKEND	10	1	/* Data block sent/received (CRC check passed) */
-	CMDACTIVE		11	1	/* Command transfer in progress */
-	TXACTIVE		12	1	/* Data transmit in progress */
-	RXACTIVE		13	1	/* Data receive in progress */
-	TXFIFOHALFEMPTY	14	1	/* Transmit FIFO half empty */
-	RXFIFOHALFFULL	15	1	/* Receive FIFO half full */
-	TXFIFOFULL		16	1	/* Transmit FIFO full */
-	RXFIFOFULL		17	1	/* Receive FIFO full */
-	TXFIFOEMPTY		18	1	/* Transmit FIFO empty */
-	RXFIFOEMPTY		19	1	/* Receive FIFO empty */
-	TXDATAAVLBL		20	1	/* Data available in transmit FIFO */
-	RXDATAAVLBL		21	1	/* Data available in receive FIFO */
-MCI_CLEAR			0xF7301038
-	CMDCRCFAILCLR	0	1
-	DATACRCFAILCLR	1	1
-	CMDTIMEOUTCLR	2	1
-	DATATIMEOUTCLR	3	1
-	TXUNDERRUNCLR	4	1
-	RXOVERRUNCLR	5	1
-	CMDRESPENDCLR	6	1
-	CMDSENTCLR		7	1
-	DATAENDCLR		8	1
-	STARTBITERRCLR	9	1
-	DATABLOCKENDCLR	10	1
-MCI_MASK0			0xF730103C
-	CMDCRCFAILMASK			0	1
-	DATACRCFAILMASK			1	1
-	CMDTIMEOUTMASK			2	1
-	DATATIMEOUTMASK			3	1
-	TXUNDERRUNMASK			4	1
-	RXOVERRUNMASK			5	1
-	CMDRESPENDMASK			6	1
-	CMDSENTMASK				7	1
-	DATAENDMASK				8	1
-	STARTBITERRMASK			9	1
-	DATABLOCKENDMASK		10	1
-	CMDACTIVEMASK			11	1
-	TXACTIVEMASK			12	1
-	RXACTIVEMASK			13	1
-	TXFIFOHALFEMPTYMASK		14	1
-	RXFIFOHALFFULLMASK		15	1
-	TXFIFOFULLMASK			16	1
-	RXFIFOFULLMASK			17	1
-	TXFIFOEMPTYMASK			18	1
-	RXFIFOEMPTYMASK			19	1
-	TXDATAAVLBLMASK			20	1
-	RXDATAAVLBLMASK			21	1
-MCI_MASK1			0xF7301040
-	CMDCRCFAILMASK			0	1
-	DATACRCFAILMASK			1	1
-	CMDTIMEOUTMASK			2	1
-	DATATIMEOUTMASK			3	1
-	TXUNDERRUNMASK			4	1
-	RXOVERRUNMASK			5	1
-	CMDRESPENDMASK			6	1
-	CMDSENTMASK				7	1
-	DATAENDMASK				8	1
-	STARTBITERRMASK			9	1
-	DATABLOCKENDMASK		10	1
-	CMDACTIVEMASK			11	1
-	TXACTIVEMASK			12	1
-	RXACTIVEMASK			13	1
-	TXFIFOHALFEMPTYMASK		14	1
-	RXFIFOHALFFULLMASK		15	1
-	TXFIFOFULLMASK			16	1
-	RXFIFOFULLMASK			17	1
-	TXFIFOEMPTYMASK			18	1
-	RXFIFOEMPTYMASK			19	1
-	TXDATAAVLBLMASK			20	1
-	RXDATAAVLBLMASK			21	1
-MCI_SELECT			0xF7301044
-	SDCARD			0	4
-MCI_FIFOCNT		0xF7301048
-	COUNT			0	16
-MCI_FIFO_0			0xF7301080
-MCI_FIFO_1			0xF7301084
-MCI_FIFO_2			0xF7301088
-MCI_FIFO_3			0xF730108C
-MCI_FIFO_4			0xF7301090
-MCI_FIFO_5			0xF7301094
-MCI_FIFO_6			0xF7301098
-MCI_FIFO_7			0xF730109C
-MCI_FIFO_8			0xF73010A0
-MCI_FIFO_9			0xF73010A4
-MCI_FIFO_10		0xF73010A8
-MCI_FIFO_11		0xF73010AC
-MCI_FIFO_12		0xF73010B0
-MCI_FIFO_13		0xF73010B4
-MCI_FIFO_14		0xF73010B8
-MCI_FIFO_15		0xF73010BC
-MCI_PERIPH_ID0		0xF7301FE0
-	PARTNUMBER0		0	8
-MCI_PERIPH_ID1		0xF7301FE4
-	PARTNUMBER1		0	4
-	DESIGNER0		4	8
-MCI_PERIPH_ID2		0xF7301FE8
-	DESIGNER1		0	4
-	REVISION		4	8
-MCI_PERIPH_ID3		0xF7301FEC
-	CONFIGURATION	0	8
-MCI_PCELL_ID0		0xF7301FF0
-MCI_PCELL_ID1		0xF7301FF4
-MCI_PCELL_ID2		0xF7301FF8
-MCI_PCELL_ID3		0xF7301FFC
-
-# USART0
-USART0_CLC			0xF1000000
-	SMC_CLK_DIV		16	8
-	RMC_CLK_DIV		8	8
-	FSOE			5	1	/* Fast shut off enable (1: enable; 0: disable) */
-	SBWE			4	1	/* Suspend bit write enable (1: enable; 0: disable) */
-	EDIS			3	1	/* External request disable (1: disable; 0: enable) */
-	SPEN			2	1	/* Suspend bit enable (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-USART0_PISEL		0xF1000004
-USART0_ID			0xF1000008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-USART0_CON			0xF1000010
-	CON_R			15	1	/* Baud rate generator run control (0: disable; 1: enable) */
-	LB				14	1	/* Loopback mode (0: disable; 1: enable) */
-	BRS				13	1	/* Baudrate selection (0: Pre-scaler /2; 1: Pre-scaler / 3) */
-	ODD				12	1	/* Parity selection (0: even; 1: odd)  */
-	FDE				11	1	/* Fraction divider enable (0: disable; 1: enable) */
-	OE				10	1	/* Overrun error flag */
-	FE				9	1	/* Framing error flag */
-	PE				8	1	/* Parity error flag */
-	OEN				7	1	/* Overrun check enable (0: ignore; 1: check) */
-	FEN				6	1	/* Framing error check (0: ignore; 1: check) */
-	PEN				5	1	/* Parity check enable (0: ignore; 1: check) */
-	REN				4	1	/* Receiver bit enable (0: disable; 1: enable) */
-	STP				3	1	/* Number of stop bits (0: 1 stop bit; 1: two stop bits) */
-	M				0	3	/* ASC Mode Control. */
-USART0_BG			0xF1000014
-USART0_FDV			0xF1000018
-USART0_PMW			0xF100001C
-	IRPW			8	1	/* IrDA Pulse Width Selection */
-	PW_VALUE		0	8	/* IrDA Pulse Width Value */
-USART0_TXB			0xF1000020
-USART0_RXB			0xF1000024
-USART0_ABCON		0xF1000030
-	RXINV				11	1	/* Receive invert enable (0: disable; 1: enable) */
-	TXINV				10	1	/* Transmit invert enable (0: disable; 1: enable) */
-	ABEM_ECHO_DET		8	1	/* Autobaud echo mode enabled during detection */
-	ABEM_ECHO_ALWAYS	9	1	/* Autobaud echo mode always enabled */
-	FCDETEN				4	1	/* Fir char of two byte frame detect */
-	ABDETEN				3	1	/* Autobaud detection interrupt enable (0: dis; 1: en) */
-	ABSTEN				2	1	/* Start of autobaud detect interrupt (0: dis; 1: en) */
-	AUREN				1	1	/* Auto control of CON.REN (too complex for here) */
-	ABEN				0	1	/* Autobaud detection enable */
-USART0_ABSTAT		0xF1000034
-	DETWAIT			4	1	/* Autobaud detect is waiting */
-	SCCDET			3	1	/* Second character with capital letter detected */
-	SCSDET			2	1	/* Second character with small letter detected */
-	FCCDET			1	1	/* First character with capital letter detected */
-	FCSDET			0	1	/* First character with small letter detected */
-USART0_RXFCON		0xF1000040
-	RXFITL			8	4	/* Receive FIFO interrupt trigger level */
-	RXTMEN			2	1	/* Receive FIFO transparent mode enable */
-	RXFFLU			1	1	/* Receive FIFO flush */
-	RXFEN			0	1	/* Receive FIFO enable */
-USART0_TXFCON		0xF1000044
-	TXFITL			8	4	/* Transmit FIFO interrupt trigger level */
-	TXTMEN			2	1	/* Transmit FIFO transparent mode enable */
-	TXFFLU			1	1	/* Transmit FIFO flush */
-	TXFEN			0	1	/* Transmit FIFO enable */
-USART0_FSTAT		0xF1000048
-	TXFFL			8	4	/* Transmit FIFO filling level mask */
-	RXFFL			0	4	/* Receive FIFO filling level mask */
-USART0_WHBCON		0xF1000050
-	SETOE			13	1	/* Set overrun error flag */
-	SETFE			12	1	/* Set framing error flag */
-	SETPE			11	1	/* Set parity error flag */
-	CLROE			10	1	/* Clear overrun error flag */
-	CLRFE			9	1	/* Clear framing error flag */
-	CLRPE			8	1	/* Clear parity error flag */
-	SETREN			5	1	/* Set receiver enable bit */
-	CLRREN			4	1	/* Clear receiver enable bit */
-USART0_WHBABCON		0xF1000054
-USART0_WHBABSTAT	0xF1000058
-USART0_FCCON		0xF100005C
-	RTS_TRIGGER		8	6	/* RTS receive FIFO trigger level */
-	RTS				4	1	/* RTS control bit */
-	RTSEN			1	1	/* CTS enable (0: disable; 1: enable) */
-	CTSEN			0	1	/* RTS enbled (0: disable; 1: enable) */
-USART0_FCSTAT		0xF1000060
-	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
-	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
-USART0_IMSC			0xF1000064
-USART0_RIS			0xF1000068
-USART0_MIS			0xF100006C
-USART0_ICR			0xF1000070
-	TMO				7	1	/* RX timeout interrupt mask */
-	CTS				6	1	/* CTS interrupt mask */
-	ABDET			5	1	/* Autobaud detected interrupt mask */
-	ABSTART			4	1	/* Autobaud start interrupt mask */
-	ERR				3	1	/* Error interrupt mask */
-	RX				2	1	/* Receive interrupt mask */
-	TB				1	1	/* Transmit buffer interrupt mask */
-	TX				0	1	/* Transmit interrupt mask */
-USART0_ISR			0xF1000074
-	TMO				7	1	/* RX timeout interrupt mask */
-	CTS				6	1	/* CTS interrupt mask */
-	ABDET			5	1	/* Autobaud detected interrupt mask */
-	ABSTART			4	1	/* Autobaud start interrupt mask */
-	ERR				3	1	/* Error interrupt mask */
-	RX				2	1	/* Receive interrupt mask */
-	TB				1	1	/* Transmit buffer interrupt mask */
-	TX				0	1	/* Transmit interrupt mask */
-USART0_TMO			0xF100007C
-
-# USART1
-USART1_CLC			0xF1800000
-	SMC_CLK_DIV		16	8
-	RMC_CLK_DIV		8	8
-	FSOE			5	1	/* Fast shut off enable (1: enable; 0: disable) */
-	SBWE			4	1	/* Suspend bit write enable (1: enable; 0: disable) */
-	EDIS			3	1	/* External request disable (1: disable; 0: enable) */
-	SPEN			2	1	/* Suspend bit enable (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-USART1_PISEL		0xF1800004
-USART1_ID			0xF1800008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-USART1_CON			0xF1800010
-	CON_R			15	1	/* Baud rate generator run control (0: disable; 1: enable) */
-	LB				14	1	/* Loopback mode (0: disable; 1: enable) */
-	BRS				13	1	/* Baudrate selection (0: Pre-scaler /2; 1: Pre-scaler / 3) */
-	ODD				12	1	/* Parity selection (0: even; 1: odd)  */
-	FDE				11	1	/* Fraction divider enable (0: disable; 1: enable) */
-	OE				10	1	/* Overrun error flag */
-	FE				9	1	/* Framing error flag */
-	PE				8	1	/* Parity error flag */
-	OEN				7	1	/* Overrun check enable (0: ignore; 1: check) */
-	FEN				6	1	/* Framing error check (0: ignore; 1: check) */
-	PEN				5	1	/* Parity check enable (0: ignore; 1: check) */
-	REN				4	1	/* Receiver bit enable (0: disable; 1: enable) */
-	STP				3	1	/* Number of stop bits (0: 1 stop bit; 1: two stop bits) */
-	M				0	3	/* ASC Mode Control. */
-USART1_BG			0xF1800014
-USART1_FDV			0xF1800018
-USART1_PMW			0xF180001C
-	IRPW			8	1	/* IrDA Pulse Width Selection */
-	PW_VALUE		0	8	/* IrDA Pulse Width Value */
-USART1_TXB			0xF1800020
-USART1_RXB			0xF1800024
-USART1_ABCON		0xF1800030
-	RXINV				11	1	/* Receive invert enable (0: disable; 1: enable) */
-	TXINV				10	1	/* Transmit invert enable (0: disable; 1: enable) */
-	ABEM_ECHO_DET		8	1	/* Autobaud echo mode enabled during detection */
-	ABEM_ECHO_ALWAYS	9	1	/* Autobaud echo mode always enabled */
-	FCDETEN				4	1	/* Fir char of two byte frame detect */
-	ABDETEN				3	1	/* Autobaud detection interrupt enable (0: dis; 1: en) */
-	ABSTEN				2	1	/* Start of autobaud detect interrupt (0: dis; 1: en) */
-	AUREN				1	1	/* Auto control of CON.REN (too complex for here) */
-	ABEN				0	1	/* Autobaud detection enable */
-USART1_ABSTAT		0xF1800034
-	DETWAIT			4	1	/* Autobaud detect is waiting */
-	SCCDET			3	1	/* Second character with capital letter detected */
-	SCSDET			2	1	/* Second character with small letter detected */
-	FCCDET			1	1	/* First character with capital letter detected */
-	FCSDET			0	1	/* First character with small letter detected */
-USART1_RXFCON		0xF1800040
-	RXFITL			8	4	/* Receive FIFO interrupt trigger level */
-	RXTMEN			2	1	/* Receive FIFO transparent mode enable */
-	RXFFLU			1	1	/* Receive FIFO flush */
-	RXFEN			0	1	/* Receive FIFO enable */
-USART1_TXFCON		0xF1800044
-	TXFITL			8	4	/* Transmit FIFO interrupt trigger level */
-	TXTMEN			2	1	/* Transmit FIFO transparent mode enable */
-	TXFFLU			1	1	/* Transmit FIFO flush */
-	TXFEN			0	1	/* Transmit FIFO enable */
-USART1_FSTAT		0xF1800048
-	TXFFL			8	4	/* Transmit FIFO filling level mask */
-	RXFFL			0	4	/* Receive FIFO filling level mask */
-USART1_WHBCON		0xF1800050
-	SETOE			13	1	/* Set overrun error flag */
-	SETFE			12	1	/* Set framing error flag */
-	SETPE			11	1	/* Set parity error flag */
-	CLROE			10	1	/* Clear overrun error flag */
-	CLRFE			9	1	/* Clear framing error flag */
-	CLRPE			8	1	/* Clear parity error flag */
-	SETREN			5	1	/* Set receiver enable bit */
-	CLRREN			4	1	/* Clear receiver enable bit */
-USART1_WHBABCON		0xF1800054
-USART1_WHBABSTAT	0xF1800058
-USART1_FCCON		0xF180005C
-	RTS_TRIGGER		8	6	/* RTS receive FIFO trigger level */
-	RTS				4	1	/* RTS control bit */
-	RTSEN			1	1	/* CTS enable (0: disable; 1: enable) */
-	CTSEN			0	1	/* RTS enbled (0: disable; 1: enable) */
-USART1_FCSTAT		0xF1800060
-	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
-	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
-USART1_IMSC			0xF1800064
-USART1_RIS			0xF1800068
-USART1_MIS			0xF180006C
-USART1_ICR			0xF1800070
-	TMO				7	1	/* RX timeout interrupt mask */
-	CTS				6	1	/* CTS interrupt mask */
-	ABDET			5	1	/* Autobaud detected interrupt mask */
-	ABSTART			4	1	/* Autobaud start interrupt mask */
-	ERR				3	1	/* Error interrupt mask */
-	RX				2	1	/* Receive interrupt mask */
-	TB				1	1	/* Transmit buffer interrupt mask */
-	TX				0	1	/* Transmit interrupt mask */
-USART1_ISR			0xF1800074
-	TMO				7	1	/* RX timeout interrupt mask */
-	CTS				6	1	/* CTS interrupt mask */
-	ABDET			5	1	/* Autobaud detected interrupt mask */
-	ABSTART			4	1	/* Autobaud start interrupt mask */
-	ERR				3	1	/* Error interrupt mask */
-	RX				2	1	/* Receive interrupt mask */
-	TB				1	1	/* Transmit buffer interrupt mask */
-	TX				0	1	/* Transmit interrupt mask */
-USART1_TMO			0xF180007C
-
-# SSC0
-SSC0_CLC		0xF1100000
-	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	7
-SSC0_PISEL		0xF1100004
-SSC0_ID			0xF1100008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-SSC0_CON		0xF1100010
-SSC0_BR			0xF1100014
-SSC0_SSOC		0xF1100018
-SSC0_SSOTC		0xF110001C
-SSC0_TB			0xF1100020
-SSC0_RB			0xF1100024
-SSC0_STAT		0xF1100028
-SSC0_EFM		0xF110002C
-SSC0_RXFCON		0xF1100030
-SSC0_TXFCON		0xF1100034
-SSC0_FSTAT		0xF1100038
-
-# SIM
-SIM_CLC		0xF1300000
-	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	7
-SIM_ID			0xF1300008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# AMCPWR
-AMCPWR_CLC		0xF4C00000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-AMCPWR_ID		0xF4C00008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# KEYPAD
-KEYPAD_CLC		0xF4D00000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-KEYPAD_ID		0xF4D00008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# MODEM
-MODEM_CLC		0xF6000000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-MODEM_ID		0xF6000008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# GPRS_CHIP
-GPRS_CHIP_CLC		0xF6200000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-GPRS_CHIP_ID		0xF6200008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# GSM_FRM
-GSM_FRM_CLC		0xF6300000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-GSM_FRM_ID		0xF6300008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# CIF
-CIF_CLC		0xF7000000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-CIF_ID		0xF7000008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# DIF
-DIF_CLC		0xF7100000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-DIF_ID		0xF7100008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# DEV_F00F
-DEV_F00F_CLC	0xF7200000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-DEV_F00F_ID		0xF7200008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# DEV_F048
-DEV_F048_CLC	0xF7400000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-DEV_F048_ID		0xF7400008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# DEV_F051
-DEV_F051_CLC	0xF7500000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-DEV_F051_ID		0xF7500008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# MMICIF
-MMICIF_CLC		0xF8000000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-MMICIF_ID		0xF8000004
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-
-# USB
-USB_CLC			0xF2200000
-	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC				8	7
-USB_PISEL		0xF2200004
-USB_ID			0xF2200008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-USB_DCR			0xF2200010
-USB_DSR			0xF2200014
-USB_EPSTL		0xF2200018
-USB_EPSSR		0xF220001C
-USB_CNFR		0xF2200020
-USB_FNR			0xF2200024
-USB_EPDIR		0xF2200028
-USB_EPDSR		0xF220002C
-USB_FCON		0xF2200030
-USB_CPLPR		0xF2200034
-USB_DATA32		0xF2200038
-USB_DATA16		0xF220003C
-USB_DATA8		0xF2200040
-USB_EPVLD		0xF2200044
-USB_EVSR		0xF2200048
-USB_ZLPEN		0xF2200090
-USB_ZLPSR		0xF2200094
-USB_DIER		0xF220004C
-USB_DIRR		0xF2200050
-USB_DIRST		0xF2200054
-USB_DINP		0xF2200058
-USB_EPIR0		0xF220005C
-USB_EPIR1		0xF2200060
-USB_EPIR2		0xF2200064
-USB_EPIR3		0xF2200068
-USB_EPIRST0		0xF220006C
-USB_EPIRST1		0xF2200070
-USB_EPIRST2		0xF2200074
-USB_EPIRST3		0xF2200078
 
 # EBU
 EBU_CLC				0xF0000000
-	DISS		1	1	/* EBU disable status bit */
-	DISR		0	1	/* EBU module */
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
 EBU_ID				0xF0000008
 	MOD_NUMBER		16	16
 	MOD_32B			8	8
@@ -1789,7 +1253,7 @@ EBU_EMUAS			0xF0000160
 	ALTENAB		1	1	/* Alternate segment comparison */
 	REGENAB		0	1	/* Memory region */
 EBU_EMUBC			0xF0000168
-	WR			31	1	/* Write protection */
+	WRITE		31	1	/* Write protection */
 	AGEN		28	3	/* Address generation */
 	XCMDDELAY	26	2	/* External command delay */
 	WAIT		24	2	/* External wait state */
@@ -1819,186 +1283,30 @@ EBU_EMUOVL			0xF0000178
 	OVERLAY		0	8	/* Overlay chip select */
 EBU_USERCON			0xF0000190
 
-# SCU
-SCU_CLC				0xF4400000
-	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	7
-SCU_ID				0xF4400008
-	MOD_NUMBER		16	16	/* SCU Module Identification Number. */
-	MOD_32B			8	8	/* Indicates a 32-bit ID register. */
-	REV_NUMBER		0	8	/* SCU Module Revision Number. */
-SCU_RST_UNK			0xF4400010
-	BOARD_TYPE		16	3
-	BOOT_TYPE		28	4
-		0b0001	BOOT_TYPE_2_FW
-		0b0100	BOOT_TYPE_1_FW
-		0b1000	BOOT_TYPE_3_UART
-SCU_RST_CTRL_ST		0xF4400018
 
-SCU_WDTCON0			0xF4400024
-	WDTREL		16	16	/* Reload Value for the Watchdog Timer. */
-	WDTPW		8	8	/* User-Definable Password Field for Access to WDT_CON0. */
-	WDTHPW1		4	4	/* Hardware Password 1. */
-	WDTHPW0		2	2	/* Hardware Password 0. */
-	WDTLCK		1	1	/* Lock bit to Control Access to WDT_CON0. */
-	ENDINIT		0	1	/* End-of-Initialization Control Bit. */
-SCU_WDTCON1			0xF4400028
-	WDTDR		3	1	/* Watchdog Timer Disable Request Control Bit. */
-	WDTIR		2	1	/* Watchdog Timer Input Frequency Request Control Bit. */
-SCU_PLLCLC			0xF4400044
-SCU_CHIPID			0xF4400060
-SCU_RTCIF			0xF4400064
-SCU_ROMAMCR			0xf440007C
-SCU_BOOT_FLAG		0xF4400078
-	BOOT_OK			0	1
-SCU_DMA				0xF4400084
-
-# PCL
-PCL_CLC						0xf4300000
-	DISR		0	1	/* Disable request bit (1: enable; 0: disable) */
-	DISS		1	1	/* Disable status bit (1: disable; 0: enable) */
-	RMC			8	7
-PCL_ID						0xf4300008
+# GPRS_CHIP
+GPRS_CHIP_CLC		0xF6200000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+GPRS_CHIP_ID		0xF6200008
 	MOD_NUMBER		16	16
 	MOD_32B			8	8
 	MOD_REV			0	8
-MON_CR1						0xf4300010
-MON_CR2						0xf4300014
-MON_CR3						0xf4300018
-MON_CR4						0xf430001C
 
-# Кнопки
-GPIO_KP_IN0					0xF4300020
-GPIO_KP_IN1					0xF4300024
-GPIO_KP_IN2					0xF4300028
-GPIO_KP_IN3					0xF430002C
-GPIO_KP_IN4					0xF4300030
-GPIO_KP_IN5					0xF4300034
-GPIO_KP_OUT5_OUT6			0xF4300038
-GPIO_KP_OUT0				0xF430003C
-GPIO_KP_OUT1				0xF4300040
-GPIO_KP_OUT2				0xF4300044
-GPIO_KP_OUT3				0xF4300048
-
-# Пины в разьёме
-GPIO_USART0_RXD				0xF430004C
-GPIO_USART0_TXD				0xF4300050
-GPIO_USART0_RTS				0xF4300054
-GPIO_USART0_CTS				0xF4300058
-
-GPIO_DSPOUT0				0xF430005C
-GPIO_USART1_RXD				0xF4300060
-GPIO_USART1_TXD				0xF4300064
-GPIO_USART1_RTS				0xF4300068
-GPIO_USART1_CTS				0xF430006C
-GPIO_USB_DPLUS				0xF4300070
-GPIO_USB_DMINUS				0xF4300074
-PCL_22						0xF4300078
-PCL_23						0xF430007C
-PCL_24						0xF4300080
-PCL_25						0xF4300084
-PCL_26						0xF4300088
-PCL_27						0xF430008C
-GPIO_I2C_SCL				0xF4300090
-GPIO_I2C_SDA				0xF4300094
-PCL_30						0xF4300098
-PCL_31_I2S2					0xF430009C
-PCL_32_I2S2					0xF43000A0
-PCL_33_I2S2					0xF43000A4
-PCL_34_I2S2					0xF43000A8
-PCL_35						0xF43000AC
-PCL_36						0xF43000B0
-PCL_37						0xF43000B4
-PCL_38						0xF43000B8
-PCL_39						0xF43000BC
-PCL_40						0xF43000C0
-PCL_41						0xF43000C4
-PCL_42						0xF43000C8
-GPIO_LED_FL_OFF				0xF43000CC
-GPIO_TOUT1_PM_CHARGE_UC		0xF43000D0 # вкл/выкл зарядку аккумулятора
-PCL_45						0xF43000D4
-PCL_46						0xF43000D8
-PCL_47						0xF43000DC
-PCL_48						0xF43000E0
-PCL_49						0xF43000E4
-GPIO_TOUT7_PM_RF2_EN		0xF43000E8
-PCL_51						0xF43000EC
-GPIO_TOUT9_I2C_2_DAT		0xF43000F0
-GPIO_TOUT10_SERIAL_EN		0xF43000F4
-GPIO_TOUT11_I2C_2_CLK		0xF43000F8
-PCL_55						0xF43000FC
-GPIO_RF_STR0				0xF4300100
-GPIO_RF_STR1_PM_RINGIN		0xF4300104
-GPIO_MMC_VCC_EN				0xF4300108
-GPIO_RF_CLK					0xF430010C
-PCL_60						0xF4300110
-PCL_61						0xF4300114
-GPIO_DSPOUT1_PM_WADOG		0xF4300118 # внешний watchdog
-GPIO_LED_FL_EN				0xF430011C
-PCL_64						0xF4300120
-PCL_65						0xF4300124
-PCL_66						0xF4300128
-PCL_67						0xF430012C
-PCL_68						0xF4300130
-PCL_69						0xF4300134
-PCL_70						0xF4300138
-PCL_71						0xF430013C
-PCL_72						0xF4300140
-PCL_73						0xF4300144
-PCL_74						0xF4300148
-PCL_75						0xF430014C
-PCL_76						0xF4300150
-GPIO_MMC_CD					0xF4300154
-GPIO_CIF_D0					0xF4300158
-GPIO_CIF_D1					0xF430015C
-GPIO_CIF_D2					0xF4300160
-GPIO_CIF_D3					0xF4300164
-GPIO_CIF_D4					0xF4300168
-GPIO_CIF_D5					0xF430016C
-GPIO_CIF_D6					0xF4300170
-GPIO_CIF_D7					0xF4300174
-GPIO_CIF_PCLK				0xF4300178
-GPIO_CIF_HSYNC				0xF430017C
-GPIO_CIF_VSYNC				0xF4300180
-GPIO_CLKOUT2				0xF4300184
-
-GPIO_MMC_CMD				0xF43001C0
-GPIO_MMC_DAT				0xF43001C4
-GPIO_MMC_CLK				0xF43001C8
-
-GPIO_I2S1_CLK1				0xF43001E0 
-GPIO_CIF_PD					0xF43001E4
-
-# STM
-STM_CLC		0xF4B00000
-	RMC			8	3
-	FSOE		5	1
-	SBWE		4	1
-	EDIS		3	1
-	SPEN		2	1
-	DISS		1	1	/* STM Disable Status Bit. */
-	DISR		0	1	/* STM Disable Request Bit. */
-STM_ID		0xF4B00008
-	MOD			16	16	/* System Timer Module Identification Number. */
-	MOD_32B		8	8	/* Indicates a 32-bit ID register. */
-	REV			0	8	/* System Timer Module Revision Number. */
-STM_0		0xF4B00010
-STM_1		0xF4B00014
-STM_2		0xF4B00018
-STM_3		0xF4B0001C
-STM_4		0xF4B00020
-STM_5		0xF4B00024
-STM_6		0xF4B00028
 
 GPTU0_CLC		0xF4900000
-	RMC			8	8	/* GPTU Clock Divider for Normal Mode */
-	FSOE		5	1	/* GPTU Fast Shut-Off Enable. */
-	SBWE		4	1	/* GPTU Suspend Bit Write Enable */
-	EDIS		3	1	/* GPTU External Request Disable */
-	SPEN		2	1	/* GPTU Suspend Enable Bit */
-	DISS		1	1	/* GPTU Disable Status Bit */
-	DISR		0	1	/* GPTU Disable Request Bit */
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
 GPTU0_ID		0xF4900008
 	MOD_NUMBER		16	16	/* GPTU Module Identification Number. */
 	MOD_32B			8	8	/* Indicates 32-bit Module GPTUx_ID format */
@@ -2246,14 +1554,16 @@ GPTU0_SRC0		0xF49000FC
 	SRE			12	1	/* Service request node enable */
 	TOS			10	2	/* Type of service for node */
 	SRPN		0	8	/* Service request node priority number */
+
+
 GPTU1_CLC		0xF4A00000
-	RMC			8	8	/* GPTU Clock Divider for Normal Mode */
-	FSOE		5	1	/* GPTU Fast Shut-Off Enable. */
-	SBWE		4	1	/* GPTU Suspend Bit Write Enable */
-	EDIS		3	1	/* GPTU External Request Disable */
-	SPEN		2	1	/* GPTU Suspend Enable Bit */
-	DISS		1	1	/* GPTU Disable Status Bit */
-	DISR		0	1	/* GPTU Disable Request Bit */
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
 GPTU1_ID		0xF4A00008
 	MOD_NUMBER		16	16	/* GPTU Module Identification Number. */
 	MOD_32B			8	8	/* Indicates 32-bit Module GPTUx_ID format */
@@ -2502,6 +1812,32 @@ GPTU1_SRC0		0xF4A000FC
 	TOS			10	2	/* Type of service for node */
 	SRPN		0	8	/* Service request node priority number */
 
+
+# I2C
+I2C_CLC				0xF7600000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+I2C_ID				0xF7600008	/* Module Identification Register */
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+I2C_TXD				0xF7608000	/* Transmission Data Register */
+	READ		0	1
+	ADDR		1	7
+	REG			8	8
+	VAL			16	8
+I2C_RXD				0xF760C000	/* Reception Data Register */
+	READ		0	1
+	ADDR		1	7
+	REG			8	8
+	VAL			16	8
+
+
 # IRQ
 IRQ_ID			0xF2800000
 	MOD_NUMBER		16	16
@@ -2548,6 +1884,8 @@ IRQS_PRIO		0xF2800030-0xF28002D4
 	FIQ			8	1
 
 IRQ_000			0xF2800030
+	PRIORITY	0	8
+	FIQ			8	1
 IRQ_001			0xF2800034
 IRQ_002			0xF2800038
 IRQ_003			0xF280003C
@@ -2626,7 +1964,6 @@ IRQ_069			0xF2800144
 IRQ_070			0xF2800148
 IRQ_071			0xF280014C
 
-# CAPCOM0
 IRQ_072_CCU0_T0				0xF2800150
 IRQ_073_CCU0_T1				0xF2800154
 IRQ_074_CCU0_CC0			0xF2800158
@@ -2718,144 +2055,831 @@ IRQ_156			0xF28002A0
 IRQ_157			0xF28002A4
 IRQ_158			0xF28002A8
 
-# CAPCOM0
-CAPCOM0_CLC					0xF4000000
-	DISS			1	1	/* STM Status Bit. */
-	DISR			0	1	/* STM Request Bit. */
-CAPCOM0_CCPISEL				0xF4000004
-CAPCOM0_ID					0xF4000008
-	MOD_NUMBER		16	16
-	MOD_32B			8	8
-	MOD_REV			0	8
-CAPCOM0_ZERO1				0xF400000C
-CAPCOM0_T01CON				0xF4000010
-CAPCOM0_CCM0				0xF4000014
-CAPCOM0_CCM1				0xF4000018
-CAPCOM0_RESERVED1[0]		0xF400001C
-CAPCOM0_RESERVED1[1]		0xF4000020
-CAPCOM0_CCOUT				0xF4000024
-CAPCOM0_CCIOC				0xF4000028
-CAPCOM0_CCSEE				0xF400002C
-CAPCOM0_CCSEM				0xF4000030
-CAPCOM0_CCDRM				0xF4000034
-CAPCOM0_RESERVED3[0]		0xF4000038
-CAPCOM0_RESERVED3[1]		0xF400003C
-CAPCOM0_T0					0xF4000040
-CAPCOM0_T0REL				0xF4000044
-CAPCOM0_T1					0xF4000048
-CAPCOM0_T1REL				0xF400004C
-CAPCOM0_CC0					0xF4000050
-CAPCOM0_CC1					0xF4000054
-CAPCOM0_CC2					0xF4000058
-CAPCOM0_CC3					0xF400005C
-CAPCOM0_CC4					0xF4000060
-CAPCOM0_CC5					0xF4000064
-CAPCOM0_CC6					0xF4000068
-CAPCOM0_CC7					0xF400006C
-CAPCOM0_RESERVED5[0]		0xF4000070
-CAPCOM0_RESERVED5[1]		0xF4000074
-CAPCOM0_RESERVED5[2]		0xF4000078
-CAPCOM0_RESERVED5[3]		0xF400007C
-CAPCOM0_RESERVED5[4]		0xF4000080
-CAPCOM0_RESERVED5[5]		0xF4000084
-CAPCOM0_RESERVED5[6]		0xF4000088
-CAPCOM0_RESERVED5[7]		0xF400008C
-CAPCOM0_ZERO2				0xF4000090
-CAPCOM0_ZERO3				0xF4000094
-CAPCOM0_ZERO4				0xF4000098
-CAPCOM0_ZERO5				0xF400009C
-CAPCOM0_RESERVED13[0]		0xF40000A0
-CAPCOM0_RESERVED13[1]		0xF40000A4
-CAPCOM0_RESERVED13[2]		0xF40000A8
-CAPCOM0_RESERVED13[3]		0xF40000AC
-CAPCOM0_RESERVED13[4]		0xF40000B0
-CAPCOM0_RESERVED13[5]		0xF40000B4
-CAPCOM0_RESERVED13[6]		0xF40000B8
-CAPCOM0_RESERVED13[7]		0xF40000BC
-CAPCOM0_RESERVED13[8]		0xF40000C0
-CAPCOM0_RESERVED13[9]		0xF40000C4
-CAPCOM0_RESERVED13[10]		0xF40000C8
-CAPCOM0_RESERVED13[11]		0xF40000CC
-CAPCOM0_RESERVED13[12]		0xF40000D0
-CAPCOM0_RESERVED13[13]		0xF40000D4
-CAPCOM0_CC7IC				0xF40000D8
-CAPCOM0_CC6IC				0xF40000DC
-CAPCOM0_CC5IC				0xF40000E0
-CAPCOM0_CC4IC				0xF40000E4
-CAPCOM0_CC3IC				0xF40000E8
-CAPCOM0_CC2IC				0xF40000EC
-CAPCOM0_CC1IC				0xF40000F0
-CAPCOM0_CC0IC				0xF40000F4
-CAPCOM0_T1IC				0xF40000F8
-CAPCOM0_T0IC				0xF40000FC
 
-# CAPCOM1
-CAPCOM1_CLC					0xF4000000
-	DISS			1	1	/* STM Status Bit. */
-	DISR			0	1	/* STM Request Bit. */
-CAPCOM1_PISEL				0xF4000004
-CAPCOM1_ID					0xF4000008
+# KEYPAD
+KEYPAD_CLC		0xF4D00000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+KEYPAD_ID		0xF4D00008
 	MOD_NUMBER		16	16
 	MOD_32B			8	8
 	MOD_REV			0	8
-CAPCOM1_ZERO1				0xF400000C
-CAPCOM1_T01CON				0xF4000010
-CAPCOM1_CCM0				0xF4000014
-CAPCOM1_CCM1				0xF4000018
-CAPCOM1_RESERVED1[0]		0xF400001C
-CAPCOM1_RESERVED1[1]		0xF4000020
-CAPCOM1_CCOUT				0xF4000024
-CAPCOM1_CCIOC				0xF4000028
-CAPCOM1_CCSEE				0xF400002C
-CAPCOM1_CCSEM				0xF4000030
-CAPCOM1_CCDRM				0xF4000034
-CAPCOM1_RESERVED3[0]		0xF4000038
-CAPCOM1_RESERVED3[1]		0xF400003C
-CAPCOM1_T0					0xF4000040
-CAPCOM1_T0REL				0xF4000044
-CAPCOM1_T1					0xF4000048
-CAPCOM1_T1REL				0xF400004C
-CAPCOM1_CC0					0xF4000050
-CAPCOM1_CC1					0xF4000054
-CAPCOM1_CC2					0xF4000058
-CAPCOM1_CC3					0xF400005C
-CAPCOM1_CC4					0xF4000060
-CAPCOM1_CC5					0xF4000064
-CAPCOM1_CC6					0xF4000068
-CAPCOM1_CC7					0xF400006C
-CAPCOM1_RESERVED5[0]		0xF4000070
-CAPCOM1_RESERVED5[1]		0xF4000074
-CAPCOM1_RESERVED5[2]		0xF4000078
-CAPCOM1_RESERVED5[3]		0xF400007C
-CAPCOM1_RESERVED5[4]		0xF4000080
-CAPCOM1_RESERVED5[5]		0xF4000084
-CAPCOM1_RESERVED5[6]		0xF4000088
-CAPCOM1_RESERVED5[7]		0xF400008C
-CAPCOM1_ZERO2				0xF4000090
-CAPCOM1_ZERO3				0xF4000094
-CAPCOM1_ZERO4				0xF4000098
-CAPCOM1_ZERO5				0xF400009C
-CAPCOM1_RESERVED13[0]		0xF40000A0
-CAPCOM1_RESERVED13[1]		0xF40000A4
-CAPCOM1_RESERVED13[2]		0xF40000A8
-CAPCOM1_RESERVED13[3]		0xF40000AC
-CAPCOM1_RESERVED13[4]		0xF40000B0
-CAPCOM1_RESERVED13[5]		0xF40000B4
-CAPCOM1_RESERVED13[6]		0xF40000B8
-CAPCOM1_RESERVED13[7]		0xF40000BC
-CAPCOM1_RESERVED13[8]		0xF40000C0
-CAPCOM1_RESERVED13[9]		0xF40000C4
-CAPCOM1_RESERVED13[10]		0xF40000C8
-CAPCOM1_RESERVED13[11]		0xF40000CC
-CAPCOM1_RESERVED13[12]		0xF40000D0
-CAPCOM1_RESERVED13[13]		0xF40000D4
-CAPCOM1_CC7IC				0xF40000D8
-CAPCOM1_CC6IC				0xF40000DC
-CAPCOM1_CC5IC				0xF40000E0
-CAPCOM1_CC4IC				0xF40000E4
-CAPCOM1_CC3IC				0xF40000E8
-CAPCOM1_CC2IC				0xF40000EC
-CAPCOM1_CC1IC				0xF40000F0
-CAPCOM1_CC0IC				0xF40000F4
-CAPCOM1_T1IC				0xF40000F8
-CAPCOM1_T0IC				0xF40000FC
+
+
+# MultiMedia Card Interface (MCI) Controller
+# MCI
+MCI_CLC		0xF7300000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+MCI_ID		0xF7200008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+
+MCI_POWER			0xF7301000
+	CTRL			0	2
+		0b00	POWER_OFF
+		0b01	RESERVED
+		0b10	POWER_UP
+		0b11	POWER_ON
+	VOLTAGE			2	4
+	OPENDRAIN		6	1
+	ROD				7	1
+MCI_CLOCK			0xF7301004
+	CLKDIV			0	8	/* MCLCLK frequency = MCLK / [2x(ClkDiv+1)]. */
+	ENABLE			8	1
+	PWRSAVE			9	1
+	BYPASS			10	1
+	WIDEBUS			11	1
+MCI_ARGUMENT		0xF7301008
+	CMDARG			0	32
+MCI_COMMAND		0xF730100C
+	CMDINDEX		0	6
+	RESPONSE		6	1
+	LONGRSP			7	1
+	INTERRUPT		8	1
+	PENDING			9	1
+	ENABLE			10	1
+MCI_RESPCMD		0xF7301010
+	CMDINDEX		0	6
+MCI_RESPONSE0		0xF7301014
+MCI_RESPONSE1		0xF7301018
+MCI_RESPONSE2		0xF730101C
+MCI_RESPONSE3		0xF7301020
+MCI_DATATIMER		0xF7301024
+	TIMER			0	32
+MCI_DATALENGTH		0xF7301028
+	LENGTH			0	16
+MCI_DATACTRL		0xF730102C
+	EMABLE			0	1
+	DIRECTION		1	1	/* 0 = From controller to card, 1 = From card to controller */
+		0	WRITE
+		1	READ
+	MODE			2	1
+		0	BLCOK
+		1	STREAM
+	DMAENABLE		3	1
+	BLOCKSIZE		4	4
+MCI_DATACNT		0xF7301030
+	COUNT			0	16
+MCI_STATUS			0xF7301034
+	CMDCRCFAIL		0	1	/* Command response received (CRC check failed) */
+	DATACRCFAIL		1	1	/* Data block sent/received (CRC check failed) */
+	CMDTIMEOUT		2	1	/* Command response timeout */
+	DATATIMEOUT		3	1	/* Data timeout */
+	TXUNDERRUN		4	1	/* Transmit FIFO underrun error */
+	RXOVERRUN		5	1	/* Receive FIFO overrun error */
+	CMDRESPEND		6	1	/* Command response received (CRC check passed) */
+	CMDSENT			7	1	/* Command sent (no response required) */
+	DATAEND			8	1	/* Data end (data counter is zero) */
+	STARTBITERR		9	1	/* Start bit not detected on all data signals in wide bus mode */
+	DATABLOCKEND	10	1	/* Data block sent/received (CRC check passed) */
+	CMDACTIVE		11	1	/* Command transfer in progress */
+	TXACTIVE		12	1	/* Data transmit in progress */
+	RXACTIVE		13	1	/* Data receive in progress */
+	TXFIFOHALFEMPTY	14	1	/* Transmit FIFO half empty */
+	RXFIFOHALFFULL	15	1	/* Receive FIFO half full */
+	TXFIFOFULL		16	1	/* Transmit FIFO full */
+	RXFIFOFULL		17	1	/* Receive FIFO full */
+	TXFIFOEMPTY		18	1	/* Transmit FIFO empty */
+	RXFIFOEMPTY		19	1	/* Receive FIFO empty */
+	TXDATAAVLBL		20	1	/* Data available in transmit FIFO */
+	RXDATAAVLBL		21	1	/* Data available in receive FIFO */
+MCI_CLEAR			0xF7301038
+	CMDCRCFAILCLR	0	1
+	DATACRCFAILCLR	1	1
+	CMDTIMEOUTCLR	2	1
+	DATATIMEOUTCLR	3	1
+	TXUNDERRUNCLR	4	1
+	RXOVERRUNCLR	5	1
+	CMDRESPENDCLR	6	1
+	CMDSENTCLR		7	1
+	DATAENDCLR		8	1
+	STARTBITERRCLR	9	1
+	DATABLOCKENDCLR	10	1
+MCI_MASK0			0xF730103C
+	CMDCRCFAILMASK			0	1
+	DATACRCFAILMASK			1	1
+	CMDTIMEOUTMASK			2	1
+	DATATIMEOUTMASK			3	1
+	TXUNDERRUNMASK			4	1
+	RXOVERRUNMASK			5	1
+	CMDRESPENDMASK			6	1
+	CMDSENTMASK				7	1
+	DATAENDMASK				8	1
+	STARTBITERRMASK			9	1
+	DATABLOCKENDMASK		10	1
+	CMDACTIVEMASK			11	1
+	TXACTIVEMASK			12	1
+	RXACTIVEMASK			13	1
+	TXFIFOHALFEMPTYMASK		14	1
+	RXFIFOHALFFULLMASK		15	1
+	TXFIFOFULLMASK			16	1
+	RXFIFOFULLMASK			17	1
+	TXFIFOEMPTYMASK			18	1
+	RXFIFOEMPTYMASK			19	1
+	TXDATAAVLBLMASK			20	1
+	RXDATAAVLBLMASK			21	1
+MCI_MASK1			0xF7301040
+	CMDCRCFAILMASK			0	1
+	DATACRCFAILMASK			1	1
+	CMDTIMEOUTMASK			2	1
+	DATATIMEOUTMASK			3	1
+	TXUNDERRUNMASK			4	1
+	RXOVERRUNMASK			5	1
+	CMDRESPENDMASK			6	1
+	CMDSENTMASK				7	1
+	DATAENDMASK				8	1
+	STARTBITERRMASK			9	1
+	DATABLOCKENDMASK		10	1
+	CMDACTIVEMASK			11	1
+	TXACTIVEMASK			12	1
+	RXACTIVEMASK			13	1
+	TXFIFOHALFEMPTYMASK		14	1
+	RXFIFOHALFFULLMASK		15	1
+	TXFIFOFULLMASK			16	1
+	RXFIFOFULLMASK			17	1
+	TXFIFOEMPTYMASK			18	1
+	RXFIFOEMPTYMASK			19	1
+	TXDATAAVLBLMASK			20	1
+	RXDATAAVLBLMASK			21	1
+MCI_SELECT			0xF7301044
+	SDCARD			0	4
+MCI_FIFOCNT		0xF7301048
+	COUNT			0	16
+MCI_FIFO_0			0xF7301080
+MCI_FIFO_1			0xF7301084
+MCI_FIFO_2			0xF7301088
+MCI_FIFO_3			0xF730108C
+MCI_FIFO_4			0xF7301090
+MCI_FIFO_5			0xF7301094
+MCI_FIFO_6			0xF7301098
+MCI_FIFO_7			0xF730109C
+MCI_FIFO_8			0xF73010A0
+MCI_FIFO_9			0xF73010A4
+MCI_FIFO_10		0xF73010A8
+MCI_FIFO_11		0xF73010AC
+MCI_FIFO_12		0xF73010B0
+MCI_FIFO_13		0xF73010B4
+MCI_FIFO_14		0xF73010B8
+MCI_FIFO_15		0xF73010BC
+MCI_PERIPH_ID0		0xF7301FE0
+	PARTNUMBER0		0	8
+MCI_PERIPH_ID1		0xF7301FE4
+	PARTNUMBER1		0	4
+	DESIGNER0		4	8
+MCI_PERIPH_ID2		0xF7301FE8
+	DESIGNER1		0	4
+	REVISION		4	8
+MCI_PERIPH_ID3		0xF7301FEC
+	CONFIGURATION	0	8
+MCI_PCELL_ID0		0xF7301FF0
+MCI_PCELL_ID1		0xF7301FF4
+MCI_PCELL_ID2		0xF7301FF8
+MCI_PCELL_ID3		0xF7301FFC
+
+
+# MODEM
+MODEM_CLC		0xF6000000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+MODEM_ID		0xF6000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+
+# PCL
+PCL_CLC						0xf4300000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+PCL_ID						0xf4300008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+MON_CR1						0xf4300010
+MON_CR2						0xf4300014
+MON_CR3						0xf4300018
+MON_CR4						0xf430001C
+
+# Кнопки
+GPIO_KP_IN0					0xF4300020
+GPIO_KP_IN1					0xF4300024
+GPIO_KP_IN2					0xF4300028
+GPIO_KP_IN3					0xF430002C
+GPIO_KP_IN4					0xF4300030
+GPIO_KP_IN5					0xF4300034
+GPIO_KP_OUT5_OUT6			0xF4300038
+GPIO_KP_OUT0				0xF430003C
+GPIO_KP_OUT1				0xF4300040
+GPIO_KP_OUT2				0xF4300044
+GPIO_KP_OUT3				0xF4300048
+
+# Пины в разьёме
+GPIO_USART0_RXD				0xF430004C
+GPIO_USART0_TXD				0xF4300050
+GPIO_USART0_RTS				0xF4300054
+GPIO_USART0_CTS				0xF4300058
+
+GPIO_DSPOUT0				0xF430005C
+GPIO_USART1_RXD				0xF4300060
+GPIO_USART1_TXD				0xF4300064
+GPIO_USART1_RTS				0xF4300068
+GPIO_USART1_CTS				0xF430006C
+GPIO_USB_DPLUS				0xF4300070
+GPIO_USB_DMINUS				0xF4300074
+PCL_22						0xF4300078
+PCL_23						0xF430007C
+PCL_24						0xF4300080
+PCL_25						0xF4300084
+PCL_26						0xF4300088
+PCL_27						0xF430008C
+GPIO_I2C_SCL				0xF4300090
+GPIO_I2C_SDA				0xF4300094
+PCL_30						0xF4300098
+PCL_31_I2S2					0xF430009C
+PCL_32_I2S2					0xF43000A0
+PCL_33_I2S2					0xF43000A4
+PCL_34_I2S2					0xF43000A8
+PCL_35						0xF43000AC
+PCL_36						0xF43000B0
+PCL_37						0xF43000B4
+PCL_38						0xF43000B8
+PCL_39						0xF43000BC
+PCL_40						0xF43000C0
+PCL_41						0xF43000C4
+PCL_42						0xF43000C8
+GPIO_LED_FL_OFF				0xF43000CC
+GPIO_TOUT1_PM_CHARGE_UC		0xF43000D0 # вкл/выкл зарядку аккумулятора
+PCL_45						0xF43000D4
+PCL_46						0xF43000D8
+PCL_47						0xF43000DC
+PCL_48						0xF43000E0
+PCL_49						0xF43000E4
+GPIO_TOUT7_PM_RF2_EN		0xF43000E8
+PCL_51						0xF43000EC
+GPIO_TOUT9_I2C_2_DAT		0xF43000F0
+GPIO_TOUT10_SERIAL_EN		0xF43000F4
+GPIO_TOUT11_I2C_2_CLK		0xF43000F8
+PCL_55						0xF43000FC
+GPIO_RF_STR0				0xF4300100
+GPIO_RF_STR1_PM_RINGIN		0xF4300104
+GPIO_MMC_VCC_EN				0xF4300108
+GPIO_RF_CLK					0xF430010C
+PCL_60						0xF4300110
+PCL_61						0xF4300114
+GPIO_DSPOUT1_PM_WADOG		0xF4300118 # внешний watchdog
+GPIO_LED_FL_EN				0xF430011C
+PCL_64						0xF4300120
+PCL_65						0xF4300124
+PCL_66						0xF4300128
+PCL_67						0xF430012C
+PCL_68						0xF4300130
+PCL_69						0xF4300134
+PCL_70						0xF4300138
+PCL_71						0xF430013C
+PCL_72						0xF4300140
+PCL_73						0xF4300144
+PCL_74						0xF4300148
+PCL_75						0xF430014C
+PCL_76						0xF4300150
+GPIO_MMC_CD					0xF4300154
+GPIO_CIF_D0					0xF4300158
+GPIO_CIF_D1					0xF430015C
+GPIO_CIF_D2					0xF4300160
+GPIO_CIF_D3					0xF4300164
+GPIO_CIF_D4					0xF4300168
+GPIO_CIF_D5					0xF430016C
+GPIO_CIF_D6					0xF4300170
+GPIO_CIF_D7					0xF4300174
+GPIO_CIF_PCLK				0xF4300178
+GPIO_CIF_HSYNC				0xF430017C
+GPIO_CIF_VSYNC				0xF4300180
+GPIO_CLKOUT2				0xF4300184
+
+GPIO_MMC_CMD				0xF43001C0
+GPIO_MMC_DAT				0xF43001C4
+GPIO_MMC_CLK				0xF43001C8
+
+GPIO_I2S1_CLK1				0xF43001E0 
+GPIO_CIF_PD					0xF43001E4
+
+
+# PLL
+PLL_OSC		0xF45000A0
+PLL_CON0	0xF45000A4
+PLL_CON1	0xF45000A8
+	FSYS_DIV_EN		25	1	/* Enable fsys divider and div fsys by 4 */
+	FSYS_DIV		28	2	/* Fsys diviver (work if FSYS_DIV_EN=1) */
+PLL_CON2	0xF45000AC
+PLL_STAT	0xF45000B0
+PLL_CON3	0xF45000B4
+PLL_CON4	0xF45000CC
+
+
+# Real Time Clock
+RTC_CLC		0xF4700000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+
+RTC_ID		0xF4700008
+	MOD			16	16	/* Module Identification Number. */
+	MOD_32B		8	8	/* Indicates a 32-bit ID register. */
+	REV			0	8	/* Module Revision Number. */
+
+RTC_CTRL	0xF4700010	/* RTC Shell Control Register */
+	RTCOUTEN		0	1	/* RTC External Interrupt Output Enable */
+	RTCINT			1	1	/* RTC Interrupt Status */
+	CLK32KEN		2	1	/* 32k Clock Enable */
+	PU32K			3	1	/* 32 kHz Oscillator Power Up */
+	RTC_CLK_SEL		4	1	/* RTC Logic Clock Select */
+	CLR_RTCINT		8	1	/* Clears RTCINT */
+	RTCBAD			9	1	/* RTC Content Inconsistent Due to Power Supply Drop Down */
+	CLR_RTCBAD		10	1	/* Clears RTCBAD */
+
+RTC_CON		0xF4700014	/* RTC Control Register */
+	RUN			0	1	/* RTC Enable */
+	PRE			1	1	/* RTC Input Source Pre-Scaler Enable */
+	T14DEC		2	1	/* Decrement T14 Timer Value */
+	T14INC		3	1	/* Increment T14 Timer Value */
+	ACCPOS		4	1	/* RTC Register Access Possible */
+
+RTC_T14		0xF4700018	/* Timer T14 Count/Reload Register */
+	REL		0	16	/* Timer T14 Reload Value */
+	CNT		16	16	/* Timer T14 Count Value */
+
+RTC_CNT		0xF470001C	/* RTC Count Register */
+	CNT		0	32	/* RTC Timer Count Value */
+
+RTC_REL		0xF4700020	/* RTC Reload Register */
+	REL		0	32	/* RTC Timer Reload Value */
+
+RTC_ISNC	0xF4700024	/* Interrupt Sub-Node Control Register */
+	T14IE	0	1		/* T14 Overflow Interrupt Enable Control */
+	T14IR	1	1		/* T14 Overflow Interrupt Request */
+	RTC0IE	2	1		/* Interrupt Enable Control */
+	RTC0IR	3	1		/* Interrupt Request */
+	RTC1IE	4	1		/* Interrupt Enable Control */
+	RTC1IR	5	1		/* Interrupt Request */
+	RTC2IE	6	1		/* Interrupt Enable Control */
+	RTC2IR	7	1		/* Interrupt Request */
+	RTC3IE	8	1		/* Interrupt Enable Control */
+	RTC3IR	9	1		/* Interrupt Request */
+	ALARMIE	10	1		/* Alarm Interrupt Enable Control */
+	ALARMIR	11	1		/* Alarm Interrupt Request */
+
+RTC_ALARM	0xF470002C	/* RTC Alarm Register */
+	VALUE	0	32
+
+
+# SCU
+SCU_CLC				0xF4400000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+SCU_ID				0xF4400008
+	MOD_NUMBER		16	16	/* SCU Module Identification Number. */
+	MOD_32B			8	8	/* Indicates a 32-bit ID register. */
+	REV_NUMBER		0	8	/* SCU Module Revision Number. */
+
+RST_SR				0xF4400010	/* Reset Status Register */
+	RSSTM			0	1	/* System Timer Reset Status */
+	RSEXT			1	1	/* HDRST Line State during Last Reset */
+	HWCFG			16	3	/* Boot Configuration Selection Status */
+	TESTMODE		20	1	/* State of TESTMODE Pin */
+	HWBRKIN			21	1	/* State of BRKIN Pin */
+	PWORST			27	1	/* Power-On Reset Status Flag */
+	HDRST			28	1	/* Hardware Reset Status Flag */
+	SFTRST			29	1	/* Software Reset Status Flag */
+	WDTRST			30	1	/* Watchdog Reset Status Flag */
+	PWDRST			31	1	/* Power Down/Wake-Up Reset Flag */
+
+RST_REQ				0xF4400018	/* Reset Request Register */
+	RRSTM			0	1	/* Reset Request for the System Timer */
+	RREXT			2	1	/* Reset Request for External Devices */
+	SWCFG			16	3	/* Software Boot Configuration */
+	SWBRKIN			21	1	/* Software Break Signal Boot Value */
+	SWBOOT			24	1	/* Software Boot Configuration Selection */
+
+SCU_WDTCON0			0xF4400024
+	WDTREL		16	16	/* Reload Value for the Watchdog Timer. */
+	WDTPW		8	8	/* User-Definable Password Field for Access to WDT_CON0. */
+	WDTHPW1		4	4	/* Hardware Password 1. */
+	WDTHPW0		2	2	/* Hardware Password 0. */
+	WDTLCK		1	1	/* Lock bit to Control Access to WDT_CON0. */
+	ENDINIT		0	1	/* End-of-Initialization Control Bit. */
+SCU_WDTCON1			0xF4400028
+	WDTDR		3	1	/* Watchdog Timer Disable Request Control Bit. */
+	WDTIR		2	1	/* Watchdog Timer Input Frequency Request Control Bit. */
+SCU_WDT_SR			0xF440002C
+	WDTAE		0	1	/* Watchdog Access Error Status Flag */
+	WDTOE		1	1	/* Watchdog Overflow Error Status Flag */
+	WDTIS		2	1	/* Watchdog Input Clock Status Flag */
+	WDTDS		3	1	/* Watchdog Enable/Disable Status Flag */
+	WDTTO		4	1	/* Watchdog Time-out Mode Flag */
+	WDTPR		5	1	/* Watchdog Prewarning Mode Flag */
+	WDTTIM		16	16	/* Watchdog Timer Value */
+
+SCU_EBUCLC			0xF4400040
+	LOCK		0	1
+	VCOBYP		8	1
+
+SCU_MANID			0xF440005C
+	DEPT		0	4
+	MANUF		4	11
+
+SCU_CHIPID			0xF4400060
+	CHREV		0	8
+	MANUF		8	8
+
+SCU_RTID			0xF4400080
+
+SCU_RTCIF			0xF4400064
+SCU_ROMAMCR			0xf440007C
+	MOUNT_BROM		0	1
+SCU_BOOT_FLAG		0xF4400078
+	BOOT_OK			0	1
+
+SCU_EBUCLC0			0xF4400040
+	FLAG1		0	4
+	FLAG2		4	4
+
+SCU_EBUCLC1			0xF4400044
+	FLAG1		0	4
+	FLAG2		4	4
+
+DMARS				0xF4400084	/* DMA Request Select Register */
+	SEL0		0	1	/* Request Select Bit 0 */
+	SEL1		1	1	/* Request Select Bit 1 */
+	SEL2		2	1	/* Request Select Bit 2 */
+	SEL3		3	1	/* Request Select Bit 3 */
+	SEL4		4	1	/* Request Select Bit 4 */
+	SEL5		5	1	/* Request Select Bit 5 */
+	SEL6		6	1	/* Request Select Bit 6 */
+	SEL7		7	1	/* Request Select Bit 7 */
+	SEL8		8	1	/* Request Select Bit 8 */
+	SEL9		9	1	/* Request Select Bit 9 */
+
+
+# SIM
+SIM_CLC			0xF1300000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+SIM_ID			0xF1300008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+
+
+STM_CLC		0xF4B00000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+STM_ID		0xF4B00008
+	MOD			16	16	/* System Timer Module Identification Number. */
+	MOD_32B		8	8	/* Indicates a 32-bit ID register. */
+	REV			0	8	/* System Timer Module Revision Number. */
+STM_TIM0		0xF4B00010
+	value		0	32
+STM_TIM1		0xF4B00014
+	value		0	32
+STM_TIM2		0xF4B00018
+	value		0	32
+STM_TIM3		0xF4B0001C
+	value		0	32
+STM_TIM4		0xF4B00020
+	value		0	32
+STM_TIM5		0xF4B00024
+	value		0	32
+STM_TIM6		0xF4B00028
+	value		0	32
+
+
+# Time Processing Unit
+TPU_CLC		0xF6400000
+	RMC			8	8	/* Module Clock Divider for Normal Mode */
+	FSOE		5	1	/* Module Fast Shut-Off Enable. */
+	SBWE		4	1	/* Module Suspend Bit Write Enable */
+	EDIS		3	1	/* Module External Request Disable */
+	SPEN		2	1	/* Module Suspend Enable Bit */
+	DISS		1	1	/* Module Disable Status Bit */
+	DISR		0	1	/* Module Disable Request Bit */
+
+TPU_ID		0xF6400008
+	MOD			16	16	/* Module Identification Number. */
+	MOD_32B		8	8	/* Indicates a 32-bit ID register. */
+	REV			0	8	/* Module Revision Number. */
+
+TPU_UNK0		0xF6400010
+TPU_UNK1		0xF6400014
+TPU_UNK2		0xF6400018
+
+TPU_CORRECTION	0xF640001C
+	VALUE		0	15
+	CTRL		16	1
+
+TPU_OVERFLOW	0xF6400020
+	VALUE		0	15
+
+TPU_INT0		0xF6400024
+	VALUE		0	15
+
+TPU_INT1		0xF6400028
+	VALUE		0	15
+
+TPU_OFFSET		0xF640002C
+	VALUE		0	15
+	CTRL		16	1
+
+TPU_SKIP		0xF6400030
+	SKIPN		0	1
+	SKIPC		1	1
+
+TPU_COUNTER		0xF6400034
+	VALUE		0	15
+
+TPU_UNK3		0xF6400038
+TPU_UNK4		0xF640003C
+TPU_UNK5		0xF6400040
+TPU_UNK6		0xF6400044
+
+TPU_PARAM		0xF640005C
+	TINI		0	1
+	FDIS		1	1
+
+TPU_UNK7		0xF6400060
+
+TPU_PLLCON0		0xF6400068
+	K_DIV		0	30
+
+TPU_PLLCON1		0xF640006C
+	L_DIV		0	30
+
+TPU_PLLCON2		0xF6400070
+	LOAD		0	1
+	INIT		1	1
+
+TPU_ICR0			0xF64000F8
+	ENABLE		12	1
+	RESET		14	1
+
+TPU_ICR1			0xF64000FC
+	ENABLE		12	1
+	RESET		14	1
+
+
+# USART0
+USART0_CLC			0xF1000000
+	SMC_CLK_DIV		16	8
+	RMC_CLK_DIV		8	8
+	FSOE			5	1	/* Fast shut off enable (1: enable; 0: disable) */
+	SBWE			4	1	/* Suspend bit write enable (1: enable; 0: disable) */
+	EDIS			3	1	/* External request disable (1: disable; 0: enable) */
+	SPEN			2	1	/* Suspend bit enable (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+USART0_PISEL		0xF1000004
+USART0_ID			0xF1000008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+USART0_CON			0xF1000010
+	CON_R			15	1	/* Baud rate generator run control (0: disable; 1: enable) */
+	LB				14	1	/* Loopback mode (0: disable; 1: enable) */
+	BRS				13	1	/* Baudrate selection (0: Pre-scaler /2; 1: Pre-scaler / 3) */
+	ODD				12	1	/* Parity selection (0: even; 1: odd)  */
+	FDE				11	1	/* Fraction divider enable (0: disable; 1: enable) */
+	OE				10	1	/* Overrun error flag */
+	FE				9	1	/* Framing error flag */
+	PE				8	1	/* Parity error flag */
+	OEN				7	1	/* Overrun check enable (0: ignore; 1: check) */
+	FEN				6	1	/* Framing error check (0: ignore; 1: check) */
+	PEN				5	1	/* Parity check enable (0: ignore; 1: check) */
+	REN				4	1	/* Receiver bit enable (0: disable; 1: enable) */
+	STP				3	1	/* Number of stop bits (0: 1 stop bit; 1: two stop bits) */
+	M				0	3	/* ASC Mode Control. */
+USART0_BG			0xF1000014
+USART0_FDV			0xF1000018
+USART0_PMW			0xF100001C
+	IRPW			8	1	/* IrDA Pulse Width Selection */
+	PW_VALUE		0	8	/* IrDA Pulse Width Value */
+USART0_TXB			0xF1000020
+USART0_RXB			0xF1000024
+USART0_ABCON		0xF1000030
+	RXINV				11	1	/* Receive invert enable (0: disable; 1: enable) */
+	TXINV				10	1	/* Transmit invert enable (0: disable; 1: enable) */
+	ABEM_ECHO_DET		8	1	/* Autobaud echo mode enabled during detection */
+	ABEM_ECHO_ALWAYS	9	1	/* Autobaud echo mode always enabled */
+	FCDETEN				4	1	/* Fir char of two byte frame detect */
+	ABDETEN				3	1	/* Autobaud detection interrupt enable (0: dis; 1: en) */
+	ABSTEN				2	1	/* Start of autobaud detect interrupt (0: dis; 1: en) */
+	AUREN				1	1	/* Auto control of CON.REN (too complex for here) */
+	ABEN				0	1	/* Autobaud detection enable */
+USART0_ABSTAT		0xF1000034
+	DETWAIT			4	1	/* Autobaud detect is waiting */
+	SCCDET			3	1	/* Second character with capital letter detected */
+	SCSDET			2	1	/* Second character with small letter detected */
+	FCCDET			1	1	/* First character with capital letter detected */
+	FCSDET			0	1	/* First character with small letter detected */
+USART0_RXFCON		0xF1000040
+	RXFITL			8	4	/* Receive FIFO interrupt trigger level */
+	RXTMEN			2	1	/* Receive FIFO transparent mode enable */
+	RXFFLU			1	1	/* Receive FIFO flush */
+	RXFEN			0	1	/* Receive FIFO enable */
+USART0_TXFCON		0xF1000044
+	TXFITL			8	4	/* Transmit FIFO interrupt trigger level */
+	TXTMEN			2	1	/* Transmit FIFO transparent mode enable */
+	TXFFLU			1	1	/* Transmit FIFO flush */
+	TXFEN			0	1	/* Transmit FIFO enable */
+USART0_FSTAT		0xF1000048
+	TXFFL			8	4	/* Transmit FIFO filling level mask */
+	RXFFL			0	4	/* Receive FIFO filling level mask */
+USART0_WHBCON		0xF1000050
+	SETOE			13	1	/* Set overrun error flag */
+	SETFE			12	1	/* Set framing error flag */
+	SETPE			11	1	/* Set parity error flag */
+	CLROE			10	1	/* Clear overrun error flag */
+	CLRFE			9	1	/* Clear framing error flag */
+	CLRPE			8	1	/* Clear parity error flag */
+	SETREN			5	1	/* Set receiver enable bit */
+	CLRREN			4	1	/* Clear receiver enable bit */
+USART0_WHBABCON		0xF1000054
+USART0_WHBABSTAT	0xF1000058
+USART0_FCCON		0xF100005C
+	RTS_TRIGGER		8	6	/* RTS receive FIFO trigger level */
+	RTS				4	1	/* RTS control bit */
+	RTSEN			1	1	/* CTS enable (0: disable; 1: enable) */
+	CTSEN			0	1	/* RTS enbled (0: disable; 1: enable) */
+USART0_FCSTAT		0xF1000060
+	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
+	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
+USART0_IMSC			0xF1000064
+USART0_RIS			0xF1000068
+USART0_MIS			0xF100006C
+USART0_ICR			0xF1000070
+	TMO				7	1	/* RX timeout interrupt mask */
+	CTS				6	1	/* CTS interrupt mask */
+	ABDET			5	1	/* Autobaud detected interrupt mask */
+	ABSTART			4	1	/* Autobaud start interrupt mask */
+	ERR				3	1	/* Error interrupt mask */
+	RX				2	1	/* Receive interrupt mask */
+	TB				1	1	/* Transmit buffer interrupt mask */
+	TX				0	1	/* Transmit interrupt mask */
+USART0_ISR			0xF1000074
+	TMO				7	1	/* RX timeout interrupt mask */
+	CTS				6	1	/* CTS interrupt mask */
+	ABDET			5	1	/* Autobaud detected interrupt mask */
+	ABSTART			4	1	/* Autobaud start interrupt mask */
+	ERR				3	1	/* Error interrupt mask */
+	RX				2	1	/* Receive interrupt mask */
+	TB				1	1	/* Transmit buffer interrupt mask */
+	TX				0	1	/* Transmit interrupt mask */
+USART0_TMO			0xF100007C
+
+
+# USART1
+USART1_CLC			0xF1800000
+	SMC_CLK_DIV		16	8
+	RMC_CLK_DIV		8	8
+	FSOE			5	1	/* Fast shut off enable (1: enable; 0: disable) */
+	SBWE			4	1	/* Suspend bit write enable (1: enable; 0: disable) */
+	EDIS			3	1	/* External request disable (1: disable; 0: enable) */
+	SPEN			2	1	/* Suspend bit enable (1: enable; 0: disable) */
+	DISS			1	1	/* Disable status bit (1: disable; 0: enable) */
+	DISR			0	1	/* Disable request bit (1: enable; 0: disable) */
+USART1_PISEL		0xF1800004
+USART1_ID			0xF1800008
+	MOD_NUMBER		16	16
+	MOD_32B			8	8
+	MOD_REV			0	8
+USART1_CON			0xF1800010
+	CON_R			15	1	/* Baud rate generator run control (0: disable; 1: enable) */
+	LB				14	1	/* Loopback mode (0: disable; 1: enable) */
+	BRS				13	1	/* Baudrate selection (0: Pre-scaler /2; 1: Pre-scaler / 3) */
+	ODD				12	1	/* Parity selection (0: even; 1: odd)  */
+	FDE				11	1	/* Fraction divider enable (0: disable; 1: enable) */
+	OE				10	1	/* Overrun error flag */
+	FE				9	1	/* Framing error flag */
+	PE				8	1	/* Parity error flag */
+	OEN				7	1	/* Overrun check enable (0: ignore; 1: check) */
+	FEN				6	1	/* Framing error check (0: ignore; 1: check) */
+	PEN				5	1	/* Parity check enable (0: ignore; 1: check) */
+	REN				4	1	/* Receiver bit enable (0: disable; 1: enable) */
+	STP				3	1	/* Number of stop bits (0: 1 stop bit; 1: two stop bits) */
+	M				0	3	/* ASC Mode Control. */
+USART1_BG			0xF1800014
+USART1_FDV			0xF1800018
+USART1_PMW			0xF180001C
+	IRPW			8	1	/* IrDA Pulse Width Selection */
+	PW_VALUE		0	8	/* IrDA Pulse Width Value */
+USART1_TXB			0xF1800020
+USART1_RXB			0xF1800024
+USART1_ABCON		0xF1800030
+	RXINV				11	1	/* Receive invert enable (0: disable; 1: enable) */
+	TXINV				10	1	/* Transmit invert enable (0: disable; 1: enable) */
+	ABEM_ECHO_DET		8	1	/* Autobaud echo mode enabled during detection */
+	ABEM_ECHO_ALWAYS	9	1	/* Autobaud echo mode always enabled */
+	FCDETEN				4	1	/* Fir char of two byte frame detect */
+	ABDETEN				3	1	/* Autobaud detection interrupt enable (0: dis; 1: en) */
+	ABSTEN				2	1	/* Start of autobaud detect interrupt (0: dis; 1: en) */
+	AUREN				1	1	/* Auto control of CON.REN (too complex for here) */
+	ABEN				0	1	/* Autobaud detection enable */
+USART1_ABSTAT		0xF1800034
+	DETWAIT			4	1	/* Autobaud detect is waiting */
+	SCCDET			3	1	/* Second character with capital letter detected */
+	SCSDET			2	1	/* Second character with small letter detected */
+	FCCDET			1	1	/* First character with capital letter detected */
+	FCSDET			0	1	/* First character with small letter detected */
+USART1_RXFCON		0xF1800040
+	RXFITL			8	4	/* Receive FIFO interrupt trigger level */
+	RXTMEN			2	1	/* Receive FIFO transparent mode enable */
+	RXFFLU			1	1	/* Receive FIFO flush */
+	RXFEN			0	1	/* Receive FIFO enable */
+USART1_TXFCON		0xF1800044
+	TXFITL			8	4	/* Transmit FIFO interrupt trigger level */
+	TXTMEN			2	1	/* Transmit FIFO transparent mode enable */
+	TXFFLU			1	1	/* Transmit FIFO flush */
+	TXFEN			0	1	/* Transmit FIFO enable */
+USART1_FSTAT		0xF1800048
+	TXFFL			8	4	/* Transmit FIFO filling level mask */
+	RXFFL			0	4	/* Receive FIFO filling level mask */
+USART1_WHBCON		0xF1800050
+	SETOE			13	1	/* Set overrun error flag */
+	SETFE			12	1	/* Set framing error flag */
+	SETPE			11	1	/* Set parity error flag */
+	CLROE			10	1	/* Clear overrun error flag */
+	CLRFE			9	1	/* Clear framing error flag */
+	CLRPE			8	1	/* Clear parity error flag */
+	SETREN			5	1	/* Set receiver enable bit */
+	CLRREN			4	1	/* Clear receiver enable bit */
+USART1_WHBABCON		0xF1800054
+USART1_WHBABSTAT	0xF1800058
+USART1_FCCON		0xF180005C
+	RTS_TRIGGER		8	6	/* RTS receive FIFO trigger level */
+	RTS				4	1	/* RTS control bit */
+	RTSEN			1	1	/* CTS enable (0: disable; 1: enable) */
+	CTSEN			0	1	/* RTS enbled (0: disable; 1: enable) */
+USART1_FCSTAT		0xF1800060
+	RTS				1	1	/* RTS Status (0: inactive; 1: active) */
+	CTS				0	1	/* CTS Status (0: inactive; 1: active) */
+USART1_IMSC			0xF1800064
+USART1_RIS			0xF1800068
+USART1_MIS			0xF180006C
+USART1_ICR			0xF1800070
+	TMO				7	1	/* RX timeout interrupt mask */
+	CTS				6	1	/* CTS interrupt mask */
+	ABDET			5	1	/* Autobaud detected interrupt mask */
+	ABSTART			4	1	/* Autobaud start interrupt mask */
+	ERR				3	1	/* Error interrupt mask */
+	RX				2	1	/* Receive interrupt mask */
+	TB				1	1	/* Transmit buffer interrupt mask */
+	TX				0	1	/* Transmit interrupt mask */
+USART1_ISR			0xF1800074
+	TMO				7	1	/* RX timeout interrupt mask */
+	CTS				6	1	/* CTS interrupt mask */
+	ABDET			5	1	/* Autobaud detected interrupt mask */
+	ABSTART			4	1	/* Autobaud start interrupt mask */
+	ERR				3	1	/* Error interrupt mask */
+	RX				2	1	/* Receive interrupt mask */
+	TB				1	1	/* Transmit buffer interrupt mask */
+	TX				0	1	/* Transmit interrupt mask */
+USART1_TMO			0xF180007C

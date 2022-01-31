@@ -78,7 +78,6 @@ sub _handle_irq {
 	my ($count, $data) = $port->read(1);
 	if ($count == 1) {
 		$irq_handler->(ord($data)) if ($irq_handler);
-		printf("!!!!!!! NEW IRQ: %02X\n", ord($data));
 		return ord($data);
 	}
 	die "Can't get IRQ num (cmd_$cmd)\n";

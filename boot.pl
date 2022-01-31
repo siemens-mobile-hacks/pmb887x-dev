@@ -9,12 +9,12 @@ no utf8;
 
 $| = 1;
 
-my $device = "/dev/ttyUSB3";
+my $device = "/dev/ttyUSB0";
 my $boot_speed = 115200;
 my $speed = 1600000;
 my $module;
 my $as_hex = 0;
-my $ign = 0;
+my $ign = 1;
 my $dtr = 0;
 my $rts = 0;
 my $bootloader = dirname(__FILE__)."/bootloader/bootloader.bin";

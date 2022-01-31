@@ -24,8 +24,7 @@ __enter_reset:
 	bic r0, r0, #0x80
 	/* go back in supervisor mode */
 	msr cpsr, r0
-	bl __init_vectors
-	bl main
+	bl __reset_handler
 	
 endless_loop:
 	b	endless_loop
