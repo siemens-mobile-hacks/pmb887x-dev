@@ -3,11 +3,11 @@ use strict;
 use File::Basename qw|dirname|;
 use Data::Dumper;
 
-my $pmb8876_regs;
+my $regs;
 
 sub get_regs {
-	if (!$pmb8876_regs) {
-		$pmb8876_regs = [];
+	if (!$regs) {
+		$regs = [];
 		
 		my $last_reg;
 		my $last_reg_field;
@@ -61,7 +61,7 @@ sub get_regs {
 				if (scalar(@values) >= 2) {
 					my $val = [$values[0]];
 					if ($values[1] =~ /0x([a-f0-9]+)-0x([a-f0-9]+)/i) {
-						push @$pmb8876_regs, {
+						push @$regs, {
 							name => $values[0], 
 							addr => hex $1, 
 							addr_end => hex $2, 
@@ -69,21 +69,21 @@ sub get_regs {
 							desc => []
 						};
 					} elsif ($values[1] =~ /0x([a-f0-9]+)/i) {
-						push @$pmb8876_regs, {
+						push @$regs, {
 							name => $values[0], 
 							addr => hex $1, 
 							bits => 0, 
 							desc => []
 						};
 					}
-					$last_reg = $pmb8876_regs->[scalar(@$pmb8876_regs) - 1];
+					$last_reg = $regs->[scalar(@$regs) - 1];
 				}
 			}
 		}
 		close FFF;
 	}
 	
-	return $pmb8876_regs;
+	return $regs;
 }
 
 sub reg_name {

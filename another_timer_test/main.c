@@ -1,33 +1,7 @@
 #include <printf.h>
 #include "main.h"
-#include "i2c.h"
-
-
-/* stack */
-char stack_top[512 * 1024];
-char irq_stack_top[512 * 1024];
-unsigned int max_wd_time = 4;
-
 
 #define D1601AA_I2C_ADDR		0x31 // Dialog/Twigo
-
-
-#define RTC_CTRL		(0xF4700010)
-
-#define RTC_OUTEN		(1 << 0)	/* external interrupt output enable */
-#define RTC_INT			(1 << 1)	/* rtc interrupt status */
-#define RTC_32KEN		(1 << 2) 	/* enable 32k osc */
-#define RTC_PU32K		(1 << 3) 	/* power up 32k osc */
-/*
-    Logic Clock Select
-	0 - 32 kHz clock operation mode (Asynchronous to microcontroller clock, low power, read only)
-	1 - Bus clock operation mode (Synchronous to microcontroller clock, required for register write operation for some registers)
- */
-#define RTC_CLK_SEL		(1 << 4) 
-#define RTC_CLRINT		(1 << 8)	/* clear interrupt bit */
-#define RTC_BAD			(1 << 9)	/* rtc bad detect bit */
-#define RTC_CLRBAD		(1 << 10)	/* clear bad bit */
-
 
 /* STM */
 #define PMB8876_STM_CLC			0xF4B00000
@@ -42,33 +16,30 @@ unsigned int max_wd_time = 4;
 #define MIN_DELTA			( 10 )
 
 
-#define IOPLL_CON0()		readl((void *)PLL_CON0)
-#define IOPLL_CON0_SET(x)	writel(x, (void *)PLL_CON0)
+#define IOPLL_CON0()		PLL_CON0
+#define IOPLL_CON0_SET(x)	(PLL_CON0 = x)
 
-#define IOPLL_CON1()		readl((void *)PLL_CON1)
-#define IOPLL_CON1_SET(x)	writel(x, (void *)PLL_CON1)
+#define IOPLL_CON1()		PLL_CON1
+#define IOPLL_CON1_SET(x)	(PLL_CON1 = x)
 
-#define IOPLL_CON2()		readl((void *)PLL_CON2)
-#define IOPLL_CON2_SET(x)	writel(x, (void *)PLL_CON2)
+#define IOPLL_CON2()		PLL_CON2
+#define IOPLL_CON2_SET(x)	(PLL_CON2 = x)
 
-#define IOPLL_ICR()		readl((void *)PLL_ICR)
-#define IOPLL_ICR_SET(x)	writel(x, (void *)PLL_ICR)
+#define IOPLL_ICR()			PLL_CON4
+#define IOPLL_ICR_SET(x)	(PLL_CON4 = x)
 
-#define IOPLL_OSC()		readl((void *)PLL_OSC)
-#define IOPLL_OSC_SET(x)	writel(x, (void *)PLL_OSC)
+#define IOPLL_OSC()			PLL_OSC
+#define IOPLL_OSC_SET(x)	(PLL_OSC = x)
 
-#define IOPLL_STAT()		readl((void *)PLL_STAT)
+#define IOPLL_STAT()		PLL_STAT
 
-#define IOSCU_PLLCLC()		readl((void *)SCU_PLLCLC)
-#define IOSCU_PLLCLC_SET(x)	writel(x, (void *)SCU_PLLCLC)
+#define IOSCU_PLLCLC()		SCU_PLLCLC
+#define IOSCU_PLLCLC_SET(x)	(SCU_PLLCLC = x)
 
-#define IOEBU_CON()		readl((void *)EBU_CON)
-#define IOEBU_CON_SET(x)	writel(x, (void *)EBU_CON)
+#define IOEBU_CON()			EBU_CON
+#define IOEBU_CON_SET(x)	(EBU_CON = x)
 
-
-
-unsigned int init_pll()
-{
+static unsigned int init_pll(void) {
     /*IOPLL_CON0_SET( (IOPLL_CON0() & 0xFFFFFFF8) | 3 );
     IOPLL_CON0_SET( (IOPLL_CON0() & 0xFFFFFF87) | 8 );
     IOPLL_CON0_SET( (IOPLL_CON0() & 0xFFFFF8FF) );
@@ -96,19 +67,18 @@ unsigned int init_pll()
 
     IOPLL_CON2_SET( (IOPLL_CON2() & 0xFFFF3FFF) | 0x8000 );
     writel( (readl((void *)0xF45000B4) & 0xFCFFFFFF) | 0x1000000, (void *)0xF45000B4 );
+    
+    return 0;
 }
 
-void EBU_wtf_clock_reinit_2()
-{
+static void EBU_wtf_clock_reinit_2(void) {
     writel( readl(0xF4400044) | 1u, (void *)0xF4400044 );
     while ( !(readl(0xF4400044) & 0x10) );
 }
 
-void EBU_wtf_finish(void)
-{
+static void EBU_wtf_finish(void) {
     REG(0xF4400040) |= 1u;
-    while ( !(REG(0xF4400040) & 0x10) )
-    ;
+    while ( !(REG(0xF4400040) & 0x10) );
     REG(EBU_CON) |= 0x4000000;
     REG(0xF4400040) = 0;
 }
@@ -148,7 +118,7 @@ F45000CC: 00001000 (PLL_ICR)*/
 
 
 
-unsigned int _pmb8876_pll_reclock(char mul1, char mul2, char div1, char div2);
+static unsigned int _pll_reclock(char mul1, char mul2, char div1, char div2);
 
 /*
  12  MHz: 2, 2, 1, 6
@@ -165,39 +135,37 @@ unsigned int _pmb8876_pll_reclock(char mul1, char mul2, char div1, char div2);
  
  */
 
-unsigned int pll_reclock(char mul1)
-{
-    _pmb8876_pll_reclock(3, 1, 1, 0);
+static unsigned int pll_reclock(char mul1) {
+	return _pll_reclock(3, 1, 1, 0);
 }
 
-unsigned int _pmb8876_pll_reclock(char mul1, char mul2, char div1, char div2)
-{
+static unsigned int _pll_reclock(char mul1, char mul2, char div1, char div2) {
     //( 1 << 12 ) - делитель, 3х битный
     IOPLL_CON0_SET( 0x11200800 | (0 << 16) | (div2 << 12) ); 
     
     // (5 << 16) - множитель 1 - 5
     // (5 << 8) - тоже какая-то хуитка, похожая на множитель
-    writel((mul1 << 16) | (0 << 12) | (5 << 8) | 5, (void *)PLL_OSC);
+    PLL_OSC = ((mul1 << 16) | (0 << 12) | (5 << 8) | 5);
     
-    printk(" -> osc: %X\n", readl((void *)PLL_OSC));
+    printf(" -> osc: %X\n", PLL_OSC);
 
     // (1 << 5) - PLL_CONNECT
     // (1 << 8) - делитель, очень стрёмный, при увеличении вроде тупее работает, но богомипсов одинаково
-    writel((0x10 << 24) | (7 << 13) | (0 << 12) | (div1 << 8) | (1 << 5) | 0x7, (void *)PLL_CON2);
-    printk(" -> con2: %X\n", readl((void *)PLL_CON2));
+    PLL_CON2 = (0x10 << 24) | (7 << 13) | (0 << 12) | (div1 << 8) | (1 << 5) | 0x7;
+    printf(" -> con2: %X\n", PLL_CON2);
     
     EBU_wtf_clock_reinit_2();
     
     // (1 << (20+0)) - иножитель
     // (1 << (16+0)) - хрень какая-то
     // (1 << 1) - если установлен, нужно пересчитывать CLC периферии
-    writel((1 << (20+mul2)) | (0 << 16) | 0, (void *)PLL_CON1);
-    printk(" -> con1: %X\n", readl((void *)PLL_CON1));
+    PLL_CON1 = ((1 << (20+mul2)) | (0 << 16) | 0);
+    printf(" -> con1: %X\n", PLL_CON1);
     
     writel(readl((void *)0xF45000B4) | 0x310000, (void *)0xF45000B4);
-    printk(" -> b4: %X\n", readl((void *)0xF45000B4));
+    printf(" -> b4: %X\n", readl((void *)0xF45000B4));
     
-    printk("con0: %X\n", IOPLL_CON0());
+    printf("con0: %X\n", IOPLL_CON0());
     
     writel( readl((void *)0xF4400040) | 1u, (void *)0xF4400040);
     while ( !(readl((void *)0xF4400040) & 0x10) );
@@ -211,22 +179,22 @@ unsigned int _pmb8876_pll_reclock(char mul1, char mul2, char div1, char div2)
     
     IOEBU_CON_SET( IOEBU_CON() & 0xFBFFFFFF );
     writel(0, (void *)0xF4400040);
+    
+    return 0;
 }
 
-void EBU_some_state_wait()
-{
+static void EBU_some_state_wait(void) {
     writel( readl(0xF4400044) & 0xFFFFFFFE, (void *)0xF4400044 );
     while ( !(readl(0xF4400044) & 0x10) );
 }
 
 
-void activate_rtc()
-{
+static void activate_rtc(void) {
     int a1 = 1487538810, result;
-    REG(SCU_RTCIF) = 0xAA;
+    SCU_RTCIF = 0xAA;
     
     REG(0xF4700000) = (1 << 8);
-    REG(RTC_CTRL) |= RTC_PU32K | RTC_32KEN;
+    RTC_CTRL |= RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN;
     
     REG(0xF4700014) = 2;
     REG(0xF4700018) = 0xF000F000;
@@ -238,20 +206,19 @@ void activate_rtc()
     REG(0xF4700024) = 0;
     REG(0xF4700028) = 1;
     
-    REG(RTC_CTRL) |= RTC_CLK_SEL | RTC_CLRBAD | RTC_CLRINT;
-    if ( REG(RTC_CTRL) & RTC_BAD ) {
+	RTC_CTRL |= RTC_CTRL_CLK_SEL | RTC_CTRL_CLR_RTCBAD | RTC_CTRL_CLR_RTCINT;
+    if (RTC_CTRL & RTC_CTRL_RTCBAD) {
 	
     } else {
-	// Start count
-	REG(0xF4700014) |= 1u;
+		// Start count
+		REG(0xF4700014) |= 1u;
     }
 }
 
 
 
-int cpu_rate()
-{
-    /*volatile unsigned long cnt = 0;
+static int cpu_rate(void) {
+    /* volatile unsigned long cnt = 0;
     unsigned long start = REG(0xF470001C)+1, end;
     
     while( start != REG(0xF470001C) );
@@ -262,7 +229,7 @@ int cpu_rate()
     }
     
     
-    /*unsigned int overflow = 0;
+    /* unsigned int overflow = 0;
     for( int i = 0; i < 2; i ++ ) 
     {
 	unsigned long stm_start = REG(STM_0);
@@ -284,33 +251,12 @@ int cpu_rate()
     return ((lpj / (500000 / HZ) + 1) * 2);
 }
 
-
-void main() {
-	init_watchdog_noinit();
-	
-	volatile int i;
-	void **vectors = (void **) 0;
-	vectors[8] = reset_addr;
-	vectors[9] = undef_addr;
-	vectors[10] = swi_addr;
-	vectors[11] = prefetch_addr;
-	vectors[12] = abort_addr;
-	vectors[13] = reserved_addr;
-	vectors[14] = c_irq_handler; // asm_irq_handler;
-	vectors[15] = fiq_test;
-	
-	unsigned int addr;
-	for (addr = 0xf2800030; addr <= 0xf28002a8; ++addr) {
-		REG(addr) = 0;
-	}
-	
-	enable_irq(1);
-	
+int main(void) {
+	wdt_init();
 	activate_rtc();
 	
 	/* fuck watchdog */
 	i2c_smbus_write_byte(D1601AA_I2C_ADDR, 0xE, 0b11);
-	
 	
 	//REG(STM_CLC) = 0x001A1A04;
 	
@@ -326,8 +272,8 @@ void main() {
 	//(10 - 2) - Row precharge time counter
 	
 	//0x00D7A870
-	REG(EBU_SDRMCON0) = 0xD02070 | (7 << 16) | (2 << 14) | (2 << 10);
-	REG(EBU_SDRMCON1) = 0xD02070 | (7 << 16) | (2 << 14) | (2 << 10);
+	EBU_SDRMCON(0) = 0xD02070 | (7 << 16) | (2 << 14) | (2 << 10);
+	EBU_SDRMCON(1) = 0xD02070 | (7 << 16) | (2 << 14) | (2 << 10);
 	
 	
 	//(4 - 3) - cas latency
@@ -371,9 +317,7 @@ void main() {
 	init_pll();
 	pll_reclock(5);
 	
-	REG(USART0_CLC) = (1 << (8)) | 8;
-	//REG(USART0_BG) = 0;
-	//REG(USART0_FDV) = 0;
+	USART_CLC(USART0) = (1 << (8)) | 8;
 	
 	for(int i = 0; i<2000; i++);
 	
@@ -381,31 +325,45 @@ void main() {
 	printf("Xuj!\n");
 	printf("Xuj!\n");
 	
-	printk(" ->  osc: %X\n", readl((void *)PLL_OSC));
-	printk(" -> con0: %X\n", readl((void *)PLL_CON0));
-	printk(" -> con1: %X\n", readl((void *)PLL_CON1));
-	printk(" -> con2: %X\n", readl((void *)PLL_CON2));
-	printk(" -> 00b4: %X\n", readl((void *)0xF45000B4));
-	
+	printf(" ->  osc: %X\n", PLL_OSC);
+	printf(" -> con0: %X\n", PLL_CON0);
+	printf(" -> con1: %X\n", PLL_CON1);
+	printf(" -> con2: %X\n", PLL_CON2);
+	printf(" -> 00b4: %X\n", REG(0xF45000B4));
 	
 	int mhz = cpu_rate();
 	printf("CPU: %d MHz\n", mhz);
 	
 	
 	volatile int cnt = 0;
-	int last_stm = REG(STM_4);
-	i = 0;
+	int last_stm = STM_TIM4;
+	int i = 0;
 	
 	printf("last_stm: %d\n", last_stm);
 	
-	while(1) {
-	    if( i > 60000 )
-	    {
-		printf("\rcnt %d, %d", cnt ++, REG(STM_4) - last_stm);
-		last_stm = REG(STM_4);
-		i = 0;
+	while (true) {
+	    if (i > 60000) {
+			printf("\rcnt %d, %d", cnt ++, STM_TIM4 - last_stm);
+			last_stm = STM_TIM4;
+			i = 0;
 	    }
 	    i++;
 	}
+	
+	return 0;
 }
 
+__IRQ void data_abort_handler(void) {
+	printf("data_abort_handler\n");
+	while (true);
+}
+
+__IRQ void undef_handler(void) {
+	printf("undef_handler\n");
+	while (true);
+}
+
+__IRQ void prefetch_abort_handler(void) {
+	printf("prefetch_abort_handler\n");
+	while (true);
+}

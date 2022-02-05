@@ -46,20 +46,20 @@ STATUS TCC_Create_Task(NU_TASK *task, CHAR *name,
 __def(0x0C00, STATUS, task, name, task_entry, argc, argv, stack_address, stack_size, priority, time_slice, preempt, auto_start)
 */
 
-void pmb8876_serial_set_speed(unsigned int speed) {
+void usart_set_speed(unsigned int speed) {
 	REG(PMB8876_USART0_BG) = ((speed >> 16));
 	REG(PMB8876_USART0_FDV) = ((speed << 16) >> 16);
 }
 
-void pmb8876_serial_putc(volatile char c) {
+void usart_putc(volatile char c) {
 	REG(PMB8876_USART0_TXB) = c;
 	while (!(REG(PMB8876_USART0_FCSTAT) & 2));
 	REG(PMB8876_USART0_ICR) |= 2;
 }
 
-void pmb8876_serial_print(const char *data) {
+void usart_print(const char *data) {
 	while (*data)
-		pmb8876_serial_putc(*data++);
+		usart_putc(*data++);
 }
 
 #pragma pack(push, 1)
@@ -107,7 +107,7 @@ void transmit_buffer(int i) {
 	while (buffer_tx_pos < buffer_free_pos && i) {
 		struct LogEntry *log = &buffer[get_array_idx(buffer_tx_pos)];
 		sprintf(tmp, "%c %08X: %08X (from %08X)\r\n", log->type ? 'R' : 'W', log->addr, log->value, log->pc);
-		pmb8876_serial_print(tmp);
+		usart_print(tmp);
 		++buffer_tx_pos;
 		--i;
 	}
@@ -145,12 +145,12 @@ int main() {
 	// Убиваем все IRQ UART'а
 	for (int i = 4; i <= 11; ++i)
 		PMB8876_IRQ(i) = 0;
-	pmb8876_serial_set_speed(UART_SPEED_1600000);
+	usart_set_speed(UART_SPEED_1600000);
 	
 	check_buffer();
 	
 	io_sniffer_init(my_sniff_proc);
-	pmb8876_serial_print("init - OK\r\n");
+	usart_print("init - OK\r\n");
 	
 	GBS_StartTimerProc(&start_delayed_tmr, 216 / 2, start_delayed);
 	return 0;

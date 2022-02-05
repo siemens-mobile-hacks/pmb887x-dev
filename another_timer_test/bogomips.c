@@ -1,11 +1,9 @@
-#include <printf.h>
 #include "main.h"
+#include <printf.h>
 
- 
 #define LPS_PREC	8
 #define STM_DIV		1 /*26*/
-#define jiffies 	(REG(STM_0) / ((26000000/STM_DIV)/HZ))
-
+#define jiffies 	(STM_TIM0 / ((26000000 / STM_DIV) / HZ))
 
 unsigned long calibrate_delay_converge(void)
 {

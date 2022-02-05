@@ -1,2 +1,2 @@
-#/bin/bash
-perl ../chaos-boot.pl --exec=app.bin --exec-addr=0xA8000000 $@
+#!/bin/bash
+perl ../chaos-boot.pl --exec=app.bin --exec-addr=0xA8000000 --ign $@

@@ -1,2 +1,2 @@
-#/bin/bash
+#!/bin/bash
 perl ../boot.pl --boot=app.bin $@

@@ -78,7 +78,7 @@ static void hexdump(unsigned char *data, unsigned int len);
 static void exec_address(unsigned int addr);
 
 // UART
-static void pmb8876_serial_set_speed(unsigned int speed);
-static void pmb8876_serial_putc(char c);
-static char pmb8876_serial_getc();
-static void pmb8876_serial_print(char *data);
+static void usart_set_speed(unsigned int speed);
+static void usart_putc(char c);
+static char usart_getc();
+static void usart_print(char *data);

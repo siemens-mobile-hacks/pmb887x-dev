@@ -1,170 +1,93 @@
-#include <pmb8876.h>
+#include <pmb887x.h>
+#include <printf.h>
 
-#include "main.h"
+void send_flash_cmd(uint32_t addr, uint8_t cmd);
+void send_flash_reset(void);
+uint16_t read_otp_reg(uint32_t reg);
 
-void send_flash_cmd(unsigned int addr, unsigned char cmd);
-void send_flash_reset();
-unsigned short read_otp_reg(unsigned int reg);
-
-void main() {
-	init_sdram();
-	enable_irq(0);
-	enable_fiq(0);
-	set_einit(0);
-	disable_first_whatchdog();
-	set_einit(1);
-	init_watchdog();
-	
-	int i;
-	void **vectors = (void **) 0;
-	vectors[8] = reset_addr;
-	vectors[9] = undef_addr;
-	vectors[10] = loop;
-	vectors[11] = prefetch_addr;
-	vectors[12] = abort_addr;
-	vectors[13] = loop;
-	vectors[14] = loop;
-	vectors[15] = loop;
+int main(void) {
+	wdt_init();
 	
 	// Инифицализируем флеш
-	REG(EBU_ADDRSEL0) = 0xA0000011;
-	REG(EBU_ADDRSEL4) = 0xA0000011;
-	REG(EBU_BUSCON0) = 0x00522600;
-	REG(EBU_BUSCON4) = 0x00522600;
-	
-	/*
-	unsigned int before, after, after2;
-	
-	unsigned int seg = 0xA2000000;
-	
-	for (unsigned int i = seg; i < seg + 0x1000000; i += 4) {
-		before = REG(i);
-		
-		send_flash_cmd(seg, 0x70);
-		after = REG(i);
-		send_flash_reset();
-		
-		send_flash_cmd(seg, 0x90);
-		after2 = REG(i);
-		send_flash_reset();
-		
-		if (before == after && before == after2) {
-			hexnum(&before, 4);
-			pmb8876_serial_print(" == ");
-			hexnum(&after, 4);
-			pmb8876_serial_print(" == ");
-			hexnum(&after2, 4);
-			pmb8876_serial_print("\n");
-			
-			hexnum(&i, 4);
-			pmb8876_serial_print(" - MATCH");
-			pmb8876_serial_print("\n");
-			break;
-		} else {
-			if (i % 0x10000 == 0) {
-				hexnum(&i, 4);
-				pmb8876_serial_print("\n");
-			}
-			serve_watchdog();
-		}
-	}
-	*/
+	EBU_ADDRSEL(0) = 0xA0000011;
+	EBU_ADDRSEL(4) = 0xA0000011;
+	EBU_BUSCON(0) = 0x00522600;
+	EBU_BUSCON(4) = 0x00522600;
 	
 	// ESN
-	pmb8876_serial_print("ESN: ");
-	for (i = 0x81; i <= 0x84; i++) {
-		unsigned short v = read_otp_reg(i);
+	printf("ESN: ");
+	for (int i = 0x81; i <= 0x84; i++) {
+		uint16_t v = read_otp_reg(i);
 		
-		unsigned char hi = v & 0xFF;
-		unsigned char lo = (v >> 8) & 0xFF;
+		uint8_t hi = v & 0xFF;
+		uint8_t lo = (v >> 8) & 0xFF;
 		
-		hexnum(&hi, 1);
-		hexnum(&lo, 1);
+		printf("%02X%02X", hi, lo);
 	}
-	pmb8876_serial_print("\n");
+	printf("\n");
 	
 	// IMEI
-	pmb8876_serial_print("IMEI: ");
-	for (i = 0x8A; i <= 0x8D; i++) {
-		unsigned short v = read_otp_reg(i);
+	printf("IMEI: ");
+	for (int i = 0x8A; i <= 0x8D; i++) {
+		uint16_t v = read_otp_reg(i);
 		
-		unsigned char hi = v & 0xFF;
-		unsigned char lo = (v >> 8) & 0xFF;
+		uint8_t hi = v & 0xFF;
+		uint8_t lo = (v >> 8) & 0xFF;
 		
-		hexnum(&hi, 1);
-		hexnum(&lo, 1);
+		printf("%02X%02X", hi, lo);
 	}
-	pmb8876_serial_print("\n");
+	printf("\n");
 	
 	// CFI
-	pmb8876_serial_print("CFI:\n");
-	for (i = 0x10; i <= 0x32; i++) {
-		unsigned short v = read_otp_reg(i);
-		
-		unsigned char hi = v & 0xFF;
-		pmb8876_serial_print("pfl->cfi_table[0x");
-		hexnum(&i, 1);
-		pmb8876_serial_print("] = 0x");
-		hexnum(&hi, 1);
-		pmb8876_serial_print(";\n");
+	printf("CFI:\n");
+	for (int i = 0x10; i <= 0x32; i++) {
+		uint16_t v = read_otp_reg(i);
+		printf("pfl->cfi_table[0x%02X] = 0x%02X;\n", i, v & 0xFF);
 	}
-	pmb8876_serial_print("\n");
+	printf("\n");
 	
-	unsigned int pri_addr = ((read_otp_reg(0x16) & 0xFF) << 8) | (read_otp_reg(0x15) & 0xFF);
+	uint32_t pri_addr = ((read_otp_reg(0x16) & 0xFF) << 8) | (read_otp_reg(0x15) & 0xFF);
 	
 	// PRI
-	pmb8876_serial_print("PRI at ");
-	hexnum(&pri_addr, 4);
-	pmb8876_serial_print("\n");
-	for (i = pri_addr; i <= pri_addr + 0x50; i++) {
-		unsigned short v = read_otp_reg(i);
-		
-		unsigned int off = i - pri_addr;
-		
-		unsigned char hi = v & 0xFF;
-		pmb8876_serial_print("pfl->pri_table[0x");
-		hexnum(&off, 1);
-		pmb8876_serial_print("] = 0x");
-		hexnum(&hi, 1);
-		pmb8876_serial_print(";\n");
+	printf("PRI at %04X\n", pri_addr);
+	for (uint32_t i = pri_addr; i <= pri_addr + 0x50; i++) {
+		uint16_t v = read_otp_reg(i);
+		printf("pfl->cfi_table[0x%02X] = 0x%02X;\n", i - pri_addr, v & 0xFF);
 	}
-	pmb8876_serial_print("\n");
+	printf("\n");
 	
 	while (1);
 }
 
-void send_flash_cmd(unsigned int addr, unsigned char cmd) {
+void send_flash_cmd(uint32_t addr, uint8_t cmd) {
 	REG_SHORT(0xA0000AAA) = 0xAA;
 	REG_SHORT(0xA0000554) = 0x55;
 	REG_SHORT(addr) = cmd;
 }
 
-void send_flash_reset() {
+void send_flash_reset(void) {
 	REG_SHORT(0xA0000AAA) = 0xFF;
 }
 
-unsigned short read_otp_reg(unsigned int reg) {
-	unsigned short v;
+uint16_t read_otp_reg(uint32_t reg) {
+	uint16_t v;
 	send_flash_cmd(0xA0000AAA, 0x90);
 	v = REG_SHORT(0xA0000000 + reg * 2);
 	send_flash_reset();
 	return v;
 }
 
-void __IRQ reset_addr() {
-	pmb8876_serial_print("\n***** reset_addr! *****\n");
+__IRQ void data_abort_handler(void) {
+	printf("data_abort_handler\n");
+	while (true);
 }
-void __IRQ undef_addr() {
-	pmb8876_serial_print("\n***** undef_addr! *****\n");
+
+__IRQ void undef_handler(void) {
+	printf("undef_handler\n");
+	while (true);
 }
-void __IRQ prefetch_addr() {
-	pmb8876_serial_print("\n***** prefetch_addr! *****\n");
-	while (1);
-}
-void __IRQ abort_addr() {
-	pmb8876_serial_print("\n***** abort_addr! *****\n");
-	while (1);
-}
-void __IRQ loop() {
-	while (1);
+
+__IRQ void prefetch_abort_handler(void) {
+	printf("prefetch_abort_handler\n");
+	while (true);
 }

@@ -8,12 +8,12 @@ void _start() {
 	set_einit(1);
 	init_watchdog();
 	
-	pmb8876_serial_putc('\x0B');
-	pmb8876_serial_set_speed(UART_SPEED_115200);
+	usart_putc('\x0B');
+	usart_set_speed(UART_SPEED_115200);
 	
 	int i;
 	while (1) {
-		char cmd = pmb8876_serial_getc();
+		char cmd = usart_getc();
 		switch (cmd) {
 			case '.': // Keep alive
 				serve_watchdog();
@@ -21,31 +21,31 @@ void _start() {
 			
 			case 'B': // Set speed
 			{
-				unsigned int speed = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
-				pmb8876_serial_putc(0xCC);
+				unsigned int speed = usart_getc() << 24 | usart_getc() << 16 | usart_getc() << 8 | usart_getc();
+				usart_putc(0xCC);
 				
 				for (i = 0; i < 0xa000; ++i) asm("NOP");
 				
 				if (speed == 57600) {
-					pmb8876_serial_set_speed(UART_SPEED_57600);
+					usart_set_speed(UART_SPEED_57600);
 				} else if (speed == 115200) {
-					pmb8876_serial_set_speed(UART_SPEED_115200);
+					usart_set_speed(UART_SPEED_115200);
 				} else if (speed == 230400) {
-					pmb8876_serial_set_speed(UART_SPEED_230400);
+					usart_set_speed(UART_SPEED_230400);
 				} else if (speed == 460800) {
-					pmb8876_serial_set_speed(UART_SPEED_460800);
+					usart_set_speed(UART_SPEED_460800);
 				} else if (speed == 921600) {
-					pmb8876_serial_set_speed(UART_SPEED_921600);
+					usart_set_speed(UART_SPEED_921600);
 				} else if (speed == 1228800) {
-					pmb8876_serial_set_speed(UART_SPEED_1228800);
+					usart_set_speed(UART_SPEED_1228800);
 				} else if (speed == 1600000) {
-					pmb8876_serial_set_speed(UART_SPEED_1600000);
+					usart_set_speed(UART_SPEED_1600000);
 				} else if (speed == 1500000) {
-					pmb8876_serial_set_speed(UART_SPEED_1500000);
+					usart_set_speed(UART_SPEED_1500000);
 				}
-				while (pmb8876_serial_getc() != 'A');
+				while (usart_getc() != 'A');
 				
-				pmb8876_serial_putc(0xDD);
+				usart_putc(0xDD);
 				
 				serve_watchdog();
 			}
@@ -53,7 +53,7 @@ void _start() {
 			
 			case 'X': // Exec addr
 			{
-				volatile unsigned int addr = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
+				volatile unsigned int addr = usart_getc() << 24 | usart_getc() << 16 | usart_getc() << 8 | usart_getc();
 				serve_watchdog();
 				asm volatile ("mov PC, %0" : : "r"(addr));
 				// Дальше уже точно не пойдёт ;)
@@ -62,20 +62,20 @@ void _start() {
 			
 			case 'W': // Write to RAM
 			{
-				unsigned int addr = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
-				unsigned int size = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
-				unsigned char xor = pmb8876_serial_getc();
+				unsigned int addr = usart_getc() << 24 | usart_getc() << 16 | usart_getc() << 8 | usart_getc();
+				unsigned int size = usart_getc() << 24 | usart_getc() << 16 | usart_getc() << 8 | usart_getc();
+				unsigned char xor = usart_getc();
 				serve_watchdog();
 				
 				unsigned int i;
 				unsigned char *data = (unsigned char *) addr, xor2 = 0;
 				for (i = 0; i < size; ++i) {
-					data[i] = pmb8876_serial_getc();
+					data[i] = usart_getc();
 					xor2 ^= data[i];
 					serve_watchdog();
 				}
 				
-				pmb8876_serial_putc(xor == xor2 ? 'O' : 'E');
+				usart_putc(xor == xor2 ? 'O' : 'E');
 				serve_watchdog();
 			}
 			break;
@@ -84,23 +84,23 @@ void _start() {
 	
 }
 
-static void pmb8876_serial_set_speed(unsigned int speed) {
+static void usart_set_speed(unsigned int speed) {
 	REG(PMB8876_USART0_BG) = ((speed >> 16));
 	REG(PMB8876_USART0_FDV) = ((speed << 16) >> 16);
 }
 
-static void pmb8876_serial_print(char *data) {
+static void usart_print(char *data) {
 	while (*data)
-		pmb8876_serial_putc(*data++);
+		usart_putc(*data++);
 }
 
-static void pmb8876_serial_putc(char c) {
+static void usart_putc(char c) {
 	REG(PMB8876_USART0_TXB) = c;
 	while (!(REG(PMB8876_USART0_FCSTAT) & 2));
 	REG(PMB8876_USART0_ICR) |= 2;
 }
 
-static char pmb8876_serial_getc() {
+static char usart_getc() {
 	while (!(REG(PMB8876_USART0_FCSTAT) & 4));
 	REG(PMB8876_USART0_ICR) |= 4;
 	return REG(PMB8876_USART0_RXB) & 0xFF;
@@ -172,9 +172,9 @@ static void serve_watchdog() {
 static void hexdump(unsigned char *data, unsigned int len) {
 	unsigned int i;
 	for (i = 0; i < len; ++i) {
-		pmb8876_serial_putc(to_hex((data[i] >> 4) & 0xF));
-		pmb8876_serial_putc(to_hex(data[i] & 0xF));
-		pmb8876_serial_putc(' ');
+		usart_putc(to_hex((data[i] >> 4) & 0xF));
+		usart_putc(to_hex(data[i] & 0xF));
+		usart_putc(' ');
 	}
 }
 

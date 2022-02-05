@@ -12,7 +12,7 @@ set (SOURCES
 	"${COMMON_PATH}/printf.c"
 )
 set (HEADERS
-	"${COMMON_PATH}/pmb8876.h"
+	"${COMMON_PATH}/pmb887x.h"
 	"${COMMON_PATH}/printf.h"
 )
 

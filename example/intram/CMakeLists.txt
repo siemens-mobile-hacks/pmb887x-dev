@@ -11,7 +11,7 @@ set (SOURCES
 	"${COMMON_PATH}/pmb8876.c"
 )
 set (HEADERS
-	"${COMMON_PATH}/pmb8876.h"
+	"${COMMON_PATH}/pmb887x.h"
 )
 
 INCLUDE(SiemensBootcode)

@@ -5,7 +5,7 @@ use strict;
 use IO::Socket;
 use IO::Select;
 use Device::SerialPort;
-require "test.pm";
+use Sie::BoardMetadata;
 
 my $LOG_IO = 1;
 
@@ -24,6 +24,11 @@ sub boot_module_init {
 	print "OK\n";
 	
 	cmd_ping($port);
+	
+	my $board = $ENV{BOARD} || "EL71";
+	
+	my $board_meta = Sie::BoardMetadata->new($board);
+	my $cpu_meta = $board_meta->cpu();
 	
 	my $select = new IO::Select;
 	
@@ -142,8 +147,9 @@ sub boot_module_init {
 			my $vv = unpack("V", $data);
 			
 			if ($addr != 0xF4300118) {
+				my $descr = $cpu_meta->dumpReg($addr, $vv);
 				printf("READ%s from %08X (%08X)%s (from %08X)\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
-					$addr, $vv, reg_name($addr, $vv), $from) if ($LOG_IO);
+					$addr, $vv, ($descr ? " $descr" : ""), $from) if ($LOG_IO);
 			}
 		} elsif ($cmd eq "W" || $cmd eq "w" || $cmd eq "O" || $cmd eq "o") {
 			my $addr = unpack("V", substr($buf, 1, 4));
@@ -182,8 +188,9 @@ sub boot_module_init {
 			}
 			
 			if ($addr != 0xF4300118) {
+				my $descr = $cpu_meta->dumpReg($addr, $value);
 				printf("WRITE%s %08X to %08X%s (from %08X)%s\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
-					$value, $addr, reg_name($addr, $value), $from, $valid ? "" : " | SKIP!!!!") if ($LOG_IO);
+					$value, $addr, ($descr ? " $descr" : ""), $from, $valid ? "" : " | SKIP!!!!") if ($LOG_IO);
 			}
 			
 			if ($valid) {
@@ -205,4 +212,87 @@ sub bin2hex {
 	return $hex;
 }
 
+sub cmd_write {
+	my ($port, $addr, $value, $irq_handler) = @_;
+	return cmd_write_unaligned($port, $addr, 4, $value, $irq_handler);
+}
+
+sub cmd_write_unaligned {
+	my ($port, $addr, $size, $value, $irq_handler) = @_;
+	
+	my $cmd = "W"; # 4
+	$cmd = "O" if ($size == 3);
+	$cmd = "w" if ($size == 2);
+	$cmd = "o" if ($size == 1);
+	
+	$port->write($cmd.chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF).
+		chr(($value >> 24) & 0xFF).chr(($value >> 16) & 0xFF).chr(($value >> 8) & 0xFF).chr($value & 0xFF));
+	my ($count, $ack) = $port->read(1);
+	if ($count != 1) {
+		die "Transfer error ($count != 1)";
+	} else {
+		if ($ack eq "!") {
+			_handle_irq($port, "write", $irq_handler);
+		} elsif ($ack ne ";") {
+			die sprintf("write(%08X, %08X): invalid ack = %02X\n", $addr, $value, ord($ack));
+		}
+	}
+}
+
+sub cmd_read {
+	my ($port, $addr, $raw, $irq_handler) = @_;
+	return cmd_read_unaligned($port, $addr, 4, $raw, $irq_handler);
+}
+
+sub cmd_read_unaligned {
+	my ($port, $addr, $size, $raw, $irq_handler) = @_;
+	
+	my $cmd = "R"; # 4
+	$cmd = "I" if ($size == 3);
+	$cmd = "r" if ($size == 2);
+	$cmd = "i" if ($size == 1);
+	
+	$port->write($cmd.chr(($addr >> 24) & 0xFF).chr(($addr >> 16) & 0xFF).chr(($addr >> 8) & 0xFF).chr($addr & 0xFF));
+	my ($count, $data) = $port->read(5);
+	if ($count != 5) {
+		printf("%02X\n", ord(substr($data, 0, 1)));
+		die sprintf("read(%08X): Transfer error (%d != 5)\n", $addr, $count);
+	} else {
+		my ($buf, $ack) = (substr($data, 0, 4), substr($data, 4, 1));
+		if ($ack eq "!") {
+			_handle_irq($port, "read", $irq_handler);
+		} elsif ($ack ne ";") {
+			die sprintf("read(%08X): invalid ack = %02X\n", $addr, ord($ack));
+		}
+		return $raw ? $buf : unpack("V", $buf);
+	}
+}
+
+sub cmd_ping {
+	my ($port, $irq_handler) = @_;
+	$port->write(".");
+	my ($count, $data) = $port->read(1);
+	if ($data eq ",") {
+		_handle_irq($port, "ping", $irq_handler);
+	} else {
+		die "PING ERROR (c=".sprintf("%02X (%s)%s", ord($data), $data, !length($data) ? " EMPTY" : "").")" if ($data ne ".");
+	}
+}
+
+sub _handle_irq {
+	my ($port, $cmd, $irq_handler) = @_;
+	my ($count, $data) = $port->read(1);
+	if ($count == 1) {
+		$irq_handler->(ord($data)) if ($irq_handler);
+		return ord($data);
+	}
+	die "Can't get IRQ num (cmd_$cmd)\n";
+}
+
+sub readb {
+	my ($port) = @_;
+	my ($count, $char) = $port->read(1);
+	return ord($char) if ($count);
+	return -1;
+}
 1;

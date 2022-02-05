@@ -1,178 +1,161 @@
-#include "main.h"
+#include <pmb887x.h>
 
-void irq_test();
-void abort_addr();
-void undef_addr();
-void prefetch_addr();
-void swi_handler();
-void inf_loop();
-void fiq_test();
-void rst_addr();
+volatile uint32_t current_irq = 0;
 
-volatile int current_irq = 0;
+static int command_handler(int irq);
 
-int command_handler(int irq);
+static void onerr(char c) {
+	while (1) {
+		usart_putc(USART0, c);
+	}
+}
 
-void main() {
-	set_einit(0);
-	disable_first_whatchdog();
-	set_einit(1);
-	
-	enable_irq(0);
-	enable_fiq(0);
-	init_watchdog();
+int main(void) {
+	wdt_init();
 	
 	i2c_init();
 	i2c_smbus_write_byte(0x31, 0xE, 0b11);
 	
-	pmb8876_serial_set_speed(UART_SPEED_1228800);
-	while (pmb8876_serial_getc() != 'O');
-	while (pmb8876_serial_getc() != 'K');
-	pmb8876_serial_putc('.');
+	usart_set_speed(USART0, UART_SPEED_1228800);
+	while (usart_getc(USART0) != 'O');
+	while (usart_getc(USART0) != 'K');
+	usart_putc(USART0, '.');
 	
-	REG(0xF4400078) = 0;
+	//REG(0xF4400078) = 0;
 	
-	int i;
-	void **vectors = (void **) 0;
-	vectors[8] = rst_addr; // reset
-	vectors[9] = undef_addr; // undef
-	vectors[10] = swi_handler; // svc
-	vectors[11] = prefetch_addr; // prefetch
-	vectors[12] = abort_addr; // abort
-	vectors[13] = inf_loop; // not used
-	vectors[14] = irq_test; // irq
-	vectors[15] = fiq_test; // fiq
+	cpu_enable_irq(true);
+	cpu_enable_fiq(true);
 	
-	enable_irq(1);
-	enable_fiq(0);
-	
-	while (1) {
-		if (pmb8876_serial_has_byte()) {
-			asm("swi 0");
+	while (true) {
+		if (usart_has_byte(USART0)) {
+			__asm__ volatile("swi 0");
 		}
 	}
+	
+	return 0;
 }
 
-int command_handler(int irq) {
-	unsigned int value, addr;
-	if (pmb8876_serial_has_byte()) {
-		char c = pmb8876_serial_getc();
+static int command_handler(int irq) {
+	uint32_t value, addr;
+	if (usart_has_byte(USART0)) {
+		char c = usart_getc(USART0);
+		
 		if (c == '.') {
-			serve_watchdog();
+			wdt_serve();
 			
 			if (irq == 1) {
-				pmb8876_serial_putc(',');
-				pmb8876_serial_putc(REG(IRQ_CURRENT_NUM) & 0xFF); // Высылаем сразу после команды текущий IRQ
+				usart_putc(USART0, ',');
+				usart_putc(USART0, current_irq); // Высылаем сразу после команды текущий IRQ
 			} else {
-				pmb8876_serial_putc('.');
+				usart_putc(USART0, '.');
 			}
-			
-			if (irq && REG(IRQ_CURRENT_NUM) == 0)
-				return 2;
 			
 			return 1;
 		} else if (c == 'R' || c == 'r' || c == 'I' || c == 'i') { // 4, 2, 3, 1 bytes
-			serve_watchdog();
-			addr = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
+			addr = usart_getc(USART0) << 24 | usart_getc(USART0) << 16 | usart_getc(USART0) << 8 | usart_getc(USART0);
 			
-			if (c == 'R') { // 4
-				value = REG(addr);
-			} else if (c == 'r') { // 2
-				value = REG_SHORT(addr);
-			} else if (c == 'I') { // 3
-				value = REG_SHORT(addr) << 8 | REG_BYTE(addr);
-			} else if (c == 'i') { // 1
-				value = REG_BYTE(addr);
+			wdt_serve();
+			
+			if (addr == 0xF280001C) {
+				value = current_irq;
+			} else {
+				if (c == 'R') { // 4
+					value = REG(addr);
+				} else if (c == 'r') { // 2
+					value = REG_SHORT(addr);
+				} else if (c == 'I') { // 3
+					value = REG_SHORT(addr) << 8 | REG_BYTE(addr);
+				} else if (c == 'i') { // 1
+					value = REG_BYTE(addr);
+				}
 			}
 			
-			pmb8876_serial_putc((value >> 0 ) & 0xFF);
-			pmb8876_serial_putc((value >> 8 ) & 0xFF);
-			pmb8876_serial_putc((value >> 16) & 0xFF);
-			pmb8876_serial_putc((value >> 24) & 0xFF);
+			usart_putc(USART0, (value >> 0 ) & 0xFF);
+			usart_putc(USART0, (value >> 8 ) & 0xFF);
+			usart_putc(USART0, (value >> 16) & 0xFF);
+			usart_putc(USART0, (value >> 24) & 0xFF);
 			
 			if (irq == 1) {
-				pmb8876_serial_putc('!');
-				pmb8876_serial_putc(REG(IRQ_CURRENT_NUM) & 0xFF); // Высылаем сразу после команды текущий IRQ
+				usart_putc(USART0, '!');
+				usart_putc(USART0, current_irq); // Высылаем сразу после команды текущий IRQ
 			} else {
-				pmb8876_serial_putc(';');
+				usart_putc(USART0, ';');
 			}
 			
-			serve_watchdog();
-			
-			if (irq && REG(IRQ_CURRENT_NUM) == 0)
-				return 2;
+			wdt_serve();
 			
 			return 1;
 		} else if (c == 'W' || c == 'w' || c == 'O' || c == 'o') { // 4, 2, 3, 1 bytes
-			serve_watchdog();
-			addr = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
-			value = pmb8876_serial_getc() << 24 | pmb8876_serial_getc() << 16 | pmb8876_serial_getc() << 8 | pmb8876_serial_getc();
+			addr = usart_getc(USART0) << 24 | usart_getc(USART0) << 16 | usart_getc(USART0) << 8 | usart_getc(USART0);
+			value = usart_getc(USART0) << 24 | usart_getc(USART0) << 16 | usart_getc(USART0) << 8 | usart_getc(USART0);
 			
-			if (c == 'W') { // 4
-				REG(addr) = value;
-			} else if (c == 'w') { // 2
-				REG_SHORT(addr) = value & 0xFFFF;
-			} else if (c == 'O') { // 3
-				REG_BYTE(addr) = value & 0xFF;
-				REG_SHORT(addr) = (value >> 8) & 0xFFFF;
-			} else if (c == 'o') { // 1
-				REG_BYTE(addr) = value & 0xFF;
+			wdt_serve();
+			
+			bool skip = false;
+			
+			if (!skip) {
+				if (c == 'W') { // 4
+					REG(addr) = value;
+				} else if (c == 'w') { // 2
+					REG_SHORT(addr) = value & 0xFFFF;
+				} else if (c == 'O') { // 3
+					REG_BYTE(addr) = value & 0xFF;
+					REG_SHORT(addr) = (value >> 8) & 0xFFFF;
+				} else if (c == 'o') { // 1
+					REG_BYTE(addr) = value & 0xFF;
+				}
 			}
 			
 			if (irq == 1) {
-				pmb8876_serial_putc('!');
-				pmb8876_serial_putc(REG(IRQ_CURRENT_NUM) & 0xFF); // Высылаем сразу после команды текущий IRQ
-			} else {
-				pmb8876_serial_putc(';');
+				if (addr == (uint32_t) &NVIC_IRQ_ACK)
+					current_irq = NVIC_CURRENT_IRQ;
 			}
 			
-			serve_watchdog();
+			if (irq == 1) {
+				usart_putc(USART0, '!');
+				usart_putc(USART0, current_irq); // Высылаем сразу после команды текущий IRQ
+			} else {
+				usart_putc(USART0, ';');
+			}
 			
-			if (irq && REG(IRQ_CURRENT_NUM) == 0)
+			wdt_serve();
+			
+			if (irq && current_irq == 0)
 				return 2;
 			
 			return 1;
 		} else {
-			onerr(0xDD);
+			onerr(0xE6);
 		}
 	}
 	return 0;
 }
 
-void onerr(char c) {
-	while (1) {
-		pmb8876_serial_putc(c);
-	}
-}
-
-void __IRQ swi_handler() {
-	command_handler(0);
-}
-
-void __IRQ inf_loop() {
-	onerr(0xEF);
-}
-
-void __IRQ abort_addr() {
+__IRQ void data_abort_handler(void) {
 	onerr(0xE1);
 }
 
-void __IRQ undef_addr() {
+__IRQ void undef_handler(void) {
 	onerr(0xE2);
 }
 
-void __IRQ prefetch_addr() {
+__IRQ void prefetch_abort_handler(void) {
 	onerr(0xE3);
 }
 
-void __IRQ rst_addr() {
+__IRQ void fiq_handler(void) {
 	onerr(0xE4);
 }
 
-void __IRQ fiq_test() {
+__IRQ void reserved_handler(void) {
 	onerr(0xE5);
 }
 
-void __IRQ irq_test() {
+__IRQ void swi_handler(void) {
+	command_handler(0);
+}
+
+__IRQ void irq_handler(void) {
+	current_irq = NVIC_CURRENT_IRQ;
 	while (command_handler(1) != 2); // Ждём IRQ_ACK
 }

@@ -1,11 +1,16 @@
+#!/usr/bin/env perl
 use warnings;
 use strict;
-use File::Basename qw|basename dirname|;
+use File::Basename;
+use lib dirname(__FILE__).'/../tools/lib';
 use lib dirname(__FILE__);
 use Device::SerialPort;
 use Data::Dumper;
 use SieCGSN;
 use List::Util qw|min max|;
+use Sie::CpuMetadata;
+use Sie::BoardMetadata;
+use Sie::Utils;
 no utf8;
 
 $| = 1;
@@ -14,7 +19,7 @@ main();
 
 sub main {
 	my $help = 0;
-	my $com_device = "/dev/ttyUSB0";
+	my $com_device = "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0";
 	my $com_speed = 921600;
 	my $dst_dir = "0:/Misc/";
 	my $file;
@@ -36,7 +41,7 @@ sub main {
 		print join("\n", (
 			'Common options:',
 			'	--device=/dev/ttyUSB3    com port device',
-			'	--speed=1600000          speed after boot',
+			'	--speed=1600000          speed',
 			'File options:',
 			'	--file                   output file',
 			'	--addr                   memory address',
@@ -53,6 +58,11 @@ sub main {
 	my $port = Device::SerialPort->new($com_device);
 	die("open port error ($com_device)") if (!$port);
 	
+	my $board = $ENV{BOARD} || "EL71";
+
+	my $board_meta = Sie::BoardMetadata->new($board);
+	my $cpu_meta = $board_meta->cpu();
+
 	$port->read_char_time(100);
 	$port->read_const_time(100);
 	
@@ -79,15 +89,12 @@ sub main {
 			$skip_after = $size - $old_size;
 		}
 		
-		# костыль
-		require (dirname(__FILE__)."/../common/perl/regs.pm");
-		
 		for (my $i = $addr; $i < $addr + $size; $i += 4) {
 			my $buf = $cgsn->readMem($i, 4);
 			$raw .= $buf;
 			
 			my $value = unpack("V", $buf);
-			printf("%08X: %08X %s\n", $i, $value, reg_name($i, $value));
+			printf("%08X: %08X %s\n", $i, $value, $cpu_meta->dumpReg($i, $value) || "");
 		}
 		
 		if ($skip_after || $skip_before) {

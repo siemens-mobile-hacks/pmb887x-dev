@@ -1,9 +1,11 @@
 use warnings;
 use strict;
 use Device::SerialPort;
-use File::Basename qw|dirname|;
+use File::Basename;
+use lib dirname(__FILE__).'/tools/lib';
 use Time::HiRes qw|usleep|;
 use Linux::Termios2;
+use Time::HiRes;
 use POSIX qw( :termios_h );
 no utf8;
 
@@ -17,6 +19,8 @@ my $as_hex = 0;
 my $ign = 1;
 my $dtr = 0;
 my $rts = 0;
+my $run_picocom = 0;
+my $send_noise = 0;
 my $bootloader = dirname(__FILE__)."/bootloader/bootloader.bin";
 
 get_argv_opts({
@@ -26,6 +30,8 @@ get_argv_opts({
 	"boot=s" => \$bootloader, 
 	"hex" => \$as_hex, 
 	"module=s" => \$module, 
+	"picocom" => \$run_picocom, 
+	"noise" => \$send_noise,
 	"ign" => \$ign, 
 	"dtr" => \$dtr, 
 	"rts" => \$rts
@@ -135,6 +141,11 @@ while (1) {
 		$port->read_char_time(1000);
 		$port->read_const_time(2000);
 		
+		if ($run_picocom) {
+			system("picocom -b $boot_speed $device");
+			exit;
+		}
+		
 		if ($as_hex) {
 			while (1) {
 				$c = readb($port);
@@ -142,9 +153,20 @@ while (1) {
 					my $str = chr($c);
 					printf("%s | %02X\n", ($str =~ /[[:print:]]/ ? "'".$str."'" : " ? "), $c);
 				}
+				
+				if ($send_noise) {
+					$port->write(chr(rand(0xFF)));
+				}
 			}
 		} else {
-			while (($c = readb($port)) != 0) {
+			while (1) {
+				if ($send_noise) {
+					$port->write(chr(rand(0xFF)));
+				}
+				
+				my $c = readb($port);
+				last if $c == 0;
+				
 				print chr($c) if ($c > -1);
 			}
 		}
@@ -179,28 +201,31 @@ sub set_port_baudrate {
 sub write_boot {
 	my ($port, $boot) = @_;
 	
-	# Считаем XOR
-	my $chk = 0;
 	my $len = length($boot);
+	
+	# XOR
+	my $chk = 0;
 	for (my $i = 0; $i < $len; ++$i) {
 		$chk ^= ord(substr($boot, $i, 1));
 	}
 	
-	$port->write("\x30");
+	my $packet = "\x30".chr($len & 0xFF).chr(($len >> 8) & 0xFF).$boot.chr($chk);
 	
-	# Шлём размер бута
-	$port->write(chr($len & 0xFF).chr(($len >> 8) & 0xFF));
-	
-	# Шлём бут
-	$port->write($boot);
-	
-	# Шлём XOR бута
-	$port->write(chr($chk));
+	my $last_byte_write = 0;
+	for (my $i = 0; $i < length($packet); ++$i) {
+		my $c = substr($packet, $i, 1);
+		
+		my $elapsed = (Time::HiRes::time - $last_byte_write) * 1000000;
+		Time::HiRes::nanosleep(1) if ($elapsed < 1);
+		$port->write($c);
+		
+		$last_byte_write = Time::HiRes::time;
+	}
 	
 	my $c = readb($port);
-	return 1 if ($c == 0xC1);
-	
+	return 1 if ($c == 0xC1 || $c == 0xB1);
 	warn sprintf("Invalid answer: %02X\n", $c);
+	
 	return 0;
 }
 

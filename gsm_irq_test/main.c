@@ -1,5 +1,5 @@
+#include <pmb887x.h>
 #include <printf.h>
-#include "main.h"
 
 /* register */
 #define PMB8876_GSM_TPU_CON		0xF64000F8
@@ -18,86 +18,24 @@
 #define writel(v, d) REG(d) = v
 #define readl(d) REG(d)
 
-
-/* handlers */
-void __IRQ reset_addr() {
-	pmb8876_serial_print("\n***** reset_addr! *****\n");
-}
-
-void __IRQ undef_addr() {
-	pmb8876_serial_print("\n***** undef_addr! *****\n");
-}
-
-void __IRQ swi_addr() {
-	
-}
-
-void __IRQ prefetch_addr() {
-	pmb8876_serial_print("\n***** prefetch_addr! *****\n");
-	while (1);
-
-	
-}
-void __IRQ abort_addr() {
-	pmb8876_serial_print("\n***** abort_addr! *****\n");
-	while (1);
-}
-
-void __IRQ reserved_addr() {
-	
-}
-
-
 int unk_7530 = 0;
 
-void __IRQ c_irq_handler() {
+int main(void) {
+	wdt_init();
 	
-	int irqn = REG(IRQ_CURRENT_NUM);
-	
-	//printf("IRQ FIRED: %X\n", irqn);
-	
-	if(irqn == 0x77) {
-		printf("GSM TIMER: %d \n", REG(STM_4));
-		GSM_CON_SET( GSM_CON() | PMB8876_GSM_TPU_CON_RESET );
-	}
-	
-	REG(IRQ_ACK) = 1;
-}
-
-void __IRQ fiq_test() {
-	pmb8876_serial_print("fiq_test!\n");
-	while (1);
-}
-
-
-void main() {
-	init_watchdog_noinit();
-	
-	int i;
-	void **vectors = (void **) 0;
-	vectors[8] = reset_addr;
-	vectors[9] = undef_addr;
-	vectors[10] = swi_addr;
-	vectors[11] = prefetch_addr;
-	vectors[12] = abort_addr;
-	vectors[13] = reserved_addr;
-	vectors[14] = c_irq_handler; // asm_irq_handler;
-	vectors[15] = fiq_test;
-	
-	unsigned int addr;
+	uint32_t addr;
 	for (addr = 0xf2800030; addr <= 0xf28002a8; ++addr) {
 		REG(addr) = 0;
 	}
 	
-	enable_irq(1);
+	cpu_enable_irq(false);
 
-	
 	writel(256, (void *)0xF6400000);
 	writel(1, (void *)0xF6400068);
 	writel(4, (void *)0xF640006C);
 	writel(2, (void *)0xF6400070);
 	
-	for( i = 0; i < 512; i ++ ) {
+	for (int i = 0; i < 512; i++) {
 		writel(0, (void *)0xF6401800 + (i*4));
 	}
 	
@@ -122,12 +60,44 @@ void main() {
 	
 	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_ENABLE);
 
-	PMB8876_IRQ(0x77) = 1;
+	NVIC_CON(0x77) = 1;
 	
 	printf("Xuj!\n");
 	
-	while(1) {
-		serve_watchdog();
+	cpu_enable_irq(true);
+
+	while (true) {
+		wdt_serve();
 	}
+	
+	return 0;
+}
+
+__IRQ void data_abort_handler(void) {
+	printf("data_abort_handler\n");
+	while (true);
+}
+
+__IRQ void undef_handler(void) {
+	printf("undef_handler\n");
+	while (true);
+}
+
+__IRQ void prefetch_abort_handler(void) {
+	printf("prefetch_abort_handler\n");
+	while (true);
+}
+
+__IRQ void irq_handler(void) {
+	int irqn = NVIC_CURRENT_IRQ;
+	
+	printf("IRQ FIRED: %X\n", irqn);
+	
+	if (irqn == 0x77) {
+		printf("GSM TIMER: %d \n", STM_TIM4);
+		GSM_CON_SET( GSM_CON() | PMB8876_GSM_TPU_CON_RESET );
+	}
+	
+	NVIC_IRQ_ACK = 1;
 }
 
