@@ -21,8 +21,6 @@ int main(void) {
 	while (usart_getc(USART0) != 'K');
 	usart_putc(USART0, '.');
 	
-	//REG(0xF4400078) = 0;
-	
 	cpu_enable_irq(true);
 	cpu_enable_fiq(true);
 	
