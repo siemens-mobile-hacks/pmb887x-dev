@@ -4,9 +4,11 @@
 int main(void) {
 	wdt_init();
 	
+	EBU_ADDRSEL(5) = 0x90000011;
+	
 	while (true) {
-		printf("SCU_CHIPID %08X\n", SCU_CHIPID);
-		wdt_serve();
+		printf("0x90000000 %08X\n", REG(0x90000000));
+		// wdt_serve();
 	}
 	return 0;
 }

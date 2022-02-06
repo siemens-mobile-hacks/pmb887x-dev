@@ -9,25 +9,16 @@ use POSIX qw( :termios_h );
 use Data::Dumper;
 no utf8;
 
-my $BG  = 0;
-my $FDV = 0;
-my $MAX_SPEED = ($FDV ? $FDV / 512 : 1) * (26000000 / (16 * ($BG + 1)));
-my $MAX_SPEED_VAL = sprintf("%02X%02X%02X%02X", $FDV & 0xFF, $FDV >> 8 & 0xFF, $BG & 0xFF, $BG >> 8 & 0xFF);
-
-# print "BG=$BG\n";
-# print "FDV=$FDV\n";
-# print "MAX_SPEED=$MAX_SPEED\n";
-
 $| = 1;
 
 main();
 
 sub main {
 	my $help = 0;
-	my $device = "/dev/ttyUSB0";
+	my $device = "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0";
 	my $boot_speed = 115200;
 	my $speed = 1600000;
-	my $ign = 0;
+	my $ign = 1;
 	my $dtr = -1;
 	my $rts = 0;
 	my $flasher = [];
@@ -61,10 +52,6 @@ sub main {
 	
 	$exec_addr = parse_addr($exec_addr);
 	
-	if ($speed eq "max") {
-		$speed = $MAX_SPEED;
-	}
-	
 	if ($err || $help) {
 		print "$err\n";
 		print join("\n", (
@@ -81,6 +68,9 @@ sub main {
 			'	--picocom                run picocom after exec',
 			'	--exec-addr <file>       change exec addr (default: 0xA8008000)',
 			'	--exec <file>            upload and run <file>',
+			'',
+			'Misc:',
+			'	--dump-otp				dump otp region',
 			'',
 			'Flasher:',
 			'	--flasher read,<addr>,<size>,<file>        read <size> bytes in flash/ram at <addr> and save to <file>',
@@ -498,7 +488,7 @@ sub chaos_set_speed {
 		921600 => 0x05, 
 		1228800 => 0x06, 
 		1600000 => 0x07, 
-		$MAX_SPEED => 0x08
+		1500000 => 0x08
 	);
 	
 	if (!exists($CHAOS_SPEEDS{$speed})) {
@@ -590,8 +580,6 @@ sub chaos_read_ram {
 			$port->write($block->[2]);
 			
 			my $buf = $port->read($block->[1] + 4) || "";
-			
-			print "\n\n\nLN=".length($buf)."\n\n\n";
 			
 			my $ok = substr($buf, $block->[1], 2);
 			my $chk = (ord(substr($buf, $block->[1] + 3, 1)) << 8) | ord(substr($buf, $block->[1] + 2, 1));
@@ -797,9 +785,6 @@ sub mk_chaos_boot {
 			$data .= $buf;
 		}
 	}
-	
-	$data =~ s/[\s:]//gim;
-	$data =~ s/D0010000/$MAX_SPEED_VAL/;
 	
 	return hex2bin($data);
 }

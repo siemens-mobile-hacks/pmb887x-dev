@@ -82,7 +82,7 @@ int main(void) {
 				if (for_config) {
 					printf("PL%03X\t%08X\tAMBA\t%08X /* %08X; %08X */\n", amba_pid & 0xFFF, addr, amba_pid, amba_pid, amba_pcid);
 				} else {
-					printf("%08X: AMBA %08X; %08X [PL%03X]\n", addr, amba_pid, amba_pcid, amba_pcid & 0xFFF);
+					printf("%08X: AMBA %08X; %08X [PL%03X]\n", addr, amba_pid, amba_pcid, amba_pid & 0xFFF);
 				}
 				
 				while (1) {

@@ -54,7 +54,7 @@ static int command_handler(int irq) {
 			
 			wdt_serve();
 			
-			if (addr == 0xF280001C) {
+			if (addr == (uint32_t) &NVIC_CURRENT_IRQ) {
 				value = current_irq;
 			} else {
 				if (c == 'R') { // 4
@@ -66,6 +66,10 @@ static int command_handler(int irq) {
 				} else if (c == 'i') { // 1
 					value = REG_BYTE(addr);
 				}
+			}
+			
+			if (addr == (uint32_t) &SCU_RST_SR) {
+				value = (value & ~SCU_RST_SR_PWDRST) | SCU_RST_SR_HDRST;
 			}
 			
 			usart_putc(USART0, (value >> 0 ) & 0xFF);

@@ -131,6 +131,12 @@ sub dumpReg {
 sub loadCPU {
 	my ($self, $cpu) = @_;
 	
+	if ($cpu eq "generic") {
+		$self->{name} = $cpu;
+		$self->{available_modules} = [];
+		return;
+	}
+	
 	my $file = getDataDir().'/'.$cpu.'.cfg';
 	
 	$self->{name} = $cpu;
@@ -187,8 +193,29 @@ sub getModuleNames {
 	return [sort { $self->{modules}->{$a}->{base} <=> $self->{modules}->{$b}->{base} } keys %{$self->{modules}}];
 }
 
+sub getAllModules {
+	my ($self) = @_;
+	
+	my $path = getDataDir().'/modules';
+	opendir my $fp, $path or die "opendir($path): $!";
+	my @files = readdir $fp;
+	closedir $fp;
+	
+	my $modules = [];
+	for my $file (sort @files) {
+		next if !-f "$path/$file";
+		
+		my $module = $self->parseModule("$path/$file");
+		push @$modules, $module;
+	}
+	
+	return $modules;
+}
+
 sub loadModules {
 	my ($self) = @_;
+	
+	return if ($self->{name} eq "generic");
 	
 	my $path = getDataDir().'/modules';
 	opendir my $fp, $path or die "opendir($path): $!";
@@ -211,6 +238,7 @@ sub loadModules {
 			if ($self->findModuleDef($def, $module)) {
 				my $new_module = dclone($module);
 				
+				$new_module->{base_name} = $new_module->{name};
 				$new_module->{base} = $def->{base};
 				$new_module->{name} = $def->{name};
 				
@@ -279,7 +307,7 @@ sub parseModule {
 				} elsif ($key eq 'irq') {
 					push @{$module->{irqs_needed}}, $value || "";
 				} else {
-					if ($key eq "type") {
+					if ($key eq "type" || $key eq "name") {
 						$module->{$key} = $value;
 					} elsif ($key eq "id" || $key eq "size" || $key eq "multi") {
 						$module->{$key} = parseAnyInt($value);

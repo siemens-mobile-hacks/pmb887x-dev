@@ -49,6 +49,7 @@
 #define	NVIC_CAPCOM1_CC7_IRQ	91
 #define	NVIC_GSM_TPU_INT0_IRQ	119
 #define	NVIC_GSM_TPU_INT1_IRQ	120
+#define	NVIC_MCI_IRQ			148
 
 
 // EBU [MOD_NUM=0014, MOD_REV=00, MOD_32BIT=C0]
@@ -1737,94 +1738,96 @@
 
 
 // GSM_TPU [MOD_NUM=F021, MOD_REV=00, MOD_32BIT=C0]
-#define	GSM_TPU_BASE					0xF6400000				
-#define	GSM_TPU_CLC						MMIO32(GSM_TPU_BASE + 0x00)
-#define	GSM_TPU_CLC_DISR				BIT(0)						 // Module Disable Request Bit				
-#define	GSM_TPU_CLC_DISS				BIT(1)						 // Module Disable Status Bit				
-#define	GSM_TPU_CLC_SPEN				BIT(2)						 // Module Suspend Enable Bit				
-#define	GSM_TPU_CLC_EDIS				BIT(3)						 // Module External Request Disable			
-#define	GSM_TPU_CLC_SBWE				BIT(4)						 // Module Suspend Bit Write Enable			
-#define	GSM_TPU_CLC_FSOE				BIT(5)						 // Module Fast Shut-Off Enable.			
-#define	GSM_TPU_CLC_RMC					GENMASK(8, 8)				 // Module Clock Divider for Normal Mode	
-#define	GSM_TPU_CLC_RMC_SHIFT			8						
+#define	GSM_TPU_BASE					0xF6400000								
+#define	GSM_TPU_CLC						MMIO32(GSM_TPU_BASE + 0x00)				
+#define	GSM_TPU_CLC_DISR				BIT(0)										 // Module Disable Request Bit				
+#define	GSM_TPU_CLC_DISS				BIT(1)										 // Module Disable Status Bit				
+#define	GSM_TPU_CLC_SPEN				BIT(2)										 // Module Suspend Enable Bit				
+#define	GSM_TPU_CLC_EDIS				BIT(3)										 // Module External Request Disable			
+#define	GSM_TPU_CLC_SBWE				BIT(4)										 // Module Suspend Bit Write Enable			
+#define	GSM_TPU_CLC_FSOE				BIT(5)										 // Module Fast Shut-Off Enable.			
+#define	GSM_TPU_CLC_RMC					GENMASK(8, 8)								 // Module Clock Divider for Normal Mode	
+#define	GSM_TPU_CLC_RMC_SHIFT			8										
 
-#define	GSM_TPU_ID						MMIO32(GSM_TPU_BASE + 0x08)
-#define	GSM_TPU_ID_REV					GENMASK(8, 0)				 // System Timer Module Revision Number.	
-#define	GSM_TPU_ID_REV_SHIFT			0						
-#define	GSM_TPU_ID_MOD_32B				GENMASK(8, 8)				 // Indicates a 32-bit ID register.			
-#define	GSM_TPU_ID_MOD_32B_SHIFT		8						
-#define	GSM_TPU_ID_MOD					GENMASK(16, 16)				 // System Timer Module Identification Number.
-#define	GSM_TPU_ID_MOD_SHIFT			16						
+#define	GSM_TPU_ID						MMIO32(GSM_TPU_BASE + 0x08)				
+#define	GSM_TPU_ID_REV					GENMASK(8, 0)								 // System Timer Module Revision Number.	
+#define	GSM_TPU_ID_REV_SHIFT			0										
+#define	GSM_TPU_ID_MOD_32B				GENMASK(8, 8)								 // Indicates a 32-bit ID register.			
+#define	GSM_TPU_ID_MOD_32B_SHIFT		8										
+#define	GSM_TPU_ID_MOD					GENMASK(16, 16)								 // System Timer Module Identification Number.
+#define	GSM_TPU_ID_MOD_SHIFT			16										
 
-#define	GSM_TPU_UNK0					MMIO32(GSM_TPU_BASE + 0x10)
+#define	GSM_TPU_UNK0					MMIO32(GSM_TPU_BASE + 0x10)				
 
-#define	GSM_TPU_UNK1					MMIO32(GSM_TPU_BASE + 0x14)
+#define	GSM_TPU_UNK1					MMIO32(GSM_TPU_BASE + 0x14)				
 
-#define	GSM_TPU_UNK2					MMIO32(GSM_TPU_BASE + 0x18)
+#define	GSM_TPU_UNK2					MMIO32(GSM_TPU_BASE + 0x18)				
 
-#define	GSM_TPU_CORRECTION				MMIO32(GSM_TPU_BASE + 0x1C)
-#define	GSM_TPU_CORRECTION_VALUE		GENMASK(15, 0)															
-#define	GSM_TPU_CORRECTION_VALUE_SHIFT	0						
-#define	GSM_TPU_CORRECTION_CTRL			BIT(16)																	
+#define	GSM_TPU_CORRECTION				MMIO32(GSM_TPU_BASE + 0x1C)				
+#define	GSM_TPU_CORRECTION_VALUE		GENMASK(15, 0)																			
+#define	GSM_TPU_CORRECTION_VALUE_SHIFT	0										
+#define	GSM_TPU_CORRECTION_CTRL			BIT(16)																					
 
-#define	GSM_TPU_OVERFLOW				MMIO32(GSM_TPU_BASE + 0x20)
-#define	GSM_TPU_OVERFLOW_VALUE			GENMASK(15, 0)															
-#define	GSM_TPU_OVERFLOW_VALUE_SHIFT	0						
+#define	GSM_TPU_OVERFLOW				MMIO32(GSM_TPU_BASE + 0x20)				
+#define	GSM_TPU_OVERFLOW_VALUE			GENMASK(15, 0)																			
+#define	GSM_TPU_OVERFLOW_VALUE_SHIFT	0										
 
-#define	GSM_TPU_INT0					MMIO32(GSM_TPU_BASE + 0x24)
-#define	GSM_TPU_INT0_VALUE				GENMASK(15, 0)															
-#define	GSM_TPU_INT0_VALUE_SHIFT		0						
+#define	GSM_TPU_INT0					MMIO32(GSM_TPU_BASE + 0x24)				
+#define	GSM_TPU_INT0_VALUE				GENMASK(15, 0)																			
+#define	GSM_TPU_INT0_VALUE_SHIFT		0										
 
-#define	GSM_TPU_INT1					MMIO32(GSM_TPU_BASE + 0x28)
-#define	GSM_TPU_INT1_VALUE				GENMASK(15, 0)															
-#define	GSM_TPU_INT1_VALUE_SHIFT		0						
+#define	GSM_TPU_INT1					MMIO32(GSM_TPU_BASE + 0x28)				
+#define	GSM_TPU_INT1_VALUE				GENMASK(15, 0)																			
+#define	GSM_TPU_INT1_VALUE_SHIFT		0										
 
-#define	GSM_TPU_OFFSET					MMIO32(GSM_TPU_BASE + 0x2C)
-#define	GSM_TPU_OFFSET_VALUE			GENMASK(15, 0)															
-#define	GSM_TPU_OFFSET_VALUE_SHIFT		0						
-#define	GSM_TPU_OFFSET_CTRL				BIT(16)																	
+#define	GSM_TPU_OFFSET					MMIO32(GSM_TPU_BASE + 0x2C)				
+#define	GSM_TPU_OFFSET_VALUE			GENMASK(15, 0)																			
+#define	GSM_TPU_OFFSET_VALUE_SHIFT		0										
+#define	GSM_TPU_OFFSET_CTRL				BIT(16)																					
 
-#define	GSM_TPU_SKIP					MMIO32(GSM_TPU_BASE + 0x30)
-#define	GSM_TPU_SKIP_SKIPN				BIT(0)																	
-#define	GSM_TPU_SKIP_SKIPC				BIT(1)																	
+#define	GSM_TPU_SKIP					MMIO32(GSM_TPU_BASE + 0x30)				
+#define	GSM_TPU_SKIP_SKIPN				BIT(0)																					
+#define	GSM_TPU_SKIP_SKIPC				BIT(1)																					
 
-#define	GSM_TPU_COUNTER					MMIO32(GSM_TPU_BASE + 0x34)
-#define	GSM_TPU_COUNTER_VALUE			GENMASK(15, 0)															
-#define	GSM_TPU_COUNTER_VALUE_SHIFT		0						
+#define	GSM_TPU_COUNTER					MMIO32(GSM_TPU_BASE + 0x34)				
+#define	GSM_TPU_COUNTER_VALUE			GENMASK(15, 0)																			
+#define	GSM_TPU_COUNTER_VALUE_SHIFT		0										
 
-#define	GSM_TPU_UNK3					MMIO32(GSM_TPU_BASE + 0x38)
+#define	GSM_TPU_UNK3					MMIO32(GSM_TPU_BASE + 0x38)				
 
-#define	GSM_TPU_UNK4					MMIO32(GSM_TPU_BASE + 0x3C)
+#define	GSM_TPU_UNK4					MMIO32(GSM_TPU_BASE + 0x3C)				
 
-#define	GSM_TPU_UNK5					MMIO32(GSM_TPU_BASE + 0x40)
+#define	GSM_TPU_UNK5					MMIO32(GSM_TPU_BASE + 0x40)				
 
-#define	GSM_TPU_UNK6					MMIO32(GSM_TPU_BASE + 0x44)
+#define	GSM_TPU_UNK6					MMIO32(GSM_TPU_BASE + 0x44)				
 
-#define	GSM_TPU_PARAM					MMIO32(GSM_TPU_BASE + 0x5C)
-#define	GSM_TPU_PARAM_TINI				BIT(0)																	
-#define	GSM_TPU_PARAM_FDIS				BIT(1)																	
+#define	GSM_TPU_PARAM					MMIO32(GSM_TPU_BASE + 0x5C)				
+#define	GSM_TPU_PARAM_TINI				BIT(0)																					
+#define	GSM_TPU_PARAM_FDIS				BIT(1)																					
 
-#define	GSM_TPU_UNK7					MMIO32(GSM_TPU_BASE + 0x60)
+#define	GSM_TPU_UNK7					MMIO32(GSM_TPU_BASE + 0x60)				
 
-#define	GSM_TPU_PLLCON0					MMIO32(GSM_TPU_BASE + 0x68)
-#define	GSM_TPU_PLLCON0_K_DIV			GENMASK(30, 0)															
-#define	GSM_TPU_PLLCON0_K_DIV_SHIFT		0						
+#define	GSM_TPU_PLLCON0					MMIO32(GSM_TPU_BASE + 0x68)				
+#define	GSM_TPU_PLLCON0_K_DIV			GENMASK(30, 0)																			
+#define	GSM_TPU_PLLCON0_K_DIV_SHIFT		0										
 
-#define	GSM_TPU_PLLCON1					MMIO32(GSM_TPU_BASE + 0x6C)
-#define	GSM_TPU_PLLCON1_L_DIV			GENMASK(30, 0)															
-#define	GSM_TPU_PLLCON1_L_DIV_SHIFT		0						
+#define	GSM_TPU_PLLCON1					MMIO32(GSM_TPU_BASE + 0x6C)				
+#define	GSM_TPU_PLLCON1_L_DIV			GENMASK(30, 0)																			
+#define	GSM_TPU_PLLCON1_L_DIV_SHIFT		0										
 
-#define	GSM_TPU_PLLCON2					MMIO32(GSM_TPU_BASE + 0x70)
-#define	GSM_TPU_PLLCON2_LOAD			BIT(0)																	
-#define	GSM_TPU_PLLCON2_INIT			BIT(1)																	
+#define	GSM_TPU_PLLCON2					MMIO32(GSM_TPU_BASE + 0x70)				
+#define	GSM_TPU_PLLCON2_LOAD			BIT(0)																					
+#define	GSM_TPU_PLLCON2_INIT			BIT(1)																					
 
-#define	GSM_TPU_ICR0					MMIO32(GSM_TPU_BASE + 0xF8)
-#define	GSM_TPU_ICR0_ENABLE				BIT(12)																	
-#define	GSM_TPU_ICR0_RESET				BIT(14)																	
+#define	GSM_TPU_ICR0					MMIO32(GSM_TPU_BASE + 0xF8)				
+#define	GSM_TPU_ICR0_ENABLE				BIT(12)																					
+#define	GSM_TPU_ICR0_RESET				BIT(14)																					
 
-#define	GSM_TPU_ICR1					MMIO32(GSM_TPU_BASE + 0xFC)
-#define	GSM_TPU_ICR1_ENABLE				BIT(12)																	
-#define	GSM_TPU_ICR1_RESET				BIT(14)																	
+#define	GSM_TPU_ICR1					MMIO32(GSM_TPU_BASE + 0xFC)				
+#define	GSM_TPU_ICR1_ENABLE				BIT(12)																					
+#define	GSM_TPU_ICR1_RESET				BIT(14)																					
+
+#define	GSM_TPU_RAM(n)					MMIO32(GSM_TPU_BASE + 0x1800 + ((n) * 0x4))
 
 
 // CIF [MOD_NUM=F052, MOD_REV=00, MOD_32BIT=C0]
@@ -1869,25 +1872,220 @@
 #define	DIF_ID_MOD_NUMBER_SHIFT	16					
 
 
-// MCI [MOD_NUM=F00F, MOD_REV=00, MOD_32BIT=C0]
-#define	MCI_BASE				0xF7200000			
-#define	MCI_CLC					MMIO32(MCI_BASE + 0x00)
-#define	MCI_CLC_DISR			BIT(0)					 // Module Disable Request Bit			
-#define	MCI_CLC_DISS			BIT(1)					 // Module Disable Status Bit			
-#define	MCI_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit			
-#define	MCI_CLC_EDIS			BIT(3)					 // Module External Request Disable		
-#define	MCI_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable		
-#define	MCI_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.		
-#define	MCI_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	MCI_CLC_RMC_SHIFT		8					
+// MMCI [MOD_NUM=F00F, MOD_REV=00, MOD_32BIT=C0]
+#define	MMCI_BASE					0xF7200000				
+#define	MMCI_CLC					MMIO32(MMCI_BASE + 0x00)
+#define	MMCI_CLC_DISR				BIT(0)						 // Module Disable Request Bit			
+#define	MMCI_CLC_DISS				BIT(1)						 // Module Disable Status Bit			
+#define	MMCI_CLC_SPEN				BIT(2)						 // Module Suspend Enable Bit			
+#define	MMCI_CLC_EDIS				BIT(3)						 // Module External Request Disable		
+#define	MMCI_CLC_SBWE				BIT(4)						 // Module Suspend Bit Write Enable		
+#define	MMCI_CLC_FSOE				BIT(5)						 // Module Fast Shut-Off Enable.		
+#define	MMCI_CLC_RMC				GENMASK(8, 8)				 // Module Clock Divider for Normal Mode
+#define	MMCI_CLC_RMC_SHIFT			8						
 
-#define	MCI_ID					MMIO32(MCI_BASE + 0x08)
-#define	MCI_ID_MOD_REV			GENMASK(8, 0)													
-#define	MCI_ID_MOD_REV_SHIFT	0					
-#define	MCI_ID_MOD_32B			GENMASK(8, 8)													
-#define	MCI_ID_MOD_32B_SHIFT	8					
-#define	MCI_ID_MOD_NUMBER		GENMASK(16, 16)													
-#define	MCI_ID_MOD_NUMBER_SHIFT	16					
+#define	MMCI_ID						MMIO32(MMCI_BASE + 0x08)
+#define	MMCI_ID_MOD_REV				GENMASK(8, 0)														
+#define	MMCI_ID_MOD_REV_SHIFT		0						
+#define	MMCI_ID_MOD_32B				GENMASK(8, 8)														
+#define	MMCI_ID_MOD_32B_SHIFT		8						
+#define	MMCI_ID_MOD_NUMBER			GENMASK(16, 16)														
+#define	MMCI_ID_MOD_NUMBER_SHIFT	16						
+
+
+// MCI [AMBA PL180]
+#define	MCI_BASE							0xF7301000							
+#define	MCI_POWER							MMIO32(MCI_BASE + 0x00)				
+#define	MCI_POWER_CTRL						GENMASK(2, 0)																						
+#define	MCI_POWER_CTRL_SHIFT				0									
+#define	MCI_POWER_CTRL_POWER_OFF			0x0									
+#define	MCI_POWER_CTRL_RESERVED				0x1									
+#define	MCI_POWER_CTRL_POWER_UP				0x2									
+#define	MCI_POWER_CTRL_POWER_ON				0x3									
+#define	MCI_POWER_VOLTAGE					GENMASK(4, 2)																						
+#define	MCI_POWER_VOLTAGE_SHIFT				2									
+#define	MCI_POWER_OPENDRAIN					BIT(6)																								
+#define	MCI_POWER_ROD						BIT(7)																								
+
+#define	MCI_CLOCK							MMIO32(MCI_BASE + 0x04)				
+#define	MCI_CLOCK_CLKDIV					GENMASK(8, 0)							 // MCLCLK frequency = MCLK / [2x(ClkDiv+1)].				
+#define	MCI_CLOCK_CLKDIV_SHIFT				0									
+#define	MCI_CLOCK_ENABLE					BIT(8)																								
+#define	MCI_CLOCK_PWRSAVE					BIT(9)																								
+#define	MCI_CLOCK_BYPASS					BIT(10)																								
+#define	MCI_CLOCK_WIDEBUS					BIT(11)																								
+
+#define	MCI_ARGUMENT						MMIO32(MCI_BASE + 0x08)				
+#define	MCI_ARGUMENT_CMDARG					GENMASK(32, 0)																						
+#define	MCI_ARGUMENT_CMDARG_SHIFT			0									
+
+#define	MCI_COMMAND							MMIO32(MCI_BASE + 0x0C)				
+#define	MCI_COMMAND_CMDINDEX				GENMASK(6, 0)																						
+#define	MCI_COMMAND_CMDINDEX_SHIFT			0									
+#define	MCI_COMMAND_RESPONSE				BIT(6)																								
+#define	MCI_COMMAND_LONGRSP					BIT(7)																								
+#define	MCI_COMMAND_INTERRUPT				BIT(8)																								
+#define	MCI_COMMAND_PENDING					BIT(9)																								
+#define	MCI_COMMAND_ENABLE					BIT(10)																								
+
+#define	MCI_RESPCMD							MMIO32(MCI_BASE + 0x10)				
+#define	MCI_RESPCMD_CMDINDEX				GENMASK(6, 0)																						
+#define	MCI_RESPCMD_CMDINDEX_SHIFT			0									
+
+#define	MCI_RESPONSE0						MMIO32(MCI_BASE + 0x14)				
+
+#define	MCI_RESPONSE1						MMIO32(MCI_BASE + 0x18)				
+
+#define	MCI_RESPONSE2						MMIO32(MCI_BASE + 0x1C)				
+
+#define	MCI_RESPONSE3						MMIO32(MCI_BASE + 0x20)				
+
+#define	MCI_DATATIMER						MMIO32(MCI_BASE + 0x24)				
+#define	MCI_DATATIMER_TIMER					GENMASK(32, 0)																						
+#define	MCI_DATATIMER_TIMER_SHIFT			0									
+
+#define	MCI_DATALENGTH						MMIO32(MCI_BASE + 0x28)				
+#define	MCI_DATALENGTH_LENGTH				GENMASK(16, 0)																						
+#define	MCI_DATALENGTH_LENGTH_SHIFT			0									
+
+#define	MCI_DATACTRL						MMIO32(MCI_BASE + 0x2C)				
+#define	MCI_DATACTRL_EMABLE					BIT(0)																								
+#define	MCI_DATACTRL_DIRECTION				BIT(1)									 // 0 = From controller to card, 1 = From card to controller
+#define	MCI_DATACTRL_DIRECTION_WRITE		0x0									
+#define	MCI_DATACTRL_DIRECTION_READ			0x2									
+#define	MCI_DATACTRL_MODE					BIT(2)																								
+#define	MCI_DATACTRL_MODE_BLCOK				0x0									
+#define	MCI_DATACTRL_MODE_STREAM			0x4									
+#define	MCI_DATACTRL_DMAENABLE				BIT(3)																								
+#define	MCI_DATACTRL_BLOCKSIZE				GENMASK(4, 4)																						
+#define	MCI_DATACTRL_BLOCKSIZE_SHIFT		4									
+
+#define	MCI_DATACNT							MMIO32(MCI_BASE + 0x30)				
+#define	MCI_DATACNT_COUNT					GENMASK(16, 0)																						
+#define	MCI_DATACNT_COUNT_SHIFT				0									
+
+#define	MCI_STATUS							MMIO32(MCI_BASE + 0x34)				
+#define	MCI_STATUS_CMDCRCFAIL				BIT(0)									 // Command response received (CRC check failed)			
+#define	MCI_STATUS_DATACRCFAIL				BIT(1)									 // Data block sent/received (CRC check failed)				
+#define	MCI_STATUS_CMDTIMEOUT				BIT(2)									 // Command response timeout								
+#define	MCI_STATUS_DATATIMEOUT				BIT(3)									 // Data timeout											
+#define	MCI_STATUS_TXUNDERRUN				BIT(4)									 // Transmit FIFO underrun error							
+#define	MCI_STATUS_RXOVERRUN				BIT(5)									 // Receive FIFO overrun error								
+#define	MCI_STATUS_CMDRESPEND				BIT(6)									 // Command response received (CRC check passed)			
+#define	MCI_STATUS_CMDSENT					BIT(7)									 // Command sent (no response required)						
+#define	MCI_STATUS_DATAEND					BIT(8)									 // Data end (data counter is zero)							
+#define	MCI_STATUS_STARTBITERR				BIT(9)									 // Start bit not detected on all data signals in wide bus mode
+#define	MCI_STATUS_DATABLOCKEND				BIT(10)									 // Data block sent/received (CRC check passed)				
+#define	MCI_STATUS_CMDACTIVE				BIT(11)									 // Command transfer in progress							
+#define	MCI_STATUS_TXACTIVE					BIT(12)									 // Data transmit in progress								
+#define	MCI_STATUS_RXACTIVE					BIT(13)									 // Data receive in progress								
+#define	MCI_STATUS_TXFIFOHALFEMPTY			BIT(14)									 // Transmit FIFO half empty								
+#define	MCI_STATUS_RXFIFOHALFFULL			BIT(15)									 // Receive FIFO half full									
+#define	MCI_STATUS_TXFIFOFULL				BIT(16)									 // Transmit FIFO full										
+#define	MCI_STATUS_RXFIFOFULL				BIT(17)									 // Receive FIFO full										
+#define	MCI_STATUS_TXFIFOEMPTY				BIT(18)									 // Transmit FIFO empty										
+#define	MCI_STATUS_RXFIFOEMPTY				BIT(19)									 // Receive FIFO empty										
+#define	MCI_STATUS_TXDATAAVLBL				BIT(20)									 // Data available in transmit FIFO							
+#define	MCI_STATUS_RXDATAAVLBL				BIT(21)									 // Data available in receive FIFO							
+
+#define	MCI_CLEAR							MMIO32(MCI_BASE + 0x38)				
+#define	MCI_CLEAR_CMDCRCFAILCLR				BIT(0)																								
+#define	MCI_CLEAR_DATACRCFAILCLR			BIT(1)																								
+#define	MCI_CLEAR_CMDTIMEOUTCLR				BIT(2)																								
+#define	MCI_CLEAR_DATATIMEOUTCLR			BIT(3)																								
+#define	MCI_CLEAR_TXUNDERRUNCLR				BIT(4)																								
+#define	MCI_CLEAR_RXOVERRUNCLR				BIT(5)																								
+#define	MCI_CLEAR_CMDRESPENDCLR				BIT(6)																								
+#define	MCI_CLEAR_CMDSENTCLR				BIT(7)																								
+#define	MCI_CLEAR_DATAENDCLR				BIT(8)																								
+#define	MCI_CLEAR_STARTBITERRCLR			BIT(9)																								
+#define	MCI_CLEAR_DATABLOCKENDCLR			BIT(10)																								
+
+#define	MCI_MASK0							MMIO32(MCI_BASE + 0x3C)				
+#define	MCI_MASK0_CMDCRCFAILMASK			BIT(0)																								
+#define	MCI_MASK0_DATACRCFAILMASK			BIT(1)																								
+#define	MCI_MASK0_CMDTIMEOUTMASK			BIT(2)																								
+#define	MCI_MASK0_DATATIMEOUTMASK			BIT(3)																								
+#define	MCI_MASK0_TXUNDERRUNMASK			BIT(4)																								
+#define	MCI_MASK0_RXOVERRUNMASK				BIT(5)																								
+#define	MCI_MASK0_CMDRESPENDMASK			BIT(6)																								
+#define	MCI_MASK0_CMDSENTMASK				BIT(7)																								
+#define	MCI_MASK0_DATAENDMASK				BIT(8)																								
+#define	MCI_MASK0_STARTBITERRMASK			BIT(9)																								
+#define	MCI_MASK0_DATABLOCKENDMASK			BIT(10)																								
+#define	MCI_MASK0_CMDACTIVEMASK				BIT(11)																								
+#define	MCI_MASK0_TXACTIVEMASK				BIT(12)																								
+#define	MCI_MASK0_RXACTIVEMASK				BIT(13)																								
+#define	MCI_MASK0_TXFIFOHALFEMPTYMASK		BIT(14)																								
+#define	MCI_MASK0_RXFIFOHALFFULLMASK		BIT(15)																								
+#define	MCI_MASK0_TXFIFOFULLMASK			BIT(16)																								
+#define	MCI_MASK0_RXFIFOFULLMASK			BIT(17)																								
+#define	MCI_MASK0_TXFIFOEMPTYMASK			BIT(18)																								
+#define	MCI_MASK0_RXFIFOEMPTYMASK			BIT(19)																								
+#define	MCI_MASK0_TXDATAAVLBLMASK			BIT(20)																								
+#define	MCI_MASK0_RXDATAAVLBLMASK			BIT(21)																								
+
+#define	MCI_MASK1							MMIO32(MCI_BASE + 0x40)				
+#define	MCI_MASK1_CMDCRCFAILMASK			BIT(0)																								
+#define	MCI_MASK1_DATACRCFAILMASK			BIT(1)																								
+#define	MCI_MASK1_CMDTIMEOUTMASK			BIT(2)																								
+#define	MCI_MASK1_DATATIMEOUTMASK			BIT(3)																								
+#define	MCI_MASK1_TXUNDERRUNMASK			BIT(4)																								
+#define	MCI_MASK1_RXOVERRUNMASK				BIT(5)																								
+#define	MCI_MASK1_CMDRESPENDMASK			BIT(6)																								
+#define	MCI_MASK1_CMDSENTMASK				BIT(7)																								
+#define	MCI_MASK1_DATAENDMASK				BIT(8)																								
+#define	MCI_MASK1_STARTBITERRMASK			BIT(9)																								
+#define	MCI_MASK1_DATABLOCKENDMASK			BIT(10)																								
+#define	MCI_MASK1_CMDACTIVEMASK				BIT(11)																								
+#define	MCI_MASK1_TXACTIVEMASK				BIT(12)																								
+#define	MCI_MASK1_RXACTIVEMASK				BIT(13)																								
+#define	MCI_MASK1_TXFIFOHALFEMPTYMASK		BIT(14)																								
+#define	MCI_MASK1_RXFIFOHALFFULLMASK		BIT(15)																								
+#define	MCI_MASK1_TXFIFOFULLMASK			BIT(16)																								
+#define	MCI_MASK1_RXFIFOFULLMASK			BIT(17)																								
+#define	MCI_MASK1_TXFIFOEMPTYMASK			BIT(18)																								
+#define	MCI_MASK1_RXFIFOEMPTYMASK			BIT(19)																								
+#define	MCI_MASK1_TXDATAAVLBLMASK			BIT(20)																								
+#define	MCI_MASK1_RXDATAAVLBLMASK			BIT(21)																								
+
+#define	MCI_SELECT							MMIO32(MCI_BASE + 0x44)				
+#define	MCI_SELECT_SDCARD					GENMASK(4, 0)																						
+#define	MCI_SELECT_SDCARD_SHIFT				0									
+
+#define	MCI_FIFOCNT							MMIO32(MCI_BASE + 0x48)				
+#define	MCI_FIFOCNT_COUNT					GENMASK(16, 0)																						
+#define	MCI_FIFOCNT_COUNT_SHIFT				0									
+
+#define	MCI_FIFO(n)							MMIO32(MCI_BASE + 0x80 + ((n) * 0x4))
+
+#define	MCI_PERIPH_ID0						MMIO32(MCI_BASE + 0xFE0)			
+#define	MCI_PERIPH_ID0_PARTNUMBER0			GENMASK(8, 0)																						
+#define	MCI_PERIPH_ID0_PARTNUMBER0_SHIFT	0									
+
+#define	MCI_PERIPH_ID1						MMIO32(MCI_BASE + 0xFE4)			
+#define	MCI_PERIPH_ID1_PARTNUMBER1			GENMASK(4, 0)																						
+#define	MCI_PERIPH_ID1_PARTNUMBER1_SHIFT	0									
+#define	MCI_PERIPH_ID1_DESIGNER0			GENMASK(8, 4)																						
+#define	MCI_PERIPH_ID1_DESIGNER0_SHIFT		4									
+
+#define	MCI_PERIPH_ID2						MMIO32(MCI_BASE + 0xFE8)			
+#define	MCI_PERIPH_ID2_DESIGNER1			GENMASK(4, 0)																						
+#define	MCI_PERIPH_ID2_DESIGNER1_SHIFT		0									
+#define	MCI_PERIPH_ID2_REVISION				GENMASK(8, 4)																						
+#define	MCI_PERIPH_ID2_REVISION_SHIFT		4									
+
+#define	MCI_PERIPH_ID3						MMIO32(MCI_BASE + 0xFEC)			
+#define	MCI_PERIPH_ID3_CONFIGURATION		GENMASK(8, 0)																						
+#define	MCI_PERIPH_ID3_CONFIGURATION_SHIFT	0									
+
+#define	MCI_PCELL_ID0						MMIO32(MCI_BASE + 0xFF0)			
+
+#define	MCI_PCELL_ID1						MMIO32(MCI_BASE + 0xFF4)			
+
+#define	MCI_PCELL_ID2						MMIO32(MCI_BASE + 0xFF8)			
+
+#define	MCI_PCELL_ID3						MMIO32(MCI_BASE + 0xFFC)			
 
 
 // I2C [MOD_NUM=F057, MOD_REV=00, MOD_32BIT=C0]

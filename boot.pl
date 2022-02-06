@@ -11,7 +11,7 @@ no utf8;
 
 $| = 1;
 
-my $device = "/dev/ttyUSB0";
+my $device = "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0";
 my $boot_speed = 115200;
 my $speed = 1600000;
 my $module;

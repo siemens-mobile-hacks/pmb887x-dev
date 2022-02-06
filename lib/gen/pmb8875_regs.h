@@ -1758,93 +1758,95 @@
 
 
 // GSM_TPU [MOD_NUM=F021, MOD_REV=00, MOD_32BIT=C0]
-#define	GSM_TPU_BASE					0xF6400000				
-#define	GSM_TPU_CLC						MMIO32(GSM_TPU_BASE + 0x00)
-#define	GSM_TPU_CLC_DISR				BIT(0)						 // Module Disable Request Bit				
-#define	GSM_TPU_CLC_DISS				BIT(1)						 // Module Disable Status Bit				
-#define	GSM_TPU_CLC_SPEN				BIT(2)						 // Module Suspend Enable Bit				
-#define	GSM_TPU_CLC_EDIS				BIT(3)						 // Module External Request Disable			
-#define	GSM_TPU_CLC_SBWE				BIT(4)						 // Module Suspend Bit Write Enable			
-#define	GSM_TPU_CLC_FSOE				BIT(5)						 // Module Fast Shut-Off Enable.			
-#define	GSM_TPU_CLC_RMC					GENMASK(8, 8)				 // Module Clock Divider for Normal Mode	
-#define	GSM_TPU_CLC_RMC_SHIFT			8						
+#define	GSM_TPU_BASE					0xF6400000								
+#define	GSM_TPU_CLC						MMIO32(GSM_TPU_BASE + 0x00)				
+#define	GSM_TPU_CLC_DISR				BIT(0)										 // Module Disable Request Bit				
+#define	GSM_TPU_CLC_DISS				BIT(1)										 // Module Disable Status Bit				
+#define	GSM_TPU_CLC_SPEN				BIT(2)										 // Module Suspend Enable Bit				
+#define	GSM_TPU_CLC_EDIS				BIT(3)										 // Module External Request Disable			
+#define	GSM_TPU_CLC_SBWE				BIT(4)										 // Module Suspend Bit Write Enable			
+#define	GSM_TPU_CLC_FSOE				BIT(5)										 // Module Fast Shut-Off Enable.			
+#define	GSM_TPU_CLC_RMC					GENMASK(8, 8)								 // Module Clock Divider for Normal Mode	
+#define	GSM_TPU_CLC_RMC_SHIFT			8										
 
-#define	GSM_TPU_ID						MMIO32(GSM_TPU_BASE + 0x08)
-#define	GSM_TPU_ID_REV					GENMASK(8, 0)				 // System Timer Module Revision Number.	
-#define	GSM_TPU_ID_REV_SHIFT			0						
-#define	GSM_TPU_ID_MOD_32B				GENMASK(8, 8)				 // Indicates a 32-bit ID register.			
-#define	GSM_TPU_ID_MOD_32B_SHIFT		8						
-#define	GSM_TPU_ID_MOD					GENMASK(16, 16)				 // System Timer Module Identification Number.
-#define	GSM_TPU_ID_MOD_SHIFT			16						
+#define	GSM_TPU_ID						MMIO32(GSM_TPU_BASE + 0x08)				
+#define	GSM_TPU_ID_REV					GENMASK(8, 0)								 // System Timer Module Revision Number.	
+#define	GSM_TPU_ID_REV_SHIFT			0										
+#define	GSM_TPU_ID_MOD_32B				GENMASK(8, 8)								 // Indicates a 32-bit ID register.			
+#define	GSM_TPU_ID_MOD_32B_SHIFT		8										
+#define	GSM_TPU_ID_MOD					GENMASK(16, 16)								 // System Timer Module Identification Number.
+#define	GSM_TPU_ID_MOD_SHIFT			16										
 
-#define	GSM_TPU_UNK0					MMIO32(GSM_TPU_BASE + 0x10)
+#define	GSM_TPU_UNK0					MMIO32(GSM_TPU_BASE + 0x10)				
 
-#define	GSM_TPU_UNK1					MMIO32(GSM_TPU_BASE + 0x14)
+#define	GSM_TPU_UNK1					MMIO32(GSM_TPU_BASE + 0x14)				
 
-#define	GSM_TPU_UNK2					MMIO32(GSM_TPU_BASE + 0x18)
+#define	GSM_TPU_UNK2					MMIO32(GSM_TPU_BASE + 0x18)				
 
-#define	GSM_TPU_CORRECTION				MMIO32(GSM_TPU_BASE + 0x1C)
-#define	GSM_TPU_CORRECTION_VALUE		GENMASK(15, 0)															
-#define	GSM_TPU_CORRECTION_VALUE_SHIFT	0						
-#define	GSM_TPU_CORRECTION_CTRL			BIT(16)																	
+#define	GSM_TPU_CORRECTION				MMIO32(GSM_TPU_BASE + 0x1C)				
+#define	GSM_TPU_CORRECTION_VALUE		GENMASK(15, 0)																			
+#define	GSM_TPU_CORRECTION_VALUE_SHIFT	0										
+#define	GSM_TPU_CORRECTION_CTRL			BIT(16)																					
 
-#define	GSM_TPU_OVERFLOW				MMIO32(GSM_TPU_BASE + 0x20)
-#define	GSM_TPU_OVERFLOW_VALUE			GENMASK(15, 0)															
-#define	GSM_TPU_OVERFLOW_VALUE_SHIFT	0						
+#define	GSM_TPU_OVERFLOW				MMIO32(GSM_TPU_BASE + 0x20)				
+#define	GSM_TPU_OVERFLOW_VALUE			GENMASK(15, 0)																			
+#define	GSM_TPU_OVERFLOW_VALUE_SHIFT	0										
 
-#define	GSM_TPU_INT0					MMIO32(GSM_TPU_BASE + 0x24)
-#define	GSM_TPU_INT0_VALUE				GENMASK(15, 0)															
-#define	GSM_TPU_INT0_VALUE_SHIFT		0						
+#define	GSM_TPU_INT0					MMIO32(GSM_TPU_BASE + 0x24)				
+#define	GSM_TPU_INT0_VALUE				GENMASK(15, 0)																			
+#define	GSM_TPU_INT0_VALUE_SHIFT		0										
 
-#define	GSM_TPU_INT1					MMIO32(GSM_TPU_BASE + 0x28)
-#define	GSM_TPU_INT1_VALUE				GENMASK(15, 0)															
-#define	GSM_TPU_INT1_VALUE_SHIFT		0						
+#define	GSM_TPU_INT1					MMIO32(GSM_TPU_BASE + 0x28)				
+#define	GSM_TPU_INT1_VALUE				GENMASK(15, 0)																			
+#define	GSM_TPU_INT1_VALUE_SHIFT		0										
 
-#define	GSM_TPU_OFFSET					MMIO32(GSM_TPU_BASE + 0x2C)
-#define	GSM_TPU_OFFSET_VALUE			GENMASK(15, 0)															
-#define	GSM_TPU_OFFSET_VALUE_SHIFT		0						
-#define	GSM_TPU_OFFSET_CTRL				BIT(16)																	
+#define	GSM_TPU_OFFSET					MMIO32(GSM_TPU_BASE + 0x2C)				
+#define	GSM_TPU_OFFSET_VALUE			GENMASK(15, 0)																			
+#define	GSM_TPU_OFFSET_VALUE_SHIFT		0										
+#define	GSM_TPU_OFFSET_CTRL				BIT(16)																					
 
-#define	GSM_TPU_SKIP					MMIO32(GSM_TPU_BASE + 0x30)
-#define	GSM_TPU_SKIP_SKIPN				BIT(0)																	
-#define	GSM_TPU_SKIP_SKIPC				BIT(1)																	
+#define	GSM_TPU_SKIP					MMIO32(GSM_TPU_BASE + 0x30)				
+#define	GSM_TPU_SKIP_SKIPN				BIT(0)																					
+#define	GSM_TPU_SKIP_SKIPC				BIT(1)																					
 
-#define	GSM_TPU_COUNTER					MMIO32(GSM_TPU_BASE + 0x34)
-#define	GSM_TPU_COUNTER_VALUE			GENMASK(15, 0)															
-#define	GSM_TPU_COUNTER_VALUE_SHIFT		0						
+#define	GSM_TPU_COUNTER					MMIO32(GSM_TPU_BASE + 0x34)				
+#define	GSM_TPU_COUNTER_VALUE			GENMASK(15, 0)																			
+#define	GSM_TPU_COUNTER_VALUE_SHIFT		0										
 
-#define	GSM_TPU_UNK3					MMIO32(GSM_TPU_BASE + 0x38)
+#define	GSM_TPU_UNK3					MMIO32(GSM_TPU_BASE + 0x38)				
 
-#define	GSM_TPU_UNK4					MMIO32(GSM_TPU_BASE + 0x3C)
+#define	GSM_TPU_UNK4					MMIO32(GSM_TPU_BASE + 0x3C)				
 
-#define	GSM_TPU_UNK5					MMIO32(GSM_TPU_BASE + 0x40)
+#define	GSM_TPU_UNK5					MMIO32(GSM_TPU_BASE + 0x40)				
 
-#define	GSM_TPU_UNK6					MMIO32(GSM_TPU_BASE + 0x44)
+#define	GSM_TPU_UNK6					MMIO32(GSM_TPU_BASE + 0x44)				
 
-#define	GSM_TPU_PARAM					MMIO32(GSM_TPU_BASE + 0x5C)
-#define	GSM_TPU_PARAM_TINI				BIT(0)																	
-#define	GSM_TPU_PARAM_FDIS				BIT(1)																	
+#define	GSM_TPU_PARAM					MMIO32(GSM_TPU_BASE + 0x5C)				
+#define	GSM_TPU_PARAM_TINI				BIT(0)																					
+#define	GSM_TPU_PARAM_FDIS				BIT(1)																					
 
-#define	GSM_TPU_UNK7					MMIO32(GSM_TPU_BASE + 0x60)
+#define	GSM_TPU_UNK7					MMIO32(GSM_TPU_BASE + 0x60)				
 
-#define	GSM_TPU_PLLCON0					MMIO32(GSM_TPU_BASE + 0x68)
-#define	GSM_TPU_PLLCON0_K_DIV			GENMASK(30, 0)															
-#define	GSM_TPU_PLLCON0_K_DIV_SHIFT		0						
+#define	GSM_TPU_PLLCON0					MMIO32(GSM_TPU_BASE + 0x68)				
+#define	GSM_TPU_PLLCON0_K_DIV			GENMASK(30, 0)																			
+#define	GSM_TPU_PLLCON0_K_DIV_SHIFT		0										
 
-#define	GSM_TPU_PLLCON1					MMIO32(GSM_TPU_BASE + 0x6C)
-#define	GSM_TPU_PLLCON1_L_DIV			GENMASK(30, 0)															
-#define	GSM_TPU_PLLCON1_L_DIV_SHIFT		0						
+#define	GSM_TPU_PLLCON1					MMIO32(GSM_TPU_BASE + 0x6C)				
+#define	GSM_TPU_PLLCON1_L_DIV			GENMASK(30, 0)																			
+#define	GSM_TPU_PLLCON1_L_DIV_SHIFT		0										
 
-#define	GSM_TPU_PLLCON2					MMIO32(GSM_TPU_BASE + 0x70)
-#define	GSM_TPU_PLLCON2_LOAD			BIT(0)																	
-#define	GSM_TPU_PLLCON2_INIT			BIT(1)																	
+#define	GSM_TPU_PLLCON2					MMIO32(GSM_TPU_BASE + 0x70)				
+#define	GSM_TPU_PLLCON2_LOAD			BIT(0)																					
+#define	GSM_TPU_PLLCON2_INIT			BIT(1)																					
 
-#define	GSM_TPU_ICR0					MMIO32(GSM_TPU_BASE + 0xF8)
-#define	GSM_TPU_ICR0_ENABLE				BIT(12)																	
-#define	GSM_TPU_ICR0_RESET				BIT(14)																	
+#define	GSM_TPU_ICR0					MMIO32(GSM_TPU_BASE + 0xF8)				
+#define	GSM_TPU_ICR0_ENABLE				BIT(12)																					
+#define	GSM_TPU_ICR0_RESET				BIT(14)																					
 
-#define	GSM_TPU_ICR1					MMIO32(GSM_TPU_BASE + 0xFC)
-#define	GSM_TPU_ICR1_ENABLE				BIT(12)																	
-#define	GSM_TPU_ICR1_RESET				BIT(14)																	
+#define	GSM_TPU_ICR1					MMIO32(GSM_TPU_BASE + 0xFC)				
+#define	GSM_TPU_ICR1_ENABLE				BIT(12)																					
+#define	GSM_TPU_ICR1_RESET				BIT(14)																					
+
+#define	GSM_TPU_RAM(n)					MMIO32(GSM_TPU_BASE + 0x1800 + ((n) * 0x4))
 
 
