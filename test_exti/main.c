@@ -6,8 +6,8 @@ int main(void) {
 	cpu_enable_irq(true);
 	
 	// Enable all IRQS
-	SCU_EXTI1_SRC |= SCU_EXTI1_SRC_SRE;
-	SCU_EXTI7_SRC |= SCU_EXTI7_SRC_SRE;
+	SCU_EXTI1_SRC |= MOD_SRC_SRE;
+	SCU_EXTI7_SRC |= MOD_SRC_SRE;
 	
 	SCU_EXTI = 0;
 	SCU_EXTI |= SCU_EXTI_EXT1_RISING;
@@ -52,14 +52,14 @@ __IRQ void irq_handler(void) {
 	printf("irq: %d\n", irqn);
 	
 	if (irqn == NVIC_SCU_EXT1_IRQ) {
-		SCU_EXTI1_SRC |= SCU_EXTI1_SRC_CLRR;
-		SCU_EXTI1_SRC |= SCU_EXTI1_SRC_SRE;
+		SCU_EXTI1_SRC |= MOD_SRC_CLRR;
+		SCU_EXTI1_SRC |= MOD_SRC_SRE;
 		printf("slider open\n");
 	}
 	
 	if (irqn == NVIC_SCU_EXT7_IRQ) {
-		SCU_EXTI7_SRC |= SCU_EXTI7_SRC_CLRR;
-		SCU_EXTI7_SRC |= SCU_EXTI7_SRC_SRE;
+		SCU_EXTI7_SRC |= MOD_SRC_CLRR;
+		SCU_EXTI7_SRC |= MOD_SRC_SRE;
 		printf("slider close\n");
 	}
 	

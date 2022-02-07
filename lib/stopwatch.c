@@ -6,7 +6,7 @@ static uint32_t ticks_per_ms;
 static uint32_t ticks_per_us;
 
 void stopwatch_init() {
-	uint32_t clock = (STM_CLC & STM_CLC_RMC) >> STM_CLC_RMC_SHIFT;
+	uint32_t clock = (STM_CLC & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT;
 	
 	ticks_per_s = PMB8876_SYSTEM_FREQ / clock;
 	ticks_per_ms = ticks_per_s / 1000;

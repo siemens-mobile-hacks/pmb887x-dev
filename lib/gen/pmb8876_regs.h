@@ -84,27 +84,60 @@
 #define	NVIC_I2C_INT3_IRQ		158
 
 
+// Common regs for all modules
+#define	AMBA_PERIPH_ID1_PARTNUMBER1			GENMASK(4, 0)
+#define	AMBA_PERIPH_ID1_PARTNUMBER1_SHIFT	0
+#define	AMBA_PERIPH_ID1_DESIGNER0			GENMASK(8, 4)
+#define	AMBA_PERIPH_ID1_DESIGNER0_SHIFT		4
+
+/* Module Identifier Register */
+#define	MOD_ID_REV							GENMASK(8, 0)
+#define	MOD_ID_REV_SHIFT					0
+#define	MOD_ID_32B							GENMASK(8, 8)
+#define	MOD_ID_32B_SHIFT					8
+#define	MOD_ID_NUMBER						GENMASK(16, 16)
+#define	MOD_ID_NUMBER_SHIFT					16
+
+#define	AMBA_PERIPH_ID3_CONFIGURATION		GENMASK(8, 0)
+#define	AMBA_PERIPH_ID3_CONFIGURATION_SHIFT	0
+
+/* Clock Control Register */
+#define	MOD_CLC_DISR						BIT(0)			 // Module Disable Request Bit
+#define	MOD_CLC_DISS						BIT(1)			 // Module Disable Status Bit
+#define	MOD_CLC_SPEN						BIT(2)			 // Module Suspend Enable Bit
+#define	MOD_CLC_EDIS						BIT(3)			 // Module External Request Disable
+#define	MOD_CLC_SBWE						BIT(4)			 // Module Suspend Bit Write Enable
+#define	MOD_CLC_FSOE						BIT(5)			 // Module Fast Shut-Off Enable.
+#define	MOD_CLC_RMC							GENMASK(8, 8)	 // Module Clock Divider for Normal Mode
+#define	MOD_CLC_RMC_SHIFT					8
+
+#define	AMBA_PERIPH_ID0_PARTNUMBER0			GENMASK(8, 0)
+#define	AMBA_PERIPH_ID0_PARTNUMBER0_SHIFT	0
+
+#define	AMBA_PERIPH_ID2_DESIGNER1			GENMASK(4, 0)
+#define	AMBA_PERIPH_ID2_DESIGNER1_SHIFT		0
+#define	AMBA_PERIPH_ID2_REVISION			GENMASK(8, 4)
+#define	AMBA_PERIPH_ID2_REVISION_SHIFT		4
+
+/* Service Routing Control Register */
+#define	MOD_SRC_SRPN						GENMASK(8, 0)	 // IRQ priority number
+#define	MOD_SRC_SRPN_SHIFT					0
+#define	MOD_SRC_TOS							GENMASK(2, 10)	 // Type of service for node
+#define	MOD_SRC_TOS_SHIFT					10
+#define	MOD_SRC_SRE							BIT(12)			 // IRQ enable
+#define	MOD_SRC_SRR							BIT(13)			 // IRQ Service Request Bit
+#define	MOD_SRC_CLRR						BIT(14)			 // IRQ Request Clear Bit
+#define	MOD_SRC_SETR						BIT(15)			 // IRQ Request Set Bit
+
+
+
 // EBU [MOD_NUM=0014, MOD_REV=00, MOD_32BIT=C0]
 #define	EBU_BASE					0xF0000000
 /* Clock Control Register */
 #define	EBU_CLC						MMIO32(EBU_BASE + 0x00)
-#define	EBU_CLC_DISR				BIT(0)									 // Module Disable Request Bit
-#define	EBU_CLC_DISS				BIT(1)									 // Module Disable Status Bit
-#define	EBU_CLC_SPEN				BIT(2)									 // Module Suspend Enable Bit
-#define	EBU_CLC_EDIS				BIT(3)									 // Module External Request Disable
-#define	EBU_CLC_SBWE				BIT(4)									 // Module Suspend Bit Write Enable
-#define	EBU_CLC_FSOE				BIT(5)									 // Module Fast Shut-Off Enable.
-#define	EBU_CLC_RMC					GENMASK(8, 8)							 // Module Clock Divider for Normal Mode
-#define	EBU_CLC_RMC_SHIFT			8
 
 /* Module Identifier Register */
 #define	EBU_ID						MMIO32(EBU_BASE + 0x08)
-#define	EBU_ID_MOD_REV				GENMASK(8, 0)
-#define	EBU_ID_MOD_REV_SHIFT		0
-#define	EBU_ID_MOD_32B				GENMASK(8, 8)
-#define	EBU_ID_MOD_32B_SHIFT		8
-#define	EBU_ID_MOD_NUMBER			GENMASK(16, 16)
-#define	EBU_ID_MOD_NUMBER_SHIFT		16
 
 #define	EBU_CON						MMIO32(EBU_BASE + 0x10)
 #define	EBU_CON_EXTRECON			BIT(1)									 // External reconfiguration
@@ -323,25 +356,11 @@
 
 /* Clock Control Register */
 #define	USART_CLC(base)					MMIO32((base) + 0x00)
-#define	USART_CLC_DISR					BIT(0)					 // Module Disable Request Bit
-#define	USART_CLC_DISS					BIT(1)					 // Module Disable Status Bit
-#define	USART_CLC_SPEN					BIT(2)					 // Module Suspend Enable Bit
-#define	USART_CLC_EDIS					BIT(3)					 // Module External Request Disable
-#define	USART_CLC_SBWE					BIT(4)					 // Module Suspend Bit Write Enable
-#define	USART_CLC_FSOE					BIT(5)					 // Module Fast Shut-Off Enable.
-#define	USART_CLC_RMC					GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	USART_CLC_RMC_SHIFT				8
 
 #define	USART_PISEL(base)				MMIO32((base) + 0x04)
 
 /* Module Identifier Register */
 #define	USART_ID(base)					MMIO32((base) + 0x08)
-#define	USART_ID_MOD_REV				GENMASK(8, 0)
-#define	USART_ID_MOD_REV_SHIFT			0
-#define	USART_ID_MOD_32B				GENMASK(8, 8)
-#define	USART_ID_MOD_32B_SHIFT			8
-#define	USART_ID_MOD_NUMBER				GENMASK(16, 16)
-#define	USART_ID_MOD_NUMBER_SHIFT		16
 
 #define	USART_CON(base)					MMIO32((base) + 0x10)
 #define	USART_CON_M						GENMASK(3, 0)			 // ASC Mode Control.
@@ -499,74 +518,40 @@
 
 
 // SIM [MOD_NUM=F000, MOD_REV=00, MOD_32BIT=C0]
-#define	SIM_BASE				0xF1300000
+#define	SIM_BASE	0xF1300000
 /* Clock Control Register */
-#define	SIM_CLC					MMIO32(SIM_BASE + 0x00)
-#define	SIM_CLC_DISR			BIT(0)					 // Module Disable Request Bit
-#define	SIM_CLC_DISS			BIT(1)					 // Module Disable Status Bit
-#define	SIM_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit
-#define	SIM_CLC_EDIS			BIT(3)					 // Module External Request Disable
-#define	SIM_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable
-#define	SIM_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.
-#define	SIM_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	SIM_CLC_RMC_SHIFT		8
+#define	SIM_CLC		MMIO32(SIM_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	SIM_ID					MMIO32(SIM_BASE + 0x08)
-#define	SIM_ID_MOD_REV			GENMASK(8, 0)
-#define	SIM_ID_MOD_REV_SHIFT	0
-#define	SIM_ID_MOD_32B			GENMASK(8, 8)
-#define	SIM_ID_MOD_32B_SHIFT	8
-#define	SIM_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	SIM_ID_MOD_NUMBER_SHIFT	16
+#define	SIM_ID		MMIO32(SIM_BASE + 0x08)
 
 
 // USB [MOD_NUM=F047, MOD_REV=00, MOD_32BIT=C0]
-#define	USB_BASE				0xF2200800
+#define	USB_BASE	0xF2200800
 /* Clock Control Register */
-#define	USB_CLC					MMIO32(USB_BASE + 0x00)
-#define	USB_CLC_DISR			BIT(0)					 // Module Disable Request Bit
-#define	USB_CLC_DISS			BIT(1)					 // Module Disable Status Bit
-#define	USB_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit
-#define	USB_CLC_EDIS			BIT(3)					 // Module External Request Disable
-#define	USB_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable
-#define	USB_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.
-#define	USB_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	USB_CLC_RMC_SHIFT		8
+#define	USB_CLC		MMIO32(USB_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	USB_ID					MMIO32(USB_BASE + 0x08)
-#define	USB_ID_MOD_REV			GENMASK(8, 0)
-#define	USB_ID_MOD_REV_SHIFT	0
-#define	USB_ID_MOD_32B			GENMASK(8, 8)
-#define	USB_ID_MOD_32B_SHIFT	8
-#define	USB_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	USB_ID_MOD_NUMBER_SHIFT	16
+#define	USB_ID		MMIO32(USB_BASE + 0x08)
 
 
 // NVIC [MOD_NUM=0031, MOD_REV=00, MOD_32BIT=C0]
-#define	NVIC_BASE					0xF2800000
+#define	NVIC_BASE				0xF2800000
 /* Module Identifier Register */
-#define	NVIC_ID						MMIO32(NVIC_BASE + 0x00)
-#define	NVIC_ID_MOD_REV				GENMASK(8, 0)
-#define	NVIC_ID_MOD_REV_SHIFT		0
-#define	NVIC_ID_MOD_32B				GENMASK(8, 8)
-#define	NVIC_ID_MOD_32B_SHIFT		8
-#define	NVIC_ID_MOD_NUMBER			GENMASK(16, 16)
-#define	NVIC_ID_MOD_NUMBER_SHIFT	16
+#define	NVIC_ID					MMIO32(NVIC_BASE + 0x00)
 
-#define	NVIC_FIQ_ACK				MMIO32(NVIC_BASE + 0x08)
+#define	NVIC_FIQ_ACK			MMIO32(NVIC_BASE + 0x08)
 
-#define	NVIC_IRQ_ACK				MMIO32(NVIC_BASE + 0x14)
+#define	NVIC_IRQ_ACK			MMIO32(NVIC_BASE + 0x14)
 
-#define	NVIC_CURRENT_FIQ			MMIO32(NVIC_BASE + 0x18)
+#define	NVIC_CURRENT_FIQ		MMIO32(NVIC_BASE + 0x18)
 
-#define	NVIC_CURRENT_IRQ			MMIO32(NVIC_BASE + 0x1C)
+#define	NVIC_CURRENT_IRQ		MMIO32(NVIC_BASE + 0x1C)
 
-#define	NVIC_CON(n)					MMIO32(NVIC_BASE + 0x30 + ((n) * 0x4))
-#define	NVIC_CON_PRIORITY			GENMASK(8, 0)
-#define	NVIC_CON_PRIORITY_SHIFT		0
-#define	NVIC_CON_FIQ				BIT(8)
+#define	NVIC_CON(n)				MMIO32(NVIC_BASE + 0x30 + ((n) * 0x4))
+#define	NVIC_CON_PRIORITY		GENMASK(8, 0)
+#define	NVIC_CON_PRIORITY_SHIFT	0
+#define	NVIC_CON_FIQ			BIT(8)
 
 
 // DMAC [AMBA PL080]
@@ -843,26 +828,12 @@
 #define	DMAC_CH_CONFIG_HALT						BIT(18)										 // Halt.
 
 #define	DMAC_PERIPH_ID0							MMIO32(DMAC_BASE + 0xFE0)
-#define	DMAC_PERIPH_ID0_PARTNUMBER0				GENMASK(8, 0)
-#define	DMAC_PERIPH_ID0_PARTNUMBER0_SHIFT		0
 
 #define	DMAC_PERIPH_ID1							MMIO32(DMAC_BASE + 0xFE4)
-#define	DMAC_PERIPH_ID1_PARTNUMBER1				GENMASK(4, 0)
-#define	DMAC_PERIPH_ID1_PARTNUMBER1_SHIFT		0
-#define	DMAC_PERIPH_ID1_DESIGNER0				GENMASK(8, 4)
-#define	DMAC_PERIPH_ID1_DESIGNER0_SHIFT			4
 
 #define	DMAC_PERIPH_ID2							MMIO32(DMAC_BASE + 0xFE8)
-#define	DMAC_PERIPH_ID2_DESIGNER1				GENMASK(4, 0)
-#define	DMAC_PERIPH_ID2_DESIGNER1_SHIFT			0
-#define	DMAC_PERIPH_ID2_REVISION				GENMASK(8, 4)
-#define	DMAC_PERIPH_ID2_REVISION_SHIFT			4
 
 #define	DMAC_PERIPH_ID3							MMIO32(DMAC_BASE + 0xFEC)
-#define	DMAC_PERIPH_ID3_DESIGNER1				GENMASK(4, 0)
-#define	DMAC_PERIPH_ID3_DESIGNER1_SHIFT			0
-#define	DMAC_PERIPH_ID3_REVISION				GENMASK(8, 4)
-#define	DMAC_PERIPH_ID3_REVISION_SHIFT			4
 
 #define	DMAC_PCELL_ID0							MMIO32(DMAC_BASE + 0xFF0)
 
@@ -874,281 +845,159 @@
 
 
 // CAPCOM0 [MOD_NUM=0050, MOD_REV=00, MOD_32BIT=00]
-#define	CAPCOM0_BASE				0xF4000000
-#define	CAPCOM0						0xF4000000
+#define	CAPCOM0_BASE		0xF4000000
+#define	CAPCOM0				0xF4000000
 
-#define	CAPCOM1_BASE				0xF4100000
-#define	CAPCOM1						0xF4100000
+#define	CAPCOM1_BASE		0xF4100000
+#define	CAPCOM1				0xF4100000
 
 /* Clock Control Register */
-#define	CAPCOM_CLC(base)			MMIO32((base) + 0x00)
-#define	CAPCOM_CLC_DISR				BIT(0)					 // Module Disable Request Bit
-#define	CAPCOM_CLC_DISS				BIT(1)					 // Module Disable Status Bit
-#define	CAPCOM_CLC_SPEN				BIT(2)					 // Module Suspend Enable Bit
-#define	CAPCOM_CLC_EDIS				BIT(3)					 // Module External Request Disable
-#define	CAPCOM_CLC_SBWE				BIT(4)					 // Module Suspend Bit Write Enable
-#define	CAPCOM_CLC_FSOE				BIT(5)					 // Module Fast Shut-Off Enable.
-#define	CAPCOM_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	CAPCOM_CLC_RMC_SHIFT		8
+#define	CAPCOM_CLC(base)	MMIO32((base) + 0x00)
 
-#define	CAPCOM_CPISEL(base)			MMIO32((base) + 0x04)
+#define	CAPCOM_CPISEL(base)	MMIO32((base) + 0x04)
 
 /* Module Identifier Register */
-#define	CAPCOM_ID(base)				MMIO32((base) + 0x08)
-#define	CAPCOM_ID_MOD_REV			GENMASK(8, 0)
-#define	CAPCOM_ID_MOD_REV_SHIFT		0
-#define	CAPCOM_ID_MOD_32B			GENMASK(8, 8)
-#define	CAPCOM_ID_MOD_32B_SHIFT		8
-#define	CAPCOM_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	CAPCOM_ID_MOD_NUMBER_SHIFT	16
+#define	CAPCOM_ID(base)		MMIO32((base) + 0x08)
 
-#define	CAPCOM_ZERO1(base)			MMIO32((base) + 0x0C)
+#define	CAPCOM_ZERO1(base)	MMIO32((base) + 0x0C)
 
-#define	CAPCOM_T01CON(base)			MMIO32((base) + 0x10)
+#define	CAPCOM_T01CON(base)	MMIO32((base) + 0x10)
 
-#define	CAPCOM_CCM0(base)			MMIO32((base) + 0x14)
+#define	CAPCOM_CCM0(base)	MMIO32((base) + 0x14)
 
-#define	CAPCOM_CCM1(base)			MMIO32((base) + 0x18)
+#define	CAPCOM_CCM1(base)	MMIO32((base) + 0x18)
 
-#define	CAPCOM_CCOUT(base)			MMIO32((base) + 0x24)
+#define	CAPCOM_CCOUT(base)	MMIO32((base) + 0x24)
 
-#define	CAPCOM_CCIOC(base)			MMIO32((base) + 0x28)
+#define	CAPCOM_CCIOC(base)	MMIO32((base) + 0x28)
 
-#define	CAPCOM_CCSEE(base)			MMIO32((base) + 0x2C)
+#define	CAPCOM_CCSEE(base)	MMIO32((base) + 0x2C)
 
-#define	CAPCOM_CCSEM(base)			MMIO32((base) + 0x30)
+#define	CAPCOM_CCSEM(base)	MMIO32((base) + 0x30)
 
-#define	CAPCOM_CCDRM(base)			MMIO32((base) + 0x34)
+#define	CAPCOM_CCDRM(base)	MMIO32((base) + 0x34)
 
-#define	CAPCOM_T0(base)				MMIO32((base) + 0x40)
+#define	CAPCOM_T0(base)		MMIO32((base) + 0x40)
 
-#define	CAPCOM_T0REL(base)			MMIO32((base) + 0x44)
+#define	CAPCOM_T0REL(base)	MMIO32((base) + 0x44)
 
-#define	CAPCOM_T1(base)				MMIO32((base) + 0x48)
+#define	CAPCOM_T1(base)		MMIO32((base) + 0x48)
 
-#define	CAPCOM_T1REL(base)			MMIO32((base) + 0x4C)
+#define	CAPCOM_T1REL(base)	MMIO32((base) + 0x4C)
 
-#define	CAPCOM_CC0(base)			MMIO32((base) + 0x50)
+#define	CAPCOM_CC0(base)	MMIO32((base) + 0x50)
 
-#define	CAPCOM_CC1(base)			MMIO32((base) + 0x54)
+#define	CAPCOM_CC1(base)	MMIO32((base) + 0x54)
 
-#define	CAPCOM_CC2(base)			MMIO32((base) + 0x58)
+#define	CAPCOM_CC2(base)	MMIO32((base) + 0x58)
 
-#define	CAPCOM_CC3(base)			MMIO32((base) + 0x5C)
+#define	CAPCOM_CC3(base)	MMIO32((base) + 0x5C)
 
-#define	CAPCOM_CC4(base)			MMIO32((base) + 0x60)
+#define	CAPCOM_CC4(base)	MMIO32((base) + 0x60)
 
-#define	CAPCOM_CC5(base)			MMIO32((base) + 0x64)
+#define	CAPCOM_CC5(base)	MMIO32((base) + 0x64)
 
-#define	CAPCOM_CC6(base)			MMIO32((base) + 0x68)
+#define	CAPCOM_CC6(base)	MMIO32((base) + 0x68)
 
-#define	CAPCOM_CC7(base)			MMIO32((base) + 0x6C)
+#define	CAPCOM_CC7(base)	MMIO32((base) + 0x6C)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC7IC(base)			MMIO32((base) + 0xD8)
-#define	CAPCOM_CC7IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_CC7IC_SRPN_SHIFT		0
-#define	CAPCOM_CC7IC_TOS			GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_CC7IC_TOS_SHIFT		10
-#define	CAPCOM_CC7IC_SRE			BIT(12)					 // IRQ enable
-#define	CAPCOM_CC7IC_SRR			BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_CC7IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_CC7IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_CC7IC(base)	MMIO32((base) + 0xD8)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC6IC(base)			MMIO32((base) + 0xDC)
-#define	CAPCOM_CC6IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_CC6IC_SRPN_SHIFT		0
-#define	CAPCOM_CC6IC_TOS			GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_CC6IC_TOS_SHIFT		10
-#define	CAPCOM_CC6IC_SRE			BIT(12)					 // IRQ enable
-#define	CAPCOM_CC6IC_SRR			BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_CC6IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_CC6IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_CC6IC(base)	MMIO32((base) + 0xDC)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC5IC(base)			MMIO32((base) + 0xE0)
-#define	CAPCOM_CC5IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_CC5IC_SRPN_SHIFT		0
-#define	CAPCOM_CC5IC_TOS			GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_CC5IC_TOS_SHIFT		10
-#define	CAPCOM_CC5IC_SRE			BIT(12)					 // IRQ enable
-#define	CAPCOM_CC5IC_SRR			BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_CC5IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_CC5IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_CC5IC(base)	MMIO32((base) + 0xE0)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC4IC(base)			MMIO32((base) + 0xE4)
-#define	CAPCOM_CC4IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_CC4IC_SRPN_SHIFT		0
-#define	CAPCOM_CC4IC_TOS			GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_CC4IC_TOS_SHIFT		10
-#define	CAPCOM_CC4IC_SRE			BIT(12)					 // IRQ enable
-#define	CAPCOM_CC4IC_SRR			BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_CC4IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_CC4IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_CC4IC(base)	MMIO32((base) + 0xE4)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC3IC(base)			MMIO32((base) + 0xE8)
-#define	CAPCOM_CC3IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_CC3IC_SRPN_SHIFT		0
-#define	CAPCOM_CC3IC_TOS			GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_CC3IC_TOS_SHIFT		10
-#define	CAPCOM_CC3IC_SRE			BIT(12)					 // IRQ enable
-#define	CAPCOM_CC3IC_SRR			BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_CC3IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_CC3IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_CC3IC(base)	MMIO32((base) + 0xE8)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC2IC(base)			MMIO32((base) + 0xEC)
-#define	CAPCOM_CC2IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_CC2IC_SRPN_SHIFT		0
-#define	CAPCOM_CC2IC_TOS			GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_CC2IC_TOS_SHIFT		10
-#define	CAPCOM_CC2IC_SRE			BIT(12)					 // IRQ enable
-#define	CAPCOM_CC2IC_SRR			BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_CC2IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_CC2IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_CC2IC(base)	MMIO32((base) + 0xEC)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC1IC(base)			MMIO32((base) + 0xF0)
-#define	CAPCOM_CC1IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_CC1IC_SRPN_SHIFT		0
-#define	CAPCOM_CC1IC_TOS			GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_CC1IC_TOS_SHIFT		10
-#define	CAPCOM_CC1IC_SRE			BIT(12)					 // IRQ enable
-#define	CAPCOM_CC1IC_SRR			BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_CC1IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_CC1IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_CC1IC(base)	MMIO32((base) + 0xF0)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC0IC(base)			MMIO32((base) + 0xF4)
-#define	CAPCOM_CC0IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_CC0IC_SRPN_SHIFT		0
-#define	CAPCOM_CC0IC_TOS			GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_CC0IC_TOS_SHIFT		10
-#define	CAPCOM_CC0IC_SRE			BIT(12)					 // IRQ enable
-#define	CAPCOM_CC0IC_SRR			BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_CC0IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_CC0IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_CC0IC(base)	MMIO32((base) + 0xF4)
 
 /* Service Routing Control Register */
-#define	CAPCOM_T1IC(base)			MMIO32((base) + 0xF8)
-#define	CAPCOM_T1IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_T1IC_SRPN_SHIFT		0
-#define	CAPCOM_T1IC_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_T1IC_TOS_SHIFT		10
-#define	CAPCOM_T1IC_SRE				BIT(12)					 // IRQ enable
-#define	CAPCOM_T1IC_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_T1IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_T1IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_T1IC(base)	MMIO32((base) + 0xF8)
 
 /* Service Routing Control Register */
-#define	CAPCOM_T0IC(base)			MMIO32((base) + 0xFC)
-#define	CAPCOM_T0IC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	CAPCOM_T0IC_SRPN_SHIFT		0
-#define	CAPCOM_T0IC_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	CAPCOM_T0IC_TOS_SHIFT		10
-#define	CAPCOM_T0IC_SRE				BIT(12)					 // IRQ enable
-#define	CAPCOM_T0IC_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	CAPCOM_T0IC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	CAPCOM_T0IC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	CAPCOM_T0IC(base)	MMIO32((base) + 0xFC)
 
 
 // GPIO [MOD_NUM=F023, MOD_REV=00, MOD_32BIT=C0]
-#define	GPIO_BASE					0xF4300000
+#define	GPIO_BASE			0xF4300000
 /* Clock Control Register */
-#define	GPIO_CLC					MMIO32(GPIO_BASE + 0x00)
-#define	GPIO_CLC_DISR				BIT(0)									 // Module Disable Request Bit
-#define	GPIO_CLC_DISS				BIT(1)									 // Module Disable Status Bit
-#define	GPIO_CLC_SPEN				BIT(2)									 // Module Suspend Enable Bit
-#define	GPIO_CLC_EDIS				BIT(3)									 // Module External Request Disable
-#define	GPIO_CLC_SBWE				BIT(4)									 // Module Suspend Bit Write Enable
-#define	GPIO_CLC_FSOE				BIT(5)									 // Module Fast Shut-Off Enable.
-#define	GPIO_CLC_RMC				GENMASK(8, 8)							 // Module Clock Divider for Normal Mode
-#define	GPIO_CLC_RMC_SHIFT			8
+#define	GPIO_CLC			MMIO32(GPIO_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	GPIO_ID						MMIO32(GPIO_BASE + 0x08)
-#define	GPIO_ID_MOD_REV				GENMASK(8, 0)
-#define	GPIO_ID_MOD_REV_SHIFT		0
-#define	GPIO_ID_MOD_32B				GENMASK(8, 8)
-#define	GPIO_ID_MOD_32B_SHIFT		8
-#define	GPIO_ID_MOD_NUMBER			GENMASK(16, 16)
-#define	GPIO_ID_MOD_NUMBER_SHIFT	16
+#define	GPIO_ID				MMIO32(GPIO_BASE + 0x08)
 
-#define	GPIO_MON_CR1				MMIO32(GPIO_BASE + 0x10)
+#define	GPIO_MON_CR1		MMIO32(GPIO_BASE + 0x10)
 
-#define	GPIO_MON_CR2				MMIO32(GPIO_BASE + 0x14)
+#define	GPIO_MON_CR2		MMIO32(GPIO_BASE + 0x14)
 
-#define	GPIO_MON_CR3				MMIO32(GPIO_BASE + 0x18)
+#define	GPIO_MON_CR3		MMIO32(GPIO_BASE + 0x18)
 
-#define	GPIO_MON_CR4				MMIO32(GPIO_BASE + 0x1C)
+#define	GPIO_MON_CR4		MMIO32(GPIO_BASE + 0x1C)
 
-#define	GPIO_PIN(n)					MMIO32(GPIO_BASE + 0x20 + ((n) * 0x4))
-#define	GPIO_IS						GENMASK(3, 0)
-#define	GPIO_IS_SHIFT				0
-#define	GPIO_IS_NONE				0x0
-#define	GPIO_IS_ALT0				0x1
-#define	GPIO_IS_ALT1				0x2
-#define	GPIO_IS_ALT2				0x3
-#define	GPIO_IS_ALT3				0x4
-#define	GPIO_IS_ALT4				0x5
-#define	GPIO_IS_ALT5				0x6
-#define	GPIO_IS_ALT6				0x7
-#define	GPIO_OS						GENMASK(3, 4)
-#define	GPIO_OS_SHIFT				4
-#define	GPIO_OS_NONE				0x0
-#define	GPIO_OS_ALT0				0x10
-#define	GPIO_OS_ALT1				0x20
-#define	GPIO_OS_ALT2				0x30
-#define	GPIO_OS_ALT3				0x40
-#define	GPIO_OS_ALT4				0x50
-#define	GPIO_OS_ALT5				0x60
-#define	GPIO_OS_ALT6				0x70
-#define	GPIO_PS						BIT(8)
-#define	GPIO_PS_ALT					0x0
-#define	GPIO_PS_MANUAL				0x100
-#define	GPIO_DATA					BIT(9)
-#define	GPIO_DATA_LOW				0x0
-#define	GPIO_DATA_HIGH				0x200
-#define	GPIO_DIR					BIT(10)
-#define	GPIO_DIR_IN					0x0
-#define	GPIO_DIR_OUT				0x400
-#define	GPIO_PPEN					BIT(12)
-#define	GPIO_PPEN_PUSHPULL			0x0
-#define	GPIO_PPEN_OPENDRAIN			0x1000
-#define	GPIO_PDPU					GENMASK(2, 13)
-#define	GPIO_PDPU_SHIFT				13
-#define	GPIO_PDPU_NONE				0x0
-#define	GPIO_PDPU_PULLUP			0x2000
-#define	GPIO_PDPU_PULLDOWN			0x4000
-#define	GPIO_ENAQ					BIT(15)
-#define	GPIO_ENAQ_OFF				0x0
-#define	GPIO_ENAQ_ON				0x8000
+#define	GPIO_PIN(n)			MMIO32(GPIO_BASE + 0x20 + ((n) * 0x4))
+#define	GPIO_IS				GENMASK(3, 0)
+#define	GPIO_IS_SHIFT		0
+#define	GPIO_IS_NONE		0x0
+#define	GPIO_IS_ALT0		0x1
+#define	GPIO_IS_ALT1		0x2
+#define	GPIO_IS_ALT2		0x3
+#define	GPIO_IS_ALT3		0x4
+#define	GPIO_IS_ALT4		0x5
+#define	GPIO_IS_ALT5		0x6
+#define	GPIO_IS_ALT6		0x7
+#define	GPIO_OS				GENMASK(3, 4)
+#define	GPIO_OS_SHIFT		4
+#define	GPIO_OS_NONE		0x0
+#define	GPIO_OS_ALT0		0x10
+#define	GPIO_OS_ALT1		0x20
+#define	GPIO_OS_ALT2		0x30
+#define	GPIO_OS_ALT3		0x40
+#define	GPIO_OS_ALT4		0x50
+#define	GPIO_OS_ALT5		0x60
+#define	GPIO_OS_ALT6		0x70
+#define	GPIO_PS				BIT(8)
+#define	GPIO_PS_ALT			0x0
+#define	GPIO_PS_MANUAL		0x100
+#define	GPIO_DATA			BIT(9)
+#define	GPIO_DATA_LOW		0x0
+#define	GPIO_DATA_HIGH		0x200
+#define	GPIO_DIR			BIT(10)
+#define	GPIO_DIR_IN			0x0
+#define	GPIO_DIR_OUT		0x400
+#define	GPIO_PPEN			BIT(12)
+#define	GPIO_PPEN_PUSHPULL	0x0
+#define	GPIO_PPEN_OPENDRAIN	0x1000
+#define	GPIO_PDPU			GENMASK(2, 13)
+#define	GPIO_PDPU_SHIFT		13
+#define	GPIO_PDPU_NONE		0x0
+#define	GPIO_PDPU_PULLUP	0x2000
+#define	GPIO_PDPU_PULLDOWN	0x4000
+#define	GPIO_ENAQ			BIT(15)
+#define	GPIO_ENAQ_OFF		0x0
+#define	GPIO_ENAQ_ON		0x8000
 
 
 // SCU [MOD_NUM=F040, MOD_REV=00, MOD_32BIT=C0]
 #define	SCU_BASE					0xF4400000
 /* Clock Control Register */
 #define	SCU_CLC						MMIO32(SCU_BASE + 0x00)
-#define	SCU_CLC_DISR				BIT(0)									 // Module Disable Request Bit
-#define	SCU_CLC_DISS				BIT(1)									 // Module Disable Status Bit
-#define	SCU_CLC_SPEN				BIT(2)									 // Module Suspend Enable Bit
-#define	SCU_CLC_EDIS				BIT(3)									 // Module External Request Disable
-#define	SCU_CLC_SBWE				BIT(4)									 // Module Suspend Bit Write Enable
-#define	SCU_CLC_FSOE				BIT(5)									 // Module Fast Shut-Off Enable.
-#define	SCU_CLC_RMC					GENMASK(8, 8)							 // Module Clock Divider for Normal Mode
-#define	SCU_CLC_RMC_SHIFT			8
 
 /* Module Identifier Register */
 #define	SCU_ID						MMIO32(SCU_BASE + 0x08)
-#define	SCU_ID_MOD_REV				GENMASK(8, 0)
-#define	SCU_ID_MOD_REV_SHIFT		0
-#define	SCU_ID_MOD_32B				GENMASK(8, 8)
-#define	SCU_ID_MOD_32B_SHIFT		8
-#define	SCU_ID_MOD_NUMBER			GENMASK(16, 16)
-#define	SCU_ID_MOD_NUMBER_SHIFT		16
 
 /* Reset Status Register */
 #define	SCU_RST_SR					MMIO32(SCU_BASE + 0x10)
@@ -1275,102 +1124,30 @@
 
 /* Service Routing Control Register */
 #define	SCU_EXTI0_SRC				MMIO32(SCU_BASE + 0xB8)
-#define	SCU_EXTI0_SRC_SRPN			GENMASK(8, 0)							 // IRQ priority number
-#define	SCU_EXTI0_SRC_SRPN_SHIFT	0
-#define	SCU_EXTI0_SRC_TOS			GENMASK(2, 10)							 // Type of service for node
-#define	SCU_EXTI0_SRC_TOS_SHIFT		10
-#define	SCU_EXTI0_SRC_SRE			BIT(12)									 // IRQ enable
-#define	SCU_EXTI0_SRC_SRR			BIT(13)									 // IRQ Service Request Bit
-#define	SCU_EXTI0_SRC_CLRR			BIT(14)									 // IRQ Request Clear Bit
-#define	SCU_EXTI0_SRC_SETR			BIT(15)									 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	SCU_EXTI1_SRC				MMIO32(SCU_BASE + 0xBC)
-#define	SCU_EXTI1_SRC_SRPN			GENMASK(8, 0)							 // IRQ priority number
-#define	SCU_EXTI1_SRC_SRPN_SHIFT	0
-#define	SCU_EXTI1_SRC_TOS			GENMASK(2, 10)							 // Type of service for node
-#define	SCU_EXTI1_SRC_TOS_SHIFT		10
-#define	SCU_EXTI1_SRC_SRE			BIT(12)									 // IRQ enable
-#define	SCU_EXTI1_SRC_SRR			BIT(13)									 // IRQ Service Request Bit
-#define	SCU_EXTI1_SRC_CLRR			BIT(14)									 // IRQ Request Clear Bit
-#define	SCU_EXTI1_SRC_SETR			BIT(15)									 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	SCU_EXTI2_SRC				MMIO32(SCU_BASE + 0xC0)
-#define	SCU_EXTI2_SRC_SRPN			GENMASK(8, 0)							 // IRQ priority number
-#define	SCU_EXTI2_SRC_SRPN_SHIFT	0
-#define	SCU_EXTI2_SRC_TOS			GENMASK(2, 10)							 // Type of service for node
-#define	SCU_EXTI2_SRC_TOS_SHIFT		10
-#define	SCU_EXTI2_SRC_SRE			BIT(12)									 // IRQ enable
-#define	SCU_EXTI2_SRC_SRR			BIT(13)									 // IRQ Service Request Bit
-#define	SCU_EXTI2_SRC_CLRR			BIT(14)									 // IRQ Request Clear Bit
-#define	SCU_EXTI2_SRC_SETR			BIT(15)									 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	SCU_EXTI3_SRC				MMIO32(SCU_BASE + 0xC4)
-#define	SCU_EXTI3_SRC_SRPN			GENMASK(8, 0)							 // IRQ priority number
-#define	SCU_EXTI3_SRC_SRPN_SHIFT	0
-#define	SCU_EXTI3_SRC_TOS			GENMASK(2, 10)							 // Type of service for node
-#define	SCU_EXTI3_SRC_TOS_SHIFT		10
-#define	SCU_EXTI3_SRC_SRE			BIT(12)									 // IRQ enable
-#define	SCU_EXTI3_SRC_SRR			BIT(13)									 // IRQ Service Request Bit
-#define	SCU_EXTI3_SRC_CLRR			BIT(14)									 // IRQ Request Clear Bit
-#define	SCU_EXTI3_SRC_SETR			BIT(15)									 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	SCU_EXTI4_SRC				MMIO32(SCU_BASE + 0xC8)
-#define	SCU_EXTI4_SRC_SRPN			GENMASK(8, 0)							 // IRQ priority number
-#define	SCU_EXTI4_SRC_SRPN_SHIFT	0
-#define	SCU_EXTI4_SRC_TOS			GENMASK(2, 10)							 // Type of service for node
-#define	SCU_EXTI4_SRC_TOS_SHIFT		10
-#define	SCU_EXTI4_SRC_SRE			BIT(12)									 // IRQ enable
-#define	SCU_EXTI4_SRC_SRR			BIT(13)									 // IRQ Service Request Bit
-#define	SCU_EXTI4_SRC_CLRR			BIT(14)									 // IRQ Request Clear Bit
-#define	SCU_EXTI4_SRC_SETR			BIT(15)									 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	SCU_DSP_SRC(n)				MMIO32(SCU_BASE + 0xCC + ((n) * 0x4))
-#define	SCU_DSP_SRC_SRPN			GENMASK(8, 0)							 // IRQ priority number
-#define	SCU_DSP_SRC_SRPN_SHIFT		0
-#define	SCU_DSP_SRC_TOS				GENMASK(2, 10)							 // Type of service for node
-#define	SCU_DSP_SRC_TOS_SHIFT		10
-#define	SCU_DSP_SRC_SRE				BIT(12)									 // IRQ enable
-#define	SCU_DSP_SRC_SRR				BIT(13)									 // IRQ Service Request Bit
-#define	SCU_DSP_SRC_CLRR			BIT(14)									 // IRQ Request Clear Bit
-#define	SCU_DSP_SRC_SETR			BIT(15)									 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	SCU_EXTI5_SRC				MMIO32(SCU_BASE + 0xF4)
-#define	SCU_EXTI5_SRC_SRPN			GENMASK(8, 0)							 // IRQ priority number
-#define	SCU_EXTI5_SRC_SRPN_SHIFT	0
-#define	SCU_EXTI5_SRC_TOS			GENMASK(2, 10)							 // Type of service for node
-#define	SCU_EXTI5_SRC_TOS_SHIFT		10
-#define	SCU_EXTI5_SRC_SRE			BIT(12)									 // IRQ enable
-#define	SCU_EXTI5_SRC_SRR			BIT(13)									 // IRQ Service Request Bit
-#define	SCU_EXTI5_SRC_CLRR			BIT(14)									 // IRQ Request Clear Bit
-#define	SCU_EXTI5_SRC_SETR			BIT(15)									 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	SCU_EXTI6_SRC				MMIO32(SCU_BASE + 0xF8)
-#define	SCU_EXTI6_SRC_SRPN			GENMASK(8, 0)							 // IRQ priority number
-#define	SCU_EXTI6_SRC_SRPN_SHIFT	0
-#define	SCU_EXTI6_SRC_TOS			GENMASK(2, 10)							 // Type of service for node
-#define	SCU_EXTI6_SRC_TOS_SHIFT		10
-#define	SCU_EXTI6_SRC_SRE			BIT(12)									 // IRQ enable
-#define	SCU_EXTI6_SRC_SRR			BIT(13)									 // IRQ Service Request Bit
-#define	SCU_EXTI6_SRC_CLRR			BIT(14)									 // IRQ Request Clear Bit
-#define	SCU_EXTI6_SRC_SETR			BIT(15)									 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	SCU_EXTI7_SRC				MMIO32(SCU_BASE + 0xFC)
-#define	SCU_EXTI7_SRC_SRPN			GENMASK(8, 0)							 // IRQ priority number
-#define	SCU_EXTI7_SRC_SRPN_SHIFT	0
-#define	SCU_EXTI7_SRC_TOS			GENMASK(2, 10)							 // Type of service for node
-#define	SCU_EXTI7_SRC_TOS_SHIFT		10
-#define	SCU_EXTI7_SRC_SRE			BIT(12)									 // IRQ enable
-#define	SCU_EXTI7_SRC_SRR			BIT(13)									 // IRQ Service Request Bit
-#define	SCU_EXTI7_SRC_CLRR			BIT(14)									 // IRQ Request Clear Bit
-#define	SCU_EXTI7_SRC_SETR			BIT(15)									 // IRQ Request Set Bit
 
 
 // PLL
@@ -1392,37 +1169,15 @@
 
 /* Service Routing Control Register */
 #define	PLL_SRC					MMIO32(PLL_BASE + 0xCC)
-#define	PLL_SRC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	PLL_SRC_SRPN_SHIFT		0
-#define	PLL_SRC_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	PLL_SRC_TOS_SHIFT		10
-#define	PLL_SRC_SRE				BIT(12)					 // IRQ enable
-#define	PLL_SRC_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	PLL_SRC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	PLL_SRC_SETR			BIT(15)					 // IRQ Request Set Bit
 
 
 // RTC [MOD_NUM=F049, MOD_REV=00, MOD_32BIT=C0]
 #define	RTC_BASE				0xF4700000
 /* Clock Control Register */
 #define	RTC_CLC					MMIO32(RTC_BASE + 0x00)
-#define	RTC_CLC_DISR			BIT(0)					 // Module Disable Request Bit
-#define	RTC_CLC_DISS			BIT(1)					 // Module Disable Status Bit
-#define	RTC_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit
-#define	RTC_CLC_EDIS			BIT(3)					 // Module External Request Disable
-#define	RTC_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable
-#define	RTC_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.
-#define	RTC_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	RTC_CLC_RMC_SHIFT		8
 
 /* Module Identifier Register */
 #define	RTC_ID					MMIO32(RTC_BASE + 0x08)
-#define	RTC_ID_MOD_REV			GENMASK(8, 0)
-#define	RTC_ID_MOD_REV_SHIFT	0
-#define	RTC_ID_MOD_32B			GENMASK(8, 8)
-#define	RTC_ID_MOD_32B_SHIFT	8
-#define	RTC_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	RTC_ID_MOD_NUMBER_SHIFT	16
 
 /* RTC Shell Control Register */
 #define	RTC_CTRL				MMIO32(RTC_BASE + 0x10)
@@ -1482,14 +1237,6 @@
 
 /* Service Routing Control Register */
 #define	RTC_SRC					MMIO32(RTC_BASE + 0xF0)
-#define	RTC_SRC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	RTC_SRC_SRPN_SHIFT		0
-#define	RTC_SRC_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	RTC_SRC_TOS_SHIFT		10
-#define	RTC_SRC_SRE				BIT(12)					 // IRQ enable
-#define	RTC_SRC_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	RTC_SRC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	RTC_SRC_SETR			BIT(15)					 // IRQ Request Set Bit
 
 
 // GPTU0 [MOD_NUM=0001, MOD_REV=00, MOD_32BIT=C0]
@@ -1501,23 +1248,9 @@
 
 /* Clock Control Register */
 #define	GPTU_CLC(base)				MMIO32((base) + 0x00)
-#define	GPTU_CLC_DISR				BIT(0)					 // Module Disable Request Bit
-#define	GPTU_CLC_DISS				BIT(1)					 // Module Disable Status Bit
-#define	GPTU_CLC_SPEN				BIT(2)					 // Module Suspend Enable Bit
-#define	GPTU_CLC_EDIS				BIT(3)					 // Module External Request Disable
-#define	GPTU_CLC_SBWE				BIT(4)					 // Module Suspend Bit Write Enable
-#define	GPTU_CLC_FSOE				BIT(5)					 // Module Fast Shut-Off Enable.
-#define	GPTU_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	GPTU_CLC_RMC_SHIFT			8
 
 /* Module Identifier Register */
 #define	GPTU_ID(base)				MMIO32((base) + 0x08)
-#define	GPTU_ID_MOD_REV				GENMASK(8, 0)
-#define	GPTU_ID_MOD_REV_SHIFT		0
-#define	GPTU_ID_MOD_32B				GENMASK(8, 8)
-#define	GPTU_ID_MOD_32B_SHIFT		8
-#define	GPTU_ID_MOD_NUMBER			GENMASK(16, 16)
-#define	GPTU_ID_MOD_NUMBER_SHIFT	16
 
 #define	GPTU_T01IRS(base)			MMIO32((base) + 0x10)
 #define	GPTU_T01IRS_T0AINS			GENMASK(2, 0)			 // T0A Input Selection
@@ -1842,292 +1575,114 @@
 
 /* Service Routing Control Register */
 #define	GPTU_SRC7(base)				MMIO32((base) + 0xE0)
-#define	GPTU_SRC7_SRPN				GENMASK(8, 0)			 // IRQ priority number
-#define	GPTU_SRC7_SRPN_SHIFT		0
-#define	GPTU_SRC7_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	GPTU_SRC7_TOS_SHIFT			10
-#define	GPTU_SRC7_SRE				BIT(12)					 // IRQ enable
-#define	GPTU_SRC7_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	GPTU_SRC7_CLRR				BIT(14)					 // IRQ Request Clear Bit
-#define	GPTU_SRC7_SETR				BIT(15)					 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	GPTU_SRC6(base)				MMIO32((base) + 0xE4)
-#define	GPTU_SRC6_SRPN				GENMASK(8, 0)			 // IRQ priority number
-#define	GPTU_SRC6_SRPN_SHIFT		0
-#define	GPTU_SRC6_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	GPTU_SRC6_TOS_SHIFT			10
-#define	GPTU_SRC6_SRE				BIT(12)					 // IRQ enable
-#define	GPTU_SRC6_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	GPTU_SRC6_CLRR				BIT(14)					 // IRQ Request Clear Bit
-#define	GPTU_SRC6_SETR				BIT(15)					 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	GPTU_SRC5(base)				MMIO32((base) + 0xE8)
-#define	GPTU_SRC5_SRPN				GENMASK(8, 0)			 // IRQ priority number
-#define	GPTU_SRC5_SRPN_SHIFT		0
-#define	GPTU_SRC5_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	GPTU_SRC5_TOS_SHIFT			10
-#define	GPTU_SRC5_SRE				BIT(12)					 // IRQ enable
-#define	GPTU_SRC5_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	GPTU_SRC5_CLRR				BIT(14)					 // IRQ Request Clear Bit
-#define	GPTU_SRC5_SETR				BIT(15)					 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	GPTU_SRC4(base)				MMIO32((base) + 0xEC)
-#define	GPTU_SRC4_SRPN				GENMASK(8, 0)			 // IRQ priority number
-#define	GPTU_SRC4_SRPN_SHIFT		0
-#define	GPTU_SRC4_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	GPTU_SRC4_TOS_SHIFT			10
-#define	GPTU_SRC4_SRE				BIT(12)					 // IRQ enable
-#define	GPTU_SRC4_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	GPTU_SRC4_CLRR				BIT(14)					 // IRQ Request Clear Bit
-#define	GPTU_SRC4_SETR				BIT(15)					 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	GPTU_SRC3(base)				MMIO32((base) + 0xF0)
-#define	GPTU_SRC3_SRPN				GENMASK(8, 0)			 // IRQ priority number
-#define	GPTU_SRC3_SRPN_SHIFT		0
-#define	GPTU_SRC3_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	GPTU_SRC3_TOS_SHIFT			10
-#define	GPTU_SRC3_SRE				BIT(12)					 // IRQ enable
-#define	GPTU_SRC3_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	GPTU_SRC3_CLRR				BIT(14)					 // IRQ Request Clear Bit
-#define	GPTU_SRC3_SETR				BIT(15)					 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	GPTU_SRC2(base)				MMIO32((base) + 0xF4)
-#define	GPTU_SRC2_SRPN				GENMASK(8, 0)			 // IRQ priority number
-#define	GPTU_SRC2_SRPN_SHIFT		0
-#define	GPTU_SRC2_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	GPTU_SRC2_TOS_SHIFT			10
-#define	GPTU_SRC2_SRE				BIT(12)					 // IRQ enable
-#define	GPTU_SRC2_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	GPTU_SRC2_CLRR				BIT(14)					 // IRQ Request Clear Bit
-#define	GPTU_SRC2_SETR				BIT(15)					 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	GPTU_SRC1(base)				MMIO32((base) + 0xF8)
-#define	GPTU_SRC1_SRPN				GENMASK(8, 0)			 // IRQ priority number
-#define	GPTU_SRC1_SRPN_SHIFT		0
-#define	GPTU_SRC1_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	GPTU_SRC1_TOS_SHIFT			10
-#define	GPTU_SRC1_SRE				BIT(12)					 // IRQ enable
-#define	GPTU_SRC1_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	GPTU_SRC1_CLRR				BIT(14)					 // IRQ Request Clear Bit
-#define	GPTU_SRC1_SETR				BIT(15)					 // IRQ Request Set Bit
 
 /* Service Routing Control Register */
 #define	GPTU_SRC0(base)				MMIO32((base) + 0xFC)
-#define	GPTU_SRC0_SRPN				GENMASK(8, 0)			 // IRQ priority number
-#define	GPTU_SRC0_SRPN_SHIFT		0
-#define	GPTU_SRC0_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	GPTU_SRC0_TOS_SHIFT			10
-#define	GPTU_SRC0_SRE				BIT(12)					 // IRQ enable
-#define	GPTU_SRC0_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	GPTU_SRC0_CLRR				BIT(14)					 // IRQ Request Clear Bit
-#define	GPTU_SRC0_SETR				BIT(15)					 // IRQ Request Set Bit
 
 
 // STM [MOD_NUM=0000, MOD_REV=00, MOD_32BIT=C0]
-#define	STM_BASE				0xF4B00000
+#define	STM_BASE	0xF4B00000
 /* Clock Control Register */
-#define	STM_CLC					MMIO32(STM_BASE + 0x00)
-#define	STM_CLC_DISR			BIT(0)					 // Module Disable Request Bit
-#define	STM_CLC_DISS			BIT(1)					 // Module Disable Status Bit
-#define	STM_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit
-#define	STM_CLC_EDIS			BIT(3)					 // Module External Request Disable
-#define	STM_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable
-#define	STM_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.
-#define	STM_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	STM_CLC_RMC_SHIFT		8
+#define	STM_CLC		MMIO32(STM_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	STM_ID					MMIO32(STM_BASE + 0x08)
-#define	STM_ID_MOD_REV			GENMASK(8, 0)
-#define	STM_ID_MOD_REV_SHIFT	0
-#define	STM_ID_MOD_32B			GENMASK(8, 8)
-#define	STM_ID_MOD_32B_SHIFT	8
-#define	STM_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	STM_ID_MOD_NUMBER_SHIFT	16
+#define	STM_ID		MMIO32(STM_BASE + 0x08)
 
-#define	STM_TIM0				MMIO32(STM_BASE + 0x10)
+#define	STM_TIM0	MMIO32(STM_BASE + 0x10)
 
-#define	STM_TIM1				MMIO32(STM_BASE + 0x14)
+#define	STM_TIM1	MMIO32(STM_BASE + 0x14)
 
-#define	STM_TIM2				MMIO32(STM_BASE + 0x18)
+#define	STM_TIM2	MMIO32(STM_BASE + 0x18)
 
-#define	STM_TIM3				MMIO32(STM_BASE + 0x1C)
+#define	STM_TIM3	MMIO32(STM_BASE + 0x1C)
 
-#define	STM_TIM4				MMIO32(STM_BASE + 0x20)
+#define	STM_TIM4	MMIO32(STM_BASE + 0x20)
 
-#define	STM_TIM5				MMIO32(STM_BASE + 0x24)
+#define	STM_TIM5	MMIO32(STM_BASE + 0x24)
 
-#define	STM_TIM6				MMIO32(STM_BASE + 0x28)
+#define	STM_TIM6	MMIO32(STM_BASE + 0x28)
 
-#define	STM_CAP					MMIO32(STM_BASE + 0x2C)
+#define	STM_CAP		MMIO32(STM_BASE + 0x2C)
 
 
 // AMC [MOD_NUM=F024, MOD_REV=00, MOD_32BIT=C0]
-#define	AMC_BASE				0xF4C00000
+#define	AMC_BASE	0xF4C00000
 /* Clock Control Register */
-#define	AMC_CLC					MMIO32(AMC_BASE + 0x00)
-#define	AMC_CLC_DISR			BIT(0)					 // Module Disable Request Bit
-#define	AMC_CLC_DISS			BIT(1)					 // Module Disable Status Bit
-#define	AMC_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit
-#define	AMC_CLC_EDIS			BIT(3)					 // Module External Request Disable
-#define	AMC_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable
-#define	AMC_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.
-#define	AMC_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	AMC_CLC_RMC_SHIFT		8
+#define	AMC_CLC		MMIO32(AMC_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	AMC_ID					MMIO32(AMC_BASE + 0x08)
-#define	AMC_ID_MOD_REV			GENMASK(8, 0)
-#define	AMC_ID_MOD_REV_SHIFT	0
-#define	AMC_ID_MOD_32B			GENMASK(8, 8)
-#define	AMC_ID_MOD_32B_SHIFT	8
-#define	AMC_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	AMC_ID_MOD_NUMBER_SHIFT	16
+#define	AMC_ID		MMIO32(AMC_BASE + 0x08)
 
 /* Service Routing Control Register */
-#define	AMC_SRC					MMIO32(AMC_BASE + 0xF0)
-#define	AMC_SRC_SRPN			GENMASK(8, 0)			 // IRQ priority number
-#define	AMC_SRC_SRPN_SHIFT		0
-#define	AMC_SRC_TOS				GENMASK(2, 10)			 // Type of service for node
-#define	AMC_SRC_TOS_SHIFT		10
-#define	AMC_SRC_SRE				BIT(12)					 // IRQ enable
-#define	AMC_SRC_SRR				BIT(13)					 // IRQ Service Request Bit
-#define	AMC_SRC_CLRR			BIT(14)					 // IRQ Request Clear Bit
-#define	AMC_SRC_SETR			BIT(15)					 // IRQ Request Set Bit
+#define	AMC_SRC		MMIO32(AMC_BASE + 0xF0)
 
 
 // KEYPAD [MOD_NUM=F046, MOD_REV=00, MOD_32BIT=C0]
-#define	KEYPAD_BASE					0xF4D00000
+#define	KEYPAD_BASE		0xF4D00000
 /* Module Identifier Register */
-#define	KEYPAD_ID					MMIO32(KEYPAD_BASE + 0x08)
-#define	KEYPAD_ID_MOD_REV			GENMASK(8, 0)
-#define	KEYPAD_ID_MOD_REV_SHIFT		0
-#define	KEYPAD_ID_MOD_32B			GENMASK(8, 8)
-#define	KEYPAD_ID_MOD_32B_SHIFT		8
-#define	KEYPAD_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	KEYPAD_ID_MOD_NUMBER_SHIFT	16
+#define	KEYPAD_ID		MMIO32(KEYPAD_BASE + 0x08)
 
 /* Clock Control Register */
-#define	KEYPAD_CLC					MMIO32(KEYPAD_BASE + 0x10)
-#define	KEYPAD_CLC_DISR				BIT(0)										 // Module Disable Request Bit
-#define	KEYPAD_CLC_DISS				BIT(1)										 // Module Disable Status Bit
-#define	KEYPAD_CLC_SPEN				BIT(2)										 // Module Suspend Enable Bit
-#define	KEYPAD_CLC_EDIS				BIT(3)										 // Module External Request Disable
-#define	KEYPAD_CLC_SBWE				BIT(4)										 // Module Suspend Bit Write Enable
-#define	KEYPAD_CLC_FSOE				BIT(5)										 // Module Fast Shut-Off Enable.
-#define	KEYPAD_CLC_RMC				GENMASK(8, 8)								 // Module Clock Divider for Normal Mode
-#define	KEYPAD_CLC_RMC_SHIFT		8
+#define	KEYPAD_CLC		MMIO32(KEYPAD_BASE + 0x10)
 
-#define	KEYPAD_PORT(n)				MMIO32(KEYPAD_BASE + 0x18 + ((n) * 0x4))
+#define	KEYPAD_PORT(n)	MMIO32(KEYPAD_BASE + 0x18 + ((n) * 0x4))
 
 /* Service Routing Control Register */
-#define	KEYPAD_SRC(n)				MMIO32(KEYPAD_BASE + 0xF0 + ((n) * 0x4))
-#define	KEYPAD_SRC_SRPN				GENMASK(8, 0)								 // IRQ priority number
-#define	KEYPAD_SRC_SRPN_SHIFT		0
-#define	KEYPAD_SRC_TOS				GENMASK(2, 10)								 // Type of service for node
-#define	KEYPAD_SRC_TOS_SHIFT		10
-#define	KEYPAD_SRC_SRE				BIT(12)										 // IRQ enable
-#define	KEYPAD_SRC_SRR				BIT(13)										 // IRQ Service Request Bit
-#define	KEYPAD_SRC_CLRR				BIT(14)										 // IRQ Request Clear Bit
-#define	KEYPAD_SRC_SETR				BIT(15)										 // IRQ Request Set Bit
+#define	KEYPAD_SRC(n)	MMIO32(KEYPAD_BASE + 0xF0 + ((n) * 0x4))
 
 
 // DSP [MOD_NUM=F022, MOD_REV=00, MOD_32BIT=C0]
-#define	DSP_BASE				0xF6000000
+#define	DSP_BASE	0xF6000000
 /* Clock Control Register */
-#define	DSP_CLC					MMIO32(DSP_BASE + 0x00)
-#define	DSP_CLC_DISR			BIT(0)					 // Module Disable Request Bit
-#define	DSP_CLC_DISS			BIT(1)					 // Module Disable Status Bit
-#define	DSP_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit
-#define	DSP_CLC_EDIS			BIT(3)					 // Module External Request Disable
-#define	DSP_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable
-#define	DSP_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.
-#define	DSP_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	DSP_CLC_RMC_SHIFT		8
+#define	DSP_CLC		MMIO32(DSP_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	DSP_ID					MMIO32(DSP_BASE + 0x08)
-#define	DSP_ID_MOD_REV			GENMASK(8, 0)
-#define	DSP_ID_MOD_REV_SHIFT	0
-#define	DSP_ID_MOD_32B			GENMASK(8, 8)
-#define	DSP_ID_MOD_32B_SHIFT	8
-#define	DSP_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	DSP_ID_MOD_NUMBER_SHIFT	16
+#define	DSP_ID		MMIO32(DSP_BASE + 0x08)
 
 
 // GPRSCU [MOD_NUM=F003, MOD_REV=00, MOD_32BIT=C0]
-#define	GPRSCU_BASE					0xF6200000
+#define	GPRSCU_BASE	0xF6200000
 /* Clock Control Register */
-#define	GPRSCU_CLC					MMIO32(GPRSCU_BASE + 0x00)
-#define	GPRSCU_CLC_DISR				BIT(0)						 // Module Disable Request Bit
-#define	GPRSCU_CLC_DISS				BIT(1)						 // Module Disable Status Bit
-#define	GPRSCU_CLC_SPEN				BIT(2)						 // Module Suspend Enable Bit
-#define	GPRSCU_CLC_EDIS				BIT(3)						 // Module External Request Disable
-#define	GPRSCU_CLC_SBWE				BIT(4)						 // Module Suspend Bit Write Enable
-#define	GPRSCU_CLC_FSOE				BIT(5)						 // Module Fast Shut-Off Enable.
-#define	GPRSCU_CLC_RMC				GENMASK(8, 8)				 // Module Clock Divider for Normal Mode
-#define	GPRSCU_CLC_RMC_SHIFT		8
+#define	GPRSCU_CLC	MMIO32(GPRSCU_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	GPRSCU_ID					MMIO32(GPRSCU_BASE + 0x08)
-#define	GPRSCU_ID_MOD_REV			GENMASK(8, 0)
-#define	GPRSCU_ID_MOD_REV_SHIFT		0
-#define	GPRSCU_ID_MOD_32B			GENMASK(8, 8)
-#define	GPRSCU_ID_MOD_32B_SHIFT		8
-#define	GPRSCU_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	GPRSCU_ID_MOD_NUMBER_SHIFT	16
+#define	GPRSCU_ID	MMIO32(GPRSCU_BASE + 0x08)
 
 
 // AFC [MOD_NUM=F004, MOD_REV=00, MOD_32BIT=C0]
-#define	AFC_BASE				0xF6300000
+#define	AFC_BASE	0xF6300000
 /* Clock Control Register */
-#define	AFC_CLC					MMIO32(AFC_BASE + 0x00)
-#define	AFC_CLC_DISR			BIT(0)					 // Module Disable Request Bit
-#define	AFC_CLC_DISS			BIT(1)					 // Module Disable Status Bit
-#define	AFC_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit
-#define	AFC_CLC_EDIS			BIT(3)					 // Module External Request Disable
-#define	AFC_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable
-#define	AFC_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.
-#define	AFC_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	AFC_CLC_RMC_SHIFT		8
+#define	AFC_CLC		MMIO32(AFC_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	AFC_ID					MMIO32(AFC_BASE + 0x08)
-#define	AFC_ID_MOD_REV			GENMASK(8, 0)
-#define	AFC_ID_MOD_REV_SHIFT	0
-#define	AFC_ID_MOD_32B			GENMASK(8, 8)
-#define	AFC_ID_MOD_32B_SHIFT	8
-#define	AFC_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	AFC_ID_MOD_NUMBER_SHIFT	16
+#define	AFC_ID		MMIO32(AFC_BASE + 0x08)
 
 
 // TPU [MOD_NUM=F021, MOD_REV=00, MOD_32BIT=C0]
 #define	TPU_BASE					0xF6400000
 /* Clock Control Register */
 #define	TPU_CLC						MMIO32(TPU_BASE + 0x00)
-#define	TPU_CLC_DISR				BIT(0)									 // Module Disable Request Bit
-#define	TPU_CLC_DISS				BIT(1)									 // Module Disable Status Bit
-#define	TPU_CLC_SPEN				BIT(2)									 // Module Suspend Enable Bit
-#define	TPU_CLC_EDIS				BIT(3)									 // Module External Request Disable
-#define	TPU_CLC_SBWE				BIT(4)									 // Module Suspend Bit Write Enable
-#define	TPU_CLC_FSOE				BIT(5)									 // Module Fast Shut-Off Enable.
-#define	TPU_CLC_RMC					GENMASK(8, 8)							 // Module Clock Divider for Normal Mode
-#define	TPU_CLC_RMC_SHIFT			8
 
 /* Module Identifier Register */
 #define	TPU_ID						MMIO32(TPU_BASE + 0x08)
-#define	TPU_ID_MOD_REV				GENMASK(8, 0)
-#define	TPU_ID_MOD_REV_SHIFT		0
-#define	TPU_ID_MOD_32B				GENMASK(8, 8)
-#define	TPU_ID_MOD_32B_SHIFT		8
-#define	TPU_ID_MOD_NUMBER			GENMASK(16, 16)
-#define	TPU_ID_MOD_NUMBER_SHIFT		16
 
 #define	TPU_UNK0					MMIO32(TPU_BASE + 0x10)
 
@@ -2189,349 +1744,257 @@
 
 /* Service Routing Control Register */
 #define	TPU_SRC(n)					MMIO32(TPU_BASE + 0xF8 + ((n) * 0x4))
-#define	TPU_SRC_SRPN				GENMASK(8, 0)							 // IRQ priority number
-#define	TPU_SRC_SRPN_SHIFT			0
-#define	TPU_SRC_TOS					GENMASK(2, 10)							 // Type of service for node
-#define	TPU_SRC_TOS_SHIFT			10
-#define	TPU_SRC_SRE					BIT(12)									 // IRQ enable
-#define	TPU_SRC_SRR					BIT(13)									 // IRQ Service Request Bit
-#define	TPU_SRC_CLRR				BIT(14)									 // IRQ Request Clear Bit
-#define	TPU_SRC_SETR				BIT(15)									 // IRQ Request Set Bit
 
 #define	TPU_RAM(n)					MMIO32(TPU_BASE + 0x1800 + ((n) * 0x4))
 
 
 // CIF [MOD_NUM=F052, MOD_REV=00, MOD_32BIT=C0]
-#define	CIF_BASE				0xF7000000
+#define	CIF_BASE	0xF7000000
 /* Clock Control Register */
-#define	CIF_CLC					MMIO32(CIF_BASE + 0x00)
-#define	CIF_CLC_DISR			BIT(0)					 // Module Disable Request Bit
-#define	CIF_CLC_DISS			BIT(1)					 // Module Disable Status Bit
-#define	CIF_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit
-#define	CIF_CLC_EDIS			BIT(3)					 // Module External Request Disable
-#define	CIF_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable
-#define	CIF_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.
-#define	CIF_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	CIF_CLC_RMC_SHIFT		8
+#define	CIF_CLC		MMIO32(CIF_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	CIF_ID					MMIO32(CIF_BASE + 0x08)
-#define	CIF_ID_MOD_REV			GENMASK(8, 0)
-#define	CIF_ID_MOD_REV_SHIFT	0
-#define	CIF_ID_MOD_32B			GENMASK(8, 8)
-#define	CIF_ID_MOD_32B_SHIFT	8
-#define	CIF_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	CIF_ID_MOD_NUMBER_SHIFT	16
+#define	CIF_ID		MMIO32(CIF_BASE + 0x08)
 
 
 // DIF [MOD_NUM=F043, MOD_REV=00, MOD_32BIT=C0]
-#define	DIF_BASE				0xF7100000
+#define	DIF_BASE	0xF7100000
 /* Clock Control Register */
-#define	DIF_CLC					MMIO32(DIF_BASE + 0x00)
-#define	DIF_CLC_DISR			BIT(0)					 // Module Disable Request Bit
-#define	DIF_CLC_DISS			BIT(1)					 // Module Disable Status Bit
-#define	DIF_CLC_SPEN			BIT(2)					 // Module Suspend Enable Bit
-#define	DIF_CLC_EDIS			BIT(3)					 // Module External Request Disable
-#define	DIF_CLC_SBWE			BIT(4)					 // Module Suspend Bit Write Enable
-#define	DIF_CLC_FSOE			BIT(5)					 // Module Fast Shut-Off Enable.
-#define	DIF_CLC_RMC				GENMASK(8, 8)			 // Module Clock Divider for Normal Mode
-#define	DIF_CLC_RMC_SHIFT		8
+#define	DIF_CLC		MMIO32(DIF_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	DIF_ID					MMIO32(DIF_BASE + 0x08)
-#define	DIF_ID_MOD_REV			GENMASK(8, 0)
-#define	DIF_ID_MOD_REV_SHIFT	0
-#define	DIF_ID_MOD_32B			GENMASK(8, 8)
-#define	DIF_ID_MOD_32B_SHIFT	8
-#define	DIF_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	DIF_ID_MOD_NUMBER_SHIFT	16
+#define	DIF_ID		MMIO32(DIF_BASE + 0x08)
 
 
 // MMCI [MOD_NUM=F00F, MOD_REV=00, MOD_32BIT=C0]
-#define	MMCI_BASE					0xF7200000
+#define	MMCI_BASE	0xF7200000
 /* Clock Control Register */
-#define	MMCI_CLC					MMIO32(MMCI_BASE + 0x00)
-#define	MMCI_CLC_DISR				BIT(0)						 // Module Disable Request Bit
-#define	MMCI_CLC_DISS				BIT(1)						 // Module Disable Status Bit
-#define	MMCI_CLC_SPEN				BIT(2)						 // Module Suspend Enable Bit
-#define	MMCI_CLC_EDIS				BIT(3)						 // Module External Request Disable
-#define	MMCI_CLC_SBWE				BIT(4)						 // Module Suspend Bit Write Enable
-#define	MMCI_CLC_FSOE				BIT(5)						 // Module Fast Shut-Off Enable.
-#define	MMCI_CLC_RMC				GENMASK(8, 8)				 // Module Clock Divider for Normal Mode
-#define	MMCI_CLC_RMC_SHIFT			8
+#define	MMCI_CLC	MMIO32(MMCI_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	MMCI_ID						MMIO32(MMCI_BASE + 0x08)
-#define	MMCI_ID_MOD_REV				GENMASK(8, 0)
-#define	MMCI_ID_MOD_REV_SHIFT		0
-#define	MMCI_ID_MOD_32B				GENMASK(8, 8)
-#define	MMCI_ID_MOD_32B_SHIFT		8
-#define	MMCI_ID_MOD_NUMBER			GENMASK(16, 16)
-#define	MMCI_ID_MOD_NUMBER_SHIFT	16
+#define	MMCI_ID		MMIO32(MMCI_BASE + 0x08)
 
 
 // MCI [AMBA PL180]
-#define	MCI_BASE							0xF7301000
-#define	MCI_POWER							MMIO32(MCI_BASE + 0x00)
-#define	MCI_POWER_CTRL						GENMASK(2, 0)
-#define	MCI_POWER_CTRL_SHIFT				0
-#define	MCI_POWER_CTRL_POWER_OFF			0x0
-#define	MCI_POWER_CTRL_RESERVED				0x1
-#define	MCI_POWER_CTRL_POWER_UP				0x2
-#define	MCI_POWER_CTRL_POWER_ON				0x3
-#define	MCI_POWER_VOLTAGE					GENMASK(4, 2)
-#define	MCI_POWER_VOLTAGE_SHIFT				2
-#define	MCI_POWER_OPENDRAIN					BIT(6)
-#define	MCI_POWER_ROD						BIT(7)
+#define	MCI_BASE						0xF7301000
+#define	MCI_POWER						MMIO32(MCI_BASE + 0x00)
+#define	MCI_POWER_CTRL					GENMASK(2, 0)
+#define	MCI_POWER_CTRL_SHIFT			0
+#define	MCI_POWER_CTRL_POWER_OFF		0x0
+#define	MCI_POWER_CTRL_RESERVED			0x1
+#define	MCI_POWER_CTRL_POWER_UP			0x2
+#define	MCI_POWER_CTRL_POWER_ON			0x3
+#define	MCI_POWER_VOLTAGE				GENMASK(4, 2)
+#define	MCI_POWER_VOLTAGE_SHIFT			2
+#define	MCI_POWER_OPENDRAIN				BIT(6)
+#define	MCI_POWER_ROD					BIT(7)
 
-#define	MCI_CLOCK							MMIO32(MCI_BASE + 0x04)
-#define	MCI_CLOCK_CLKDIV					GENMASK(8, 0)							 // MCLCLK frequency = MCLK / [2x(ClkDiv+1)].
-#define	MCI_CLOCK_CLKDIV_SHIFT				0
-#define	MCI_CLOCK_ENABLE					BIT(8)
-#define	MCI_CLOCK_PWRSAVE					BIT(9)
-#define	MCI_CLOCK_BYPASS					BIT(10)
-#define	MCI_CLOCK_WIDEBUS					BIT(11)
+#define	MCI_CLOCK						MMIO32(MCI_BASE + 0x04)
+#define	MCI_CLOCK_CLKDIV				GENMASK(8, 0)							 // MCLCLK frequency = MCLK / [2x(ClkDiv+1)].
+#define	MCI_CLOCK_CLKDIV_SHIFT			0
+#define	MCI_CLOCK_ENABLE				BIT(8)
+#define	MCI_CLOCK_PWRSAVE				BIT(9)
+#define	MCI_CLOCK_BYPASS				BIT(10)
+#define	MCI_CLOCK_WIDEBUS				BIT(11)
 
-#define	MCI_ARGUMENT						MMIO32(MCI_BASE + 0x08)
-#define	MCI_ARGUMENT_CMDARG					GENMASK(32, 0)
-#define	MCI_ARGUMENT_CMDARG_SHIFT			0
+#define	MCI_ARGUMENT					MMIO32(MCI_BASE + 0x08)
+#define	MCI_ARGUMENT_CMDARG				GENMASK(32, 0)
+#define	MCI_ARGUMENT_CMDARG_SHIFT		0
 
-#define	MCI_COMMAND							MMIO32(MCI_BASE + 0x0C)
-#define	MCI_COMMAND_CMDINDEX				GENMASK(6, 0)
-#define	MCI_COMMAND_CMDINDEX_SHIFT			0
-#define	MCI_COMMAND_RESPONSE				BIT(6)
-#define	MCI_COMMAND_LONGRSP					BIT(7)
-#define	MCI_COMMAND_INTERRUPT				BIT(8)
-#define	MCI_COMMAND_PENDING					BIT(9)
-#define	MCI_COMMAND_ENABLE					BIT(10)
+#define	MCI_COMMAND						MMIO32(MCI_BASE + 0x0C)
+#define	MCI_COMMAND_CMDINDEX			GENMASK(6, 0)
+#define	MCI_COMMAND_CMDINDEX_SHIFT		0
+#define	MCI_COMMAND_RESPONSE			BIT(6)
+#define	MCI_COMMAND_LONGRSP				BIT(7)
+#define	MCI_COMMAND_INTERRUPT			BIT(8)
+#define	MCI_COMMAND_PENDING				BIT(9)
+#define	MCI_COMMAND_ENABLE				BIT(10)
 
-#define	MCI_RESPCMD							MMIO32(MCI_BASE + 0x10)
-#define	MCI_RESPCMD_CMDINDEX				GENMASK(6, 0)
-#define	MCI_RESPCMD_CMDINDEX_SHIFT			0
+#define	MCI_RESPCMD						MMIO32(MCI_BASE + 0x10)
+#define	MCI_RESPCMD_CMDINDEX			GENMASK(6, 0)
+#define	MCI_RESPCMD_CMDINDEX_SHIFT		0
 
-#define	MCI_RESPONSE0						MMIO32(MCI_BASE + 0x14)
+#define	MCI_RESPONSE0					MMIO32(MCI_BASE + 0x14)
 
-#define	MCI_RESPONSE1						MMIO32(MCI_BASE + 0x18)
+#define	MCI_RESPONSE1					MMIO32(MCI_BASE + 0x18)
 
-#define	MCI_RESPONSE2						MMIO32(MCI_BASE + 0x1C)
+#define	MCI_RESPONSE2					MMIO32(MCI_BASE + 0x1C)
 
-#define	MCI_RESPONSE3						MMIO32(MCI_BASE + 0x20)
+#define	MCI_RESPONSE3					MMIO32(MCI_BASE + 0x20)
 
-#define	MCI_DATATIMER						MMIO32(MCI_BASE + 0x24)
-#define	MCI_DATATIMER_TIMER					GENMASK(32, 0)
-#define	MCI_DATATIMER_TIMER_SHIFT			0
+#define	MCI_DATATIMER					MMIO32(MCI_BASE + 0x24)
+#define	MCI_DATATIMER_TIMER				GENMASK(32, 0)
+#define	MCI_DATATIMER_TIMER_SHIFT		0
 
-#define	MCI_DATALENGTH						MMIO32(MCI_BASE + 0x28)
-#define	MCI_DATALENGTH_LENGTH				GENMASK(16, 0)
-#define	MCI_DATALENGTH_LENGTH_SHIFT			0
+#define	MCI_DATALENGTH					MMIO32(MCI_BASE + 0x28)
+#define	MCI_DATALENGTH_LENGTH			GENMASK(16, 0)
+#define	MCI_DATALENGTH_LENGTH_SHIFT		0
 
-#define	MCI_DATACTRL						MMIO32(MCI_BASE + 0x2C)
-#define	MCI_DATACTRL_EMABLE					BIT(0)
-#define	MCI_DATACTRL_DIRECTION				BIT(1)									 // 0 = From controller to card, 1 = From card to controller
-#define	MCI_DATACTRL_DIRECTION_WRITE		0x0
-#define	MCI_DATACTRL_DIRECTION_READ			0x2
-#define	MCI_DATACTRL_MODE					BIT(2)
-#define	MCI_DATACTRL_MODE_BLCOK				0x0
-#define	MCI_DATACTRL_MODE_STREAM			0x4
-#define	MCI_DATACTRL_DMAENABLE				BIT(3)
-#define	MCI_DATACTRL_BLOCKSIZE				GENMASK(4, 4)
-#define	MCI_DATACTRL_BLOCKSIZE_SHIFT		4
+#define	MCI_DATACTRL					MMIO32(MCI_BASE + 0x2C)
+#define	MCI_DATACTRL_EMABLE				BIT(0)
+#define	MCI_DATACTRL_DIRECTION			BIT(1)									 // 0 = From controller to card, 1 = From card to controller
+#define	MCI_DATACTRL_DIRECTION_WRITE	0x0
+#define	MCI_DATACTRL_DIRECTION_READ		0x2
+#define	MCI_DATACTRL_MODE				BIT(2)
+#define	MCI_DATACTRL_MODE_BLCOK			0x0
+#define	MCI_DATACTRL_MODE_STREAM		0x4
+#define	MCI_DATACTRL_DMAENABLE			BIT(3)
+#define	MCI_DATACTRL_BLOCKSIZE			GENMASK(4, 4)
+#define	MCI_DATACTRL_BLOCKSIZE_SHIFT	4
 
-#define	MCI_DATACNT							MMIO32(MCI_BASE + 0x30)
-#define	MCI_DATACNT_COUNT					GENMASK(16, 0)
-#define	MCI_DATACNT_COUNT_SHIFT				0
+#define	MCI_DATACNT						MMIO32(MCI_BASE + 0x30)
+#define	MCI_DATACNT_COUNT				GENMASK(16, 0)
+#define	MCI_DATACNT_COUNT_SHIFT			0
 
-#define	MCI_STATUS							MMIO32(MCI_BASE + 0x34)
-#define	MCI_STATUS_CMDCRCFAIL				BIT(0)									 // Command response received (CRC check failed)
-#define	MCI_STATUS_DATACRCFAIL				BIT(1)									 // Data block sent/received (CRC check failed)
-#define	MCI_STATUS_CMDTIMEOUT				BIT(2)									 // Command response timeout
-#define	MCI_STATUS_DATATIMEOUT				BIT(3)									 // Data timeout
-#define	MCI_STATUS_TXUNDERRUN				BIT(4)									 // Transmit FIFO underrun error
-#define	MCI_STATUS_RXOVERRUN				BIT(5)									 // Receive FIFO overrun error
-#define	MCI_STATUS_CMDRESPEND				BIT(6)									 // Command response received (CRC check passed)
-#define	MCI_STATUS_CMDSENT					BIT(7)									 // Command sent (no response required)
-#define	MCI_STATUS_DATAEND					BIT(8)									 // Data end (data counter is zero)
-#define	MCI_STATUS_STARTBITERR				BIT(9)									 // Start bit not detected on all data signals in wide bus mode
-#define	MCI_STATUS_DATABLOCKEND				BIT(10)									 // Data block sent/received (CRC check passed)
-#define	MCI_STATUS_CMDACTIVE				BIT(11)									 // Command transfer in progress
-#define	MCI_STATUS_TXACTIVE					BIT(12)									 // Data transmit in progress
-#define	MCI_STATUS_RXACTIVE					BIT(13)									 // Data receive in progress
-#define	MCI_STATUS_TXFIFOHALFEMPTY			BIT(14)									 // Transmit FIFO half empty
-#define	MCI_STATUS_RXFIFOHALFFULL			BIT(15)									 // Receive FIFO half full
-#define	MCI_STATUS_TXFIFOFULL				BIT(16)									 // Transmit FIFO full
-#define	MCI_STATUS_RXFIFOFULL				BIT(17)									 // Receive FIFO full
-#define	MCI_STATUS_TXFIFOEMPTY				BIT(18)									 // Transmit FIFO empty
-#define	MCI_STATUS_RXFIFOEMPTY				BIT(19)									 // Receive FIFO empty
-#define	MCI_STATUS_TXDATAAVLBL				BIT(20)									 // Data available in transmit FIFO
-#define	MCI_STATUS_RXDATAAVLBL				BIT(21)									 // Data available in receive FIFO
+#define	MCI_STATUS						MMIO32(MCI_BASE + 0x34)
+#define	MCI_STATUS_CMDCRCFAIL			BIT(0)									 // Command response received (CRC check failed)
+#define	MCI_STATUS_DATACRCFAIL			BIT(1)									 // Data block sent/received (CRC check failed)
+#define	MCI_STATUS_CMDTIMEOUT			BIT(2)									 // Command response timeout
+#define	MCI_STATUS_DATATIMEOUT			BIT(3)									 // Data timeout
+#define	MCI_STATUS_TXUNDERRUN			BIT(4)									 // Transmit FIFO underrun error
+#define	MCI_STATUS_RXOVERRUN			BIT(5)									 // Receive FIFO overrun error
+#define	MCI_STATUS_CMDRESPEND			BIT(6)									 // Command response received (CRC check passed)
+#define	MCI_STATUS_CMDSENT				BIT(7)									 // Command sent (no response required)
+#define	MCI_STATUS_DATAEND				BIT(8)									 // Data end (data counter is zero)
+#define	MCI_STATUS_STARTBITERR			BIT(9)									 // Start bit not detected on all data signals in wide bus mode
+#define	MCI_STATUS_DATABLOCKEND			BIT(10)									 // Data block sent/received (CRC check passed)
+#define	MCI_STATUS_CMDACTIVE			BIT(11)									 // Command transfer in progress
+#define	MCI_STATUS_TXACTIVE				BIT(12)									 // Data transmit in progress
+#define	MCI_STATUS_RXACTIVE				BIT(13)									 // Data receive in progress
+#define	MCI_STATUS_TXFIFOHALFEMPTY		BIT(14)									 // Transmit FIFO half empty
+#define	MCI_STATUS_RXFIFOHALFFULL		BIT(15)									 // Receive FIFO half full
+#define	MCI_STATUS_TXFIFOFULL			BIT(16)									 // Transmit FIFO full
+#define	MCI_STATUS_RXFIFOFULL			BIT(17)									 // Receive FIFO full
+#define	MCI_STATUS_TXFIFOEMPTY			BIT(18)									 // Transmit FIFO empty
+#define	MCI_STATUS_RXFIFOEMPTY			BIT(19)									 // Receive FIFO empty
+#define	MCI_STATUS_TXDATAAVLBL			BIT(20)									 // Data available in transmit FIFO
+#define	MCI_STATUS_RXDATAAVLBL			BIT(21)									 // Data available in receive FIFO
 
-#define	MCI_CLEAR							MMIO32(MCI_BASE + 0x38)
-#define	MCI_CLEAR_CMDCRCFAILCLR				BIT(0)
-#define	MCI_CLEAR_DATACRCFAILCLR			BIT(1)
-#define	MCI_CLEAR_CMDTIMEOUTCLR				BIT(2)
-#define	MCI_CLEAR_DATATIMEOUTCLR			BIT(3)
-#define	MCI_CLEAR_TXUNDERRUNCLR				BIT(4)
-#define	MCI_CLEAR_RXOVERRUNCLR				BIT(5)
-#define	MCI_CLEAR_CMDRESPENDCLR				BIT(6)
-#define	MCI_CLEAR_CMDSENTCLR				BIT(7)
-#define	MCI_CLEAR_DATAENDCLR				BIT(8)
-#define	MCI_CLEAR_STARTBITERRCLR			BIT(9)
-#define	MCI_CLEAR_DATABLOCKENDCLR			BIT(10)
+#define	MCI_CLEAR						MMIO32(MCI_BASE + 0x38)
+#define	MCI_CLEAR_CMDCRCFAILCLR			BIT(0)
+#define	MCI_CLEAR_DATACRCFAILCLR		BIT(1)
+#define	MCI_CLEAR_CMDTIMEOUTCLR			BIT(2)
+#define	MCI_CLEAR_DATATIMEOUTCLR		BIT(3)
+#define	MCI_CLEAR_TXUNDERRUNCLR			BIT(4)
+#define	MCI_CLEAR_RXOVERRUNCLR			BIT(5)
+#define	MCI_CLEAR_CMDRESPENDCLR			BIT(6)
+#define	MCI_CLEAR_CMDSENTCLR			BIT(7)
+#define	MCI_CLEAR_DATAENDCLR			BIT(8)
+#define	MCI_CLEAR_STARTBITERRCLR		BIT(9)
+#define	MCI_CLEAR_DATABLOCKENDCLR		BIT(10)
 
-#define	MCI_MASK0							MMIO32(MCI_BASE + 0x3C)
-#define	MCI_MASK0_CMDCRCFAILMASK			BIT(0)
-#define	MCI_MASK0_DATACRCFAILMASK			BIT(1)
-#define	MCI_MASK0_CMDTIMEOUTMASK			BIT(2)
-#define	MCI_MASK0_DATATIMEOUTMASK			BIT(3)
-#define	MCI_MASK0_TXUNDERRUNMASK			BIT(4)
-#define	MCI_MASK0_RXOVERRUNMASK				BIT(5)
-#define	MCI_MASK0_CMDRESPENDMASK			BIT(6)
-#define	MCI_MASK0_CMDSENTMASK				BIT(7)
-#define	MCI_MASK0_DATAENDMASK				BIT(8)
-#define	MCI_MASK0_STARTBITERRMASK			BIT(9)
-#define	MCI_MASK0_DATABLOCKENDMASK			BIT(10)
-#define	MCI_MASK0_CMDACTIVEMASK				BIT(11)
-#define	MCI_MASK0_TXACTIVEMASK				BIT(12)
-#define	MCI_MASK0_RXACTIVEMASK				BIT(13)
-#define	MCI_MASK0_TXFIFOHALFEMPTYMASK		BIT(14)
-#define	MCI_MASK0_RXFIFOHALFFULLMASK		BIT(15)
-#define	MCI_MASK0_TXFIFOFULLMASK			BIT(16)
-#define	MCI_MASK0_RXFIFOFULLMASK			BIT(17)
-#define	MCI_MASK0_TXFIFOEMPTYMASK			BIT(18)
-#define	MCI_MASK0_RXFIFOEMPTYMASK			BIT(19)
-#define	MCI_MASK0_TXDATAAVLBLMASK			BIT(20)
-#define	MCI_MASK0_RXDATAAVLBLMASK			BIT(21)
+#define	MCI_MASK0						MMIO32(MCI_BASE + 0x3C)
+#define	MCI_MASK0_CMDCRCFAILMASK		BIT(0)
+#define	MCI_MASK0_DATACRCFAILMASK		BIT(1)
+#define	MCI_MASK0_CMDTIMEOUTMASK		BIT(2)
+#define	MCI_MASK0_DATATIMEOUTMASK		BIT(3)
+#define	MCI_MASK0_TXUNDERRUNMASK		BIT(4)
+#define	MCI_MASK0_RXOVERRUNMASK			BIT(5)
+#define	MCI_MASK0_CMDRESPENDMASK		BIT(6)
+#define	MCI_MASK0_CMDSENTMASK			BIT(7)
+#define	MCI_MASK0_DATAENDMASK			BIT(8)
+#define	MCI_MASK0_STARTBITERRMASK		BIT(9)
+#define	MCI_MASK0_DATABLOCKENDMASK		BIT(10)
+#define	MCI_MASK0_CMDACTIVEMASK			BIT(11)
+#define	MCI_MASK0_TXACTIVEMASK			BIT(12)
+#define	MCI_MASK0_RXACTIVEMASK			BIT(13)
+#define	MCI_MASK0_TXFIFOHALFEMPTYMASK	BIT(14)
+#define	MCI_MASK0_RXFIFOHALFFULLMASK	BIT(15)
+#define	MCI_MASK0_TXFIFOFULLMASK		BIT(16)
+#define	MCI_MASK0_RXFIFOFULLMASK		BIT(17)
+#define	MCI_MASK0_TXFIFOEMPTYMASK		BIT(18)
+#define	MCI_MASK0_RXFIFOEMPTYMASK		BIT(19)
+#define	MCI_MASK0_TXDATAAVLBLMASK		BIT(20)
+#define	MCI_MASK0_RXDATAAVLBLMASK		BIT(21)
 
-#define	MCI_MASK1							MMIO32(MCI_BASE + 0x40)
-#define	MCI_MASK1_CMDCRCFAILMASK			BIT(0)
-#define	MCI_MASK1_DATACRCFAILMASK			BIT(1)
-#define	MCI_MASK1_CMDTIMEOUTMASK			BIT(2)
-#define	MCI_MASK1_DATATIMEOUTMASK			BIT(3)
-#define	MCI_MASK1_TXUNDERRUNMASK			BIT(4)
-#define	MCI_MASK1_RXOVERRUNMASK				BIT(5)
-#define	MCI_MASK1_CMDRESPENDMASK			BIT(6)
-#define	MCI_MASK1_CMDSENTMASK				BIT(7)
-#define	MCI_MASK1_DATAENDMASK				BIT(8)
-#define	MCI_MASK1_STARTBITERRMASK			BIT(9)
-#define	MCI_MASK1_DATABLOCKENDMASK			BIT(10)
-#define	MCI_MASK1_CMDACTIVEMASK				BIT(11)
-#define	MCI_MASK1_TXACTIVEMASK				BIT(12)
-#define	MCI_MASK1_RXACTIVEMASK				BIT(13)
-#define	MCI_MASK1_TXFIFOHALFEMPTYMASK		BIT(14)
-#define	MCI_MASK1_RXFIFOHALFFULLMASK		BIT(15)
-#define	MCI_MASK1_TXFIFOFULLMASK			BIT(16)
-#define	MCI_MASK1_RXFIFOFULLMASK			BIT(17)
-#define	MCI_MASK1_TXFIFOEMPTYMASK			BIT(18)
-#define	MCI_MASK1_RXFIFOEMPTYMASK			BIT(19)
-#define	MCI_MASK1_TXDATAAVLBLMASK			BIT(20)
-#define	MCI_MASK1_RXDATAAVLBLMASK			BIT(21)
+#define	MCI_MASK1						MMIO32(MCI_BASE + 0x40)
+#define	MCI_MASK1_CMDCRCFAILMASK		BIT(0)
+#define	MCI_MASK1_DATACRCFAILMASK		BIT(1)
+#define	MCI_MASK1_CMDTIMEOUTMASK		BIT(2)
+#define	MCI_MASK1_DATATIMEOUTMASK		BIT(3)
+#define	MCI_MASK1_TXUNDERRUNMASK		BIT(4)
+#define	MCI_MASK1_RXOVERRUNMASK			BIT(5)
+#define	MCI_MASK1_CMDRESPENDMASK		BIT(6)
+#define	MCI_MASK1_CMDSENTMASK			BIT(7)
+#define	MCI_MASK1_DATAENDMASK			BIT(8)
+#define	MCI_MASK1_STARTBITERRMASK		BIT(9)
+#define	MCI_MASK1_DATABLOCKENDMASK		BIT(10)
+#define	MCI_MASK1_CMDACTIVEMASK			BIT(11)
+#define	MCI_MASK1_TXACTIVEMASK			BIT(12)
+#define	MCI_MASK1_RXACTIVEMASK			BIT(13)
+#define	MCI_MASK1_TXFIFOHALFEMPTYMASK	BIT(14)
+#define	MCI_MASK1_RXFIFOHALFFULLMASK	BIT(15)
+#define	MCI_MASK1_TXFIFOFULLMASK		BIT(16)
+#define	MCI_MASK1_RXFIFOFULLMASK		BIT(17)
+#define	MCI_MASK1_TXFIFOEMPTYMASK		BIT(18)
+#define	MCI_MASK1_RXFIFOEMPTYMASK		BIT(19)
+#define	MCI_MASK1_TXDATAAVLBLMASK		BIT(20)
+#define	MCI_MASK1_RXDATAAVLBLMASK		BIT(21)
 
-#define	MCI_SELECT							MMIO32(MCI_BASE + 0x44)
-#define	MCI_SELECT_SDCARD					GENMASK(4, 0)
-#define	MCI_SELECT_SDCARD_SHIFT				0
+#define	MCI_SELECT						MMIO32(MCI_BASE + 0x44)
+#define	MCI_SELECT_SDCARD				GENMASK(4, 0)
+#define	MCI_SELECT_SDCARD_SHIFT			0
 
-#define	MCI_FIFOCNT							MMIO32(MCI_BASE + 0x48)
-#define	MCI_FIFOCNT_COUNT					GENMASK(16, 0)
-#define	MCI_FIFOCNT_COUNT_SHIFT				0
+#define	MCI_FIFOCNT						MMIO32(MCI_BASE + 0x48)
+#define	MCI_FIFOCNT_COUNT				GENMASK(16, 0)
+#define	MCI_FIFOCNT_COUNT_SHIFT			0
 
-#define	MCI_FIFO(n)							MMIO32(MCI_BASE + 0x80 + ((n) * 0x4))
+#define	MCI_FIFO(n)						MMIO32(MCI_BASE + 0x80 + ((n) * 0x4))
 
-#define	MCI_PERIPH_ID0						MMIO32(MCI_BASE + 0xFE0)
-#define	MCI_PERIPH_ID0_PARTNUMBER0			GENMASK(8, 0)
-#define	MCI_PERIPH_ID0_PARTNUMBER0_SHIFT	0
+#define	MCI_PERIPH_ID0					MMIO32(MCI_BASE + 0xFE0)
 
-#define	MCI_PERIPH_ID1						MMIO32(MCI_BASE + 0xFE4)
-#define	MCI_PERIPH_ID1_PARTNUMBER1			GENMASK(4, 0)
-#define	MCI_PERIPH_ID1_PARTNUMBER1_SHIFT	0
-#define	MCI_PERIPH_ID1_DESIGNER0			GENMASK(8, 4)
-#define	MCI_PERIPH_ID1_DESIGNER0_SHIFT		4
+#define	MCI_PERIPH_ID1					MMIO32(MCI_BASE + 0xFE4)
 
-#define	MCI_PERIPH_ID2						MMIO32(MCI_BASE + 0xFE8)
-#define	MCI_PERIPH_ID2_DESIGNER1			GENMASK(4, 0)
-#define	MCI_PERIPH_ID2_DESIGNER1_SHIFT		0
-#define	MCI_PERIPH_ID2_REVISION				GENMASK(8, 4)
-#define	MCI_PERIPH_ID2_REVISION_SHIFT		4
+#define	MCI_PERIPH_ID2					MMIO32(MCI_BASE + 0xFE8)
 
-#define	MCI_PERIPH_ID3						MMIO32(MCI_BASE + 0xFEC)
-#define	MCI_PERIPH_ID3_DESIGNER1			GENMASK(4, 0)
-#define	MCI_PERIPH_ID3_DESIGNER1_SHIFT		0
-#define	MCI_PERIPH_ID3_REVISION				GENMASK(8, 4)
-#define	MCI_PERIPH_ID3_REVISION_SHIFT		4
+#define	MCI_PERIPH_ID3					MMIO32(MCI_BASE + 0xFEC)
 
-#define	MCI_PCELL_ID0						MMIO32(MCI_BASE + 0xFF0)
+#define	MCI_PCELL_ID0					MMIO32(MCI_BASE + 0xFF0)
 
-#define	MCI_PCELL_ID1						MMIO32(MCI_BASE + 0xFF4)
+#define	MCI_PCELL_ID1					MMIO32(MCI_BASE + 0xFF4)
 
-#define	MCI_PCELL_ID2						MMIO32(MCI_BASE + 0xFF8)
+#define	MCI_PCELL_ID2					MMIO32(MCI_BASE + 0xFF8)
 
-#define	MCI_PCELL_ID3						MMIO32(MCI_BASE + 0xFFC)
+#define	MCI_PCELL_ID3					MMIO32(MCI_BASE + 0xFFC)
 
 
 // I2C [MOD_NUM=F057, MOD_REV=00, MOD_32BIT=C0]
-#define	I2C_BASE				0xF7600000
+#define	I2C_BASE			0xF7600000
 /* Clock Control Register */
-#define	I2C_CLC					MMIO32(I2C_BASE + 0x00)
-#define	I2C_CLC_DISR			BIT(0)						 // Module Disable Request Bit
-#define	I2C_CLC_DISS			BIT(1)						 // Module Disable Status Bit
-#define	I2C_CLC_SPEN			BIT(2)						 // Module Suspend Enable Bit
-#define	I2C_CLC_EDIS			BIT(3)						 // Module External Request Disable
-#define	I2C_CLC_SBWE			BIT(4)						 // Module Suspend Bit Write Enable
-#define	I2C_CLC_FSOE			BIT(5)						 // Module Fast Shut-Off Enable.
-#define	I2C_CLC_RMC				GENMASK(8, 8)				 // Module Clock Divider for Normal Mode
-#define	I2C_CLC_RMC_SHIFT		8
+#define	I2C_CLC				MMIO32(I2C_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	I2C_ID					MMIO32(I2C_BASE + 0x08)
-#define	I2C_ID_MOD_REV			GENMASK(8, 0)
-#define	I2C_ID_MOD_REV_SHIFT	0
-#define	I2C_ID_MOD_32B			GENMASK(8, 8)
-#define	I2C_ID_MOD_32B_SHIFT	8
-#define	I2C_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	I2C_ID_MOD_NUMBER_SHIFT	16
+#define	I2C_ID				MMIO32(I2C_BASE + 0x08)
 
-#define	I2C_ICR					MMIO32(I2C_BASE + 0x8C)
+#define	I2C_ICR				MMIO32(I2C_BASE + 0x8C)
 
 /* Transmission Data Register */
-#define	I2C_TXD					MMIO32(I2C_BASE + 0x8000)
-#define	I2C_TXD_READ			BIT(0)
-#define	I2C_TXD_ADDR			GENMASK(7, 1)
-#define	I2C_TXD_ADDR_SHIFT		1
-#define	I2C_TXD_REG				GENMASK(8, 8)
-#define	I2C_TXD_REG_SHIFT		8
-#define	I2C_TXD_VAL				GENMASK(8, 16)
-#define	I2C_TXD_VAL_SHIFT		16
+#define	I2C_TXD				MMIO32(I2C_BASE + 0x8000)
+#define	I2C_TXD_READ		BIT(0)
+#define	I2C_TXD_ADDR		GENMASK(7, 1)
+#define	I2C_TXD_ADDR_SHIFT	1
+#define	I2C_TXD_REG			GENMASK(8, 8)
+#define	I2C_TXD_REG_SHIFT	8
+#define	I2C_TXD_VAL			GENMASK(8, 16)
+#define	I2C_TXD_VAL_SHIFT	16
 
 /* Reception Data Register */
-#define	I2C_RXD					MMIO32(I2C_BASE + 0xC000)
-#define	I2C_RXD_READ			BIT(0)
-#define	I2C_RXD_ADDR			GENMASK(7, 1)
-#define	I2C_RXD_ADDR_SHIFT		1
-#define	I2C_RXD_REG				GENMASK(8, 8)
-#define	I2C_RXD_REG_SHIFT		8
-#define	I2C_RXD_VAL				GENMASK(8, 16)
-#define	I2C_RXD_VAL_SHIFT		16
+#define	I2C_RXD				MMIO32(I2C_BASE + 0xC000)
+#define	I2C_RXD_READ		BIT(0)
+#define	I2C_RXD_ADDR		GENMASK(7, 1)
+#define	I2C_RXD_ADDR_SHIFT	1
+#define	I2C_RXD_REG			GENMASK(8, 8)
+#define	I2C_RXD_REG_SHIFT	8
+#define	I2C_RXD_VAL			GENMASK(8, 16)
+#define	I2C_RXD_VAL_SHIFT	16
 
 
 // MMICIF [MOD_NUM=F053, MOD_REV=00, MOD_32BIT=C0]
-#define	MMICIF_BASE					0xF8000000
+#define	MMICIF_BASE	0xF8000000
 /* Clock Control Register */
-#define	MMICIF_CLC					MMIO32(MMICIF_BASE + 0x00)
-#define	MMICIF_CLC_DISR				BIT(0)						 // Module Disable Request Bit
-#define	MMICIF_CLC_DISS				BIT(1)						 // Module Disable Status Bit
-#define	MMICIF_CLC_SPEN				BIT(2)						 // Module Suspend Enable Bit
-#define	MMICIF_CLC_EDIS				BIT(3)						 // Module External Request Disable
-#define	MMICIF_CLC_SBWE				BIT(4)						 // Module Suspend Bit Write Enable
-#define	MMICIF_CLC_FSOE				BIT(5)						 // Module Fast Shut-Off Enable.
-#define	MMICIF_CLC_RMC				GENMASK(8, 8)				 // Module Clock Divider for Normal Mode
-#define	MMICIF_CLC_RMC_SHIFT		8
+#define	MMICIF_CLC	MMIO32(MMICIF_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	MMICIF_ID					MMIO32(MMICIF_BASE + 0x08)
-#define	MMICIF_ID_MOD_REV			GENMASK(8, 0)
-#define	MMICIF_ID_MOD_REV_SHIFT		0
-#define	MMICIF_ID_MOD_32B			GENMASK(8, 8)
-#define	MMICIF_ID_MOD_32B_SHIFT		8
-#define	MMICIF_ID_MOD_NUMBER		GENMASK(16, 16)
-#define	MMICIF_ID_MOD_NUMBER_SHIFT	16
+#define	MMICIF_ID	MMIO32(MMICIF_BASE + 0x08)
 
 
