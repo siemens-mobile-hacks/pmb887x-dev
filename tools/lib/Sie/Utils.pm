@@ -81,7 +81,7 @@ sub printTable {
 		$out .= "\n";
 	}
 	
-	$out =~ s/[ \t]$//gm;
+	$out =~ s/[ \t]+$//gm;
 	
 	return $out;
 }

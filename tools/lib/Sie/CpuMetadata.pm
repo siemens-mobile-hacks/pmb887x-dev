@@ -16,6 +16,8 @@ sub new {
 		gpios => {}
 	} => $class;
 	
+	$self->{common} = $self->loadCommonRegs();
+	
 	$self->loadCPU($cpu);
 	
 	return $self;
@@ -264,8 +266,14 @@ sub loadModules {
 	}
 }
 
+sub loadCommonRegs {
+	my ($self) = @_;
+	my $tmp_module = $self->parseModule(getDataDir()."/common_regs.cfg", 1);
+	return $tmp_module->{regs};
+}
+
 sub parseModule {
-	my ($self, $file) = @_;
+	my ($self, $file, $is_common_data) = @_;
 	
 	my $module = {
 		id			=> 0,
@@ -306,6 +314,8 @@ sub parseModule {
 				my $key = $1;
 				my $value = $2;
 				
+				die "Unexpected .$key in common data" if $is_common_data;
+				
 				if ($key eq 'field_format') {
 					$current_field_format = $value;
 				} elsif ($key eq 'enum_format') {
@@ -322,13 +332,20 @@ sub parseModule {
 					}
 				}
 			} elsif ($line !~ /^\./) {
-				my ($name, $addr, $step, $descr) = split("\t", $line);
+				my ($name, $addr, $step, $descr);
+				my ($start, $end);
 				
-				my ($start, $end) = split("-", $addr);
-				
-				if (!$end) {
-					$descr = $step;
-					$step = undef;
+				if ($is_common_data) {
+					($name, $descr) = split("\t", $line);
+					$start = 0;
+				} else {
+					($name, $addr, $step, $descr) = split("\t", $line);
+					($start, $end) = split("-", $addr);
+					
+					if (!$end) {
+						$descr = $step;
+						$step = undef;
+					}
 				}
 				
 				$current_reg = {
@@ -355,6 +372,22 @@ sub parseModule {
 			my ($name, $start, $size, $descr) = split("\t", $line);
 			
 			die("Invalid: '$line'") if !$current_reg;
+			
+			if ($name =~ /^\*(.*?)$/) {
+				my $ref = $1;
+				
+				die "Unknown reference to common_regs.cfg:$name" if !exists $self->{common}->{$ref};
+				
+				for my $k (keys %{$self->{common}->{$ref}->{fields}}) {
+					$current_reg->{fields}->{$k} = dclone($self->{common}->{$ref}->{fields}->{$k});
+				}
+				
+				$current_reg->{common} = 1;
+				
+				$current_reg->{descr} = $self->{common}->{$ref}->{descr} if !$current_reg->{descr};
+				
+				next;
+			}
 			
 			$current_field = {
 				name		=> $name,
