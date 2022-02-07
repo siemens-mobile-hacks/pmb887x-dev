@@ -70,6 +70,7 @@
 #define	NVIC_GPTU0_SRC0_IRQ		92
 #define	NVIC_GPTU0_SRC1_IRQ		93
 #define	NVIC_KEYPAD_PRESS_IRQ	108
+#define	NVIC_KEYPAD_UNK0_IRQ	110
 #define	NVIC_KEYPAD_RELEASE_IRQ	111
 #define	NVIC_TPU_INT_UNK2_IRQ	114
 #define	NVIC_TPU_INT0_IRQ		119
@@ -85,22 +86,6 @@
 
 
 // Common regs for all modules
-#define	AMBA_PERIPH_ID1_PARTNUMBER1			GENMASK(4, 0)
-#define	AMBA_PERIPH_ID1_PARTNUMBER1_SHIFT	0
-#define	AMBA_PERIPH_ID1_DESIGNER0			GENMASK(8, 4)
-#define	AMBA_PERIPH_ID1_DESIGNER0_SHIFT		4
-
-/* Module Identifier Register */
-#define	MOD_ID_REV							GENMASK(8, 0)
-#define	MOD_ID_REV_SHIFT					0
-#define	MOD_ID_32B							GENMASK(8, 8)
-#define	MOD_ID_32B_SHIFT					8
-#define	MOD_ID_NUMBER						GENMASK(16, 16)
-#define	MOD_ID_NUMBER_SHIFT					16
-
-#define	AMBA_PERIPH_ID3_CONFIGURATION		GENMASK(8, 0)
-#define	AMBA_PERIPH_ID3_CONFIGURATION_SHIFT	0
-
 /* Clock Control Register */
 #define	MOD_CLC_DISR						BIT(0)			 // Module Disable Request Bit
 #define	MOD_CLC_DISS						BIT(1)			 // Module Disable Status Bit
@@ -111,14 +96,6 @@
 #define	MOD_CLC_RMC							GENMASK(8, 8)	 // Module Clock Divider for Normal Mode
 #define	MOD_CLC_RMC_SHIFT					8
 
-#define	AMBA_PERIPH_ID0_PARTNUMBER0			GENMASK(8, 0)
-#define	AMBA_PERIPH_ID0_PARTNUMBER0_SHIFT	0
-
-#define	AMBA_PERIPH_ID2_DESIGNER1			GENMASK(4, 0)
-#define	AMBA_PERIPH_ID2_DESIGNER1_SHIFT		0
-#define	AMBA_PERIPH_ID2_REVISION			GENMASK(8, 4)
-#define	AMBA_PERIPH_ID2_REVISION_SHIFT		4
-
 /* Service Routing Control Register */
 #define	MOD_SRC_SRPN						GENMASK(8, 0)	 // IRQ priority number
 #define	MOD_SRC_SRPN_SHIFT					0
@@ -128,6 +105,30 @@
 #define	MOD_SRC_SRR							BIT(13)			 // IRQ Service Request Bit
 #define	MOD_SRC_CLRR						BIT(14)			 // IRQ Request Clear Bit
 #define	MOD_SRC_SETR						BIT(15)			 // IRQ Request Set Bit
+
+/* Module Identifier Register */
+#define	MOD_ID_REV							GENMASK(8, 0)
+#define	MOD_ID_REV_SHIFT					0
+#define	MOD_ID_32B							GENMASK(8, 8)
+#define	MOD_ID_32B_SHIFT					8
+#define	MOD_ID_NUMBER						GENMASK(16, 16)
+#define	MOD_ID_NUMBER_SHIFT					16
+
+#define	AMBA_PERIPH_ID0_PARTNUMBER0			GENMASK(8, 0)
+#define	AMBA_PERIPH_ID0_PARTNUMBER0_SHIFT	0
+
+#define	AMBA_PERIPH_ID1_PARTNUMBER1			GENMASK(4, 0)
+#define	AMBA_PERIPH_ID1_PARTNUMBER1_SHIFT	0
+#define	AMBA_PERIPH_ID1_DESIGNER0			GENMASK(8, 4)
+#define	AMBA_PERIPH_ID1_DESIGNER0_SHIFT		4
+
+#define	AMBA_PERIPH_ID2_DESIGNER1			GENMASK(4, 0)
+#define	AMBA_PERIPH_ID2_DESIGNER1_SHIFT		0
+#define	AMBA_PERIPH_ID2_REVISION			GENMASK(8, 4)
+#define	AMBA_PERIPH_ID2_REVISION_SHIFT		4
+
+#define	AMBA_PERIPH_ID3_CONFIGURATION		GENMASK(8, 0)
+#define	AMBA_PERIPH_ID3_CONFIGURATION_SHIFT	0
 
 
 
@@ -1636,17 +1637,24 @@
 
 
 // KEYPAD [MOD_NUM=F046, MOD_REV=00, MOD_32BIT=C0]
-#define	KEYPAD_BASE		0xF4D00000
+#define	KEYPAD_BASE			0xF4D00000
 /* Module Identifier Register */
-#define	KEYPAD_ID		MMIO32(KEYPAD_BASE + 0x08)
+#define	KEYPAD_ID			MMIO32(KEYPAD_BASE + 0x08)
 
 /* Clock Control Register */
-#define	KEYPAD_CLC		MMIO32(KEYPAD_BASE + 0x10)
+#define	KEYPAD_CLC			MMIO32(KEYPAD_BASE + 0x10)
 
-#define	KEYPAD_PORT(n)	MMIO32(KEYPAD_BASE + 0x18 + ((n) * 0x4))
+#define	KEYPAD_PORT(n)		MMIO32(KEYPAD_BASE + 0x18 + ((n) * 0x4))
+
+#define	KEYPAD_ISR			MMIO32(KEYPAD_BASE + 0x24)
+#define	KEYPAD_ISR_PRESS	BIT(2)
+#define	KEYPAD_ISR_RELEASE	BIT(3)
 
 /* Service Routing Control Register */
-#define	KEYPAD_SRC(n)	MMIO32(KEYPAD_BASE + 0xF0 + ((n) * 0x4))
+#define	KEYPAD_PORT_SRC(n)	MMIO32(KEYPAD_BASE + 0xF0 + ((n) * 0x4))
+
+/* Service Routing Control Register */
+#define	KEYPAD_SRC(n)		MMIO32(KEYPAD_BASE + 0xF0 + ((n) * 0x4))
 
 
 // DSP [MOD_NUM=F022, MOD_REV=00, MOD_32BIT=C0]
