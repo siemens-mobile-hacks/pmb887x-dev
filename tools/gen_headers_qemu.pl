@@ -19,11 +19,21 @@ for my $cpu ("pmb8875", "pmb8876") {
 }
 
 my $cpu_meta = Sie::CpuMetadata->new("generic");
+$str .= getCommonRegsHeader($cpu_meta, $cpu_meta->{common});
 for my $module (@{$cpu_meta->getAllModules()}) {
 	$str .= genModuleHeader($cpu_meta, $module);
 }
 
 print $str."\n";
+
+sub getCommonRegsHeader {
+	my ($cpu_meta, $regs) = @_;
+	
+	return genModuleHeader($cpu_meta, {
+		regs		=> $regs,
+		common		=> 1
+	});
+}
 
 sub genCpuHeader {
 	my ($cpu_meta, $cpu_id) = @_;
@@ -58,9 +68,13 @@ sub genModuleHeader {
 	
 	my @header;
 	
-	push @header, ["#define ".$module->{name}."_IO_SIZE", sprintf("0x%08X", $module->{size})];
+	my $name = $module->{name} || "";
+	my $prefix = ($name ? $name."_" : "");
 	
-	my $prefix = $module->{name};
+	if (!$module->{common}) {
+		push @header, ["#define ".$name."_IO_SIZE", sprintf("0x%08X", $module->{size})];
+	}
+	
 	for my $reg_name (getSortedKeys($module->{regs}, 'start')) {
 		my $reg = $module->{regs}->{$reg_name};
 		
@@ -68,67 +82,75 @@ sub genModuleHeader {
 			push @header, "/* ".$reg->{descr}." */";
 		}
 		
-		if ($reg->{start} != $reg->{end}) {
-			my $index = 0;
-			for (my $i = $reg->{start}; $i <= $reg->{end}; $i += $reg->{step}) {
-				push @header, ["#define ".$prefix."_".$reg_name.$index, sprintf("0x%02X", $i)];
-				$index++;
+		if (!$module->{common}) {
+			if ($reg->{start} != $reg->{end}) {
+				my $index = 0;
+				for (my $i = $reg->{start}; $i <= $reg->{end}; $i += $reg->{step}) {
+					push @header, ["#define ".$prefix.$reg_name.$index, sprintf("0x%02X", $i)];
+					$index++;
+				}
+			} else {
+				push @header, ["#define ".$prefix.$reg_name, sprintf("0x%02X", $reg->{start})];
 			}
-		} else {
-			push @header, ["#define ".$prefix."_".$reg_name, sprintf("0x%02X", $reg->{start})];
 		}
 		
-		for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
-			my $field = $reg->{fields}->{$field_name};
-			
-			my $field_name_prepared = $reg->{field_format};
-			$field_name_prepared =~ s/{reg}/$reg_name/g;
-			$field_name_prepared =~ s/{field}/$field_name/g;
-			
-			my $descr = "";
-			
-			if ($field->{descr}) {
-				$descr = " // ".$field->{descr};
-			}
-			
-			if ($field->{size} > 1) {
-				push @header, ["#define ".$prefix."_".$field_name_prepared, "(".sprintf("0x%0X", (1 << $field->{size}) - 1)." << ".$field->{start}.")", $descr];
-			} else {
-				push @header, ["#define ".$prefix."_".$field_name_prepared, "(1 << ".$field->{start}.")", $descr];
-			}
-			
-			push @header, ["#define ".$prefix."_".$field_name_prepared."_SHIFT", $field->{start}];
-			
-			for my $val_name (getSortedKeys($field->{values})) {
-				my $val = $field->{values}->{$val_name};
+		if (!$reg->{common}) {
+			for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
+				my $field = $reg->{fields}->{$field_name};
 				
-				my $val_name_prepared = $reg->{enum_format};
-				$val_name_prepared =~ s/{reg}/$reg_name/g;
-				$val_name_prepared =~ s/{field}/$field_name/g;
-				$val_name_prepared =~ s/{value}/$val_name/g;
+				my $field_name_prepared = $reg->{field_format};
+				$field_name_prepared =~ s/{reg}/$reg_name/g;
+				$field_name_prepared =~ s/{field}/$field_name/g;
 				
-				push @header, ["#define ".$prefix."_".$val_name_prepared, sprintf("0x%X", $val << $field->{start})];
+				my $descr = "";
+				
+				if ($field->{descr}) {
+					$descr = " // ".$field->{descr};
+				}
+				
+				if ($field->{size} > 1) {
+					push @header, ["#define ".$prefix.$field_name_prepared, "(".sprintf("0x%0X", (1 << $field->{size}) - 1)." << ".$field->{start}.")", $descr];
+				} else {
+					push @header, ["#define ".$prefix.$field_name_prepared, "(1 << ".$field->{start}.")", $descr];
+				}
+				
+				push @header, ["#define ".$prefix.$field_name_prepared."_SHIFT", $field->{start}];
+				
+				for my $val_name (getSortedKeys($field->{values})) {
+					my $val = $field->{values}->{$val_name};
+					
+					my $val_name_prepared = $reg->{enum_format};
+					$val_name_prepared =~ s/{reg}/$reg_name/g;
+					$val_name_prepared =~ s/{field}/$field_name/g;
+					$val_name_prepared =~ s/{value}/$val_name/g;
+					
+					push @header, ["#define ".$prefix.$val_name_prepared, sprintf("0x%X", $val << $field->{start})];
+				}
 			}
 		}
 		push @header, [];
 	}
 	
 	my $module_descr = "";
-	if ($module->{type} eq "AMBA") {
-		$module_descr = sprintf("// %s [AMBA PL%03X]\n", $module->{name}, $module->{id} & 0xFFF);
-	} elsif ($module->{type} eq "MODULE") {
-		my $MOD_REV = $module->{id} & 0xFF;
-		my $MOD_NUM = ($module->{id} >> 16) & 0xFFFF;
-		my $MOD_32BIT = ($module->{id} >> 8) & 0xFF;
-		
-		if ($MOD_32BIT != 0xC0) {
-			$MOD_NUM = $MOD_32BIT;
-			$MOD_32BIT = 0;
-		}
-		
-		$module_descr = sprintf("// %s [MOD_NUM=%04X, MOD_REV=%02X, MOD_32BIT=%02X]\n", $module->{name}, $MOD_NUM, $MOD_REV, $MOD_32BIT);
+	if ($module->{common}) {
+		$module_descr = "// Common regs for all modules\n";
 	} else {
-		$module_descr = sprintf("// %s\n", $module->{name});
+		if ($module->{type} eq "AMBA") {
+			$module_descr = sprintf("// %s [AMBA PL%03X]\n", $name, $module->{id} & 0xFFF);
+		} elsif ($module->{type} eq "MODULE") {
+			my $MOD_REV = $module->{id} & 0xFF;
+			my $MOD_NUM = ($module->{id} >> 16) & 0xFFFF;
+			my $MOD_32BIT = ($module->{id} >> 8) & 0xFF;
+			
+			if ($MOD_32BIT != 0xC0) {
+				$MOD_NUM = $MOD_32BIT;
+				$MOD_32BIT = 0;
+			}
+			
+			$module_descr = sprintf("// %s [MOD_NUM=%04X, MOD_REV=%02X, MOD_32BIT=%02X]\n", $name, $MOD_NUM, $MOD_REV, $MOD_32BIT);
+		} else {
+			$module_descr = sprintf("// %s\n", $name);
+		}
 	}
 	
 	return $module_descr.printTable(\@header)."\n";
