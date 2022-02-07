@@ -105,7 +105,11 @@ sub dumpReg {
 			
 			my $unknown = ($value & ~$known);
 			if ($unknown) {
-				push @bitmap, "UNKNOWN(".sprintf("0b%08b", $unknown).")";
+				for (my $i = 0; $i < 32; $i++) {
+					if (($unknown & (1 << $i))) {
+						push @bitmap, "UNK_$i";
+					}
+				}
 			}
 		} elsif ($reg->{name} eq "NVIC_CURRENT_IRQ" || $reg->{name} eq "NVIC_CURRENT_FIQ") {
 			if (exists $self->{id2irq}->{$value}) {
@@ -242,14 +246,16 @@ sub loadModules {
 				$new_module->{base} = $def->{base};
 				$new_module->{name} = $def->{name};
 				
-				if (scalar(@{$def->{irqs}}) != scalar(@{$new_module->{irqs_needed}})) {
-					die sprintf("Module %s required %d irqs, but specified %d", $def->{name}, scalar(@{$new_module->{irqs_needed}}), scalar(@{$def->{irqs}}));
-				}
-				
-				my $irq_num = 0;
-				for my $irq (@{$def->{irqs}}) {
-					$new_module->{irqs}->{$new_module->{irqs_needed}->[$irq_num]} = $def->{irqs}->[$irq_num];
-					$irq_num++;
+				if (@{$def->{irqs}} && $def->{irqs}->[0] ne "-") {
+					if (scalar(@{$def->{irqs}}) != scalar(@{$new_module->{irqs_needed}})) {
+						die sprintf("Module %s required %d irqs, but specified %d", $def->{name}, scalar(@{$new_module->{irqs_needed}}), scalar(@{$def->{irqs}}));
+					}
+					
+					my $irq_num = 0;
+					for my $irq (@{$def->{irqs}}) {
+						$new_module->{irqs}->{$new_module->{irqs_needed}->[$irq_num]} = $def->{irqs}->[$irq_num];
+						$irq_num++;
+					}
 				}
 				
 				$self->{modules}->{$def->{name}} = $new_module;

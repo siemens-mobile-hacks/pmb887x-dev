@@ -38,11 +38,10 @@ void data_abort_handler2(void) {
 int main(void) {
 	wdt_init();
 	
-	const bool for_config = false;
-	
-	printf("start!\n");
+	const bool for_config = true;
 	
 	SCU_RTCIF = 0xAA;
+	SCU_CLC = 0x200;
 	
 	const uint32_t chunk = 0x100;
 	
@@ -52,7 +51,7 @@ int main(void) {
 		if (!check_addr(addr))
 			continue;
 		
-		if (!check_addr(addr + 8) || (REG(addr) & 1)) {
+		if (!check_addr(addr + 4) || !check_addr(addr + 8) || (REG(addr) & 1)) {
 			write_addr(addr, 0x200);
 			stopwatch_msleep_wd(100);
 		}
@@ -108,8 +107,8 @@ int main(void) {
 			}
 		}
 		
-		if (!check_addr(addr + 0x10))
-			continue;
+	//	if (!check_addr(addr + 0x10))
+	//		continue;
 		
 		wdt_serve();
 		
@@ -134,6 +133,12 @@ int main(void) {
 				MOD_32B = 0;
 			}
 			
+			if (for_config) {
+				printf("%s\t%08X\tMODULE\t%08X /* MOD_REV=%02X; MOD_32B=%02X; MOD_NUM=%04X */\n", get_mod_name(MOD_NUM, MOD_32B != 0), addr, v,  MOD_REV, MOD_32B, MOD_NUM);
+			} else {
+				printf("%08X: MOD_REV=%02X; MOD_32B=%02X; MOD_NUM=%04X [%s]\n", id_addr, MOD_REV, MOD_32B, MOD_NUM, get_mod_name(MOD_NUM, MOD_32B != 0));
+			}
+			
 			if (MOD_32B && MOD_NUM == 0x0031)
 				addr = (addr + 0x800000) - chunk;
 			
@@ -148,12 +153,6 @@ int main(void) {
 			
 			if (MOD_32B && MOD_NUM == 0x0014)
 				addr = (addr + 0x300) - chunk;
-			
-			if (for_config) {
-				printf("%s\t%08X\tMODULE\t%08X /* MOD_REV=%02X; MOD_32B=%02X; MOD_NUM=%04X */\n", get_mod_name(MOD_NUM, MOD_32B != 0), addr, v,  MOD_REV, MOD_32B, MOD_NUM);
-			} else {
-				printf("%08X: MOD_REV=%02X; MOD_32B=%02X; MOD_NUM=%04X [%s]\n", id_addr, MOD_REV, MOD_32B, MOD_NUM, get_mod_name(MOD_NUM, MOD_32B != 0));
-			}
 			
 			break;
 		}
@@ -187,6 +186,7 @@ const char *get_mod_name(uint32_t id, bool is32) {
 			case 0xF047:	return "USB";
 			case 0xF049:	return "RTC";
 			case 0xF053:	return "MMICIF";
+			case 0xF000:	return "SIM";
 		}
 	} else {
 		switch (id) {

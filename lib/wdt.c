@@ -13,7 +13,7 @@ static void _set_einit(bool flag) {
 }
 
 void wdt_init() {
-	wdt_init_custom(1200);
+	wdt_init_custom(550);
 }
 
 void wdt_init_custom(uint32_t interval) {

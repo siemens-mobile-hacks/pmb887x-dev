@@ -28,6 +28,7 @@
 #define	GPIO_USB_DMINUS			21
 #define	GPIO_I2C_SCL			28
 #define	GPIO_I2C_SDA			29
+#define	GPIO_OPEN_CLOSE_SW1		39
 #define	GPIO_LED_FL_OFF			43
 #define	GPIO_TOUT1_PM_CHARGE_UC	44
 #define	GPIO_TOUT7_PM_RF2_EN	50
@@ -53,6 +54,7 @@
 #define	GPIO_CIF_HSYNC			87
 #define	GPIO_CIF_VSYNC			88
 #define	GPIO_CLKOUT2			89
+#define	GPIO_OPEN_CLOSE_SW2		99
 #define	GPIO_MMC_CMD			104
 #define	GPIO_MMC_DAT			105
 #define	GPIO_MMC_CLK			106

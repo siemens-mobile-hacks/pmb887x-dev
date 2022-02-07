@@ -25,8 +25,8 @@
 #define IOPLL_CON2()		PLL_CON2
 #define IOPLL_CON2_SET(x)	(PLL_CON2 = x)
 
-#define IOPLL_ICR()			PLL_CON4
-#define IOPLL_ICR_SET(x)	(PLL_CON4 = x)
+#define IOPLL_ICR()			PLL_SRC
+#define IOPLL_ICR_SET(x)	(PLL_SRC = x)
 
 #define IOPLL_OSC()			PLL_OSC
 #define IOPLL_OSC_SET(x)	(PLL_OSC = x)

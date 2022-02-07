@@ -1,6 +1,33 @@
 #include <pmb887x.h>
 #include <printf.h>
 
+/*
+	ALT1
+	GPIO_56 -> EXT4
+	GPIO_98 -> EXT4
+	GPIO_108 -> EXT5
+
+	ALT2
+	GPIO_0 -> EXT0
+	GPIO_7 -> EXT1
+	GPIO_28 -> EXT6
+	GPIO_29 -> EXT2
+	GPIO_39 -> EXT1
+	GPIO_101 -> EXT6
+
+	ALT3
+	GPIO_16 -> EXT3
+	GPIO_18 -> EXT0
+	GPIO_31 -> EXT3
+	GPIO_58 -> EXT4
+
+	ALT4
+	GPIO_44 -> EXT5
+	GPIO_47 -> EXT6
+	GPIO_50 -> EXT5
+	GPIO_51 -> EXT7
+*/
+
 typedef struct {
 	volatile uint32_t *reg;
 	int irq;
@@ -26,9 +53,6 @@ int main(void) {
 	wdt_init();
 	cpu_enable_irq(true);
 	
-	// Enable GPIO
-	GPIO_CLC = 1 << GPIO_CLC_RMC_SHIFT;
-	
 	// Enable all IRQS
 	for (uint32_t i = 0; i < ARRAY_SIZE(exti_regs); i++) {
 		NVIC_CON(exti_regs[i].irq) = 1;
@@ -37,19 +61,6 @@ int main(void) {
 		SCU_EXTI |= exti_regs[i].cfg;
 	}
 	
-	// Init slider pins
-	GPIO_PIN(GPIO_OPEN_CLOSE_SW1) = GPIO_IS_ALT2;
-	GPIO_PIN(GPIO_OPEN_CLOSE_SW2) = GPIO_IS_ALT2;
-	
-	while (true) {
-		cpu_enable_irq(false);
-		printf("wait...\n");
-		cpu_enable_irq(true);
-		
-		stopwatch_msleep_wd(1000);
-	}
-	
-/*
 	uint32_t alts[] = {
 		GPIO_IS_ALT0,
 		GPIO_IS_ALT1,
@@ -57,87 +68,60 @@ int main(void) {
 		GPIO_IS_ALT3,
 		GPIO_IS_ALT4,
 		GPIO_IS_ALT5,
-		GPIO_IS_ALT6,
+		GPIO_IS_ALT6
 	};
 	
-ALT1
-GPIO_56 -> EXT4
-GPIO_98 -> EXT4
-GPIO_108 -> EXT5
-
-ALT2
-GPIO_0 -> EXT0
-GPIO_7 -> EXT1
-GPIO_28 -> EXT6
-GPIO_29 -> EXT2
-GPIO_39 -> EXT1
-GPIO_101 -> EXT6
-
-ALT3
-GPIO_16 -> EXT3
-GPIO_18 -> EXT0
-GPIO_31 -> EXT3
-GPIO_58 -> EXT4
-
-ALT4
-GPIO_44 -> EXT5
-GPIO_47 -> EXT6
-GPIO_50 -> EXT5
-GPIO_51 -> EXT7
-
-	
-	uint32_t alt = 2;
-	
-	for (int i = 0; i < 114; i++) {
-		if (i == GPIO_USART0_TXD || i == GPIO_USART0_RXD || i == GPIO_DSPOUT1_PM_WADOG || i == 60)
-			continue;
-		GPIO_PIN(i) = 0;
-	}
-	
-	printf("test\n");
-	for (int i = 0; i < 114; i++) {
-		if (i == GPIO_USART0_TXD || i == GPIO_USART0_RXD || i == GPIO_DSPOUT1_PM_WADOG || i == 60)
-			continue;
+	for (uint32_t alt = 0; alt < ARRAY_SIZE(alts); alt++) {
+		printf("ALT%d:\n", alt);
 		
-		last_exti = -1;
+		for (int i = 0; i < 114; i++) {
+			if (i == GPIO_USART0_TXD || i == GPIO_USART0_RXD || i == GPIO_DSPOUT1_PM_WADOG || i == 60)
+				continue;
+			GPIO_PIN(i) = 0;
+		}
 		
-		GPIO_PIN(i) = 0;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLUP | GPIO_ENAQ_ON;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLUP;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLDOWN | GPIO_ENAQ_ON;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLDOWN;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLUP | GPIO_PS_MANUAL;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLDOWN | GPIO_PS_MANUAL;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = alts[alt] | GPIO_ENAQ_ON;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = alts[alt];
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = GPIO_PDPU_PULLUP | GPIO_PS_MANUAL;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = GPIO_PDPU_PULLDOWN | GPIO_PS_MANUAL;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = GPIO_PS_MANUAL;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = GPIO_PS_MANUAL | GPIO_ENAQ_ON;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = GPIO_PS_MANUAL | GPIO_ENAQ_OFF;
-		stopwatch_msleep_wd(1);
-		GPIO_PIN(i) = 0;
-		stopwatch_msleep_wd(20);
-		
-		if (last_exti != -1) {
-			printf("GPIO_%d -> EXT%d\n", i, last_exti);
+		for (int i = 0; i < 114; i++) {
+			if (i == GPIO_USART0_TXD || i == GPIO_USART0_RXD || i == GPIO_DSPOUT1_PM_WADOG || i == 60)
+				continue;
+			
+			last_exti = -1;
+			
+			GPIO_PIN(i) = 0;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLUP | GPIO_ENAQ_ON;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLUP;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLDOWN | GPIO_ENAQ_ON;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLDOWN;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLUP | GPIO_PS_MANUAL;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = alts[alt] | GPIO_PDPU_PULLDOWN | GPIO_PS_MANUAL;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = alts[alt] | GPIO_ENAQ_ON;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = alts[alt];
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = GPIO_PDPU_PULLUP | GPIO_PS_MANUAL;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = GPIO_PDPU_PULLDOWN | GPIO_PS_MANUAL;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = GPIO_PS_MANUAL;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = GPIO_PS_MANUAL | GPIO_ENAQ_ON;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = GPIO_PS_MANUAL | GPIO_ENAQ_OFF;
+			stopwatch_msleep_wd(1);
+			GPIO_PIN(i) = 0;
+			stopwatch_msleep_wd(20);
+			
+			if (last_exti != -1) {
+				printf("  GPIO_%d -> EXT%d\n", i, last_exti);
+			}
 		}
 	}
-	
-*/
 	printf("done.\n");
 	
 	return 0;
@@ -160,8 +144,6 @@ __IRQ void prefetch_abort_handler(void) {
 
 __IRQ void irq_handler(void) {
 	int irqn = NVIC_CURRENT_IRQ;
-	
-	printf("irq: %d\n", irqn);
 	
 	for (uint32_t i = 0; i < ARRAY_SIZE(exti_regs); i++) {
 		if (irqn == exti_regs[i].irq) {

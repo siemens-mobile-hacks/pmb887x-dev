@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
 #define PMB8876_SYSTEM_FREQ 26000000
 
 #define MMIO8(addr)			(*(volatile uint8_t *)(addr))
