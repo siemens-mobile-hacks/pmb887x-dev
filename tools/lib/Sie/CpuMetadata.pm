@@ -49,8 +49,19 @@ sub buildRegIndex {
 			}
 		}
 		
+		if ($module->{name} eq "NVIC") {
+			for my $id (@{$self->getModuleNames()}) {
+				my $other_module = $self->{modules}->{$id};
+				for my $irq_name (keys %{$other_module->{irqs}}) {
+					my $irq_num = $other_module->{irqs}->{$irq_name};
+					my $irq_con_addr = $module->{regs}->{CON}->{start} + ($irq_num * $module->{regs}->{CON}->{step});
+					$alt_names->{$irq_con_addr} = "IRQ_CON".$irq_num."_".$other_module->{name}.($irq_name ? "_".$irq_name : "");
+				}
+			}
+		}
+		
 		for my $irq_name (keys %{$module->{irqs}}) {
-			$self->{id2irq}->{$module->{irqs}->{$irq_name}} = $module->{name}."_".$irq_name;
+			$self->{id2irq}->{$module->{irqs}->{$irq_name}} = $module->{name}.($irq_name ? "_".$irq_name : "");
 		}
 		
 		for my $reg (values %{$module->{regs}}) {
