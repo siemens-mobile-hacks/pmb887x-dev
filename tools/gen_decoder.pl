@@ -113,6 +113,9 @@ sub genModuleHeader {
 	for my $reg_name (getSortedKeys($module->{regs}, 'start')) {
 		my $reg = $module->{regs}->{$reg_name};
 		my $fields_var = lc($module->{name})."_".lc($reg->{name})."_fields";
+		my $reg_name_prefix = $reg_name;
+		
+		$reg_name_prefix = $reg->{common} if ($reg->{common});
 		
 		if (!$used_vars->{$fields_var}) {
 			$used_vars->{$fields_var} = 1;
@@ -121,8 +124,8 @@ sub genModuleHeader {
 			for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
 				my $field = $reg->{fields}->{$field_name};
 				
-				my $field_name_prepared = $reg->{field_format};
-				$field_name_prepared =~ s/{reg}/$reg_name/g;
+				my $field_name_prepared = ($reg->{common} ? "" : $module->{name}."_").$reg->{field_format};
+				$field_name_prepared =~ s/{reg}/$reg_name_prefix/g;
 				$field_name_prepared =~ s/{field}/$field_name/g;
 				
 				my $values_var = lc($module->{name})."_".lc($field_name_prepared)."_values";
@@ -132,7 +135,7 @@ sub genModuleHeader {
 					my $val = $field->{values}->{$val_name};
 					
 					my $val_name_prepared = $reg->{enum_format};
-					$val_name_prepared =~ s/{reg}/$reg_name/g;
+					$val_name_prepared =~ s/{reg}/$reg_name_prefix/g;
 					$val_name_prepared =~ s/{field}/$field_name/g;
 					$val_name_prepared =~ s/{value}/$val_name/g;
 					
@@ -144,8 +147,8 @@ sub genModuleHeader {
 				
 				push @fields, [
 					'"'.$field_name.'",',
-					$module->{name}."_".$field_name_prepared.",",
-					$module->{name}."_".$field_name_prepared."_SHIFT,",
+					$field_name_prepared.",",
+					$field_name_prepared."_SHIFT,",
 					@values ? $values_var."," : "NULL,",
 					@values ? "ARRAY_SIZE($values_var)" : 0
 				];

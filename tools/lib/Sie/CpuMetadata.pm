@@ -395,7 +395,7 @@ sub parseModule {
 					$current_reg->{fields}->{$k} = dclone($self->{common}->{$ref}->{fields}->{$k});
 				}
 				
-				$current_reg->{common} = 1;
+				$current_reg->{common} = $ref;
 				
 				$current_reg->{descr} = $self->{common}->{$ref}->{descr} if !$current_reg->{descr};
 				
