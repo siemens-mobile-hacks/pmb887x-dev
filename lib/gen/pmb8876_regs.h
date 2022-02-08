@@ -87,9 +87,6 @@
 
 
 // Common regs for all modules
-#define	AMBA_PERIPH_ID0_PARTNUMBER0			GENMASK(8, 0)
-#define	AMBA_PERIPH_ID0_PARTNUMBER0_SHIFT	0
-
 /* Service Routing Control Register */
 #define	MOD_SRC_SRPN						GENMASK(8, 0)	 // IRQ priority number
 #define	MOD_SRC_SRPN_SHIFT					0
@@ -99,6 +96,27 @@
 #define	MOD_SRC_SRR							BIT(13)			 // IRQ Service Request Bit
 #define	MOD_SRC_CLRR						BIT(14)			 // IRQ Request Clear Bit
 #define	MOD_SRC_SETR						BIT(15)			 // IRQ Request Set Bit
+
+/* Clock Control Register */
+#define	MOD_CLC_DISR						BIT(0)			 // Module Disable Request Bit
+#define	MOD_CLC_DISS						BIT(1)			 // Module Disable Status Bit
+#define	MOD_CLC_SPEN						BIT(2)			 // Module Suspend Enable Bit
+#define	MOD_CLC_EDIS						BIT(3)			 // Module External Request Disable
+#define	MOD_CLC_SBWE						BIT(4)			 // Module Suspend Bit Write Enable
+#define	MOD_CLC_FSOE						BIT(5)			 // Module Fast Shut-Off Enable.
+#define	MOD_CLC_RMC							GENMASK(8, 8)	 // Module Clock Divider for Normal Mode
+#define	MOD_CLC_RMC_SHIFT					8
+
+#define	AMBA_PERIPH_ID0_PARTNUMBER0			GENMASK(8, 0)
+#define	AMBA_PERIPH_ID0_PARTNUMBER0_SHIFT	0
+
+#define	AMBA_PERIPH_ID2_DESIGNER1			GENMASK(4, 0)
+#define	AMBA_PERIPH_ID2_DESIGNER1_SHIFT		0
+#define	AMBA_PERIPH_ID2_REVISION			GENMASK(8, 4)
+#define	AMBA_PERIPH_ID2_REVISION_SHIFT		4
+
+#define	AMBA_PERIPH_ID3_CONFIGURATION		GENMASK(8, 0)
+#define	AMBA_PERIPH_ID3_CONFIGURATION_SHIFT	0
 
 /* Module Identifier Register */
 #define	MOD_ID_REV							GENMASK(8, 0)
@@ -112,24 +130,6 @@
 #define	AMBA_PERIPH_ID1_PARTNUMBER1_SHIFT	0
 #define	AMBA_PERIPH_ID1_DESIGNER0			GENMASK(8, 4)
 #define	AMBA_PERIPH_ID1_DESIGNER0_SHIFT		4
-
-#define	AMBA_PERIPH_ID3_CONFIGURATION		GENMASK(8, 0)
-#define	AMBA_PERIPH_ID3_CONFIGURATION_SHIFT	0
-
-/* Clock Control Register */
-#define	MOD_CLC_DISR						BIT(0)			 // Module Disable Request Bit
-#define	MOD_CLC_DISS						BIT(1)			 // Module Disable Status Bit
-#define	MOD_CLC_SPEN						BIT(2)			 // Module Suspend Enable Bit
-#define	MOD_CLC_EDIS						BIT(3)			 // Module External Request Disable
-#define	MOD_CLC_SBWE						BIT(4)			 // Module Suspend Bit Write Enable
-#define	MOD_CLC_FSOE						BIT(5)			 // Module Fast Shut-Off Enable.
-#define	MOD_CLC_RMC							GENMASK(8, 8)	 // Module Clock Divider for Normal Mode
-#define	MOD_CLC_RMC_SHIFT					8
-
-#define	AMBA_PERIPH_ID2_DESIGNER1			GENMASK(4, 0)
-#define	AMBA_PERIPH_ID2_DESIGNER1_SHIFT		0
-#define	AMBA_PERIPH_ID2_REVISION			GENMASK(8, 4)
-#define	AMBA_PERIPH_ID2_REVISION_SHIFT		4
 
 
 
@@ -1973,34 +1973,212 @@
 
 
 // I2C [MOD_NUM=F057, MOD_REV=00, MOD_32BIT=C0]
-#define	I2C_BASE			0xF7600000
+#define	I2C_BASE							0xF7600000
 /* Clock Control Register */
-#define	I2C_CLC				MMIO32(I2C_BASE + 0x00)
+#define	I2C_CLC								MMIO32(I2C_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	I2C_ID				MMIO32(I2C_BASE + 0x08)
+#define	I2C_ID								MMIO32(I2C_BASE + 0x08)
 
-#define	I2C_ICR				MMIO32(I2C_BASE + 0x8C)
+/* RUN Control Register */
+#define	I2C_RUNCTRL							MMIO32(I2C_BASE + 0x10)
+#define	I2C_RUNCTRL_RUN						BIT(0)						 // Enable I2C-bus Interface
+
+/* End Data Control Register */
+#define	I2C_ENDDCTRL						MMIO32(I2C_BASE + 0x14)
+#define	I2C_ENDDCTRL_SETRSC					BIT(0)						 // Set Restart Condition
+#define	I2C_ENDDCTRL_SETEND					BIT(1)						 // Set End of Transmission
+
+/* Fractional Divider Configuration Register */
+#define	I2C_FDIVCFG							MMIO32(I2C_BASE + 0x18)
+#define	I2C_FDIVCFG_DEC						GENMASK(11, 0)				 // Decrement Value of Fractional Divider
+#define	I2C_FDIVCFG_DEC_SHIFT				0
+#define	I2C_FDIVCFG_INC						GENMASK(8, 16)				 // Increment Value of Fractional Divider
+#define	I2C_FDIVCFG_INC_SHIFT				16
+
+/* Fractional Divider High-speed Mode Configuration Register */
+#define	I2C_FDIVHIGHCFG						MMIO32(I2C_BASE + 0x1C)
+#define	I2C_FDIVHIGHCFG_DEC					GENMASK(11, 0)				 // Decrement Value of Fractional Divider
+#define	I2C_FDIVHIGHCFG_DEC_SHIFT			0
+#define	I2C_FDIVHIGHCFG_INC					GENMASK(8, 16)				 // Increment Value of Fractional Divider
+#define	I2C_FDIVHIGHCFG_INC_SHIFT			16
+
+/* Address Configuration Register */
+#define	I2C_ADDRCFG							MMIO32(I2C_BASE + 0x20)
+#define	I2C_ADDRCFG_ADR						GENMASK(10, 0)				 // I2C-bus Device Address (slave)
+#define	I2C_ADDRCFG_ADR_SHIFT				0
+#define	I2C_ADDRCFG_TBAM					BIT(16)						 // Ten Bit Address Mode
+#define	I2C_ADDRCFG_GCE						BIT(17)						 // General Call Enable
+#define	I2C_ADDRCFG_MCE						BIT(18)						 // Master Code Enable
+#define	I2C_ADDRCFG_MnS						BIT(19)						 // Master / not Slave
+#define	I2C_ADDRCFG_SONA					BIT(20)						 // Stop on Not-acknowledge
+#define	I2C_ADDRCFG_SOPE					BIT(21)						 // Stop on Packet End
+
+/* Bus Status Register */
+#define	I2C_BUSSTAT							MMIO32(I2C_BASE + 0x24)
+#define	I2C_BUSSTAT_BS						GENMASK(2, 1)				 // Bus Status
+#define	I2C_BUSSTAT_BS_SHIFT				1
+#define	I2C_BUSSTAT_RnW						BIT(3)						 // Read/not Write
+
+/* FIFO Configuration Register */
+#define	I2C_FIFOCFG							MMIO32(I2C_BASE + 0x28)
+#define	I2C_FIFOCFG_RXBS					GENMASK(2, 0)				 // RX Burst Size
+#define	I2C_FIFOCFG_RXBS_SHIFT				0
+#define	I2C_FIFOCFG_RXBS_1_WORD				0x0
+#define	I2C_FIFOCFG_RXBS_2_WORD				0x1
+#define	I2C_FIFOCFG_RXBS_4_WORD				0x2
+#define	I2C_FIFOCFG_TXBS					GENMASK(2, 4)				 // TX Burst Size
+#define	I2C_FIFOCFG_TXBS_SHIFT				4
+#define	I2C_FIFOCFG_TXBS_1_WORD				0x0
+#define	I2C_FIFOCFG_TXBS_2_WORD				0x10
+#define	I2C_FIFOCFG_TXBS_4_WORD				0x20
+#define	I2C_FIFOCFG_RXFA					GENMASK(2, 8)				 // RX FIFO Alignment
+#define	I2C_FIFOCFG_RXFA_SHIFT				8
+#define	I2C_FIFOCFG_RXFA_BYTE				0x0
+#define	I2C_FIFOCFG_RXFA_HALF_WORLD			0x100
+#define	I2C_FIFOCFG_RXFA_WORD				0x200
+#define	I2C_FIFOCFG_TXFA					GENMASK(2, 12)				 // TX FIFO Alignment
+#define	I2C_FIFOCFG_TXFA_SHIFT				12
+#define	I2C_FIFOCFG_TXFA_BYTE				0x0
+#define	I2C_FIFOCFG_TXFA_HALF_WORLD			0x1000
+#define	I2C_FIFOCFG_TXFA_WORD				0x2000
+#define	I2C_FIFOCFG_RXFC					BIT(16)						 // RX FIFO Flow Control
+#define	I2C_FIFOCFG_TXFC					BIT(17)						 // TX FIFO Flow Control
+
+/* Maximum Received Packet Size Control Register */
+#define	I2C_MRPSCTRL						MMIO32(I2C_BASE + 0x2C)
+#define	I2C_MRPSCTRL_MRPS					GENMASK(14, 0)				 // Maximum Received Packet Size
+#define	I2C_MRPSCTRL_MRPS_SHIFT				0
+
+/* Received Packet Size Status Register */
+#define	I2C_RPSSTAT							MMIO32(I2C_BASE + 0x30)
+#define	I2C_RPSSTAT_RPS						GENMASK(14, 0)				 // Received Packet Size
+#define	I2C_RPSSTAT_RPS_SHIFT				0
+
+/* Transmit Packet Size Control Register */
+#define	I2C_TPSCTRL							MMIO32(I2C_BASE + 0x34)
+#define	I2C_TPSCTRL_TPS						GENMASK(14, 0)				 // Transmit Packet Size
+#define	I2C_TPSCTRL_TPS_SHIFT				0
+
+/* Filled FIFO Stages Status Register */
+#define	I2C_FFSSTAT							MMIO32(I2C_BASE + 0x38)
+#define	I2C_FFSSTAT_FFS						GENMASK(6, 0)				 // Filled FIFO Stages
+#define	I2C_FFSSTAT_FFS_SHIFT				0
+
+/* Timing Configuration Register */
+#define	I2C_TIMCFG							MMIO32(I2C_BASE + 0x40)
+#define	I2C_TIMCFG_SDA_DEL_HD_DAT			GENMASK(6, 0)				 // SDA Delay Stages for Data Hold Time
+#define	I2C_TIMCFG_SDA_DEL_HD_DAT_SHIFT		0
+#define	I2C_TIMCFG_HS_SDA_DEL_HD_DAT		GENMASK(3, 6)				 // SDA Delay Stages for Data Hold Time in Highspeed Mode
+#define	I2C_TIMCFG_HS_SDA_DEL_HD_DAT_SHIFT	6
+#define	I2C_TIMCFG_SCL_DEL_HD_STA			GENMASK(3, 9)				 // SCL Delay Stages for Hold Time Start (Restart) Bit
+#define	I2C_TIMCFG_SCL_DEL_HD_STA_SHIFT		9
+#define	I2C_TIMCFG_EN_SCL_LOW_LEN			BIT(14)						 // Enable Direct Configuration of SCL Low Period Length in Fast Mode
+#define	I2C_TIMCFG_FS_SCL_LOW				BIT(15)						 // Set Fast Mode SCL Low Period Timing
+#define	I2C_TIMCFG_HS_SDA_DEL				GENMASK(3, 16)				 // SDA Delay Stages for Start/Stop bit in Highspeed Mode
+#define	I2C_TIMCFG_HS_SDA_DEL_SHIFT			16
+#define	I2C_TIMCFG_SCL_LOW_LEN				GENMASK(8, 24)				 // SCL Low Length in Fast Mode
+#define	I2C_TIMCFG_SCL_LOW_LEN_SHIFT		24
+
+/* Error Interrupt Request Source Mask Register */
+#define	I2C_ERRIRQSM						MMIO32(I2C_BASE + 0x60)
+#define	I2C_ERRIRQSM_RXF_UFL				BIT(0)						 // RX FIFO Underflow
+#define	I2C_ERRIRQSM_RXF_OFL				BIT(1)						 // RX FIFO Overflow
+#define	I2C_ERRIRQSM_TXF_UFL				BIT(2)						 // TX FIFO Underflow
+#define	I2C_ERRIRQSM_TXF_OFL				BIT(3)						 // TX FIFO Overflow
+
+/* Error Interrupt Request Source Status Register */
+#define	I2C_ERRIRQSS						MMIO32(I2C_BASE + 0x64)
+#define	I2C_ERRIRQSS_RXF_UFL				BIT(0)						 // RX FIFO Underflow
+#define	I2C_ERRIRQSS_RXF_OFL				BIT(1)						 // RX FIFO Overflow
+#define	I2C_ERRIRQSS_TXF_UFL				BIT(2)						 // TX FIFO Underflow
+#define	I2C_ERRIRQSS_TXF_OFL				BIT(3)						 // TX FIFO Overflow
+
+/* Error Interrupt Request Source Clear Register */
+#define	I2C_ERRIRQSC						MMIO32(I2C_BASE + 0x68)
+#define	I2C_ERRIRQSC_RXF_UFL				BIT(0)						 // RX FIFO Underflow
+#define	I2C_ERRIRQSC_RXF_OFL				BIT(1)						 // RX FIFO Overflow
+#define	I2C_ERRIRQSC_TXF_UFL				BIT(2)						 // TX FIFO Underflow
+#define	I2C_ERRIRQSC_TXF_OFL				BIT(3)						 // TX FIFO Overflow
+
+/* Protocol Interrupt Request Source Mask Register */
+#define	I2C_PIRQSM							MMIO32(I2C_BASE + 0x70)
+#define	I2C_PIRQSM_AM						BIT(0)						 // Address Match
+#define	I2C_PIRQSM_GC						BIT(1)						 // General Call
+#define	I2C_PIRQSM_MC						BIT(2)						 // Master Code
+#define	I2C_PIRQSM_AL						BIT(3)						 // Arbitration Lost
+#define	I2C_PIRQSM_NACK						BIT(4)						 // Not-acknowledge Received
+#define	I2C_PIRQSM_TX_END					BIT(5)						 // Transmission End
+#define	I2C_PIRQSM_RX						BIT(6)						 // Receive Mode
+
+/* Protocol Interrupt Request Source Status Register */
+#define	I2C_PIRQSS							MMIO32(I2C_BASE + 0x74)
+#define	I2C_PIRQSS_AM						BIT(0)						 // Address Match
+#define	I2C_PIRQSS_GC						BIT(1)						 // General Call
+#define	I2C_PIRQSS_MC						BIT(2)						 // Master Code
+#define	I2C_PIRQSS_AL						BIT(3)						 // Arbitration Lost
+#define	I2C_PIRQSS_NACK						BIT(4)						 // Not-acknowledge Received
+#define	I2C_PIRQSS_TX_END					BIT(5)						 // Transmission End
+#define	I2C_PIRQSS_RX						BIT(6)						 // Receive Mode
+
+/* Protocol Interrupt Request Source Clear Register */
+#define	I2C_PIRQSC							MMIO32(I2C_BASE + 0x78)
+#define	I2C_PIRQSC_AM						BIT(0)						 // Address Match
+#define	I2C_PIRQSC_GC						BIT(1)						 // General Call
+#define	I2C_PIRQSC_MC						BIT(2)						 // Master Code
+#define	I2C_PIRQSC_AL						BIT(3)						 // Arbitration Lost
+#define	I2C_PIRQSC_NACK						BIT(4)						 // Not-acknowledge Received
+#define	I2C_PIRQSC_TX_END					BIT(5)						 // Transmission End
+#define	I2C_PIRQSC_RX						BIT(6)						 // Receive Mode
+
+/* Raw Interrupt Status Register */
+#define	I2C_RIS								MMIO32(I2C_BASE + 0x80)
+#define	I2C_RIS_LSREQ_INT					BIT(0)						 // Last Single Request Interrupt
+#define	I2C_RIS_SREQ_INT					BIT(1)						 // Single Request Interrupt
+#define	I2C_RIS_LBREQ_INT					BIT(2)						 // Last Burst Request Interrupt
+#define	I2C_RIS_BREQ_INT					BIT(3)						 // Burst Request Interrupt
+#define	I2C_RIS_I2C_ERR_INT					BIT(4)						 // I2C Error Interrupt
+#define	I2C_RIS_I2C_P_INT					BIT(5)						 // I2C Protocol Interrupt
+
+/* Interrupt Mask Control Register */
+#define	I2C_IMSC							MMIO32(I2C_BASE + 0x84)
+#define	I2C_IMSC_LSREQ_INT					BIT(0)						 // Last Single Request Interrupt
+#define	I2C_IMSC_SREQ_INT					BIT(1)						 // Single Request Interrupt
+#define	I2C_IMSC_LBREQ_INT					BIT(2)						 // Last Burst Request Interrupt
+#define	I2C_IMSC_BREQ_INT					BIT(3)						 // Burst Request Interrupt
+#define	I2C_IMSC_I2C_ERR_INT				BIT(4)						 // I2C Error Interrupt
+#define	I2C_IMSC_I2C_P_INT					BIT(5)						 // I2C Protocol Interrupt
+
+/* Masked Interrupt Status */
+#define	I2C_MIS								MMIO32(I2C_BASE + 0x88)
+#define	I2C_MIS_LSREQ_INT					BIT(0)						 // Last Single Request Interrupt
+#define	I2C_MIS_SREQ_INT					BIT(1)						 // Single Request Interrupt
+#define	I2C_MIS_LBREQ_INT					BIT(2)						 // Last Burst Request Interrupt
+#define	I2C_MIS_BREQ_INT					BIT(3)						 // Burst Request Interrupt
+#define	I2C_MIS_I2C_ERR_INT					BIT(4)						 // I2C Error Interrupt
+#define	I2C_MIS_I2C_P_INT					BIT(5)						 // I2C Protocol Interrupt
+
+/* Interrupt Clear Register */
+#define	I2C_ICR								MMIO32(I2C_BASE + 0x8C)
+#define	I2C_ICR_LSREQ_INT					BIT(0)						 // Last Single Request Interrupt
+#define	I2C_ICR_SREQ_INT					BIT(1)						 // Single Request Interrupt
+#define	I2C_ICR_LBREQ_INT					BIT(2)						 // Last Burst Request Interrupt
+#define	I2C_ICR_BREQ_INT					BIT(3)						 // Burst Request Interrupt
+
+/* Interrupt Set Register */
+#define	I2C_ISR								MMIO32(I2C_BASE + 0x90)
+#define	I2C_ISR_LSREQ_INT					BIT(0)						 // Last Single Request Interrupt
+#define	I2C_ISR_SREQ_INT					BIT(1)						 // Single Request Interrupt
+#define	I2C_ISR_LBREQ_INT					BIT(2)						 // Last Burst Request Interrupt
+#define	I2C_ISR_BREQ_INT					BIT(3)						 // Burst Request Interrupt
+#define	I2C_ISR_I2C_ERR_INT					BIT(4)						 // I2C Error Interrupt
+#define	I2C_ISR_I2C_P_INT					BIT(5)						 // I2C Protocol Interrupt
 
 /* Transmission Data Register */
-#define	I2C_TXD				MMIO32(I2C_BASE + 0x8000)
-#define	I2C_TXD_READ		BIT(0)
-#define	I2C_TXD_ADDR		GENMASK(7, 1)
-#define	I2C_TXD_ADDR_SHIFT	1
-#define	I2C_TXD_REG			GENMASK(8, 8)
-#define	I2C_TXD_REG_SHIFT	8
-#define	I2C_TXD_VAL			GENMASK(8, 16)
-#define	I2C_TXD_VAL_SHIFT	16
+#define	I2C_TXD								MMIO32(I2C_BASE + 0x8000)
 
 /* Reception Data Register */
-#define	I2C_RXD				MMIO32(I2C_BASE + 0xC000)
-#define	I2C_RXD_READ		BIT(0)
-#define	I2C_RXD_ADDR		GENMASK(7, 1)
-#define	I2C_RXD_ADDR_SHIFT	1
-#define	I2C_RXD_REG			GENMASK(8, 8)
-#define	I2C_RXD_REG_SHIFT	8
-#define	I2C_RXD_VAL			GENMASK(8, 16)
-#define	I2C_RXD_VAL_SHIFT	16
+#define	I2C_RXD								MMIO32(I2C_BASE + 0xC000)
 
 
 // MMICIF [MOD_NUM=F053, MOD_REV=00, MOD_32BIT=C0]
