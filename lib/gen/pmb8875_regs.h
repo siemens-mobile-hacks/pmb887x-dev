@@ -123,6 +123,7 @@
 
 
 // EBU [MOD_NUM=0014, MOD_REV=00, MOD_32BIT=C0]
+// EBU from XMC4500 official public datasheet
 #define	EBU_BASE					0xF0000000
 /* Clock Control Register */
 #define	EBU_CLC						MMIO32(EBU_BASE + 0x00)
@@ -339,6 +340,7 @@
 
 
 // USART0 [MOD_NUM=0044, MOD_REV=00, MOD_32BIT=00]
+// ASC0 from Tricore TC1766 official public datasheet
 #define	USART0_BASE						0xF1000000
 #define	USART0							0xF1000000
 
@@ -509,6 +511,7 @@
 
 
 // DIF [MOD_NUM=F043, MOD_REV=00, MOD_32BIT=C0]
+// Looks like DIF (Display Interface) module, but not sure.
 #define	DIF_BASE	0xF1B00000
 /* Clock Control Register */
 #define	DIF_CLC		MMIO32(DIF_BASE + 0x00)
@@ -518,6 +521,7 @@
 
 
 // USB [MOD_NUM=F047, MOD_REV=00, MOD_32BIT=C0]
+// Looks like USB module, but not sure.
 #define	USB_BASE	0xF2200800
 /* Clock Control Register */
 #define	USB_CLC		MMIO32(USB_BASE + 0x00)
@@ -527,6 +531,7 @@
 
 
 // NVIC [MOD_NUM=0031, MOD_REV=00, MOD_32BIT=C0]
+// NVIC module, registers collected using tests on real hardware (using "black box" method).
 #define	NVIC_BASE				0xF2800000
 /* Module Identifier Register */
 #define	NVIC_ID					MMIO32(NVIC_BASE + 0x00)
@@ -546,6 +551,7 @@
 
 
 // DMAC [AMBA PL080]
+// PrimeCell DMA Controller (PL080)
 #define	DMAC_BASE								0xF3000000
 /* Status of the DMA interrupts after masking */
 #define	DMAC_INT_STATUS							MMIO32(DMAC_BASE + 0x00)
@@ -836,6 +842,7 @@
 
 
 // CAPCOM0 [MOD_NUM=0050, MOD_REV=00, MOD_32BIT=00]
+// CC1 from Tricore TC1766 official public datasheet
 #define	CAPCOM0_BASE		0xF4000000
 #define	CAPCOM0				0xF4000000
 
@@ -924,6 +931,7 @@
 
 
 // GPIO [MOD_NUM=F023, MOD_REV=00, MOD_32BIT=C0]
+// GPIO module, registers found on some "siemens club" forum, dont known source.
 #define	GPIO_BASE			0xF4300000
 /* Clock Control Register */
 #define	GPIO_CLC			MMIO32(GPIO_BASE + 0x00)
@@ -983,6 +991,7 @@
 
 
 // SCU [MOD_NUM=F040, MOD_REV=00, MOD_32BIT=C0]
+// Looks like SCU module, registers collected using TC1766 official public datasheet and tests on real hardware (using "black box" method).
 #define	SCU_BASE					0xF4400000
 /* Clock Control Register */
 #define	SCU_CLC						MMIO32(SCU_BASE + 0x00)
@@ -1142,6 +1151,7 @@
 
 
 // PLL
+// Looks like CGU module, registers collected using tests on real hardware (using "black box" method).
 #define	PLL_BASE				0xF4500000
 #define	PLL_OSC					MMIO32(PLL_BASE + 0xA0)
 
@@ -1163,6 +1173,7 @@
 
 
 // RTC [MOD_NUM=F049, MOD_REV=00, MOD_32BIT=C0]
+// RTC from XC27x5X official public datasheet
 #define	RTC_BASE				0xF4700000
 /* Clock Control Register */
 #define	RTC_CLC					MMIO32(RTC_BASE + 0x00)
@@ -1231,6 +1242,7 @@
 
 
 // I2C [MOD_NUM=0046, MOD_REV=00, MOD_32BIT=00]
+// Looks like I2C module, but not sure.
 #define	I2C_BASE	0xF4800000
 /* Clock Control Register */
 #define	I2C_CLC		MMIO32(I2C_BASE + 0x00)
@@ -1240,6 +1252,7 @@
 
 
 // GPTU0 [MOD_NUM=0001, MOD_REV=00, MOD_32BIT=C0]
+// GPTU from Tricore TC1765 official public datasheet
 #define	GPTU0_BASE					0xF4900000
 #define	GPTU0						0xF4900000
 
@@ -1599,6 +1612,7 @@
 
 
 // STM [MOD_NUM=0000, MOD_REV=00, MOD_32BIT=C0]
+// STM from Tricore TC1766 official public datasheet
 #define	STM_BASE	0xF4B00000
 /* Clock Control Register */
 #define	STM_CLC		MMIO32(STM_BASE + 0x00)
@@ -1624,6 +1638,7 @@
 
 
 // AMC [MOD_NUM=F024, MOD_REV=00, MOD_32BIT=C0]
+// Looks like AMC (Analog Measurement Controller? ADC?) module, but not sure.
 #define	AMC_BASE	0xF4C00000
 /* Clock Control Register */
 #define	AMC_CLC		MMIO32(AMC_BASE + 0x00)
@@ -1636,6 +1651,7 @@
 
 
 // KEYPAD [MOD_NUM=F046, MOD_REV=00, MOD_32BIT=C0]
+// Keypad scaner module, registers collected using tests on real hardware (using "black box" method).
 #define	KEYPAD_BASE			0xF4D00000
 /* Module Identifier Register */
 #define	KEYPAD_ID			MMIO32(KEYPAD_BASE + 0x08)
@@ -1662,6 +1678,7 @@
 
 
 // DSP [MOD_NUM=F022, MOD_REV=00, MOD_32BIT=C0]
+// Looks like DSP module, but not sure.
 #define	DSP_BASE	0xF6000000
 /* Clock Control Register */
 #define	DSP_CLC		MMIO32(DSP_BASE + 0x00)
@@ -1671,6 +1688,7 @@
 
 
 // GPRSCU [MOD_NUM=F003, MOD_REV=00, MOD_32BIT=C0]
+// Looks like GPRS Cypher Uinit module, but not sure.
 #define	GPRSCU_BASE	0xF6200000
 /* Clock Control Register */
 #define	GPRSCU_CLC	MMIO32(GPRSCU_BASE + 0x00)
@@ -1680,6 +1698,7 @@
 
 
 // AFC [MOD_NUM=F004, MOD_REV=00, MOD_32BIT=C0]
+// Looks like AFC (Automatic Frequency Correction???) module, but not sure.
 #define	AFC_BASE	0xF6300000
 /* Clock Control Register */
 #define	AFC_CLC		MMIO32(AFC_BASE + 0x00)
@@ -1689,6 +1708,7 @@
 
 
 // TPU [MOD_NUM=F021, MOD_REV=00, MOD_32BIT=C0]
+// Looks like TPU (time processing module) module, registers collected using tests on real hardware (using "black box" method).
 #define	TPU_BASE					0xF6400000
 /* Clock Control Register */
 #define	TPU_CLC						MMIO32(TPU_BASE + 0x00)

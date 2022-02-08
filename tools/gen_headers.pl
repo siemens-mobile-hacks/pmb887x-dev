@@ -220,7 +220,7 @@ sub genModuleHeader {
 		} else {
 			$module_descr = sprintf("// %s\n", $module->{name});
 		}
-		$module_descr .= $module->{desc}."\n" if $module->{desc};
+		$module_descr .= "// ".$module->{descr}."\n" if $module->{descr};
 	}
 	
 	return $module_descr.printTable(\@header)."\n";
