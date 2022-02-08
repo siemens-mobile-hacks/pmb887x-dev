@@ -10,7 +10,7 @@
 #define	GPIO_KP_IN3				3
 #define	GPIO_KP_IN4				4
 #define	GPIO_KP_IN5				5
-#define	GPIO_KP_OUT5_OUT6		6
+#define	GPIO_KP_IN6				6
 #define	GPIO_KP_OUT0			7
 #define	GPIO_KP_OUT1			8
 #define	GPIO_KP_OUT2			9
