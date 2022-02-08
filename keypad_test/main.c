@@ -40,8 +40,8 @@ int main(void) {
 	KEYPAD_CON = 0x101;
 	
 	// Enable IRQ
-	KEYPAD_PRESS_SRC = MOD_SRC_SRE;
-	KEYPAD_RELEASE_SRC = MOD_SRC_SRE;
+	KEYPAD_PRESS_SRC |= MOD_SRC_SRE;
+	KEYPAD_RELEASE_SRC |= MOD_SRC_SRE;
 	
 	NVIC_CON(NVIC_KEYPAD_PRESS_IRQ) = 1;
 	NVIC_CON(NVIC_KEYPAD_RELEASE_IRQ) = 1;
@@ -49,7 +49,6 @@ int main(void) {
 	printf("Hello?\n");
 	
 	while (true) {
-		printf("%08X\n", KEYPAD_PORT(0));
 		wdt_serve();
 	}
 	

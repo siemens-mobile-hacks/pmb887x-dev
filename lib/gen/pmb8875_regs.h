@@ -29,21 +29,28 @@
 #define	NVIC_DMAC_CH6_IRQ		42
 #define	NVIC_DMAC_CH7_IRQ		43
 #define	NVIC_RTC_IRQ			46
-#define	NVIC_SCU_EXT0_IRQ		48
-#define	NVIC_SCU_EXT1_IRQ		49
-#define	NVIC_SCU_EXT2_IRQ		50
-#define	NVIC_SCU_EXT3_IRQ		51
-#define	NVIC_SCU_EXT4_IRQ		52
-#define	NVIC_SCU_EXT5_IRQ		53
-#define	NVIC_SCU_EXT6_IRQ		54
-#define	NVIC_SCU_EXT7_IRQ		55
-#define	NVIC_SCU_DSP0_IRQ		56
-#define	NVIC_SCU_DSP1_IRQ		57
-#define	NVIC_SCU_DSP2_IRQ		58
-#define	NVIC_SCU_DSP3_IRQ		59
-#define	NVIC_SCU_DSP4_IRQ		60
+#define	NVIC_SCU_EXTI0_IRQ		48
+#define	NVIC_SCU_EXTI1_IRQ		49
+#define	NVIC_SCU_EXTI2_IRQ		50
+#define	NVIC_SCU_EXTI3_IRQ		51
+#define	NVIC_SCU_EXTI4_IRQ		52
+#define	NVIC_SCU_DSP0_IRQ		53
+#define	NVIC_SCU_DSP1_IRQ		54
+#define	NVIC_SCU_DSP2_IRQ		55
+#define	NVIC_SCU_DSP3_IRQ		56
+#define	NVIC_SCU_DSP4_IRQ		57
+#define	NVIC_SCU_UNK0_IRQ		58
+#define	NVIC_SCU_UNK1_IRQ		59
+#define	NVIC_SCU_UNK2_IRQ		60
+#define	NVIC_SCU_EXTI5_IRQ		61
+#define	NVIC_SCU_EXTI6_IRQ		62
+#define	NVIC_SCU_EXTI7_IRQ		63
 #define	NVIC_PLL_IRQ			65
-#define	NVIC_AMC_IRQ			70
+#define	NVIC_I2C_INT0_IRQ		66
+#define	NVIC_I2C_INT1_IRQ		67
+#define	NVIC_I2C_INT2_IRQ		68
+#define	NVIC_AMC_INT0_IRQ		70
+#define	NVIC_AMC_INT1_IRQ		71
 #define	NVIC_CAPCOM0_T0_IRQ		72
 #define	NVIC_CAPCOM0_T1_IRQ		73
 #define	NVIC_CAPCOM0_CC0_IRQ	74
@@ -66,13 +73,34 @@
 #define	NVIC_CAPCOM1_CC7_IRQ	91
 #define	NVIC_GPTU0_SRC0_IRQ		92
 #define	NVIC_GPTU0_SRC1_IRQ		93
+#define	NVIC_GPTU0_SRC2_IRQ		94
+#define	NVIC_GPTU0_SRC3_IRQ		95
+#define	NVIC_GPTU0_SRC4_IRQ		96
+#define	NVIC_GPTU0_SRC5_IRQ		97
+#define	NVIC_GPTU0_SRC6_IRQ		98
+#define	NVIC_GPTU0_SRC7_IRQ		99
+#define	NVIC_GPTU1_SRC0_IRQ		100
+#define	NVIC_GPTU1_SRC1_IRQ		101
+#define	NVIC_GPTU1_SRC2_IRQ		102
+#define	NVIC_GPTU1_SRC3_IRQ		103
+#define	NVIC_GPTU1_SRC4_IRQ		104
+#define	NVIC_GPTU1_SRC5_IRQ		105
+#define	NVIC_GPTU1_SRC6_IRQ		106
+#define	NVIC_GPTU1_SRC7_IRQ		107
 #define	NVIC_KEYPAD_PRESS_IRQ	108
 #define	NVIC_KEYPAD_UNK0_IRQ	109
 #define	NVIC_KEYPAD_UNK1_IRQ	110
 #define	NVIC_KEYPAD_RELEASE_IRQ	111
-#define	NVIC_TPU_INT_UNK2_IRQ	114
+#define	NVIC_TPU_INT_UNK0_IRQ	113
+#define	NVIC_TPU_INT_UNK1_IRQ	114
+#define	NVIC_TPU_INT_UNK2_IRQ	115
+#define	NVIC_TPU_INT_UNK3_IRQ	116
+#define	NVIC_TPU_INT_UNK4_IRQ	117
+#define	NVIC_TPU_INT_UNK5_IRQ	118
 #define	NVIC_TPU_INT0_IRQ		119
 #define	NVIC_TPU_INT1_IRQ		120
+#define	NVIC_GPRSCU_INT0_IRQ	121
+#define	NVIC_GPRSCU_INT1_IRQ	122
 
 
 // Common regs for all modules
@@ -1141,6 +1169,15 @@
 #define	SCU_DSP_SRC(n)				MMIO32(SCU_BASE + 0xCC + ((n) * 0x4))
 
 /* Service Routing Control Register */
+#define	SCU_UNK0_SRC				MMIO32(SCU_BASE + 0xE8)
+
+/* Service Routing Control Register */
+#define	SCU_UNK1_SRC				MMIO32(SCU_BASE + 0xEC)
+
+/* Service Routing Control Register */
+#define	SCU_UNK2_SRC				MMIO32(SCU_BASE + 0xF0)
+
+/* Service Routing Control Register */
 #define	SCU_EXTI5_SRC				MMIO32(SCU_BASE + 0xF4)
 
 /* Service Routing Control Register */
@@ -1647,7 +1684,7 @@
 #define	AMC_ID		MMIO32(AMC_BASE + 0x08)
 
 /* Service Routing Control Register */
-#define	AMC_SRC		MMIO32(AMC_BASE + 0xF0)
+#define	AMC_SRC(n)	MMIO32(AMC_BASE + 0xF0 + ((n) * 0x4))
 
 
 // KEYPAD [MOD_NUM=F046, MOD_REV=00, MOD_32BIT=C0]
@@ -1689,12 +1726,15 @@
 
 // GPRSCU [MOD_NUM=F003, MOD_REV=00, MOD_32BIT=C0]
 // Looks like GPRS Cypher Uinit module, but not sure.
-#define	GPRSCU_BASE	0xF6200000
+#define	GPRSCU_BASE		0xF6200000
 /* Clock Control Register */
-#define	GPRSCU_CLC	MMIO32(GPRSCU_BASE + 0x00)
+#define	GPRSCU_CLC		MMIO32(GPRSCU_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	GPRSCU_ID	MMIO32(GPRSCU_BASE + 0x08)
+#define	GPRSCU_ID		MMIO32(GPRSCU_BASE + 0x08)
+
+/* Service Routing Control Register */
+#define	GPRSCU_SRC(n)	MMIO32(GPRSCU_BASE + 0xF8 + ((n) * 0x4))
 
 
 // AFC [MOD_NUM=F004, MOD_REV=00, MOD_32BIT=C0]
@@ -1773,6 +1813,9 @@
 #define	TPU_PLLCON2					MMIO32(TPU_BASE + 0x70)
 #define	TPU_PLLCON2_LOAD			BIT(0)
 #define	TPU_PLLCON2_INIT			BIT(1)
+
+/* Service Routing Control Register */
+#define	TPU_UNK_SRC(n)				MMIO32(TPU_BASE + 0xE8 + ((n) * 0x4))
 
 /* Service Routing Control Register */
 #define	TPU_SRC(n)					MMIO32(TPU_BASE + 0xF8 + ((n) * 0x4))
