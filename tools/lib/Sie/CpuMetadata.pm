@@ -304,6 +304,8 @@ sub parseModule {
 	my $current_enum_format = $default_enum_format;
 	my $current_field_format = $default_field_format;
 	
+	my $n = 0;
+	
 	open my $fp, "<$file" or die("open($file): $!");
 	while (my $line = <$fp>) {
 		next if $line =~ /^(\/\/|#)/;
@@ -334,7 +336,7 @@ sub parseModule {
 				} elsif ($key eq 'irq') {
 					push @{$module->{irqs_needed}}, $value || "";
 				} else {
-					if ($key eq "type" || $key eq "name") {
+					if ($key eq "type" || $key eq "name" || $key eq "descr") {
 						$module->{$key} = $value;
 					} elsif ($key eq "id" || $key eq "size" || $key eq "multi") {
 						$module->{$key} = parseAnyInt($value);
@@ -348,7 +350,7 @@ sub parseModule {
 				
 				if ($is_common_data) {
 					($name, $descr) = split("\t", $line);
-					$start = 0;
+					$start = $n++;
 				} else {
 					($name, $addr, $step, $descr) = split("\t", $line);
 					($start, $end) = split("-", $addr);

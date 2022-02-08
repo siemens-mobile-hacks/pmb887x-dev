@@ -80,23 +80,13 @@
 #define	NVIC_CIF_UNK0_IRQ		138
 #define	NVIC_CIF_UNK2_IRQ		140
 #define	NVIC_MCI_IRQ			148
-#define	NVIC_I2C_INT0_IRQ		155
-#define	NVIC_I2C_INT1_IRQ		156
-#define	NVIC_I2C_INT2_IRQ		157
-#define	NVIC_I2C_INT3_IRQ		158
+#define	NVIC_I2C_SINGLE_REQ_IRQ	155
+#define	NVIC_I2C_BURST_REQ_IRQ	156
+#define	NVIC_I2C_ERROR_IRQ		157
+#define	NVIC_I2C_PROTOCOL_IRQ	158
 
 
 // Common regs for all modules
-/* Service Routing Control Register */
-#define	MOD_SRC_SRPN						GENMASK(8, 0)	 // IRQ priority number
-#define	MOD_SRC_SRPN_SHIFT					0
-#define	MOD_SRC_TOS							GENMASK(2, 10)	 // Type of service for node
-#define	MOD_SRC_TOS_SHIFT					10
-#define	MOD_SRC_SRE							BIT(12)			 // IRQ enable
-#define	MOD_SRC_SRR							BIT(13)			 // IRQ Service Request Bit
-#define	MOD_SRC_CLRR						BIT(14)			 // IRQ Request Clear Bit
-#define	MOD_SRC_SETR						BIT(15)			 // IRQ Request Set Bit
-
 /* Clock Control Register */
 #define	MOD_CLC_DISR						BIT(0)			 // Module Disable Request Bit
 #define	MOD_CLC_DISS						BIT(1)			 // Module Disable Status Bit
@@ -107,17 +97,6 @@
 #define	MOD_CLC_RMC							GENMASK(8, 8)	 // Module Clock Divider for Normal Mode
 #define	MOD_CLC_RMC_SHIFT					8
 
-#define	AMBA_PERIPH_ID0_PARTNUMBER0			GENMASK(8, 0)
-#define	AMBA_PERIPH_ID0_PARTNUMBER0_SHIFT	0
-
-#define	AMBA_PERIPH_ID2_DESIGNER1			GENMASK(4, 0)
-#define	AMBA_PERIPH_ID2_DESIGNER1_SHIFT		0
-#define	AMBA_PERIPH_ID2_REVISION			GENMASK(8, 4)
-#define	AMBA_PERIPH_ID2_REVISION_SHIFT		4
-
-#define	AMBA_PERIPH_ID3_CONFIGURATION		GENMASK(8, 0)
-#define	AMBA_PERIPH_ID3_CONFIGURATION_SHIFT	0
-
 /* Module Identifier Register */
 #define	MOD_ID_REV							GENMASK(8, 0)
 #define	MOD_ID_REV_SHIFT					0
@@ -126,10 +105,31 @@
 #define	MOD_ID_NUMBER						GENMASK(16, 16)
 #define	MOD_ID_NUMBER_SHIFT					16
 
+/* Service Routing Control Register */
+#define	MOD_SRC_SRPN						GENMASK(8, 0)	 // IRQ priority number
+#define	MOD_SRC_SRPN_SHIFT					0
+#define	MOD_SRC_TOS							GENMASK(2, 10)	 // Type of service for node
+#define	MOD_SRC_TOS_SHIFT					10
+#define	MOD_SRC_SRE							BIT(12)			 // IRQ enable
+#define	MOD_SRC_SRR							BIT(13)			 // IRQ Service Request Bit
+#define	MOD_SRC_CLRR						BIT(14)			 // IRQ Request Clear Bit
+#define	MOD_SRC_SETR						BIT(15)			 // IRQ Request Set Bit
+
+#define	AMBA_PERIPH_ID0_PARTNUMBER0			GENMASK(8, 0)
+#define	AMBA_PERIPH_ID0_PARTNUMBER0_SHIFT	0
+
 #define	AMBA_PERIPH_ID1_PARTNUMBER1			GENMASK(4, 0)
 #define	AMBA_PERIPH_ID1_PARTNUMBER1_SHIFT	0
 #define	AMBA_PERIPH_ID1_DESIGNER0			GENMASK(8, 4)
 #define	AMBA_PERIPH_ID1_DESIGNER0_SHIFT		4
+
+#define	AMBA_PERIPH_ID2_DESIGNER1			GENMASK(4, 0)
+#define	AMBA_PERIPH_ID2_DESIGNER1_SHIFT		0
+#define	AMBA_PERIPH_ID2_REVISION			GENMASK(8, 4)
+#define	AMBA_PERIPH_ID2_REVISION_SHIFT		4
+
+#define	AMBA_PERIPH_ID3_CONFIGURATION		GENMASK(8, 0)
+#define	AMBA_PERIPH_ID3_CONFIGURATION_SHIFT	0
 
 
 
