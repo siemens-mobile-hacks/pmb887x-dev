@@ -43,6 +43,9 @@ static const uint32_t regs[] = {
 	USB_BASE,
 	0xF1100000,
 	0xF4600000,
+	0xF7300000,
+	0xF7400000,
+	0xF7500000,
 	#elif defined(PMB8875)
 	// cat ../lib/gen/pmb8875_regs.h  | grep -P -i '#define[\t]+([a-z0-9]*)_BASE' -i | awk '{print $2}' | sort | uniq | sed 's/$/,/g'
 	AFC_BASE,
