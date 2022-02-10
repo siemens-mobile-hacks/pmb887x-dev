@@ -29,5 +29,11 @@
 #define	GPIO_I2C_SCL			28
 #define	GPIO_I2C_SDA			29
 #define	GPIO_DSPOUT1_PM_WADOG	62
+#define	GPIO_HW_DET0			66
+#define	GPIO_HW_DET1			67
+#define	GPIO_HW_DET2			68
+#define	GPIO_HW_DET3			69
+#define	GPIO_HW_DET4			70
+#define	GPIO_HW_DET5			72
 
 

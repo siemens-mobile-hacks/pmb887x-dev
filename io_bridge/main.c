@@ -68,6 +68,14 @@ static int command_handler(int irq) {
 				}
 			}
 			
+			if (addr == (uint32_t) &PLL_STAT) {
+				value = 0x2000;
+			}
+			
+			if (addr == (uint32_t) &TPU_COUNTER && value >= 0x875) {
+				value = 0x875;
+			}
+			
 			if (addr == (uint32_t) &SCU_RST_SR) {
 				value = (value & ~SCU_RST_SR_PWDRST) | SCU_RST_SR_HDRST;
 			}
@@ -95,6 +103,10 @@ static int command_handler(int irq) {
 			
 			bool skip = false;
 			
+			if (addr == (uint32_t) &I2C_FDIVCFG) {
+				value = 0x00010090;
+			}
+			
 			if (!skip) {
 				if (c == 'W') { // 4
 					REG(addr) = value;
@@ -110,7 +122,7 @@ static int command_handler(int irq) {
 			
 			if (irq == 1) {
 				if (addr == (uint32_t) &NVIC_IRQ_ACK)
-					current_irq = NVIC_CURRENT_IRQ;
+					current_irq = 0;
 			}
 			
 			if (irq == 1) {

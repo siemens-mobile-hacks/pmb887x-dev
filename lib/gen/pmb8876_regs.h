@@ -878,92 +878,277 @@
 
 
 // CAPCOM0 [MOD_NUM=0050, MOD_REV=00, MOD_32BIT=00]
-// CC1 from Tricore TC1766 official public datasheet
-#define	CAPCOM0_BASE		0xF4000000
-#define	CAPCOM0				0xF4000000
+// CAPCOM from drivers/clocksource/xgold_capcom_timer.c (GPL2)
+#define	CAPCOM0_BASE				0xF4000000
+#define	CAPCOM0						0xF4000000
 
-#define	CAPCOM1_BASE		0xF4100000
-#define	CAPCOM1				0xF4100000
+#define	CAPCOM1_BASE				0xF4100000
+#define	CAPCOM1						0xF4100000
 
 /* Clock Control Register */
-#define	CAPCOM_CLC(base)	MMIO32((base) + 0x00)
+#define	CAPCOM_CLC(base)			MMIO32((base) + 0x00)
 
-#define	CAPCOM_CPISEL(base)	MMIO32((base) + 0x04)
+#define	CAPCOM_CPISEL(base)			MMIO32((base) + 0x04)
+#define	CAPCOM_CPISEL_C1C0IS		BIT(0)
+#define	CAPCOM_CPISEL_C3C2IS		BIT(1)
+#define	CAPCOM_CPISEL_C5C4IS		BIT(2)
+#define	CAPCOM_CPISEL_C7C6IS		BIT(3)
+#define	CAPCOM_CPISEL_T0INIS		BIT(4)
+#define	CAPCOM_CPISEL_T1INIS		BIT(5)
+
+#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
 
 /* Module Identifier Register */
-#define	CAPCOM_ID(base)		MMIO32((base) + 0x08)
+#define	CAPCOM_ID(base)				MMIO32((base) + 0x08)
 
-#define	CAPCOM_ZERO1(base)	MMIO32((base) + 0x0C)
+#define	CAPCOM_T01CON(base)			MMIO32((base) + 0x10)
+#define	CAPCOM_T01CON_T0I			GENMASK(3, 0)
+#define	CAPCOM_T01CON_T0I_SHIFT		0
+#define	CAPCOM_T01CON_T0M			BIT(3)
+#define	CAPCOM_T01CON_T0R			BIT(6)
+#define	CAPCOM_T01CON_T1I			GENMASK(3, 8)
+#define	CAPCOM_T01CON_T1I_SHIFT		8
+#define	CAPCOM_T01CON_T1M			BIT(11)
+#define	CAPCOM_T01CON_T1R			BIT(14)
 
-#define	CAPCOM_T01CON(base)	MMIO32((base) + 0x10)
+#define	CAPCOM_CCM0(base)			MMIO32((base) + 0x14)
+#define	CAPCOM_CCM0_MOD0			GENMASK(3, 0)
+#define	CAPCOM_CCM0_MOD0_SHIFT		0
+#define	CAPCOM_CCM0_ACC0			BIT(3)
+#define	CAPCOM_CCM0_ACC0_TIM0		0x0
+#define	CAPCOM_CCM0_ACC0_TIM1		0x8
+#define	CAPCOM_CCM0_MOD1			GENMASK(3, 4)
+#define	CAPCOM_CCM0_MOD1_SHIFT		4
+#define	CAPCOM_CCM0_ACC1			BIT(7)
+#define	CAPCOM_CCM0_ACC1_TIM0		0x0
+#define	CAPCOM_CCM0_ACC1_TIM1		0x80
+#define	CAPCOM_CCM0_MOD2			GENMASK(3, 8)
+#define	CAPCOM_CCM0_MOD2_SHIFT		8
+#define	CAPCOM_CCM0_ACC2			BIT(11)
+#define	CAPCOM_CCM0_ACC2_TIM0		0x0
+#define	CAPCOM_CCM0_ACC2_TIM1		0x800
+#define	CAPCOM_CCM0_MOD3			GENMASK(3, 12)
+#define	CAPCOM_CCM0_MOD3_SHIFT		12
+#define	CAPCOM_CCM0_ACC3			BIT(15)
+#define	CAPCOM_CCM0_ACC3_TIM0		0x0
+#define	CAPCOM_CCM0_ACC3_TIM1		0x8000
 
-#define	CAPCOM_CCM0(base)	MMIO32((base) + 0x14)
+#define	CAPCOM_CCM1(base)			MMIO32((base) + 0x18)
+#define	CAPCOM_CCM1_MOD4			GENMASK(3, 0)
+#define	CAPCOM_CCM1_MOD4_SHIFT		0
+#define	CAPCOM_CCM1_ACC4			BIT(3)
+#define	CAPCOM_CCM1_ACC4_TIM0		0x0
+#define	CAPCOM_CCM1_ACC4_TIM1		0x8
+#define	CAPCOM_CCM1_MOD5			GENMASK(3, 4)
+#define	CAPCOM_CCM1_MOD5_SHIFT		4
+#define	CAPCOM_CCM1_ACC5			BIT(7)
+#define	CAPCOM_CCM1_ACC5_TIM0		0x0
+#define	CAPCOM_CCM1_ACC5_TIM1		0x80
+#define	CAPCOM_CCM1_MOD6			GENMASK(3, 8)
+#define	CAPCOM_CCM1_MOD6_SHIFT		8
+#define	CAPCOM_CCM1_ACC6			BIT(11)
+#define	CAPCOM_CCM1_ACC6_TIM0		0x0
+#define	CAPCOM_CCM1_ACC6_TIM1		0x800
+#define	CAPCOM_CCM1_MOD7			GENMASK(3, 12)
+#define	CAPCOM_CCM1_MOD7_SHIFT		12
+#define	CAPCOM_CCM1_ACC7			BIT(15)
+#define	CAPCOM_CCM1_ACC7_TIM0		0x0
+#define	CAPCOM_CCM1_ACC7_TIM1		0x8000
 
-#define	CAPCOM_CCM1(base)	MMIO32((base) + 0x18)
+#define	CAPCOM_OUT(base)			MMIO32((base) + 0x24)
+#define	CAPCOM_OUT_O0				BIT(0)
+#define	CAPCOM_OUT_O1				BIT(1)
+#define	CAPCOM_OUT_O2				BIT(2)
+#define	CAPCOM_OUT_O3				BIT(3)
+#define	CAPCOM_OUT_O4				BIT(4)
+#define	CAPCOM_OUT_O5				BIT(5)
+#define	CAPCOM_OUT_O6				BIT(6)
+#define	CAPCOM_OUT_O7				BIT(7)
 
-#define	CAPCOM_CCOUT(base)	MMIO32((base) + 0x24)
+#define	CAPCOM_IOC(base)			MMIO32((base) + 0x28)
+#define	CAPCOM_IOC_PDS				BIT(3)
+#define	CAPCOM_IOC_PDS_OUT			0x0
+#define	CAPCOM_IOC_PDS_IN			0x8
 
-#define	CAPCOM_CCIOC(base)	MMIO32((base) + 0x28)
+#define	CAPCOM_SEM(base)			MMIO32((base) + 0x2C)
+#define	CAPCOM_SEM_SEM0				BIT(0)
+#define	CAPCOM_SEM_SEM1				BIT(1)
+#define	CAPCOM_SEM_SEM2				BIT(2)
+#define	CAPCOM_SEM_SEM3				BIT(3)
+#define	CAPCOM_SEM_SEM4				BIT(4)
+#define	CAPCOM_SEM_SEM5				BIT(5)
+#define	CAPCOM_SEM_SEM6				BIT(6)
+#define	CAPCOM_SEM_SEM7				BIT(7)
 
-#define	CAPCOM_CCSEE(base)	MMIO32((base) + 0x2C)
+#define	CAPCOM_SEE(base)			MMIO32((base) + 0x30)
+#define	CAPCOM_SEE_SEE0				BIT(0)
+#define	CAPCOM_SEE_SEE1				BIT(1)
+#define	CAPCOM_SEE_SEE2				BIT(2)
+#define	CAPCOM_SEE_SEE3				BIT(3)
+#define	CAPCOM_SEE_SEE4				BIT(4)
+#define	CAPCOM_SEE_SEE5				BIT(5)
+#define	CAPCOM_SEE_SEE6				BIT(6)
+#define	CAPCOM_SEE_SEE7				BIT(7)
 
-#define	CAPCOM_CCSEM(base)	MMIO32((base) + 0x30)
+#define	CAPCOM_DRM(base)			MMIO32((base) + 0x34)
+#define	CAPCOM_DRM_DR0M				GENMASK(2, 0)
+#define	CAPCOM_DRM_DR0M_SHIFT		0
+#define	CAPCOM_DRM_DR0M_CON			0x0
+#define	CAPCOM_DRM_DR0M_DIS			0x1
+#define	CAPCOM_DRM_DR0M_EN			0x2
+#define	CAPCOM_DRM_DR0M_RES			0x3
+#define	CAPCOM_DRM_DR1M				GENMASK(2, 2)
+#define	CAPCOM_DRM_DR1M_SHIFT		2
+#define	CAPCOM_DRM_DR1M_CON			0x0
+#define	CAPCOM_DRM_DR1M_DIS			0x4
+#define	CAPCOM_DRM_DR1M_EN			0x8
+#define	CAPCOM_DRM_DR1M_RES			0xC
+#define	CAPCOM_DRM_DR2M				GENMASK(2, 4)
+#define	CAPCOM_DRM_DR2M_SHIFT		4
+#define	CAPCOM_DRM_DR2M_CON			0x0
+#define	CAPCOM_DRM_DR2M_DIS			0x10
+#define	CAPCOM_DRM_DR2M_EN			0x20
+#define	CAPCOM_DRM_DR2M_RES			0x30
+#define	CAPCOM_DRM_DR3M				GENMASK(2, 6)
+#define	CAPCOM_DRM_DR3M_SHIFT		6
+#define	CAPCOM_DRM_DR3M_CON			0x0
+#define	CAPCOM_DRM_DR3M_DIS			0x40
+#define	CAPCOM_DRM_DR3M_EN			0x80
+#define	CAPCOM_DRM_DR3M_RES			0xC0
 
-#define	CAPCOM_CCDRM(base)	MMIO32((base) + 0x34)
+#define	CAPCOM_WHBSSEE(base)		MMIO32((base) + 0x38)
+#define	CAPCOM_WHBSSEE_SETSEE0		BIT(0)
+#define	CAPCOM_WHBSSEE_SETSEE0_NOE	0x0
+#define	CAPCOM_WHBSSEE_SETSEE0_SET	0x1
+#define	CAPCOM_WHBSSEE_SETSEE1		BIT(1)
+#define	CAPCOM_WHBSSEE_SETSEE1_NOE	0x0
+#define	CAPCOM_WHBSSEE_SETSEE1_SET	0x2
+#define	CAPCOM_WHBSSEE_SETSEE2		BIT(2)
+#define	CAPCOM_WHBSSEE_SETSEE2_NOE	0x0
+#define	CAPCOM_WHBSSEE_SETSEE2_SET	0x4
+#define	CAPCOM_WHBSSEE_SETSEE3		BIT(3)
+#define	CAPCOM_WHBSSEE_SETSEE3_NOE	0x0
+#define	CAPCOM_WHBSSEE_SETSEE3_SET	0x8
+#define	CAPCOM_WHBSSEE_SETSEE4		BIT(4)
+#define	CAPCOM_WHBSSEE_SETSEE4_NOE	0x0
+#define	CAPCOM_WHBSSEE_SETSEE4_SET	0x10
+#define	CAPCOM_WHBSSEE_SETSEE5		BIT(5)
+#define	CAPCOM_WHBSSEE_SETSEE5_NOE	0x0
+#define	CAPCOM_WHBSSEE_SETSEE5_SET	0x20
+#define	CAPCOM_WHBSSEE_SETSEE6		BIT(6)
+#define	CAPCOM_WHBSSEE_SETSEE6_NOE	0x0
+#define	CAPCOM_WHBSSEE_SETSEE6_SET	0x40
+#define	CAPCOM_WHBSSEE_SETSEE7		BIT(7)
+#define	CAPCOM_WHBSSEE_SETSEE7_NOE	0x0
+#define	CAPCOM_WHBSSEE_SETSEE7_SET	0x80
 
-#define	CAPCOM_T0(base)		MMIO32((base) + 0x40)
+#define	CAPCOM_WHBCSEE(base)		MMIO32((base) + 0x3C)
+#define	CAPCOM_WHBCSEE_CLRSEE0		BIT(0)
+#define	CAPCOM_WHBCSEE_CLRSEE0_NOE	0x0
+#define	CAPCOM_WHBCSEE_CLRSEE0_CLR	0x1
+#define	CAPCOM_WHBCSEE_CLRSEE1		BIT(1)
+#define	CAPCOM_WHBCSEE_CLRSEE1_NOE	0x0
+#define	CAPCOM_WHBCSEE_CLRSEE1_CLR	0x2
+#define	CAPCOM_WHBCSEE_CLRSEE2		BIT(2)
+#define	CAPCOM_WHBCSEE_CLRSEE2_NOE	0x0
+#define	CAPCOM_WHBCSEE_CLRSEE2_CLR	0x4
+#define	CAPCOM_WHBCSEE_CLRSEE3		BIT(3)
+#define	CAPCOM_WHBCSEE_CLRSEE3_NOE	0x0
+#define	CAPCOM_WHBCSEE_CLRSEE3_CLR	0x8
+#define	CAPCOM_WHBCSEE_CLRSEE4		BIT(4)
+#define	CAPCOM_WHBCSEE_CLRSEE4_NOE	0x0
+#define	CAPCOM_WHBCSEE_CLRSEE4_CLR	0x10
+#define	CAPCOM_WHBCSEE_CLRSEE5		BIT(5)
+#define	CAPCOM_WHBCSEE_CLRSEE5_NOE	0x0
+#define	CAPCOM_WHBCSEE_CLRSEE5_CLR	0x20
+#define	CAPCOM_WHBCSEE_CLRSEE6		BIT(6)
+#define	CAPCOM_WHBCSEE_CLRSEE6_NOE	0x0
+#define	CAPCOM_WHBCSEE_CLRSEE6_CLR	0x40
+#define	CAPCOM_WHBCSEE_CLRSEE7		BIT(7)
+#define	CAPCOM_WHBCSEE_CLRSEE7_NOE	0x0
+#define	CAPCOM_WHBCSEE_CLRSEE7_CLR	0x80
 
-#define	CAPCOM_T0REL(base)	MMIO32((base) + 0x44)
+#define	CAPCOM_T0(base)				MMIO32((base) + 0x40)
+#define	CAPCOM_T0_T0				GENMASK(31, 0)
+#define	CAPCOM_T0_T0_SHIFT			0
+#define	CAPCOM_T0_OVF0				BIT(31)
+#define	CAPCOM_T0_OVF0_CLEARED		0x0
+#define	CAPCOM_T0_OVF0_SET			0x80000000
 
-#define	CAPCOM_T1(base)		MMIO32((base) + 0x48)
+#define	CAPCOM_T0REL(base)			MMIO32((base) + 0x44)
+#define	CAPCOM_T0REL_T0REL			GENMASK(31, 0)
+#define	CAPCOM_T0REL_T0REL_SHIFT	0
 
-#define	CAPCOM_T1REL(base)	MMIO32((base) + 0x4C)
+#define	CAPCOM_T1(base)				MMIO32((base) + 0x48)
+#define	CAPCOM_T1_T1				GENMASK(31, 0)
+#define	CAPCOM_T1_T1_SHIFT			0
+#define	CAPCOM_T1_OVF1				BIT(31)
+#define	CAPCOM_T1_OVF1_CLEARED		0x0
+#define	CAPCOM_T1_OVF1_SET			0x80000000
 
-#define	CAPCOM_CC0(base)	MMIO32((base) + 0x50)
+#define	CAPCOM_T1REL(base)			MMIO32((base) + 0x4C)
+#define	CAPCOM_T1REL_T1REL			GENMASK(31, 0)
+#define	CAPCOM_T1REL_T1REL_SHIFT	0
 
-#define	CAPCOM_CC1(base)	MMIO32((base) + 0x54)
+#define	CAPCOM_CC(base, n)			MMIO32(base + 0x50 + ((n) * 0x4))
 
-#define	CAPCOM_CC2(base)	MMIO32((base) + 0x58)
+#define	CAPCOM_T01OCR(base)			MMIO32((base) + 0x94)
+#define	CAPCOM_T01OCR_CT0			BIT(0)
+#define	CAPCOM_T01OCR_CT0_NOC		0x0
+#define	CAPCOM_T01OCR_CT0_CSR		0x1
+#define	CAPCOM_T01OCR_CT1			BIT(1)
+#define	CAPCOM_T01OCR_CT1_NOC		0x0
+#define	CAPCOM_T01OCR_CT1_CSR		0x2
 
-#define	CAPCOM_CC3(base)	MMIO32((base) + 0x5C)
+#define	CAPCOM_WHBSOUT(base)		MMIO32((base) + 0x98)
+#define	CAPCOM_WHBSOUT_SET0O		BIT(0)
+#define	CAPCOM_WHBSOUT_SET1O		BIT(1)
+#define	CAPCOM_WHBSOUT_SET2O		BIT(2)
+#define	CAPCOM_WHBSOUT_SET3O		BIT(3)
+#define	CAPCOM_WHBSOUT_SET4O		BIT(4)
+#define	CAPCOM_WHBSOUT_SET5O		BIT(5)
+#define	CAPCOM_WHBSOUT_SET6O		BIT(6)
+#define	CAPCOM_WHBSOUT_SET7O		BIT(7)
 
-#define	CAPCOM_CC4(base)	MMIO32((base) + 0x60)
-
-#define	CAPCOM_CC5(base)	MMIO32((base) + 0x64)
-
-#define	CAPCOM_CC6(base)	MMIO32((base) + 0x68)
-
-#define	CAPCOM_CC7(base)	MMIO32((base) + 0x6C)
+#define	CAPCOM_WHBCOUT(base)		MMIO32((base) + 0x9C)
+#define	CAPCOM_WHBCOUT_CLR0O		BIT(0)
+#define	CAPCOM_WHBCOUT_CLR1O		BIT(1)
+#define	CAPCOM_WHBCOUT_CLR2O		BIT(2)
+#define	CAPCOM_WHBCOUT_CLR3O		BIT(3)
+#define	CAPCOM_WHBCOUT_CLR4O		BIT(4)
+#define	CAPCOM_WHBCOUT_CLR5O		BIT(5)
+#define	CAPCOM_WHBCOUT_CLR6O		BIT(6)
+#define	CAPCOM_WHBCOUT_CLR7O		BIT(7)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC7IC(base)	MMIO32((base) + 0xD8)
+#define	CAPCOM_CC7_SRC(base)		MMIO32((base) + 0xD8)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC6IC(base)	MMIO32((base) + 0xDC)
+#define	CAPCOM_CC6_SRC(base)		MMIO32((base) + 0xDC)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC5IC(base)	MMIO32((base) + 0xE0)
+#define	CAPCOM_CC5_SRC(base)		MMIO32((base) + 0xE0)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC4IC(base)	MMIO32((base) + 0xE4)
+#define	CAPCOM_CC4_SRC(base)		MMIO32((base) + 0xE4)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC3IC(base)	MMIO32((base) + 0xE8)
+#define	CAPCOM_CC3_SRC(base)		MMIO32((base) + 0xE8)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC2IC(base)	MMIO32((base) + 0xEC)
+#define	CAPCOM_CC2_SRC(base)		MMIO32((base) + 0xEC)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC1IC(base)	MMIO32((base) + 0xF0)
+#define	CAPCOM_CC1_SRC(base)		MMIO32((base) + 0xF0)
 
 /* Service Routing Control Register */
-#define	CAPCOM_CC0IC(base)	MMIO32((base) + 0xF4)
+#define	CAPCOM_CC0_SRC(base)		MMIO32((base) + 0xF4)
 
 /* Service Routing Control Register */
-#define	CAPCOM_T1IC(base)	MMIO32((base) + 0xF8)
+#define	CAPCOM_T1_SRC(base)			MMIO32((base) + 0xF8)
 
 /* Service Routing Control Register */
-#define	CAPCOM_T0IC(base)	MMIO32((base) + 0xFC)
+#define	CAPCOM_T0_SRC(base)			MMIO32((base) + 0xFC)
 
 
 // GPIO [MOD_NUM=F023, MOD_REV=00, MOD_32BIT=C0]

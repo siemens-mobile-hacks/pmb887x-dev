@@ -24,7 +24,7 @@ my $board_meta = Sie::BoardMetadata->new("EL71");
 
 my $gpio_var = "common_gpios";
 for my $gpio_name (getSortedKeys($board_meta->gpios())) {
-	push @gpios, ['"GPIO_'.$gpio_name.'",', "GPIO_PIN".$board_meta->gpios()->{$gpio_name}];
+	push @gpios, ['"GPIO_PIN'.$board_meta->gpios()->{$gpio_name}.'_'.$gpio_name.'",', $board_meta->gpios()->{$gpio_name}.",", "GPIO_PIN".$board_meta->gpios()->{$gpio_name}];
 }
 
 for my $cpu ("pmb8875", "pmb8876") {
@@ -42,7 +42,7 @@ for my $cpu ("pmb8875", "pmb8876") {
 	
 	my @irqs;
 	for my $irq_name (getSortedKeys($irqs)) {
-		push @irqs, ['"'.$irq_name.'",', $irqs->{$irq_name}];
+		push @irqs, ['"'.$irq_name.'",', $irqs->{$irq_name}.",", 'NVIC_CON'.$irqs->{$irq_name}];
 	}
 	
 	$str .= "static pmb887x_cpu_meta_irq_t ".lc($cpu_meta->{name})."_irqs[] = {\n";
@@ -172,10 +172,10 @@ sub genModuleHeader {
 		if ($module->{name} eq "NVIC") {
 			if ($reg->{name} eq "CURRENT_IRQ" || $reg->{name} eq "CURRENT_FIQ") {
 				$special = "PMB887X_REG_IS_IRQ_NUM";
+			} elsif ($reg->{name} eq "CON") {
+				$special = "PMB887X_REG_IS_IRQ_CON";
 			}
-		}
-		
-		if ($module->{name} eq "GPIO" && $reg->{name} eq "PIN") {
+		} elsif ($module->{name} eq "GPIO" && $reg->{name} eq "PIN") {
 			$special = "PMB887X_REG_IS_GPIO_PIN";
 		}
 		

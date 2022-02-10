@@ -87,7 +87,7 @@ sub boot_module_init {
 		if ($last_irq != $irq) {
 			$last_irq = $irq;
 			
-			print "IRQ: 0x".sprintf("%02X", $irq)."\n" if ($irq);
+			# print "IRQ: 0x".sprintf("%02X", $irq)."\n" if ($irq);
 			if (syswrite($sock_irq, chr($irq)) != 1) {
 				die("write irq error: $!\n");
 			}
@@ -147,9 +147,9 @@ sub boot_module_init {
 			my $vv = unpack("V", $data);
 			
 			if ($addr != 0xF4300118) {
-				my $descr = $cpu_meta->dumpReg($addr, $vv);
-				printf("READ%s from %08X (%08X)%s (from %08X)\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
-					$addr, $vv, ($descr ? " $descr" : ""), $from) if ($LOG_IO);
+		#		my $descr = $cpu_meta->dumpReg($addr, $vv);
+		#		printf("READ%s from %08X (%08X)%s (from %08X)\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
+		#			$addr, $vv, ($descr ? " $descr" : ""), $from) if ($LOG_IO);
 			}
 		} elsif ($cmd eq "W" || $cmd eq "w" || $cmd eq "O" || $cmd eq "o") {
 			my $addr = unpack("V", substr($buf, 1, 4));
@@ -187,10 +187,20 @@ sub boot_module_init {
 				$valid = 0;
 			}
 			
+			if ($addr == 0xF1000020) {
+				my $c = chr($value);
+				if ($c =~ /[^\t\n\x20-x7e]/) {
+					print "\n" if ($value == 0xFF);
+					# print sprintf("\\x%02X\n", $value);
+				} else {
+					print $c;
+				}
+			}
+			
 			if ($addr != 0xF4300118) {
-				my $descr = $cpu_meta->dumpReg($addr, $value);
-				printf("WRITE%s %08X to %08X%s (from %08X)%s\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
-					$value, $addr, ($descr ? " $descr" : ""), $from, $valid ? "" : " | SKIP!!!!") if ($LOG_IO);
+			#	my $descr = $cpu_meta->dumpReg($addr, $value);
+			#	printf("WRITE%s %08X to %08X%s (from %08X)%s\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
+			#		$value, $addr, ($descr ? " $descr" : ""), $from, $valid ? "" : " | SKIP!!!!") if ($LOG_IO);
 			}
 			
 			if ($valid) {
