@@ -8,11 +8,20 @@ use JSON::XS;
 use Sie::GDBClient;
 use Sie::Utils;
 
+my $ESCAPE_TABLE = {
+	'"'		=> '\\"',
+	"\n"	=> "\\n",
+	"\r"	=> "\\r",
+	"\t"	=> "\\t",
+	"\\"	=> "\\\\"
+};
+
 $| = 1;
 
 my $gdb = Sie::GDBClient->new;
 
 my $functions = getFunctions($ARGV[0] || getDataDir()."/trace/EL71.json");
+my $variables = {};
 
 while (1) {
 	print STDERR "Connecting...\n";
@@ -34,7 +43,7 @@ while (1) {
 		
 		my $func = $functions->{$regs->{pc}};
 		
-		printf("%08X: %s(%s) from 0x%08X\n", $func->{addr}, $func->{name}, decodeArgs($gdb, $func, $regs), $regs->{lr});
+		printf("%08X: %s(%s) from 0x%08X\n", $func->{addr}, $func->{name}, decodeArgs($gdb, $func, $regs, $variables), $regs->{lr});
 		
 		# stop
 		last if !$gdb->continue('s');
@@ -43,8 +52,37 @@ while (1) {
 	sleep(1);
 }
 
+sub resolveRef {
+	my ($gdb, $v, $arg, $size) = @_;
+	
+	my $ptr = [];
+	while ($arg =~ /\*$/) {
+		push @$ptr, sprintf("*0x%08X", $v);
+		my $mem = $gdb->readMem($v, $arg =~ /[*]{2,}$/ ? 4 : int($size / 8));
+		
+		if (!defined $mem) {
+			$v = 0;
+			last;
+		}
+		
+		if ($size == 32) {
+			$v = unpack("V", $mem);
+		} elsif ($size == 16) {
+			$v = unpack("v", $mem);
+		} elsif ($size == 8) {
+			$v = ord($mem);
+		} else {
+			die("invalid size: $size");
+		}
+		
+		$arg = substr($arg, 0, length($arg) - 1);
+	}
+	
+	return ($v, $ptr);
+}
+
 sub decodeArgs {
-	my ($gdb, $func, $regs) = @_;
+	my ($gdb, $func, $regs, $variables) = @_;
 	
 	my $arg_id = 0;
 	my @decoded;
@@ -59,10 +97,18 @@ sub decodeArgs {
 			$sp_index++;
 		}
 		
-		if ($arg =~ /^uint(32|16|8)$/) {
-			push @decoded, sprintf("%d", $v);
-		} elsif ($arg =~ /^int(32|16|8)$/) {
+		my $ptr = [];
+		
+		if ($arg =~ /^uint(32|16|8)/) {
 			my $size = $1;
+			
+			($v, $ptr) = resolveRef($gdb, $v, $arg, $size);
+			
+			push @decoded, sprintf("0x%02X", $v);
+		} elsif ($arg =~ /^int(32|16|8)/) {
+			my $size = $1;
+			
+			($v, $ptr) = resolveRef($gdb, $v, $arg, $size);
 			
 			my $sign = $v & (1 << $size);
 			$v = ($sign ? -1 : 1) * ($v & ~$sign);
@@ -86,31 +132,55 @@ sub decodeArgs {
 				$index++;
 			}
 			
-			push @decoded, sprintf("(*0x%08X)", $v).'"'.$str.'"';
-		} elsif ($arg eq "cstr") {
+			push @decoded, sprintf("(*0x%08X)", $v).'"'.escapeStr($str).'"';
+		} elsif ($arg =~ /^cstr/) {
 			my $index = 0;
+			my $chunk = 64;
 			my $str = "";
 			
+			($v, $ptr) = resolveRef($gdb, $v, $arg, 32);
+			
 			while (1) {
-				my $c = $gdb->readMem($v + $index, 1);
+				my $c = $gdb->readMem($v + $index, $chunk);
+				
 				$str .= $c;
 				
-				if ($index >= 0x100) {
+				if ($index >= 4096) {
 					warn "Corrupted string???";
 					last;
 				}
 				
-				last if ($c eq "\0");
+				my $zero = index($str, "\0");
+				if ($zero >= 0) {
+					$str = substr($str, 0, $zero);
+					last;
+				}
 				
-				$index++;
+				$index += $chunk;
 			}
 			
-			push @decoded, sprintf("(*0x%08X)", $v).'"'.$str.'"';
+			push @decoded, sprintf("(*0x%08X)", $v).'"'.escapeStr($str).'"';
 		} else {
 			push @decoded, sprintf("UNK(*%08X)", $v);
 		}
 		
+		$decoded[scalar(@decoded) - 1] = "(".join("->", @$ptr).")".$decoded[scalar(@decoded) - 1] if @$ptr;
+		
 		$arg_id++;
+	}
+	
+	if (@decoded) {
+		if ($func->{name} =~ /^NU_Create_(.*?)$/) {
+			my $name = $decoded[1];
+			$name =~ s/.*?"(.*?)".*?/$1/g;
+			$name =~ s/\s/_/g;
+			
+			$variables->{$decoded[0]} = $decoded[0]."_".$name;
+			
+			$decoded[0] = $variables->{$decoded[0]};
+		} elsif ($func->{name} =~ /^NU_(.*?)$/) {
+			$decoded[0] = $variables->{$decoded[0]} if exists $variables->{$decoded[0]};
+		}
 	}
 	
 	return join(", ", @decoded);
@@ -152,6 +222,21 @@ sub printRegisters {
 	printf("R4  %08X  R5  %08X R6  %08X R7  %08X\n", $regs->{r4}, $regs->{r5}, $regs->{r6}, $regs->{r7});
 	printf("R8  %08X  R9  %08X R10 %08X R11 %08X\n", $regs->{r8}, $regs->{r9}, $regs->{r10}, $regs->{r11});
 	printf("R12 %08X  SP  %08X LR  %08X PC  %08X\n", $regs->{r12}, $regs->{sp}, $regs->{lr}, $regs->{pc});
+}
+
+sub escapeStr {
+	my ($str) = @_;
+	$str =~ s/([^\w\d])/_escapeChar($1)/ge;
+	return $str;
+}
+
+sub _escapeChar {
+	return $ESCAPE_TABLE->{$_[0]} if exists $ESCAPE_TABLE->{$_[0]};
+	
+	my $code = ord($_[0]);
+	return sprintf("\\x%02X", $code) if ($code < 0x20 || $code >= 0x7F);
+	
+	return $_[0];
 }
 
 sub addBreakpoints {

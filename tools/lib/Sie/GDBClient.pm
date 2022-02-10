@@ -7,11 +7,14 @@ use Data::Dumper;
 use IO::Socket qw(AF_INET SOCK_STREAM);
 use IO::Select;
 use Sie::Utils;
+use List::Util qw(min max);
 
 use constant CMD_OK				=> 0;
 use constant CMD_NACK			=> -1;
 use constant CMD_INVALID_RESP	=> -2;
 use constant CMD_CANCEL			=> -3;
+
+my $DEFAULT_REGS = [qw(r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 sp lr pc cpsr)];
 
 sub new {
 	my ($class, $cpu) = @_;
@@ -69,37 +72,33 @@ sub readMem {
 		return undef;
 	}
 	
-	my $str = "";
-	for (my $i = 0; $i < $size; $i++) {
-		$str .= chr(hex(substr($response, $i * 2, 2)));
-	}
-	return $str;
+	return pack("H*", $response);
 }
 
 sub registers {
 	my ($self, $names, $size) = @_;
 	
-	$names ||= [qw(r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 sp lr pc cpsr)];
+	$names ||= $DEFAULT_REGS;
 	$size ||= 4;
 	
 	my ($ret, $response) = $self->exec('g', []);
 	return undef if ($ret != CMD_OK);
 	
-	my $regs = [];
-	my $cnt = length($response) / ($size * 2);
-	for (my $i = 0; $i < $cnt; $i++) {
-		push @$regs, $self->decodeHexBE(substr($response, $i * $size * 2, $size * 2));
-	}
+	my $response_bin = pack("H*", $response);
 	
-	if (scalar(@$names) > scalar(@$regs)) {
-		print STDERR "[gdb-client] Invalid registers count (expected ".scalar(@$names).", but received ".scalar(@$regs).")\n";
+	my $cnt = min(scalar(@$names), length($response_bin) / $size);
+	
+	if (scalar(@$names) > $cnt) {
+		print STDERR "[gdb-client] Invalid registers count (expected ".scalar(@$names).", but received $cnt)\n";
 		return undef;
 	}
 	
 	my $regs_info = {};
-	for my $name (@$names) {
-		$regs_info->{$name} = shift @$regs;
+	for (my $i = 0; $i < $cnt; $i++) {
+		my $name = $names->[$i];
+		$regs_info->{$name} = unpack("L", substr($response_bin, $i * $size, $size));
 	}
+	
 	return $regs_info;
 }
 
@@ -151,14 +150,6 @@ sub exec {
 	}
 	
 	return ($ret, $response);
-}
-
-sub decodeHexBE {
-	my ($self, $data) = @_;
-	
-	my $v = hex $data;
-	
-	return unpack("L", pack("N", $v));
 }
 
 sub chk {

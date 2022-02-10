@@ -7,21 +7,27 @@ use Data::Dumper;
 use JSON::XS;
 
 my $funcs = parseLib($ARGV[0]);
+my $type = $ARGV[1] || "trace";
 
 my @items;
 
 for my $func (@$funcs) {
-	my $addr = sprintf("0x%08X", $func->{addr});
-	my $args = JSON::XS->new->encode($func->{args});
-	
-	push @items, qq|	{
-		"name":		"$func->{name}",
-		"addr":		$addr,
-		"args":		$args
-	}|;
+	if ($type eq "trace") {
+		my $args = JSON::XS->new->encode($func->{args});
+		my $addr = sprintf("0x%08X", $func->{addr});
+		push @items, qq|	{
+			"name":		"$func->{name}",
+			"addr":		$addr,
+			"args":		$args
+		}|;
+	} elsif ($type eq "sym") {
+		printf("%s %08X f\n", $func->{name}, $func->{addr} & ~1);
+	}
 }
 
-print "[\n".join(",\n", @items)."\n]\n";
+if ($type eq "trace") {
+	print "[\n".join(",\n", @items)."\n]\n";
+}
 
 sub parseLib {
 	my ($file) = @_;
