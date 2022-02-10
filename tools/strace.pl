@@ -49,12 +49,14 @@ sub decodeArgs {
 	my $arg_id = 0;
 	my @decoded;
 	
+	my $sp_index = 0;
 	for my $arg (@{$func->{args}}) {
 		my $v = 0;
 		if ($arg_id < 4) {
 			$v = $regs->{"r$arg_id"};
 		} else {
-			# todo stack
+			$v = unpack("L", $gdb->readMem($regs->{sp} + (4 * $sp_index), 4));
+			$sp_index++;
 		}
 		
 		if ($arg =~ /^uint(32|16|8)$/) {
@@ -75,10 +77,7 @@ sub decodeArgs {
 			while (1) {
 				my $c = $gdb->readMem($v + $index, 1);
 				
-				if (ord($c) > 0xA0 && $index >= 2) {
-					warn "Corrupted string???";
-					last;
-				}
+				last if (ord($c) > 0xA0 && $index >= 2);
 				
 				$str .= $c if ($index >= 2);
 				
@@ -133,6 +132,12 @@ sub getFunctions {
 	my $functions = {};
 	for my $func (@{JSON::XS->new->decode($json)}) {
 		next if $func->{skip};
+		
+		if (($func->{addr} & 1)) {
+			$func->{thumb} = 1;
+			$func->{addr} &= ~1;
+		}
+		
 		$functions->{$func->{addr}} = $func;
 	}
 	
@@ -152,7 +157,11 @@ sub printRegisters {
 sub addBreakpoints {
 	my ($gdb, $functions) = @_;
 	for my $func (values %$functions) {
-		return 0 if !$gdb->addBreakPoint(0, $func->{addr}, 4);
+		if ($func->{thumb}) {
+			return 0 if !$gdb->addBreakPoint(0, $func->{addr}, 2);
+		} else {
+			return 0 if !$gdb->addBreakPoint(0, $func->{addr}, 4);
+		}
 	}
 	return 1;
 }
@@ -160,7 +169,11 @@ sub addBreakpoints {
 sub removeBreakpoints {
 	my ($gdb, $functions) = @_;
 	for my $func (values %$functions) {
-		return 0 if !$gdb->removeBreakPoint(0, $func->{addr}, 4);
+		if ($func->{thumb}) {
+			return 0 if !$gdb->removeBreakPoint(0, $func->{addr}, 2);
+		} else {
+			return 0 if !$gdb->removeBreakPoint(0, $func->{addr}, 4);
+		}
 	}
 	return 1;
 }
