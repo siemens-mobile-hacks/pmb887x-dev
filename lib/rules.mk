@@ -27,6 +27,11 @@ ifeq ($(BOOT),extram)
 	LDSCRIPT = $(LIB_DIR)/ld/extram.ld
 endif
 
+ifeq ($(BOOT),flash)
+	ARCH_FLAGS += -DBOOT_FLASH
+	LDSCRIPT = $(LIB_DIR)/ld/flash.ld
+endif
+
 ARCH_FLAGS += -mcpu=arm926ej-s -DBOARD_$(BOARD)
 
 ############################################################################
@@ -152,10 +157,13 @@ $(PROJECT).elf: $(OBJS) $(LDSCRIPT) $(LIBDEPS)
 %.list: %.elf
 	$(OBJDUMP) -S $< > $@
 
+$(PROJECT).rom:
+	dd if=$(PROJECT).bin of=$(PROJECT).rom
+	fallocate -l 32M $(PROJECT).rom
+
 clean:
 	@printf "$(OBJS)"
 	rm -rf $(BUILD_DIR) $(GENERATED_BINS)
 
 .PHONY: all clean
 -include $(OBJS:.o=.d)
-

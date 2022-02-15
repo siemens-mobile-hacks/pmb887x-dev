@@ -16,7 +16,7 @@ int main(void) {
 	i2c_init();
 	i2c_smbus_write_byte(0x31, 0xE, 0b11);
 	
-	usart_set_speed(USART0, UART_SPEED_1228800);
+	usart_set_speed(USART0, UART_SPEED_1600000);
 	while (usart_getc(USART0) != 'O');
 	while (usart_getc(USART0) != 'K');
 	usart_putc(USART0, '.');
@@ -43,7 +43,7 @@ static int command_handler(int irq) {
 			
 			if (irq == 1) {
 				usart_putc(USART0, ',');
-				usart_putc(USART0, current_irq); // Высылаем сразу после команды текущий IRQ
+				usart_putc(USART0, current_irq);
 			} else {
 				usart_putc(USART0, '.');
 			}
@@ -73,11 +73,11 @@ static int command_handler(int irq) {
 			}
 			
 			if (addr == (uint32_t) &TPU_COUNTER && value >= 0x875) {
-				value = 0x875;
+				// value = 0x875;
 			}
 			
 			if (addr == (uint32_t) &SCU_RST_SR) {
-				value = (value & ~SCU_RST_SR_PWDRST) | SCU_RST_SR_HDRST;
+				// value = (value & ~SCU_RST_SR_PWDRST) | SCU_RST_SR_HDRST;
 			}
 			
 			usart_putc(USART0, (value >> 0 ) & 0xFF);
@@ -87,7 +87,7 @@ static int command_handler(int irq) {
 			
 			if (irq == 1) {
 				usart_putc(USART0, '!');
-				usart_putc(USART0, current_irq); // Высылаем сразу после команды текущий IRQ
+				usart_putc(USART0, current_irq);
 			} else {
 				usart_putc(USART0, ';');
 			}
@@ -103,6 +103,7 @@ static int command_handler(int irq) {
 			
 			bool skip = false;
 			
+			// Low freq i2c clock
 			if (addr == (uint32_t) &I2C_FDIVCFG) {
 				value = 0x00010090;
 			}
@@ -127,7 +128,7 @@ static int command_handler(int irq) {
 			
 			if (irq == 1) {
 				usart_putc(USART0, '!');
-				usart_putc(USART0, current_irq); // Высылаем сразу после команды текущий IRQ
+				usart_putc(USART0, current_irq);
 			} else {
 				usart_putc(USART0, ';');
 			}

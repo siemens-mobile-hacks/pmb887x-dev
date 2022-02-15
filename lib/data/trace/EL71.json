@@ -1,0 +1,3915 @@
+[
+	{
+		"name":		"loopback0",
+		"addr":		0xA0002040,
+		"args":		[]
+	},
+	{
+		"name":		"loopback1",
+		"addr":		0xA0002040,
+		"args":		[]
+	},
+	{
+		"name":		"loopback2",
+		"addr":		0xA0002040,
+		"args":		[]
+	},
+	{
+		"name":		"loopback3",
+		"addr":		0xA0002040,
+		"args":		[]
+	},
+	{
+		"name":		"loopback4",
+		"addr":		0xA0002040,
+		"args":		[]
+	},
+	{
+		"name":		"DecToHex",
+		"addr":		0xA058BB99,
+		"args":		[]
+	},
+	{
+		"name":		"GetAkku",
+		"addr":		0xA01A75D4,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"GetLP",
+		"addr":		0xA006F061,
+		"args":		[]
+	},
+	{
+		"name":		"SetIllumination",
+		"addr":		0xA04BD61C,
+		"args":		["uint8","uint32","uint16","uint32"]
+	},
+	{
+		"name":		"SwitchPhoneOff",
+		"addr":		0xA0549F2C,
+		"args":		[]
+	},
+	{
+		"name":		"fopen",
+		"addr":		0xA056E674,
+		"args":		["cstr","uint32","uint32","ptr"]
+	},
+	{
+		"name":		"fread",
+		"addr":		0xA056E734,
+		"args":		["int32","ptr","int32","ptr"]
+	},
+	{
+		"name":		"fwrite",
+		"addr":		0xA056E864,
+		"args":		["int32","ptr","int32","ptr"]
+	},
+	{
+		"name":		"fclose",
+		"addr":		0xA056E5C8,
+		"args":		["int32","ptr"]
+	},
+	{
+		"name":		"fflush",
+		"addr":		0xA056E5F8,
+		"args":		[]
+	},
+	{
+		"name":		"lseek",
+		"addr":		0xA056E628,
+		"args":		["int32","uint32","uint32","ptr","ptr"]
+	},
+	{
+		"name":		"mkdir",
+		"addr":		0xA056E26C,
+		"args":		["cstr","ptr"]
+	},
+	{
+		"name":		"OpenReadCloseFile",
+		"addr":		0xA006F001,
+		"args":		[]
+	},
+	{
+		"name":		"GetFileAttrib",
+		"addr":		0xA056E0CC,
+		"args":		["cstr","ptr","ptr"]
+	},
+	{
+		"name":		"SetFileAttrib",
+		"addr":		0xA056E3C0,
+		"args":		["cstr","uint8","ptr"]
+	},
+	{
+		"name":		"malloc",
+		"addr":		0xA0092F51,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"mfree",
+		"addr":		0xA0092F93,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"sprintf",
+		"addr":		0xA0FBB1A5,
+		"args":		["cstr","cstr","ptr"]
+	},
+	{
+		"name":		"strcat",
+		"addr":		0xA0FBCC29,
+		"args":		["cstr","cstr"]
+	},
+	{
+		"name":		"strchr",
+		"addr":		0xA0FBCC49,
+		"args":		["cstr","ptr"]
+	},
+	{
+		"name":		"strcmp",
+		"addr":		0xA0FBCC6C,
+		"args":		["cstr","cstr"]
+	},
+	{
+		"name":		"strcpy",
+		"addr":		0xA0FBCD09,
+		"args":		["cstr","cstr"]
+	},
+	{
+		"name":		"strlen",
+		"addr":		0xA0FBCD89,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"wsAppendChar",
+		"addr":		0xA0500C81,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"wsInsertChar",
+		"addr":		0xA0500C35,
+		"args":		["ptr","int32","int32"]
+	},
+	{
+		"name":		"GetPITaddr",
+		"addr":		0xA0956C1F,
+		"args":		["int32"]
+	},
+	{
+		"name":		"DrawMainScreen",
+		"addr":		0xA05C4B39,
+		"args":		[]
+	},
+	{
+		"name":		"DrawScreenSaver",
+		"addr":		0xA06732B3,
+		"args":		[]
+	},
+	{
+		"name":		"GetImgHeight",
+		"addr":		0xA0956D47,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetImgWidth",
+		"addr":		0xA07878CB,
+		"args":		["int32"]
+	},
+	{
+		"name":		"DrawImg",
+		"addr":		0xA05C2DF1,
+		"args":		["uint32","uint32","uint32"]
+	},
+	{
+		"name":		"DrawImage2",
+		"addr":		0xA0A166C7,
+		"args":		[]
+	},
+	{
+		"name":		"DrawCanvas",
+		"addr":		0xA05C21CB,
+		"args":		["ptr","int32","int32","int32","int32","int32"]
+	},
+	{
+		"name":		"DrawImgBW",
+		"addr":		0xA0A165F1,
+		"args":		["uint32","uint32","uint32","cstr","cstr"]
+	},
+	{
+		"name":		"AddIconToIconbar",
+		"addr":		0xA05C2409,
+		"args":		[]
+	},
+	{
+		"name":		"fp_sint2fp",
+		"addr":		0xA0FE95E0,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetEELiteBlockAddress",
+		"addr":		0xA04EDF54,
+		"args":		["int16"]
+	},
+	{
+		"name":		"fp_fp2sint",
+		"addr":		0xA0FE9480,
+		"args":		["double"]
+	},
+	{
+		"name":		"EEFullGetBlockInfo",
+		"addr":		0xA04ED5F0,
+		"args":		["uint32","ptr","cstr"]
+	},
+	{
+		"name":		"fp_add",
+		"addr":		0xA0FE8840,
+		"args":		["double","double"]
+	},
+	{
+		"name":		"fp_mul",
+		"addr":		0xA0FE97A0,
+		"args":		["double","double"]
+	},
+	{
+		"name":		"fp_div",
+		"addr":		0xA0FE8E54,
+		"args":		["double","double"]
+	},
+	{
+		"name":		"strrchr_2",
+		"addr":		0xA0FBCED1,
+		"args":		["cstr","int32"]
+	},
+	{
+		"name":		"PlaySound",
+		"addr":		0xA05A3BD4,
+		"args":		["int32","int32","int32","int32","int32"]
+	},
+	{
+		"name":		"PlaySound2",
+		"addr":		0xA05965D8,
+		"args":		[]
+	},
+	{
+		"name":		"PlaySoundLoop",
+		"addr":		0xA0B7AF9C,
+		"args":		["int32","int32","int32"]
+	},
+	{
+		"name":		"SLI_SetState",
+		"addr":		0xA04BDB9C,
+		"args":		["uint8"]
+	},
+	{
+		"name":		"Ringtones_SetState",
+		"addr":		0xA059B8A4,
+		"args":		["uint8"]
+	},
+	{
+		"name":		"Registry_GetHMIKeyID",
+		"addr":		0xA06B750C,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"Registry_SetResourcePath",
+		"addr":		0xA06B6F80,
+		"args":		["int32","int32","ptr"]
+	},
+	{
+		"name":		"Registry_DeleteResourcePath",
+		"addr":		0xA06B4178,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"MemChr",
+		"addr":		0xA0FBBF0D,
+		"args":		[]
+	},
+	{
+		"name":		"setfilesize",
+		"addr":		0xA056E774,
+		"args":		["int32","uint32","ptr"]
+	},
+	{
+		"name":		"Registry_GetResourcePathFromLevel",
+		"addr":		0xA06B6620,
+		"args":		["int32","int32","ptr","ptr"]
+	},
+	{
+		"name":		"GetPaletteAdrByColorIndex_2",
+		"addr":		0xA0951DB5,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetVibraStatus",
+		"addr":		0xA05AFB7F,
+		"args":		[]
+	},
+	{
+		"name":		"GetProvider",
+		"addr":		0xA08D3317,
+		"args":		[]
+	},
+	{
+		"name":		"IsScreenSaver",
+		"addr":		0xA067329F,
+		"args":		[]
+	},
+	{
+		"name":		"IsUnlocked",
+		"addr":		0xA08DD0BD,
+		"args":		[]
+	},
+	{
+		"name":		"TempLigntOn",
+		"addr":		0xA08D5F41,
+		"args":		[]
+	},
+	{
+		"name":		"GetWavLen",
+		"addr":		0xA006F241,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"HasFlashSMS",
+		"addr":		0xA05C18EB,
+		"args":		[]
+	},
+	{
+		"name":		"ReadFlashSMS",
+		"addr":		0xA066EBA1,
+		"args":		[]
+	},
+	{
+		"name":		"PlayFile",
+		"addr":		0xA059A29C,
+		"args":		["int32","ptr","ptr","int32","int32","int32"]
+	},
+	{
+		"name":		"StartMidlet",
+		"addr":		0xA0AD7BA0,
+		"args":		[]
+	},
+	{
+		"name":		"GetMissedCallsCount",
+		"addr":		0xA09BEBB5,
+		"args":		[]
+	},
+	{
+		"name":		"GBS_StartTimerProc",
+		"addr":		0xA0092531,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"MsgBoxError",
+		"addr":		0xA095880D,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"MsgBoxYesNo",
+		"addr":		0xA095887B,
+		"args":		["int32","int32","ptr"]
+	},
+	{
+		"name":		"MsgBoxOkCancel",
+		"addr":		0xA0958885,
+		"args":		["int32","int32","ptr"]
+	},
+	{
+		"name":		"GetNetAccessMode",
+		"addr":		0xA0D44C83,
+		"args":		[]
+	},
+	{
+		"name":		"GetIlluminationDataTable",
+		"addr":		0xA8D8726C,
+		"args":		[]
+	},
+	{
+		"name":		"memcmp_2",
+		"addr":		0xA000AE85,
+		"args":		["ptr","ptr","int32"],
+		"skip":		true
+	},
+	{
+		"name":		"StrToInt",
+		"addr":		0xA062C3ED,
+		"args":		["cstr","ptr"]
+	},
+	{
+		"name":		"PlayVibra",
+		"addr":		0xA006F131,
+		"args":		[]
+	},
+	{
+		"name":		"IsTimerProc",
+		"addr":		0xA00978A5,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"zeromem_2",
+		"addr":		0xA0FBC3A4,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"memcpy_2",
+		"addr":		0xA0FBC448,
+		"args":		["ptr","ptr","int32"],
+		"skip":		true
+	},
+	{
+		"name":		"KeypressOn",
+		"addr":		0xA08DC97B,
+		"args":		["int32"]
+	},
+	{
+		"name":		"KeypressOff",
+		"addr":		0xA08DCA8D,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetCPUClock",
+		"addr":		0xA06F9F5D,
+		"args":		[]
+	},
+	{
+		"name":		"GetCPULoad",
+		"addr":		0xA06F9F97,
+		"args":		[]
+	},
+	{
+		"name":		"GetMMIMemUsed",
+		"addr":		0xA06F9F65,
+		"args":		[]
+	},
+	{
+		"name":		"GetFreeRamAvail",
+		"addr":		0xA0092F9B,
+		"args":		[]
+	},
+	{
+		"name":		"ShowMainMenu",
+		"addr":		0xA063CCAB,
+		"args":		[]
+	},
+	{
+		"name":		"ShowNativeMenu",
+		"addr":		0xA063CCAB,
+		"args":		[]
+	},
+	{
+		"name":		"SetVibraStatus",
+		"addr":		0xA05AFB45,
+		"args":		[]
+	},
+	{
+		"name":		"MMI_CanvasBuffer_FlushV",
+		"addr":		0xA05C5A95,
+		"args":		["int32"]
+	},
+	{
+		"name":		"TriggerUpdate",
+		"addr":		0xA095931B,
+		"args":		[]
+	},
+	{
+		"name":		"EndCallBusy",
+		"addr":		0xA09C020F,
+		"args":		[]
+	},
+	{
+		"name":		"IsDirectCallActive",
+		"addr":		0xA066AC95,
+		"args":		[]
+	},
+	{
+		"name":		"GetScreenSaverRAM",
+		"addr":		0xA0673279,
+		"args":		[]
+	},
+	{
+		"name":		"LockSched",
+		"addr":		0xA00976FF,
+		"args":		[]
+	},
+	{
+		"name":		"UnlockSched",
+		"addr":		0xA009777B,
+		"args":		[]
+	},
+	{
+		"name":		"FindFirstFile",
+		"addr":		0xA056E144,
+		"args":		["ptr","cstr","ptr"]
+	},
+	{
+		"name":		"FindNextFile",
+		"addr":		0xA056E1C4,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"FindClose",
+		"addr":		0xA056E08C,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"IsCalling",
+		"addr":		0xA0CE5D91,
+		"args":		[]
+	},
+	{
+		"name":		"RefreshGPRSTraffic",
+		"addr":		0xA092D015,
+		"args":		[]
+	},
+	{
+		"name":		"GetGPRSTrafficPointer",
+		"addr":		0xA0606A3C,
+		"args":		[]
+	},
+	{
+		"name":		"DrawRoundRect",
+		"addr":		0xA0A16073,
+		"args":		[]
+	},
+	{
+		"name":		"GetTypeOfCall",
+		"addr":		0xA0CE6593,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetShortcutRecordByName",
+		"addr":		0xA06374A5,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"IsCanvasBufferSet",
+		"addr":		0xA05C5FB9,
+		"args":		["char"]
+	},
+	{
+		"name":		"GetCanvasBufferPicPtr",
+		"addr":		0xA05C5F69,
+		"args":		["char"]
+	},
+	{
+		"name":		"DrawObject2Layer",
+		"addr":		0xA08DC18B,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"UpdateDisplayByLayerPtr",
+		"addr":		0xA095679D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"SetVibration",
+		"addr":		0xA04B3D93,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"IsIncognitoCall",
+		"addr":		0xA0CE5753,
+		"args":		[]
+	},
+	{
+		"name":		"rand",
+		"addr":		0xA0CE4E0D,
+		"args":		[]
+	},
+	{
+		"name":		"IsPlayerOn",
+		"addr":		0xA06A2078,
+		"args":		[]
+	},
+	{
+		"name":		"ShowCallList",
+		"addr":		0xA0A8C2AD,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"HexToDec",
+		"addr":		0xA0FBC79C,
+		"args":		[]
+	},
+	{
+		"name":		"GetCurrentTrackFilename",
+		"addr":		0xA06A231C,
+		"args":		[]
+	},
+	{
+		"name":		"GetFileStats",
+		"addr":		0xA056E438,
+		"args":		["cstr","ptr","ptr"]
+	},
+	{
+		"name":		"StrCmpNoCase",
+		"addr":		0xA058BEC1,
+		"args":		[]
+	},
+	{
+		"name":		"EEFullReadBlock",
+		"addr":		0xA04ED410,
+		"args":		["int32","ptr","int32","int32","int32","int32"]
+	},
+	{
+		"name":		"EEFullWriteBlock",
+		"addr":		0xA04ED6A0,
+		"args":		["int32","ptr","int32","int32","int32","int32"]
+	},
+	{
+		"name":		"GetAccessoryType",
+		"addr":		0xA006EF00,
+		"args":		[]
+	},
+	{
+		"name":		"GetLangMesIntoWS",
+		"addr":		0xA08DF358,
+		"args":		[]
+	},
+	{
+		"name":		"GetFreeFlexSpace",
+		"addr":		0xA056E01C,
+		"args":		["int32","ptr"]
+	},
+	{
+		"name":		"GetTotalFlexSpace",
+		"addr":		0xA056E8D0,
+		"args":		["int32","ptr"]
+	},
+	{
+		"name":		"RegExplorerExt",
+		"addr":		0xA0508288,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetProfileName",
+		"addr":		0xA05C4121,
+		"args":		[]
+	},
+	{
+		"name":		"fmove",
+		"addr":		0xA056E2D4,
+		"args":		["cstr","cstr","ptr"]
+	},
+	{
+		"name":		"rmdir",
+		"addr":		0xA056E358,
+		"args":		["cstr","ptr"]
+	},
+	{
+		"name":		"truncate",
+		"addr":		0xA056E7EC,
+		"args":		["int32","int32","ptr"]
+	},
+	{
+		"name":		"isdir",
+		"addr":		0xA056E204,
+		"args":		["cstr","ptr"]
+	},
+	{
+		"name":		"calloc",
+		"addr":		0xA0BA6EB0,
+		"args":		["uint32","uint32"]
+	},
+	{
+		"name":		"RebootPhone",
+		"addr":		0xA0549F38,
+		"args":		[]
+	},
+	{
+		"name":		"ExecuteFile",
+		"addr":		0xA0508524,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"UnRegExplorerExt",
+		"addr":		0xA05083FC,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetWavLenByContent",
+		"addr":		0xA01B2657,
+		"args":		[]
+	},
+	{
+		"name":		"CreatePath",
+		"addr":		0xA006F261,
+		"args":		[]
+	},
+	{
+		"name":		"PlaySoundVibra",
+		"addr":		0xA006F211,
+		"args":		["char","char","uint32","char"]
+	},
+	{
+		"name":		"PlayMelodyInMem",
+		"addr":		0xA059A50C,
+		"args":		["char","ptr","int32","int32","int32","ptr"]
+	},
+	{
+		"name":		"CloseScreensaver",
+		"addr":		0xA0673917,
+		"args":		[]
+	},
+	{
+		"name":		"GetMissedEventsPtr",
+		"addr":		0xA066ED03,
+		"args":		[]
+	},
+	{
+		"name":		"GetMissedEventCount",
+		"addr":		0xA006F2B1,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"wsprintf_2",
+		"addr":		0xA09488D1,
+		"args":		["ptr","cstr","ptr"]
+	},
+	{
+		"name":		"wstrcpy_2",
+		"addr":		0xA0500B73,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"WS_GetCharByPosition",
+		"addr":		0xA0500559,
+		"args":		[]
+	},
+	{
+		"name":		"ws2str",
+		"addr":		0xA056EDB4,
+		"args":		["ptr","cstr","uint32"]
+	},
+	{
+		"name":		"AllocWS_2",
+		"addr":		0xA0949395,
+		"args":		["int32"]
+	},
+	{
+		"name":		"FreeWS_2",
+		"addr":		0xA050032D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"IsGPRSEnabled",
+		"addr":		0xA0D38AF3,
+		"args":		[]
+	},
+	{
+		"name":		"IsGPRSConnected",
+		"addr":		0xA0CE6F51,
+		"args":		[]
+	},
+	{
+		"name":		"KbdLock",
+		"addr":		0xA08DD8A3,
+		"args":		[]
+	},
+	{
+		"name":		"GetCurrentLocale",
+		"addr":		0xA0A26C5D,
+		"args":		[]
+	},
+	{
+		"name":		"loopback171",
+		"addr":		0xA0002040,
+		"args":		[]
+	},
+	{
+		"name":		"Hex2Int",
+		"addr":		0xA06F9D61,
+		"args":		[]
+	},
+	{
+		"name":		"DrawColorPicWithCanvas",
+		"addr":		0xA006F101,
+		"args":		[]
+	},
+	{
+		"name":		"Seconds2iTime",
+		"addr":		0xA006F551,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetDateTime",
+		"addr":		0xA08D8823,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetWeek",
+		"addr":		0xA058AB5B,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetProfile",
+		"addr":		0xA05AE983,
+		"args":		[]
+	},
+	{
+		"name":		"SetProfile",
+		"addr":		0xA05AE9E3,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"sdiv",
+		"addr":		0xA0FBC5BC,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"KbdUnlock",
+		"addr":		0xA08DD387,
+		"args":		[]
+	},
+	{
+		"name":		"realloc",
+		"addr":		0xA0092F5D,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"memset",
+		"addr":		0xA000AF28,
+		"args":		["ptr","int32","int32"]
+	},
+	{
+		"name":		"divide",
+		"addr":		0xA0FBC694,
+		"args":		["int32","int32"],
+		"skip":		true
+	},
+	{
+		"name":		"DivBy10",
+		"addr":		0xA0FBC758,
+		"args":		["int32"]
+	},
+	{
+		"name":		"RunScaner",
+		"addr":		0xA0060C91,
+		"args":		[]
+	},
+	{
+		"name":		"SpellTime",
+		"addr":		0xA0063001,
+		"args":		[]
+	},
+	{
+		"name":		"RunDispatcher",
+		"addr":		0xA0060C51,
+		"args":		[]
+	},
+	{
+		"name":		"ProcessFiles",
+		"addr":		0xA006F091,
+		"args":		[]
+	},
+	{
+		"name":		"GetBuffer",
+		"addr":		0xA0060C01,
+		"args":		["int32"]
+	},
+	{
+		"name":		"IsIdleUiOnTop",
+		"addr":		0xA066ECAB,
+		"args":		[]
+	},
+	{
+		"name":		"GetAkkuCapacity",
+		"addr":		0xA01A3224,
+		"args":		[]
+	},
+	{
+		"name":		"RamCap",
+		"addr":		0xA8D83788,
+		"args":		[]
+	},
+	{
+		"name":		"RamLS",
+		"addr":		0xA8D837BA,
+		"args":		[]
+	},
+	{
+		"name":		"RamNet",
+		"addr":		0xA8EFA56E,
+		"args":		[]
+	},
+	{
+		"name":		"RamRingtoneStatus",
+		"addr":		0xA8E369F0,
+		"args":		[]
+	},
+	{
+		"name":		"RamMissedCalls",
+		"addr":		0xA8EB5958,
+		"args":		[]
+	},
+	{
+		"name":		"RamAlarm",
+		"addr":		0xA8F5B0BC,
+		"args":		[]
+	},
+	{
+		"name":		"RamAccPoint",
+		"addr":		0xA8E26FCC,
+		"args":		[]
+	},
+	{
+		"name":		"RamScreensaver",
+		"addr":		0xA8EAAAD8,
+		"args":		[]
+	},
+	{
+		"name":		"RamStby",
+		"addr":		0xA8A80000,
+		"args":		[]
+	},
+	{
+		"name":		"RamMissedMes",
+		"addr":		0xA8E37284,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsLocked",
+		"addr":		0xA8DF31D4,
+		"args":		[]
+	},
+	{
+		"name":		"RamNetOnline",
+		"addr":		0xA8E69058,
+		"args":		[]
+	},
+	{
+		"name":		"RamScreenBrightness",
+		"addr":		0xA8E6A170,
+		"args":		[]
+	},
+	{
+		"name":		"RamMenuAnywhere",
+		"addr":		0xA8DA7BC5,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsShutdown",
+		"addr":		0xA8E29994,
+		"args":		[]
+	},
+	{
+		"name":		"RamNotOnMainscreen",
+		"addr":		0xA8F594DC,
+		"args":		[]
+	},
+	{
+		"name":		"RamRandSeed",
+		"addr":		0xA8EA3BC8,
+		"args":		[]
+	},
+	{
+		"name":		"RamCurrentTrack",
+		"addr":		0xA899F2BC,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsSimPresent",
+		"addr":		0xA8E35D24,
+		"args":		[]
+	},
+	{
+		"name":		"RamPressedKey",
+		"addr":		0xA8DF31AC,
+		"args":		[]
+	},
+	{
+		"name":		"RamScreenBuffer",
+		"addr":		0xA8DF3130,
+		"args":		[]
+	},
+	{
+		"name":		"RamMPlayer_CtrlCode",
+		"addr":		0xA8F05034,
+		"args":		[]
+	},
+	{
+		"name":		"FreeRAM",
+		"addr":		0xA8000000,
+		"args":		[]
+	},
+	{
+		"name":		"LP_MonthsShort",
+		"addr":		0x0000123D,
+		"args":		[]
+	},
+	{
+		"name":		"Pic_Big0",
+		"addr":		0x00000260,
+		"args":		[]
+	},
+	{
+		"name":		"Pic_Little0",
+		"addr":		0x00000830,
+		"args":		[]
+	},
+	{
+		"name":		"Pic_Extra",
+		"addr":		0x00000800,
+		"args":		[]
+	},
+	{
+		"name":		"Pic_Profiles",
+		"addr":		0x00000810,
+		"args":		[]
+	},
+	{
+		"name":		"Pic_Vibra",
+		"addr":		0x00000818,
+		"args":		[]
+	},
+	{
+		"name":		"Pic_AdvNet",
+		"addr":		0x00000800,
+		"args":		[]
+	},
+	{
+		"name":		"LP_MonthsLong",
+		"addr":		0x00001137,
+		"args":		[]
+	},
+	{
+		"name":		"LP_Weekdays",
+		"addr":		0x000003EB,
+		"args":		[]
+	},
+	{
+		"name":		"Pic_Calendar",
+		"addr":		0x000005B0,
+		"args":		[]
+	},
+	{
+		"name":		"BuildCanvas",
+		"addr":		0xA05C2E2D,
+		"args":		[]
+	},
+	{
+		"name":		"Ram_LCD_Overlay_Layer",
+		"addr":		0xA8DF3144,
+		"args":		[]
+	},
+	{
+		"name":		"RAM_LCD_Layer_Base_Ptr",
+		"addr":		0xA8E6A7B8,
+		"args":		[]
+	},
+	{
+		"name":		"AddrLibrary",
+		"addr":		0xA0074000,
+		"args":		[]
+	},
+	{
+		"name":		"GBS_SendMessage",
+		"addr":		0xA0091EAB,
+		"args":		["int32","int32","ptr"]
+	},
+	{
+		"name":		"GBS_ReciveMessage",
+		"addr":		0xA009130B,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GBS_AcceptMessage",
+		"addr":		0xA0091855,
+		"args":		[]
+	},
+	{
+		"name":		"GBS_ClearMessage",
+		"addr":		0xA009153B,
+		"args":		[]
+	},
+	{
+		"name":		"GBS_PendMessage",
+		"addr":		0xA00917B9,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"CreateGBSproc",
+		"addr":		0xA0092221,
+		"args":		["int32","cstr","ptr","int32","int32"]
+	},
+	{
+		"name":		"CSM_root",
+		"addr":		0xA8E90098,
+		"args":		[]
+	},
+	{
+		"name":		"CreateCSM",
+		"addr":		0xA09506E3,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"FindCSMbyID",
+		"addr":		0xA09506F5,
+		"args":		["int32"]
+	},
+	{
+		"name":		"DoIDLE",
+		"addr":		0xA09507BF,
+		"args":		[]
+	},
+	{
+		"name":		"freeUSSD",
+		"addr":		0xA05C12C9,
+		"args":		[]
+	},
+	{
+		"name":		"wstrcopy",
+		"addr":		0xA058BF71,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetTypeUSSD",
+		"addr":		0xA05C1305,
+		"args":		[]
+	},
+	{
+		"name":		"SetUSSD",
+		"addr":		0xA05C1315,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"strpbrk",
+		"addr":		0xA0FBCD59,
+		"args":		["cstr","cstr"]
+	},
+	{
+		"name":		"strncat",
+		"addr":		0xA0FBCDD5,
+		"args":		["cstr","cstr","int32"]
+	},
+	{
+		"name":		"strncmp",
+		"addr":		0xA0FBCE05,
+		"args":		["cstr","cstr","int32"]
+	},
+	{
+		"name":		"strncpy",
+		"addr":		0xA0FBCE55,
+		"args":		["cstr","cstr","int32"]
+	},
+	{
+		"name":		"strrchr",
+		"addr":		0xA0FBCED1,
+		"args":		["cstr","int32"]
+	},
+	{
+		"name":		"strstr",
+		"addr":		0xA0FBCF11,
+		"args":		["cstr","cstr"]
+	},
+	{
+		"name":		"strtol",
+		"addr":		0xA0FBCF39,
+		"args":		["cstr","ptr","int32"]
+	},
+	{
+		"name":		"strtoul",
+		"addr":		0xA0FBCFB5,
+		"args":		["cstr","ptr","int32"]
+	},
+	{
+		"name":		"snprintf",
+		"addr":		0xA0FBB151,
+		"args":		["cstr","int32","cstr","ptr"]
+	},
+	{
+		"name":		"memcmp",
+		"addr":		0xA000AE85,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"zeromem",
+		"addr":		0xA0FBC3A4,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"memcpy",
+		"addr":		0xA0FBC448,
+		"args":		["ptr","ptr","int32"],
+		"skip":		true
+	},
+	{
+		"name":		"wstrcpy",
+		"addr":		0xA0500B73,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"wstrncpy",
+		"addr":		0xA0500B95,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"wstrcat",
+		"addr":		0xA0500BB9,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"wstrncat",
+		"addr":		0xA0500BED,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"wstrlen",
+		"addr":		0xA05003FB,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"wsprintf",
+		"addr":		0xA09488D1,
+		"args":		["ptr","cstr","ptr"]
+	},
+	{
+		"name":		"AllocWS",
+		"addr":		0xA0949395,
+		"args":		["int32"]
+	},
+	{
+		"name":		"CutWSTR",
+		"addr":		0xA0500DE5,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"CreateLocalWS",
+		"addr":		0xA0500A03,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"CreateWS",
+		"addr":		0xA0500A7D,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"FreeWS",
+		"addr":		0xA050032D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"DrawObject",
+		"addr":		0xA08DC1F3,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"AddKeybMsgHook",
+		"addr":		0xA095089B,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"AddKeybMsgHook_end",
+		"addr":		0xA09508A3,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"RemoveKeybMsgHook",
+		"addr":		0xA09508AB,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetPaletteAdrByColorIndex",
+		"addr":		0xA0951DB5,
+		"args":		["int32"]
+	},
+	{
+		"name":		"getRGBcolor",
+		"addr":		0xA0951DD9,
+		"args":		["int32","ptr"]
+	},
+	{
+		"name":		"getRGBbyPaletteAdr",
+		"addr":		0xA0951DE9,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"setColor",
+		"addr":		0xA0951E07,
+		"args":		["int32","int32","int32","int32","ptr"]
+	},
+	{
+		"name":		"memmove",
+		"addr":		0xA0FBC500,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"StoreXYWHtoRECT",
+		"addr":		0xA0956815,
+		"args":		["ptr","int32","int32","int32","int32"]
+	},
+	{
+		"name":		"StoreXYXYtoRECT",
+		"addr":		0xA095682B,
+		"args":		["ptr","int32","int32","int32","int32"]
+	},
+	{
+		"name":		"IsGuiOnTop",
+		"addr":		0xA0959183,
+		"args":		["int32"]
+	},
+	{
+		"name":		"CreateGUI_ID",
+		"addr":		0xA09592A3,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"CreateGUI",
+		"addr":		0xA09592B3,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"CreateGUI_30or2",
+		"addr":		0xA09592C1,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"CreateGUIWithDummyCSM",
+		"addr":		0xA09592FB,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"CreateGUIWithDummyCSM_30or2",
+		"addr":		0xA095930B,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"GeneralFuncF1",
+		"addr":		0xA095931B,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GeneralFuncF0",
+		"addr":		0xA0959329,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GeneralFunc_flag1",
+		"addr":		0xA0959337,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"GeneralFunc_flag0",
+		"addr":		0xA0959347,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"DirectRedrawGUI",
+		"addr":		0xA09593DB,
+		"args":		[]
+	},
+	{
+		"name":		"DirectRedrawGUI_ID",
+		"addr":		0xA09593F3,
+		"args":		["int32"]
+	},
+	{
+		"name":		"PendedRedrawGUI",
+		"addr":		0xA09593E7,
+		"args":		[]
+	},
+	{
+		"name":		"FindCSM",
+		"addr":		0xA0A1415F,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"GBS_StartTimer",
+		"addr":		0xA009258B,
+		"args":		["ptr","int32","int32","int32","int32"]
+	},
+	{
+		"name":		"GBS_StopTimer",
+		"addr":		0xA0097B1B,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GBS_GetCurCepid",
+		"addr":		0xA009618B,
+		"args":		[]
+	},
+	{
+		"name":		"LockSched",
+		"addr":		0xA00976FF,
+		"args":		[]
+	},
+	{
+		"name":		"UnlockSched",
+		"addr":		0xA009777B,
+		"args":		[]
+	},
+	{
+		"name":		"ShowMSG",
+		"addr":		0xA09587FD,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"SetPropToText",
+		"addr":		0xA09540E1,
+		"args":		["ptr","ptr","int32","ptr","int32","int32"]
+	},
+	{
+		"name":		"FreeDrawObject_subobj",
+		"addr":		0xA0952301,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"SetColor",
+		"addr":		0xA095226B,
+		"args":		["ptr","cstr","cstr"]
+	},
+	{
+		"name":		"DrawString",
+		"addr":		0xA095412F,
+		"args":		["ptr","int32","int32","int32","int32","int32","int32","cstr","cstr"]
+	},
+	{
+		"name":		"GetTopGUI",
+		"addr":		0xA0959191,
+		"args":		[]
+	},
+	{
+		"name":		"FindItemByID",
+		"addr":		0xA0A2C599,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"GetDataOfItemByID",
+		"addr":		0xA0A2C5E5,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"DrawRoundedFrame",
+		"addr":		0xA0A16073,
+		"args":		["int32","int32","int32","int32","int32","int32","int32","cstr","cstr"]
+	},
+	{
+		"name":		"SetPropTo_Obj5",
+		"addr":		0xA0A165C7,
+		"args":		["ptr","ptr","int32","ptr"]
+	},
+	{
+		"name":		"CreateMenu",
+		"addr":		0xA0958343,
+		"args":		["int32","int32","ptr","ptr","int32","int32","ptr","ptr"]
+	},
+	{
+		"name":		"GBS_RecActDstMessage",
+		"addr":		0xA0091259,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"KillGBSproc",
+		"addr":		0xA0096141,
+		"args":		["int32"]
+	},
+	{
+		"name":		"png_create_read_struct",
+		"addr":		0xA0132BF9,
+		"args":		["ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"png_create_info_struct",
+		"addr":		0xA0131FB5,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"png_destroy_read_struct",
+		"addr":		0xA0133A6D,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"png_set_sig_bytes",
+		"addr":		0xA0131E89,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"png_read_info",
+		"addr":		0xA0132D37,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"png_get_IHDR",
+		"addr":		0xA0132611,
+		"args":		["ptr","ptr","ptr","ptr","ptr","ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"png_malloc",
+		"addr":		0xA01329B7,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"png_read_image",
+		"addr":		0xA0133627,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"png_read_end",
+		"addr":		0xA0133669,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"png_get_io_ptr",
+		"addr":		0xA01322AD,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"png_get_rowbytes",
+		"addr":		0xA0132527,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"png_read_row",
+		"addr":		0xA01331BF,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"png_init_io",
+		"addr":		0xA00E3BA0,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"setjmp",
+		"addr":		0xA0FBD1E8,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"AllocEQueue",
+		"addr":		0xA0A2066B,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"PrepareEditControl",
+		"addr":		0xA0A1FAA9,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"ConstructEditControl",
+		"addr":		0xA0A1FDB9,
+		"args":		["ptr","int32","int32","ptr","int32"]
+	},
+	{
+		"name":		"AddEditControlToEditQend",
+		"addr":		0xA0A20807,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"CreateInputTextDialog",
+		"addr":		0xA0A1D41D,
+		"args":		["ptr","ptr","ptr","int32","ptr"]
+	},
+	{
+		"name":		"SetSoftKey",
+		"addr":		0xA0A2671B,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"ExtractEditControl",
+		"addr":		0xA0A266B1,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"StoreEditControl",
+		"addr":		0xA0A266BD,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"unlink",
+		"addr":		0xA056E4B0,
+		"args":		["cstr","ptr"]
+	},
+	{
+		"name":		"str2ws",
+		"addr":		0xA056ECC0,
+		"args":		["ptr","cstr","uint32"]
+	},
+	{
+		"name":		"UnpackABentry",
+		"addr":		0xA098B2DD,
+		"args":		["ptr","ptr","int32","int32"]
+	},
+	{
+		"name":		"FreeUnpackABentry",
+		"addr":		0xA08F4FDF,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetTypeOfAB_UNPRES_ITEM",
+		"addr":		0xA08F592D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MakeVoiceCall",
+		"addr":		0xA0930B11,
+		"args":		["cstr","int32","int32"]
+	},
+	{
+		"name":		"socket",
+		"addr":		0xA0A631A1,
+		"args":		["int32","int32","int32"]
+	},
+	{
+		"name":		"connect",
+		"addr":		0xA0A63699,
+		"args":		["int32","ptr","int32"]
+	},
+	{
+		"name":		"bind",
+		"addr":		0xA0A6349D,
+		"args":		["int32","ptr","int32"]
+	},
+	{
+		"name":		"closesocket",
+		"addr":		0xA0A639CD,
+		"args":		["int32"]
+	},
+	{
+		"name":		"shutdown",
+		"addr":		0xA0A638D5,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"recv",
+		"addr":		0xA0A63ABF,
+		"args":		["int32","ptr","int32","int32"]
+	},
+	{
+		"name":		"send",
+		"addr":		0xA0A63F2D,
+		"args":		["int32","ptr","int32","int32"]
+	},
+	{
+		"name":		"htons",
+		"addr":		0xA0A6ABAD,
+		"args":		["int32"]
+	},
+	{
+		"name":		"htonl",
+		"addr":		0xA0A6ABB9,
+		"args":		["int32"]
+	},
+	{
+		"name":		"socklasterr",
+		"addr":		0xA8EF1E5C,
+		"args":		[]
+	},
+	{
+		"name":		"SetIDLETMR",
+		"addr":		0xA0959357,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"RestartIDLETMR",
+		"addr":		0xA0959367,
+		"args":		[]
+	},
+	{
+		"name":		"DisableIDLETMR",
+		"addr":		0xA0959373,
+		"args":		[]
+	},
+	{
+		"name":		"EDIT_GetItemNumInFocusedComboBox",
+		"addr":		0xA0A265B5,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"EDIT_SetTextToFocused",
+		"addr":		0xA0A2650D,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"EDIT_GetFocus",
+		"addr":		0xA0A26555,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"EDIT_GetUnFocus",
+		"addr":		0xA0A25FA5,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"ConstructComboBox",
+		"addr":		0xA0A1FDF3,
+		"args":		["ptr","int32","int32","ptr","int32","int32","int32","int32"]
+	},
+	{
+		"name":		"GBS_WaitForMsg",
+		"addr":		0xA0091C33,
+		"args":		["ptr","int32","ptr","int32"]
+	},
+	{
+		"name":		"RegisterCepidForSocketWork",
+		"addr":		0xA0973E69,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"RequestLMANConnect",
+		"addr":		0xA0974F79,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"ScreenW",
+		"addr":		0x00000084,
+		"args":		[]
+	},
+	{
+		"name":		"ScreenH",
+		"addr":		0x000000B0,
+		"args":		[]
+	},
+	{
+		"name":		"HeaderH",
+		"addr":		0x00000016,
+		"args":		[]
+	},
+	{
+		"name":		"SoftkeyH",
+		"addr":		0x00000016,
+		"args":		[]
+	},
+	{
+		"name":		"GBS_DelTimer",
+		"addr":		0xA0097A53,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"available0",
+		"addr":		0xA0A09170,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GPRS_OnOff",
+		"addr":		0xA0D38A8D,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"GetCurMenuItem",
+		"addr":		0xA095CB3F,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MutexCreate",
+		"addr":		0xA00970F9,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MutexDestroy",
+		"addr":		0xA0097195,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MutexLock",
+		"addr":		0xA009738F,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MutexLockEx",
+		"addr":		0xA00973BD,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"MutexUnlock",
+		"addr":		0xA0097459,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"SetMenuItemIcon",
+		"addr":		0xA095E2A9,
+		"args":		["ptr","int32","int32"]
+	},
+	{
+		"name":		"RefreshGUI",
+		"addr":		0xA0959469,
+		"args":		[]
+	},
+	{
+		"name":		"AllocMenuItem",
+		"addr":		0xA095E309,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"AllocMenuWS",
+		"addr":		0xA095E421,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"SetMenuItemIconArray",
+		"addr":		0xA095E27B,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"SetMenuItemText",
+		"addr":		0xA095DC1B,
+		"args":		["ptr","ptr","ptr","int32"]
+	},
+	{
+		"name":		"EDIT_SetFocus",
+		"addr":		0xA0A25F99,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"getCpuUsedTime_if_ena",
+		"addr":		0xA04D83C4,
+		"args":		[]
+	},
+	{
+		"name":		"StartCpuUsageCount",
+		"addr":		0xA04D8348,
+		"args":		[]
+	},
+	{
+		"name":		"inflateInit2_",
+		"addr":		0xA012E85D,
+		"args":		["ptr","int32","cstr","int32"]
+	},
+	{
+		"name":		"inflate",
+		"addr":		0xA012E993,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"inflateEnd",
+		"addr":		0xA012F7CF,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"IsTimerProc",
+		"addr":		0xA00978A5,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"Get_CC_NC",
+		"addr":		0xA0935C19,
+		"args":		[]
+	},
+	{
+		"name":		"png_create_read_struct_2",
+		"addr":		0xA0132ABD,
+		"args":		["ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"png_set_read_fn",
+		"addr":		0xA0133B0F,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"png_read_update_info",
+		"addr":		0xA0133187,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"png_set_palette_to_rgb",
+		"addr":		0xA0133C29,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"png_get_valid",
+		"addr":		0xA0132515,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"png_set_tRNS_to_alpha",
+		"addr":		0xA0133C29,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"png_set_filler",
+		"addr":		0xA0135735,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"png_set_strip_16",
+		"addr":		0xA0133C0D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"png_set_packing",
+		"addr":		0xA01356CB,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"png_set_gray_to_rgb",
+		"addr":		0xA0133C61,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"png_check_sig",
+		"addr":		0xA0131EE9,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"DrawLine",
+		"addr":		0xA0A17F9B,
+		"args":		["int32","int32","int32","int32","int32","cstr"]
+	},
+	{
+		"name":		"DrawRectangle",
+		"addr":		0xA0A15F3F,
+		"args":		["int32","int32","int32","int32","int32","cstr","cstr"]
+	},
+	{
+		"name":		"isnewSGold",
+		"addr":		0x00000001,
+		"args":		[]
+	},
+	{
+		"name":		"async_gethostbyname",
+		"addr":		0xA0A649A1,
+		"args":		["cstr","ptr","ptr"]
+	},
+	{
+		"name":		"str2ip",
+		"addr":		0xA097DBF9,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"SHA1_Init",
+		"addr":		0xA0F3B9FB,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"SHA1_Update",
+		"addr":		0xA0F3B6DF,
+		"args":		["ptr","ptr","uint32"]
+	},
+	{
+		"name":		"SHA1_Final",
+		"addr":		0xA0F3B8DB,
+		"args":		["cstr","ptr"]
+	},
+	{
+		"name":		"RSA_new_method",
+		"addr":		0xA0E82419,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"RSA_free",
+		"addr":		0xA0E824A7,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"RSA_sign",
+		"addr":		0xA0E82673,
+		"args":		["int32","cstr","uint32","cstr","ptr","ptr"]
+	},
+	{
+		"name":		"BN_bin2bn",
+		"addr":		0xA0E7EC0B,
+		"args":		["cstr","int32","ptr"]
+	},
+	{
+		"name":		"SetMenuItemCount",
+		"addr":		0xA095AAB5,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"SetCursorToMenuItem",
+		"addr":		0xA095AA1D,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"GetFontYSIZE",
+		"addr":		0xA0A3C124,
+		"args":		["int32"]
+	},
+	{
+		"name":		"EDIT_ExtractFocusedControl",
+		"addr":		0xA0A2653D,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"EDIT_StoreControlToFocused",
+		"addr":		0xA0A26549,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"PrepareEditCOptions",
+		"addr":		0xA0A209BD,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"SetInvertToEditCOptions",
+		"addr":		0xA0A1FA43,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"SetFontToEditCOptions",
+		"addr":		0xA0A1FA37,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"SetAlignToEditCOptions",
+		"addr":		0xA0A1FA2B,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"SetPenColorToEditCOptions",
+		"addr":		0xA0A1FA15,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"SetBrushColorToEditCOptions",
+		"addr":		0xA0A1F9FD,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"CopyOptionsToEditControl",
+		"addr":		0xA0A1FAE5,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"get_regextpnt_by_uid",
+		"addr":		0xA0507FC4,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetExtUid_ws",
+		"addr":		0xA0507DCC,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"EDIT_RemoveEditControl",
+		"addr":		0xA0A266DD,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"EDIT_InsertEditControl",
+		"addr":		0xA0A266E9,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"EDIT_GetCursorPos",
+		"addr":		0xA0A26585,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"EDIT_SetCursorPos",
+		"addr":		0xA0A26591,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Get_Phone_Info",
+		"addr":		0xA04E7ABC,
+		"args":		["int32"]
+	},
+	{
+		"name":		"png_set_gray_1_2_4_to_8",
+		"addr":		0xA0133C29,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"png_set_invert_mono",
+		"addr":		0xA0135797,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"EDIT_IsMarkModeActive",
+		"addr":		0xA0A265E5,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"EDIT_GetMarkedText",
+		"addr":		0xA0A265FD,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"SendSMS",
+		"addr":		0xA06B9A15,
+		"args":		["ptr","cstr","int32","int32","int32"]
+	},
+	{
+		"name":		"IncommingPDU",
+		"addr":		0xA8F4F064,
+		"args":		[]
+	},
+	{
+		"name":		"wstrchr",
+		"addr":		0xA05004F7,
+		"args":		["ptr","uint32","uint32"]
+	},
+	{
+		"name":		"wstrrchr",
+		"addr":		0xA0500519,
+		"args":		["ptr","uint32","uint32"]
+	},
+	{
+		"name":		"EDIT_SetTextToEditControl",
+		"addr":		0xA0A266A5,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"EDIT_GetUserPointer",
+		"addr":		0xA0A26753,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MenuGetUserPointer",
+		"addr":		0xA09602D3,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetSymbolWidth",
+		"addr":		0xA08DC2F9,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"ws_2utf8",
+		"addr":		0xA05010C9,
+		"args":		["ptr","cstr","ptr","int32"]
+	},
+	{
+		"name":		"utf8_2ws",
+		"addr":		0xA0501181,
+		"args":		["ptr","cstr","uint32"]
+	},
+	{
+		"name":		"GetPicNByUnicodeSymbol",
+		"addr":		0xA0957643,
+		"args":		["int32"]
+	},
+	{
+		"name":		"EDIT_OpenOptionMenuWithUserItems",
+		"addr":		0xA0A26805,
+		"args":		["ptr","ptr","ptr","int32"]
+	},
+	{
+		"name":		"Menu_SetItemCountDyn",
+		"addr":		0xA095CFF9,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"GetLastJavaApplication",
+		"addr":		0xA0B09AC4,
+		"args":		[]
+	},
+	{
+		"name":		"IsNoJava",
+		"addr":		0xA0A11B38,
+		"args":		[]
+	},
+	{
+		"name":		"GetMaxDynIcon",
+		"addr":		0xA09572EB,
+		"args":		[]
+	},
+	{
+		"name":		"RAM_IMSI",
+		"addr":		0xA8EA408E,
+		"args":		[]
+	},
+	{
+		"name":		"FreeDynIcon",
+		"addr":		0xA09572EF,
+		"args":		["int32"]
+	},
+	{
+		"name":		"IsDynIconBusy",
+		"addr":		0xA0957455,
+		"args":		["int32"]
+	},
+	{
+		"name":		"ProgressCalculate",
+		"addr":		0xA1400000,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"SetDynIcon",
+		"addr":		0xA0957353,
+		"args":		["int32","ptr","cstr"]
+	},
+	{
+		"name":		"Filecopy",
+		"addr":		0xA0697DB8,
+		"args":		[]
+	},
+	{
+		"name":		"Filecopy_Op_Announce",
+		"addr":		0xA069A460,
+		"args":		[]
+	},
+	{
+		"name":		"devmenu_config_IsCheckboxOff",
+		"addr":		0xA04E7648,
+		"args":		[]
+	},
+	{
+		"name":		"GetSessionAge",
+		"addr":		0xA00A320C,
+		"args":		[]
+	},
+	{
+		"name":		"RamServiceProviderName",
+		"addr":		0xA8EA4454,
+		"args":		[]
+	},
+	{
+		"name":		"sscanf",
+		"addr":		0xA0FBC80D,
+		"args":		["cstr","cstr","ptr"]
+	},
+	{
+		"name":		"GetPitAdrBy0xE200Symbol",
+		"addr":		0xA09574A3,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetFileSize",
+		"addr":		0xA006F501,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"GetPlayStatus",
+		"addr":		0xA06A1F2C,
+		"args":		[]
+	},
+	{
+		"name":		"SendMP_cmd",
+		"addr":		0xA006F401,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"RamVolumeStep",
+		"addr":		0xA8D864FD,
+		"args":		[]
+	},
+	{
+		"name":		"RamMediaIsPlaying",
+		"addr":		0xA8D9E755,
+		"args":		[]
+	},
+	{
+		"name":		"CloseCSM",
+		"addr":		0xA09507F9,
+		"args":		["int32"]
+	},
+	{
+		"name":		"SetProp2Square_v2",
+		"addr":		0xA0A15F23,
+		"args":		[]
+	},
+	{
+		"name":		"RamLighterPower",
+		"addr":		0xA8D87350,
+		"args":		[]
+	},
+	{
+		"name":		"MEDIA_PLAYLAST",
+		"addr":		0xA06F5841,
+		"args":		[]
+	},
+	{
+		"name":		"ScreenShoot",
+		"addr":		0xA0067301,
+		"args":		[]
+	},
+	{
+		"name":		"SetProp2ImageOrCanvas",
+		"addr":		0xA0A166ED,
+		"args":		["ptr","ptr","int32","ptr","int32","int32"]
+	},
+	{
+		"name":		"fillTriangle",
+		"addr":		0xA0A1C7CB,
+		"args":		["int32","int32","int32","int32","int32","int32","int32","cstr","cstr"]
+	},
+	{
+		"name":		"SetPixel",
+		"addr":		0xA0A17E4B,
+		"args":		["int32","int32","cstr"]
+	},
+	{
+		"name":		"drawArc",
+		"addr":		0xA0A14DAB,
+		"args":		["int32","int32","int32","int32","int32","int32","int32","cstr","cstr"]
+	},
+	{
+		"name":		"SetProp2Square_v1",
+		"addr":		0xA0A15EFD,
+		"args":		[]
+	},
+	{
+		"name":		"srand",
+		"addr":		0xA0FBC2C9,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"DrawScrollString",
+		"addr":		0xA0A1C103,
+		"args":		["ptr","int32","int32","int32","int32","int32","int32","int32","cstr","cstr"]
+	},
+	{
+		"name":		"Get_WS_width",
+		"addr":		0xA08DC317,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"FindGUIbyId",
+		"addr":		0xA0950737,
+		"args":		["int32","ptr"]
+	},
+	{
+		"name":		"EDIT_SetDate",
+		"addr":		0xA0A26639,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"EDIT_SetTime",
+		"addr":		0xA0A26651,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"EDIT_GetDate",
+		"addr":		0xA0A26669,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"EDIT_GetTime",
+		"addr":		0xA0A26681,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"ConstructEditTime",
+		"addr":		0xA0A1FD73,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"ConstructEditDate",
+		"addr":		0xA0A1FC59,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetCurGuiID",
+		"addr":		0xA095917D,
+		"args":		[]
+	},
+	{
+		"name":		"GBS_Cmd_4209_RefreshScreensaver",
+		"addr":		0x00006171,
+		"args":		[]
+	},
+	{
+		"name":		"wstrcpybypos",
+		"addr":		0xA0500C15,
+		"args":		["ptr","ptr","int32","int32"]
+	},
+	{
+		"name":		"wsRemoveChars",
+		"addr":		0xA0500CA5,
+		"args":		["ptr","int32","int32"]
+	},
+	{
+		"name":		"wstrcarprintf",
+		"addr":		0xA094896B,
+		"args":		["ptr","cstr","ptr"]
+	},
+	{
+		"name":		"CreateMultiLinesMenu",
+		"addr":		0xA0B2C9A5,
+		"args":		["int32","int32","ptr","ptr","int32","int32"]
+	},
+	{
+		"name":		"SetMLMenuItemText",
+		"addr":		0xA09615E3,
+		"args":		["ptr","ptr","ptr","ptr","int32","int32"]
+	},
+	{
+		"name":		"AllocMLMenuItem",
+		"addr":		0xA0961A25,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"EDIT_SetTextInvert",
+		"addr":		0xA0A26771,
+		"args":		["ptr","int32","int32"]
+	},
+	{
+		"name":		"EDIT_RemoveTextInvert",
+		"addr":		0xA0A2677D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"EDIT_IsBusy",
+		"addr":		0xA0A267B9,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GSMTXT_Decode",
+		"addr":		0xA092F025,
+		"args":		["ptr","ptr","int32","int32","ptr","ptr"]
+	},
+	{
+		"name":		"FocusGUI",
+		"addr":		0xA09593B3,
+		"args":		["int32"]
+	},
+	{
+		"name":		"UnfocusGUI",
+		"addr":		0xA09593C3,
+		"args":		[]
+	},
+	{
+		"name":		"IsSliderClosed",
+		"addr":		0xA08DD893,
+		"args":		[]
+	},
+	{
+		"name":		"SetCpuClockLow",
+		"addr":		0xA06252F8,
+		"args":		[]
+	},
+	{
+		"name":		"SetCpuClockTempHi",
+		"addr":		0xA06252E0,
+		"args":		[]
+	},
+	{
+		"name":		"IsMediaPlayerInBackground",
+		"addr":		0xA06A1ECC,
+		"args":		[]
+	},
+	{
+		"name":		"CloseMediaPlayer",
+		"addr":		0xA06A33B8,
+		"args":		[]
+	},
+	{
+		"name":		"PlayMelody_ChangeVolume",
+		"addr":		0xA059ABB8,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"PlayMelody_StopPlayback",
+		"addr":		0xA059B668,
+		"args":		["int32"]
+	},
+	{
+		"name":		"PlayMelody_PausePlayback",
+		"addr":		0xA059B708,
+		"args":		["int32"]
+	},
+	{
+		"name":		"PlayMelody_ResumePlayBack",
+		"addr":		0xA059B738,
+		"args":		["int32"]
+	},
+	{
+		"name":		"longjmp",
+		"addr":		0xA0FBD210,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"FreeGSMTXTpkt",
+		"addr":		0xA093706D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"CreateRadioButtonList",
+		"addr":		0xA0643429,
+		"args":		["ptr","char","ptr","ptr","char","ptr","char"]
+	},
+	{
+		"name":		"pdcache_getval",
+		"addr":		0xA0642B4D,
+		"args":		["cstr","int32","char","ptr","ptr","int32","char","ptr","ptr"]
+	},
+	{
+		"name":		"pdcache_setval",
+		"addr":		0xA0642D37,
+		"args":		["cstr","char","ptr","ptr","char","ptr","cstr"]
+	},
+	{
+		"name":		"OpenExplorer",
+		"addr":		0xA069C1A4,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"RamDateTimeSettings",
+		"addr":		0xA8DA7FE4,
+		"args":		[]
+	},
+	{
+		"name":		"GetTimeZoneShift",
+		"addr":		0xA08D87B1,
+		"args":		["int32","int32","int32"]
+	},
+	{
+		"name":		"RamAppointment",
+		"addr":		0xA8DA7F8C,
+		"args":		[]
+	},
+	{
+		"name":		"GBS_DestroyMessage",
+		"addr":		0xA0091D7B,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetAllEmail",
+		"addr":		0xA07BEBA3,
+		"args":		[]
+	},
+	{
+		"name":		"RamIconBar",
+		"addr":		0xA8E94D8C,
+		"args":		[]
+	},
+	{
+		"name":		"SendAutoUSSDack",
+		"addr":		0xA0937017,
+		"args":		[]
+	},
+	{
+		"name":		"EEFullDeleteBlock",
+		"addr":		0xA04EDABC,
+		"args":		["uint32","int32","int32"]
+	},
+	{
+		"name":		"EEFullCreateBlock",
+		"addr":		0xA04EDC28,
+		"args":		["uint32","int32","int32","int32","int32"]
+	},
+	{
+		"name":		"DisableIconBar",
+		"addr":		0xA096232F,
+		"args":		["int32"]
+	},
+	{
+		"name":		"MD5_Init",
+		"addr":		0xA0F38775,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MD5_Update",
+		"addr":		0xA0F383E5,
+		"args":		["ptr","ptr","uint32"]
+	},
+	{
+		"name":		"MD5_Final",
+		"addr":		0xA0F3867D,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"MD5_Hash",
+		"addr":		0xA0F39105,
+		"args":		["ptr","uint32","ptr"]
+	},
+	{
+		"name":		"SetDateTime",
+		"addr":		0xA08D89CF,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"Base64Encode",
+		"addr":		0xA0E6F345,
+		"args":		["ptr","int32","ptr","int32"]
+	},
+	{
+		"name":		"Base64Decode",
+		"addr":		0xA0E6F3F5,
+		"args":		["cstr","int32","ptr","int32","cstr","ptr"]
+	},
+	{
+		"name":		"GetFileProp",
+		"addr":		0xA0720328,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"NetOff()",
+		"addr":		0xA098502D,
+		"args":		[]
+	},
+	{
+		"name":		"RamFormatTrack",
+		"addr":		0xA8D85956,
+		"args":		[]
+	},
+	{
+		"name":		"RamFreq",
+		"addr":		0xA8D85BBE,
+		"args":		[]
+	},
+	{
+		"name":		"RamChannel",
+		"addr":		0xA8D85D76,
+		"args":		[]
+	},
+	{
+		"name":		"SetMenuSearchCallBack",
+		"addr":		0xA095E80F,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetPeripheryState",
+		"addr":		0xA065ABD1,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"PlayMelody_SetPosition",
+		"addr":		0xA059B768,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"GetPlayObjById",
+		"addr":		0xA0635360,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetPlayObjPosition",
+		"addr":		0xA0CC4378,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetPlayObjDuration",
+		"addr":		0xA0CC40B8,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"RamSizeOfPart",
+		"addr":		0xAD07CA84,
+		"args":		[]
+	},
+	{
+		"name":		"RamSizeOfRecievedSendFile",
+		"addr":		0xAD07CA0C,
+		"args":		[]
+	},
+	{
+		"name":		"RamLastCallNum",
+		"addr":		0xA8EB5D7E,
+		"args":		[]
+	},
+	{
+		"name":		"StartNativeExplorer",
+		"addr":		0xA069C1A4,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MenuSetUserPointer",
+		"addr":		0xA09602CF,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"RamNameOfRecievedSendFile",
+		"addr":		0xAD07CAF8,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsSendReceiveBT",
+		"addr":		0xAD07C9E6,
+		"args":		[]
+	},
+	{
+		"name":		"CalcBitmapSize",
+		"addr":		0xA0956CE1,
+		"args":		["int16","int16","char"]
+	},
+	{
+		"name":		"Obs_CreateObject",
+		"addr":		0xA0CDC954,
+		"args":		["int32","int32","int32","int32","int32","int32","ptr"]
+	},
+	{
+		"name":		"Obs_DestroyObject",
+		"addr":		0xA0CC8238,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"Obs_SetInput_File",
+		"addr":		0xA0CD93E0,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"Obs_GetInputImageSize",
+		"addr":		0xA0CD7644,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"Obs_SetOutputImageSize",
+		"addr":		0xA0CD77C0,
+		"args":		["ptr","int16","int16"]
+	},
+	{
+		"name":		"Obs_Start",
+		"addr":		0xA0CC7DBC,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"Obs_Output_GetPictstruct",
+		"addr":		0xA0CD8A34,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"Obs_Graphics_SetClipping",
+		"addr":		0xA0CD85F4,
+		"args":		["ptr","int16","int16","int16","int16"]
+	},
+	{
+		"name":		"Obs_SetRotation",
+		"addr":		0xA0CD8004,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_GetInfo",
+		"addr":		0xA0CC7B80,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"intObs_SetScaling",
+		"addr":		0xA0CD7DB0,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_TranslateMessageGBS",
+		"addr":		0xA0CDE10C,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"Obs_Pause",
+		"addr":		0xA0CC7F84,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"Obs_Resume",
+		"addr":		0xA0CC8140,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"Obs_Stop",
+		"addr":		0xA0CC8074,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"Obs_Prepare",
+		"addr":		0xA0CC7C84,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"Obs_SetRenderOffset",
+		"addr":		0xA0D249EC,
+		"args":		["ptr","int16","int16"]
+	},
+	{
+		"name":		"Obs_SetPosition",
+		"addr":		0xA0CC42B4,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Mam_SetPurpose",
+		"addr":		0xA0CC8444,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Sound_SetVolume",
+		"addr":		0xA0CCFEC0,
+		"args":		["ptr","char","char"]
+	},
+	{
+		"name":		"Obs_Sound_GetVolume",
+		"addr":		0xA0CD18C8,
+		"args":		["ptr","cstr"]
+	},
+	{
+		"name":		"Obs_Sound_SetAMRFrmPrBuf",
+		"addr":		0xA0CD1390,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Sound_SetAMRFormat",
+		"addr":		0xA0CD1214,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Sound_SetAMRDTX",
+		"addr":		0xA0CD1138,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Sound_SetNofChannels",
+		"addr":		0xA0CD1050,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Sound_SetAMRMode",
+		"addr":		0xA0CD0F78,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Sound_SetFIsRecording",
+		"addr":		0xA0CD0CB0,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Sound_SetMaxFileSize",
+		"addr":		0xA0CD0B1C,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Sound_SetRecordingMode",
+		"addr":		0xA0CD02BC,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_SetOutput_File",
+		"addr":		0xA0CD97AC,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"Obs_SetOutput_Uid",
+		"addr":		0xA0CDC4D8,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"Obs_Sound_SetBitrate",
+		"addr":		0xA0CD1648,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"RamIsRunJava",
+		"addr":		0xA8EBC530,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsRunCamera",
+		"addr":		0xA8EAAB54,
+		"args":		[]
+	},
+	{
+		"name":		"runMidletLinkablely",
+		"addr":		0xA06836EC,
+		"args":		["cstr","ptr"]
+	},
+	{
+		"name":		"IsGPRS",
+		"addr":		0xA0D38A65,
+		"args":		[]
+	},
+	{
+		"name":		"IsEDGE",
+		"addr":		0xA0D38A6B,
+		"args":		[]
+	},
+	{
+		"name":		"GetSMSState",
+		"addr":		0xA0D2FBE1,
+		"args":		[]
+	},
+	{
+		"name":		"BT_GetLocVisibility",
+		"addr":		0xA06440BF,
+		"args":		[]
+	},
+	{
+		"name":		"GetCurrAudioPath",
+		"addr":		0xA0660CB1,
+		"args":		[]
+	},
+	{
+		"name":		"isDecryption",
+		"addr":		0xA0DA6875,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsFileCache",
+		"addr":		0xA8E371D8,
+		"args":		[]
+	},
+	{
+		"name":		"RamTotalHeapSize",
+		"addr":		0xA8F098B0,
+		"args":		[]
+	},
+	{
+		"name":		"RamTemporaryHeapSize",
+		"addr":		0xA8F09920,
+		"args":		[]
+	},
+	{
+		"name":		"RamBTNameDevice",
+		"addr":		0xA8DA24C0,
+		"args":		[]
+	},
+	{
+		"name":		"RamActiveGPRSProfileName",
+		"addr":		0xA8DA16A8,
+		"args":		[]
+	},
+	{
+		"name":		"RamCallState",
+		"addr":		0xA8EF6D6C,
+		"args":		[]
+	},
+	{
+		"name":		"RefreshAlarmClock",
+		"addr":		0xA05C7120,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsAlarmAutorepeatOn",
+		"addr":		0xA8F5B0C0,
+		"args":		[]
+	},
+	{
+		"name":		"RamAlarmclockHour",
+		"addr":		0xA8F5B0C8,
+		"args":		[]
+	},
+	{
+		"name":		"RamAlarmclockMinute",
+		"addr":		0xA8F5B0C9,
+		"args":		[]
+	},
+	{
+		"name":		"RamAlarmclockMinute",
+		"addr":		0xA8F5B0BC,
+		"args":		[]
+	},
+	{
+		"name":		"getProfileNameByN",
+		"addr":		0xA05AEA43,
+		"args":		["ptr","int32","int32"]
+	},
+	{
+		"name":		"RamIsSoundRecord",
+		"addr":		0xA8F535D4,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsSoundRecordQuality",
+		"addr":		0xA8F53630,
+		"args":		[]
+	},
+	{
+		"name":		"RamExtendedCameraState",
+		"addr":		0xA8E3754C,
+		"args":		[]
+	},
+	{
+		"name":		"SwitchAudioToBTHeadset",
+		"addr":		0xA05B9F41,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetTypeOfBTHeadset",
+		"addr":		0xA05C1225,
+		"args":		[]
+	},
+	{
+		"name":		"RamInputLanguage",
+		"addr":		0x000001FC,
+		"args":		[]
+	},
+	{
+		"name":		"RamDisplayLanguage",
+		"addr":		0xA8DF3718,
+		"args":		[]
+	},
+	{
+		"name":		"GetAlarmclockState",
+		"addr":		0xA05C6D4C,
+		"args":		["int32"]
+	},
+	{
+		"name":		"UpdateMenuCursorItem",
+		"addr":		0xA095D09D,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"GetMenuGUI",
+		"addr":		0xA0959EA9,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetMultiLinesMenuGUI",
+		"addr":		0xA09611FD,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"SetHeaderToMenu",
+		"addr":		0xA09594BD,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"SetMenuToGUI",
+		"addr":		0xA095DE5F,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetMenuItemCount",
+		"addr":		0xA095ACB7,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"CreatePopupGUI",
+		"addr":		0xA0958645,
+		"args":		["int32","ptr","ptr","int32"]
+	},
+	{
+		"name":		"CreatePopupGUI_ws",
+		"addr":		0xA0958587,
+		"args":		["int32","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"GetPopupUserPointer",
+		"addr":		0xA096107D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"DeleteSMS",
+		"addr":		0xA0B65A03,
+		"args":		["int32","ptr"]
+	},
+	{
+		"name":		"SetSmsStatus",
+		"addr":		0xA0B65DB1,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"GetHeaderPointer",
+		"addr":		0xA095EBC1,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"SetHeaderText",
+		"addr":		0xA0A31F49,
+		"args":		["ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"SetMenuSoftKey",
+		"addr":		0xA095FDB5,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"SmsDataRoot",
+		"addr":		0xA8EB99F8,
+		"args":		[]
+	},
+	{
+		"name":		"GetSmsPosIndex",
+		"addr":		0xA0D42039,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"AllocNativeAbData",
+		"addr":		0xA0600B89,
+		"args":		[]
+	},
+	{
+		"name":		"FreeNativeAbData",
+		"addr":		0xA0600C31,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetNativeAbDataType",
+		"addr":		0xA0600DE3,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"GetNumFromNativeAbData",
+		"addr":		0xA06011F3,
+		"args":		["ptr","int32","int32"]
+	},
+	{
+		"name":		"GetNativeAbDataStatus",
+		"addr":		0xA0600DF7,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"SetNumToNativeAbData",
+		"addr":		0xA0601369,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"OpenNativeAddressbook",
+		"addr":		0xA0600303,
+		"args":		["int32","int32","int32","ptr"]
+	},
+	{
+		"name":		"SetHeaderIcon",
+		"addr":		0xA0A321A3,
+		"args":		["ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"GetTabGUI",
+		"addr":		0xA0A2EF63,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"SetGUIDefinition",
+		"addr":		0xA0A2BEB1,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"SetGUIToTabGUI",
+		"addr":		0xA0A2F417,
+		"args":		["ptr","int32","ptr","ptr"]
+	},
+	{
+		"name":		"SetCursorTab",
+		"addr":		0xA0A2F533,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"UpdateTab1stItem",
+		"addr":		0xA0A2F695,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"GetCursorTab",
+		"addr":		0xA0A2F551,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetGuiByTab",
+		"addr":		0xA0A2EFCD,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"GetSubprovider",
+		"addr":		0xA08D30F9,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetRoamingState",
+		"addr":		0xA08D332D,
+		"args":		[]
+	},
+	{
+		"name":		"GetProfileVolumeSetting",
+		"addr":		0xA05AE4A9,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"RAM_EMS_Admin",
+		"addr":		0xA8E69710,
+		"args":		[]
+	},
+	{
+		"name":		"GetSecondsFromDateTime",
+		"addr":		0xA058B1F3,
+		"args":		["ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"GetSecondsFromDateTimeSince1997",
+		"addr":		0xA058B245,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"GetSecondsFromTime",
+		"addr":		0xA058B6CE,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetDateTimeFromSeconds",
+		"addr":		0xA058B12D,
+		"args":		["ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"GetDateTimeFromSecondsSince1997",
+		"addr":		0xA058B245,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"GetTimeFromSeconds",
+		"addr":		0xA058B6E1,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"InitDate",
+		"addr":		0xA058B018,
+		"args":		["ptr","uint32","uint8","uint8"]
+	},
+	{
+		"name":		"InitTime",
+		"addr":		0xA058BA09,
+		"args":		["ptr","uint8","uint8","uint8","uint32"]
+	},
+	{
+		"name":		"CmpDates",
+		"addr":		0xA058A9FC,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"CmpTimes",
+		"addr":		0xA058B670,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"GetDaysFromMonth",
+		"addr":		0xA058AA4D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"IsLeapYear",
+		"addr":		0xA058AA2D,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetFilledNAbDataCount",
+		"addr":		0xA0601463,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetDataFromNAbData",
+		"addr":		0xA0600E0D,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"UnpackNumPkt",
+		"addr":		0xA0937983,
+		"args":		["ptr","cstr","int32"]
+	},
+	{
+		"name":		"TViewGetGUI",
+		"addr":		0xA0961B63,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"TViewSetDefinition",
+		"addr":		0xA0962161,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"TViewSetText",
+		"addr":		0xA09620EB,
+		"args":		["ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"TViewSetUserPointer",
+		"addr":		0xA096218F,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"TViewGetUserPointer",
+		"addr":		0xA0962195,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"SendMedia",
+		"addr":		0xA079CEC0,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"SaveMaxIllumination",
+		"addr":		0xA08D6125,
+		"args":		["int32"]
+	},
+	{
+		"name":		"SetIlluminationoffTimeout",
+		"addr":		0xA08D614D,
+		"args":		["int32"]
+	},
+	{
+		"name":		"IllumTimeRequest",
+		"addr":		0xA08D62D9,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"IllumTimeRelease",
+		"addr":		0xA08D630F,
+		"args":		["int32","int32"]
+	},
+	{
+		"name":		"GetIMGHDRFromThemeCache",
+		"addr":		0xA0A30841,
+		"args":		["int32"]
+	},
+	{
+		"name":		"GetExtUidByFileName_ws",
+		"addr":		0xA0507EA0,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"wstrcmp",
+		"addr":		0xA0500427,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"fexists",
+		"addr":		0xA05D2500,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"SettingsAE_Update_ws",
+		"addr":		0xA05ADF9D,
+		"args":		["ptr","int32","cstr","cstr"]
+	},
+	{
+		"name":		"SettingsAE_Read_ws",
+		"addr":		0xA05ADF5B,
+		"args":		["ptr","int32","cstr","cstr"]
+	},
+	{
+		"name":		"SettingsAE_SetFlag",
+		"addr":		0xA05ADEF5,
+		"args":		["int32","int32","cstr","cstr"]
+	},
+	{
+		"name":		"SettingsAE_GetFlag",
+		"addr":		0xA05ADEBF,
+		"args":		["ptr","int32","cstr","cstr"]
+	},
+	{
+		"name":		"SettingsAE_Update",
+		"addr":		0xA05ADF3B,
+		"args":		["int32","int32","cstr","cstr"]
+	},
+	{
+		"name":		"SettingsAE_Read",
+		"addr":		0xA05ADF07,
+		"args":		["ptr","int32","cstr","cstr"]
+	},
+	{
+		"name":		"SettingsAE_GetEntryList",
+		"addr":		0xA0642F2D,
+		"args":		["int32"]
+	},
+	{
+		"name":		"SettingsAE_RemoveEntry",
+		"addr":		0xA0643049,
+		"args":		["int32","cstr","int32"]
+	},
+	{
+		"name":		"i2c_transfer",
+		"addr":		0xA04F9C04,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"i2c_receive",
+		"addr":		0xA04F9C58,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"getEEFullMaxID",
+		"addr":		0xA04EDB5C,
+		"args":		[]
+	},
+	{
+		"name":		"WriteEELiteBlock",
+		"addr":		0xA04EED34,
+		"args":		[]
+	},
+	{
+		"name":		"EndCall",
+		"addr":		0xA09C154B,
+		"args":		[]
+	},
+	{
+		"name":		"SetCurrentSecondOfCall",
+		"addr":		0xA08D30C1,
+		"args":		[]
+	},
+	{
+		"name":		"ResetGPRSTraffic",
+		"addr":		0xA092CFFF,
+		"args":		[]
+	},
+	{
+		"name":		"RamDateTime",
+		"addr":		0xA8D9745C,
+		"args":		[]
+	},
+	{
+		"name":		"RamAutoTime",
+		"addr":		0xA8D97484,
+		"args":		[]
+	},
+	{
+		"name":		"Pic_AccuGraph",
+		"addr":		0x00001200,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsBTConnected",
+		"addr":		0xA8DA2310,
+		"args":		[]
+	},
+	{
+		"name":		"RamIsBTHeadsetConnected",
+		"addr":		0xA8DA22A4,
+		"args":		[]
+	},
+	{
+		"name":		"GetMemUsedByCepID",
+		"addr":		0xA00967E3,
+		"args":		["int16"]
+	},
+	{
+		"name":		"NU_Create_Task",
+		"addr":		0xA009CA14,
+		"args":		["ptr","cstr","ptr","ptr","int32","ptr","ptr","int32","uint8","int32","uint8","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Task",
+		"addr":		0xA009CB30,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Reset_Task",
+		"addr":		0xA009CB8C,
+		"args":		["ptr","int32","ptr"]
+	},
+	{
+		"name":		"NU_Terminate_Task",
+		"addr":		0xA009CBAC,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Resume_Task",
+		"addr":		0xA009CCA8,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Suspend_Task",
+		"addr":		0xA009CCF0,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Relinquish",
+		"addr":		0xA009CD2C,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Sleep",
+		"addr":		0xA009CD50,
+		"args":		["int32"]
+	},
+	{
+		"name":		"NU_Change_Priority",
+		"addr":		0xA009E098,
+		"args":		["ptr","uint8"]
+	},
+	{
+		"name":		"NU_Change_Preemption",
+		"addr":		0xA009E0B0,
+		"args":		["uint8"]
+	},
+	{
+		"name":		"NU_Change_Time_Slice",
+		"addr":		0xA009E0CC,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"NU_Check_Stack",
+		"addr":		0xA00A2B18,
+		"args":		[],
+		"skip":		true
+	},
+	{
+		"name":		"NU_Current_Task_Pointer",
+		"addr":		0xA009C624,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Established_Tasks",
+		"addr":		0xA00A0B54,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Task_Information",
+		"addr":		0xA00A0EF4,
+		"args":		["ptr","cstr","ptr","ptr","ptr","ptr","ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"NU_Task_Pointers",
+		"addr":		0xA00A0B7C,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"NU_Create_Mailbox",
+		"addr":		0xA009D684,
+		"args":		["ptr","cstr","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Mailbox",
+		"addr":		0xA009D6B0,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Send_To_Mailbox",
+		"addr":		0xA009D6D0,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"NU_Receive_From_Mailbox",
+		"addr":		0xA009D734,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"NU_Create_Queue",
+		"addr":		0xA00A06C8,
+		"args":		["ptr","cstr","ptr","int32","uint8","int32","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Queue",
+		"addr":		0xA00A0768,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Send_To_Queue",
+		"addr":		0xA00A0788,
+		"args":		["ptr","ptr","int32","int32"]
+	},
+	{
+		"name":		"NU_Receive_From_Queue",
+		"addr":		0xA00A082C,
+		"args":		["ptr","ptr","int32","ptr","int32"]
+	},
+	{
+		"name":		"NU_Established_Queues",
+		"addr":		0xA00A08DC,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Queue_Information",
+		"addr":		0xA00A0994,
+		"args":		["ptr","cstr","ptr","ptr","ptr","ptr","ptr","ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"NU_Queue_Pointers",
+		"addr":		0xA00A08F0,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"NU_Create_Semaphore",
+		"addr":		0xA009DFB4,
+		"args":		["ptr","cstr","int32","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Semaphore",
+		"addr":		0xA009DFEC,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Obtain_Semaphore",
+		"addr":		0xA009E00C,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"NU_Release_Semaphore",
+		"addr":		0xA009E05C,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Create_Event_Group",
+		"addr":		0xA009D520,
+		"args":		["ptr","cstr"]
+	},
+	{
+		"name":		"NU_Delete_Event_Group",
+		"addr":		0xA009D53C,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Set_Events",
+		"addr":		0xA009D55C,
+		"args":		["ptr","int32","uint8"]
+	},
+	{
+		"name":		"NU_Retrieve_Events",
+		"addr":		0xA009D590,
+		"args":		["ptr","int32","uint8","ptr","int32"]
+	},
+	{
+		"name":		"NU_Control_Signals",
+		"addr":		0xA009E0E4,
+		"args":		["int32"]
+	},
+	{
+		"name":		"NU_Receive_Signals",
+		"addr":		0xA009E104,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Register_Signal_Handler",
+		"addr":		0xA009E124,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Send_Signals",
+		"addr":		0xA009E150,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"NU_Create_Partition_Pool",
+		"addr":		0xA009D824,
+		"args":		["ptr","cstr","ptr","int32","int32","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Partition_Pool",
+		"addr":		0xA009D8A8,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Allocate_Partition",
+		"addr":		0xA009D8C8,
+		"args":		["ptr","ptr","int32"]
+	},
+	{
+		"name":		"NU_Deallocate_Partition",
+		"addr":		0xA009D92C,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Established_Partition_Pools",
+		"addr":		0xA009D964,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Partition_Pool_Information",
+		"addr":		0xA009DA1C,
+		"args":		["ptr","cstr","ptr","ptr","ptr","ptr","ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"NU_Partition_Pool_Pointers",
+		"addr":		0xA009D978,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"NU_Create_Memory_Pool",
+		"addr":		0xA009D150,
+		"args":		["ptr","cstr","ptr","int32","int32","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Memory_Pool",
+		"addr":		0xA009D1E0,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Allocate_Memory",
+		"addr":		0xA009D200,
+		"args":		["ptr","ptr","int32","int32"]
+	},
+	{
+		"name":		"NU_Deallocate_Memory",
+		"addr":		0xA009D28C,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Established_Memory_Pools",
+		"addr":		0xA009D2C4,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Memory_Pool_Information",
+		"addr":		0xA009D37C,
+		"args":		["ptr","cstr","ptr","ptr","ptr","ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"NU_Memory_Pool_Pointers",
+		"addr":		0xA009D2D8,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"NU_Control_Interrupts",
+		"addr":		0xA00A2910,
+		"args":		["int32"]
+	},
+	{
+		"name":		"NU_Local_Control_Interrupts",
+		"addr":		0xA00A293C,
+		"args":		["int32"]
+	},
+	{
+		"name":		"NU_Restore_Interrupts",
+		"addr":		0xA00A2954,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Register_LISR",
+		"addr":		0xA009C920,
+		"args":		["int32","ptr","ptr"]
+	},
+	{
+		"name":		"NU_Activate_HISR",
+		"addr":		0xA009CDAC,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Create_HISR",
+		"addr":		0xA009CAC0,
+		"args":		["ptr","cstr","ptr","uint8","ptr","int32"]
+	},
+	{
+		"name":		"WRAP_NU_Create_HISR",
+		"addr":		0xa009a48a,
+		"args":		["ptr","cstr"]
+	},
+	{
+		"name":		"NU_Delete_HISR",
+		"addr":		0xA009CB6C,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Current_HISR_Pointer",
+		"addr":		0xA009C64C,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Established_HISRs",
+		"addr":		0xA00A0B68,
+		"args":		[]
+	},
+	{
+		"name":		"NU_HISR_Information",
+		"addr":		0xA00A0DE0,
+		"args":		["ptr","cstr","ptr","ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"NU_HISR_Pointers",
+		"addr":		0xA00A0C20,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"NU_Protect",
+		"addr":		0xA00A2D00,
+		"args":		["ptr"],
+		"skip":		true
+	},
+	{
+		"name":		"NU_Unprotect",
+		"addr":		0xA00A2D68,
+		"args":		[],
+		"skip":		true
+	},
+	{
+		"name":		"NU_Create_Timer",
+		"addr":		0xA009E868,
+		"args":		["ptr","cstr","ptr","int32","int32","int32","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Timer",
+		"addr":		0xA009E8DC,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Reset_Timer",
+		"addr":		0xA009E8FC,
+		"args":		["ptr","ptr","int32","int32","uint8"]
+	},
+	{
+		"name":		"NU_Control_Timer",
+		"addr":		0xA009E960,
+		"args":		["ptr","uint8"]
+	},
+	{
+		"name":		"NU_Established_Timers",
+		"addr":		0xA009E5A0,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Timer_Information",
+		"addr":		0xA009E658,
+		"args":		["ptr","cstr","ptr","ptr","ptr","ptr","ptr"]
+	},
+	{
+		"name":		"NU_Timer_Pointers",
+		"addr":		0xA009E5B4,
+		"args":		["ptr","int32"]
+	},
+	{
+		"name":		"NU_Set_Clock",
+		"addr":		0xA00A3200,
+		"args":		["int32"]
+	},
+	{
+		"name":		"NU_Retrieve_Clock",
+		"addr":		0xA00A320C,
+		"args":		[]
+	},
+	{
+		"name":		"NU_Release_Information",
+		"addr":		0xA00A0B1C,
+		"args":		[]
+	},
+	{
+		"name":		"NU_License_Information",
+		"addr":		0xA00A0B1C,
+		"args":		[]
+	},
+	{
+		"name":		"NU_USER_MODE",
+		"addr":		0xA009B878,
+		"args":		[],
+		"skip":		true
+	},
+	{
+		"name":		"NU_SUPERV_USER_VARIABLES",
+		"addr":		0xA8D95BCC,
+		"args":		[]
+	},
+	{
+		"name":		"GetClipBoard",
+		"addr":		0xA0959171,
+		"args":		[]
+	},
+	{
+		"name":		"CopyWsToClipboard",
+		"addr":		0xA0959109,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"ClearClipboard",
+		"addr":		0xA09590F1,
+		"args":		[]
+	},
+	{
+		"name":		"PushDRWOBJOnLAYER",
+		"addr":		0xA095235B,
+		"args":		["ptr","ptr"]
+	},
+	{
+		"name":		"LCDRedrawLAYER",
+		"addr":		0xA0954061,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"GetGBSProcAddress",
+		"addr":		0xA0095FDD,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"SetPropTo_obj0x17",
+		"addr":		0xA00C95FF,
+		"args":		["ptr","ptr","int32","ptr","int32","int32"]
+	},
+	{
+		"name":		"GetLCDLAYERByCurCepID",
+		"addr":		0xA094FC3B,
+		"args":		[]
+	},
+	{
+		"name":		"SetDepthBuffer",
+		"addr":		0xA0A1B619,
+		"args":		["char"]
+	},
+	{
+		"name":		"SetDepthBufferOnLCDLAYER",
+		"addr":		0xA0A1B5C7,
+		"args":		["ptr","char"]
+	},
+	{
+		"name":		"RamLastStoreString",
+		"addr":		0xA8D94F44,
+		"args":		[]
+	},
+	{
+		"name":		"debug_pickoff",
+		"addr":		0xA04D319C,
+		"args":		["uint32", "exit", "uint32"]
+	},
+	{
+		"name":		"debug1",
+		"addr":		0xA04D3018,
+		"args":		["cstr", "uint32"]
+	},
+	{
+		"name":		"debug2",
+		"addr":		0xA08D5C56,
+		"args":		["uint32", "uint32", "uint32", "uint32", "cstr"]
+	},
+	{
+		"name":		"debug3",
+		"addr":		0xA04D3068,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"debug_otp_error",
+		"addr":		0xa05835c4,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"key_data_func",
+		"addr":		0xa04fe03c,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"pasic_i2c_transfer",
+		"addr":		0xA057D920,
+		"args":		["uint8", "uint8", "uint8*", "uint8", "uint8"]
+	},
+	{
+		"name":		"debug_flash_exit",
+		"addr":		0xA05702A8,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"read_cfi",
+		"addr":		0xa8fa95ac,
+		"args":		["uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"read_cfi_result",
+		"addr":		0xa8fa96c0,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"debug_eefull_error",
+		"addr":		0xa05712c0,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"debug_imei_error",
+		"addr":		0xa0585a80,
+		"args":		["uint32"]
+	}
+]

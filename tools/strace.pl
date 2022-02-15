@@ -145,11 +145,6 @@ sub decodeArgs {
 				
 				$str .= $c;
 				
-				if ($index >= 4096) {
-					warn "Corrupted string???";
-					last;
-				}
-				
 				my $zero = index($str, "\0");
 				if ($zero >= 0) {
 					$str = substr($str, 0, $zero);

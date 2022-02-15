@@ -61,6 +61,7 @@ sub parseLib {
 			my ($offset, $addr, $descr) = ($1, $2, $3);
 			
 			$descr =~ s/^\s*([a-f0-9]+)\s*:\s*//gi;
+			$descr =~ s/\/\/.*?$//g;
 			$descr =~ s/^\s+|\s+$//g;
 			
 			if ($descr =~ /^([\w\d_]+)$/i) {
@@ -109,7 +110,7 @@ sub parseLib {
 					};
 				}
 			} else {
-				die "Bad '$line'";
+				warn "Bad '$line'";
 			}
 		} else {
 			die "Bad '$line'";

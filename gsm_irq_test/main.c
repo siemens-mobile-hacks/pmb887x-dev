@@ -1,72 +1,57 @@
 #include <pmb887x.h>
 #include <printf.h>
 
-/* register */
-#define PMB8876_GSM_TPU_CON		0xF64000F8
+static volatile stopwatch_t last = 0;
+static volatile uint32_t period = 0;
+static volatile uint32_t cnt = 0;
 
-/* flags */
-#define PMB8876_GSM_TPU_CON_RESET	0x4000
-#define PMB8876_GSM_TPU_CON_ENABLE	0x1000
-
-#define PMB8876_GSM_CLOCK_FREQ		2166000
-
-
-#define GSM_CON()		readl((void *)PMB8876_GSM_TPU_CON)
-#define GSM_CON_SET(x)		writel(x, (void *)PMB8876_GSM_TPU_CON);
-
-
-#define writel(v, d) REG(d) = v
-#define readl(d) REG(d)
-
-int unk_7530 = 0;
+const bool PLL_RECLOCK = false;
 
 int main(void) {
 	wdt_init();
 	
-	uint32_t addr;
-	for (addr = 0xf2800030; addr <= 0xf28002a8; ++addr) {
-		REG(addr) = 0;
-	}
-	
-	cpu_enable_irq(false);
-
-	writel(256, (void *)0xF6400000);
-	writel(1, (void *)0xF6400068);
-	writel(4, (void *)0xF640006C);
-	writel(2, (void *)0xF6400070);
-	
-	for (int i = 0; i < 512; i++) {
-		writel(0, (void *)0xF6401800 + (i*4));
-	}
-	
-	writel(65024, (void *)0xF6401800);
-	writel(0, (void *)0xF6401804);
-	writel(0, (void *)0xF6401808);
-	writel(32256, (void *)0xF640180C);
-	writel(32760, (void *)0xF6401810);
-	writel(4096, (void *)0xF6401814);
-	writel(0, (void *)0xF6400040);
-	writel(6, (void *)0xF640003C);
-	writel(0x80000000, (void *)0xF6400044);
-	writel(9999, (void *)0xF6400020);
-	writel(0, (void *)0xF640002C);
-	
-	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_RESET);
-	
-	writel(0, (void *)0xF6400024);
-	
-	writel(0x7530, (void *)0xF6400028);
-	writel(3, (void *)0xF640005C);
-	
-	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_ENABLE);
-
-	NVIC_CON(0x77) = 1;
-	
-	printf("Xuj!\n");
-	
 	cpu_enable_irq(true);
-
+	NVIC_CON(NVIC_TPU_INT0_IRQ) = 1;
+	NVIC_CON(NVIC_TPU_INT1_IRQ) = 1;
+	
+	printf("usart clc: %d\n", (USART_CLC(USART0) & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT);
+	
+	if (PLL_RECLOCK) {
+		PLL_OSC = 0x00030101;
+		PLL_CON1 = 0x00220002;
+		PLL_CON2 = 0x0000E070;
+		PLL_CON3 = 0x10000302;
+		// USART_CLC(USART0) = 2 << MOD_CLC_RMC_SHIFT;
+	}
+	
+	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	TPU_PLLCON0 = 1 << TPU_PLLCON0_K_DIV_SHIFT;
+	TPU_PLLCON1 = 4 << TPU_PLLCON1_L_DIV_SHIFT;
+	TPU_PLLCON2 = TPU_PLLCON2_INIT;
+	
+	for (int i = 0; i < 512; i++)
+		TPU_RAM(i) = 0;
+	
+	TPU_UNK5 = 0;
+	TPU_UNK4 = 6;
+	TPU_UNK6 = 0x80000000;
+	
+	TPU_OVERFLOW = 9999;
+	TPU_OFFSET = 0;
+	TPU_INT(0) = 0;
+	TPU_INT(1) = 30000;
+	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
+	
+	last = stopwatch_get();
+	
+	TPU_SRC(0) = MOD_SRC_CLRR;
+	TPU_SRC(1) = MOD_SRC_CLRR;
+	
+	TPU_SRC(0) = MOD_SRC_SRE;
+	TPU_SRC(1) = MOD_SRC_SRE;
+	
 	while (true) {
+		printf("period: %d us [%d]\n", period, cnt);
 		wdt_serve();
 	}
 	
@@ -91,11 +76,17 @@ __IRQ void prefetch_abort_handler(void) {
 __IRQ void irq_handler(void) {
 	int irqn = NVIC_CURRENT_IRQ;
 	
-	printf("IRQ FIRED: %X\n", irqn);
-	
-	if (irqn == 0x77) {
-		printf("GSM TIMER: %d \n", STM_TIM4);
-		GSM_CON_SET( GSM_CON() | PMB8876_GSM_TPU_CON_RESET );
+	if (irqn == NVIC_TPU_INT0_IRQ) {
+		period = stopwatch_elapsed_us(last);
+		last = stopwatch_get();
+		
+		cnt++;
+		
+		TPU_SRC(0) |= MOD_SRC_CLRR;
+	} else if (irqn == NVIC_TPU_INT1_IRQ) {
+		printf("IRQ FIRED: %X\n", irqn);
+		while (1);
+		TPU_SRC(1) |= MOD_SRC_CLRR;
 	}
 	
 	NVIC_IRQ_ACK = 1;

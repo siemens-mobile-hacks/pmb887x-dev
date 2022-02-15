@@ -2,6 +2,25 @@
 .arm
 .section .text.startup
 
+#ifdef BOOT_FLASH
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xFFFFFFFF
+.int 0xA0000040
+.int 0xFFFFFFFF
+.int 0xA0000040
+.int 0x544B4A43
+#endif
+
 _start:
 	#ifdef BOOT_EXTRAM
 	/* chaos bootloader specific */

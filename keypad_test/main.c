@@ -78,6 +78,10 @@ __IRQ void prefetch_abort_handler(void) {
 static void read_keycodes(void) {
 	uint32_t ports[3] = {KEYPAD_PORT(0), KEYPAD_PORT(1), KEYPAD_PORT(2)};
 	
+	printf("%08X\n", ports[0]);
+	printf("%08X\n", ports[1]);
+	printf("%08X\n", ports[1]);
+	
 	for (int kp_in = 0; kp_in < 8; kp_in++) {
 		uint32_t mask1 = (1 << (kp_in + 24)) | (1 << (kp_in + 16)) | (1 << (kp_in + 8)) | (1 << kp_in);
 		uint32_t mask2 = (1 << kp_in);
