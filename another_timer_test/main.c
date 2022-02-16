@@ -1,4 +1,3 @@
-#include <printf.h>
 #include "main.h"
 
 #define D1601AA_I2C_ADDR		0x31 // Dialog/Twigo

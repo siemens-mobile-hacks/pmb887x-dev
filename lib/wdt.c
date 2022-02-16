@@ -1,7 +1,5 @@
 #include "wdt.h"
 
-#include <printf.h>
-
 static stopwatch_t last_wdt_serve = 0;
 static uint32_t wdt_interval = 0;
 

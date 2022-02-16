@@ -1,5 +1,4 @@
 #include "main.h"
-#include <printf.h>
 
 #define LPS_PREC	8
 #define STM_DIV		1 /*26*/

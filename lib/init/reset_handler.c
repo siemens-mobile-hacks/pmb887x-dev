@@ -1,7 +1,6 @@
 #include "reset_handler.h"
 
 #include <pmb887x.h>
-#include <printf.h>
 
 extern uint32_t _data_loadaddr, _data, _edata, _ebss, _stack;
 extern uint32_t _vectors_table_start, _vectors_table_end, _vectors_table_handlers;

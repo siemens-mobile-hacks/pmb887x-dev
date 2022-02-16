@@ -17,6 +17,7 @@ LIB_CFILES += $(LIB_DIR)/printf.c
 LIB_CFILES += $(LIB_DIR)/wdt.c
 LIB_CFILES += $(LIB_DIR)/stopwatch.c
 LIB_CFILES += $(LIB_DIR)/cpu.c
+LIB_CFILES += $(LIB_DIR)/libc.c
 
 ifeq ($(BOOT),intram)
 	ARCH_FLAGS += -DBOOT_INTRAM

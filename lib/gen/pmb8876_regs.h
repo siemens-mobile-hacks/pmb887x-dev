@@ -888,8 +888,6 @@
 /* Clock Control Register */
 #define	CAPCOM_CLC(base)			MMIO32((base) + 0x00)
 
-#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
-
 #define	CAPCOM_CPISEL(base)			MMIO32((base) + 0x04)
 #define	CAPCOM_CPISEL_C1C0IS		BIT(0)
 #define	CAPCOM_CPISEL_C3C2IS		BIT(1)
@@ -897,6 +895,8 @@
 #define	CAPCOM_CPISEL_C7C6IS		BIT(3)
 #define	CAPCOM_CPISEL_T0INIS		BIT(4)
 #define	CAPCOM_CPISEL_T1INIS		BIT(5)
+
+#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
 
 /* Module Identifier Register */
 #define	CAPCOM_ID(base)				MMIO32((base) + 0x08)
@@ -1407,10 +1407,10 @@
 #define	PLL_CON0_PLL4_K1_SHIFT			27
 
 #define	PLL_CON1						MMIO32(PLL_BASE + 0xA8)
-#define	PLL_CON1_FSYS_CLKSEL			GENMASK(2, 16)			 // Source clock for fSYS (OSC_DIV1: fSYS=fOSC, PLL_DIV2: fSYS=fPLL / 2)
+#define	PLL_CON1_FSYS_CLKSEL			GENMASK(2, 16)			 // Source clock for fSYS (BYPASS: fSYS=fOSC, PLL: fSYS=fPLL / 2)
 #define	PLL_CON1_FSYS_CLKSEL_SHIFT		16
 #define	PLL_CON1_FSYS_CLKSEL_BYPASS		0x0
-#define	PLL_CON1_FSYS_CLKSEL_PLL_DIV2	0x20000
+#define	PLL_CON1_FSYS_CLKSEL_PLL		0x20000
 #define	PLL_CON1_FSYS_CLKSEL_DISABLE	0x30000
 #define	PLL_CON1_AHB_CLKSEL				GENMASK(3, 20)			 // Source clock for fPLL
 #define	PLL_CON1_AHB_CLKSEL_SHIFT		20
@@ -1434,6 +1434,7 @@
 #define	PLL_CON2_CPU_DIV_EN				BIT(12)
 
 #define	PLL_STAT						MMIO32(PLL_BASE + 0xB0)
+#define	PLL_STAT_LOCK					BIT(13)
 
 #define	PLL_CON3						MMIO32(PLL_BASE + 0xB4)
 

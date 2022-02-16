@@ -12,8 +12,35 @@ static uint32_t _ahb_div(uint32_t freq, uint32_t k1, uint32_t k2) {
 
 // Freq after PLL
 static uint32_t _pll_freq(void) {
+	// fPLL = fOSC * (NDIV + 1)
 	uint32_t ndiv = (PLL_OSC & PLL_OSC_NDIV) >> PLL_OSC_NDIV_SHIFT;
 	return CPU_OSC_FREQ * (ndiv + 1);
+}
+
+uint32_t cpu_get_sys_freq(void) {
+	uint32_t freq = _pll_freq();
+	uint32_t clksel = PLL_CON1 & PLL_CON1_FSYS_CLKSEL;
+	
+	// fSYS=0
+	if (clksel == PLL_CON1_FSYS_CLKSEL_DISABLE)
+		return 0;
+	
+	if (clksel == PLL_CON1_FSYS_CLKSEL_PLL) {
+		// fSYS = fPLL / 2
+		return freq / 2;
+	}
+	
+	// fSYS = fOSC
+	return CPU_OSC_FREQ;
+}
+
+uint32_t cpu_get_stm_freq(void) {
+	uint32_t freq = CPU_OSC_FREQ;
+	if ((PLL_CON1 & PLL_CON1_FSTM_DIV_EN)) {
+		uint32_t div = (PLL_CON1 & PLL_CON1_FSTM_DIV) >> PLL_CON1_FSTM_DIV_SHIFT;
+		return freq / div;
+	}
+	return freq;
 }
 
 // CPU freq from AHB

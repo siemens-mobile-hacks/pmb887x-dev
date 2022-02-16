@@ -29,6 +29,8 @@
 
 #define __IRQ __attribute__((interrupt))
 
+#include "libc.h"
+
 #include "gen/board.h"
 #include "gen/cpu.h"
 

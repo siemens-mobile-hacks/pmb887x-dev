@@ -1,5 +1,4 @@
 #include <pmb887x.h>
-#include <printf.h>
 
 static volatile stopwatch_t last = 0;
 static volatile uint32_t period = 0;

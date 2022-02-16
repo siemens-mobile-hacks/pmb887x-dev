@@ -1,5 +1,4 @@
 #include <stopwatch.h>
-#include <printf.h>
 
 static uint32_t ticks_per_s;
 static uint32_t ticks_per_ms;
