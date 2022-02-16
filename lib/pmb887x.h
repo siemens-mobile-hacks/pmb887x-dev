@@ -4,6 +4,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifndef CPU_OSC_FREQ
+#define CPU_OSC_FREQ	26000000
+#endif
+
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 #define PMB8876_SYSTEM_FREQ 26000000

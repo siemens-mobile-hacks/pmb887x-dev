@@ -11,6 +11,9 @@ no utf8;
 
 $| = 1;
 
+my $IGNITION_ON_PERIOD = 0.5;
+my $IGNITION_OFF_PERIOD = 0.5;
+
 my $device = "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0";
 my $boot_speed = 115200;
 my $speed = 1600000;
@@ -24,17 +27,17 @@ my $send_noise = 0;
 my $bootloader = dirname(__FILE__)."/bootloader/bootloader.bin";
 
 get_argv_opts({
-	"device=s" => \$device, 
-	"boot-speed=s" => \$boot_speed, 
-	"speed=s" => \$speed, 
-	"boot=s" => \$bootloader, 
-	"hex" => \$as_hex, 
-	"module=s" => \$module, 
-	"picocom" => \$run_picocom, 
-	"noise" => \$send_noise,
-	"ign" => \$ign, 
-	"dtr" => \$dtr, 
-	"rts" => \$rts
+	"device=s"		=> \$device, 
+	"boot-speed=s"	=> \$boot_speed, 
+	"speed=s"		=> \$speed, 
+	"boot=s"		=> \$bootloader, 
+	"hex"			=> \$as_hex, 
+	"module=s"		=> \$module, 
+	"picocom"		=> \$run_picocom, 
+	"noise"			=> \$send_noise,
+	"ign"			=> \$ign, 
+	"dtr"			=> \$dtr, 
+	"rts"			=> \$rts
 });
 
 my $port = Device::SerialPort->new($device);
@@ -49,7 +52,7 @@ $port->dtr_active($dtr);
 $port->rts_active($rts);
 
 $port->read_char_time(0);
-$port->read_const_time($ign ? 20 : 100);
+$port->read_const_time(20);
 
 $SIG{INT} = $SIG{TERM} = sub {
 	$port->dtr_active(0);
@@ -102,25 +105,28 @@ my $bootloaders = {
 	]
 };
 
-my $last_dtr_val = 0;
+my $last_ignition = 0;
 my $last_dtr = 0;
-my $last_dtr_timeout = 0.5;
-my $read_zero = 0;
 my $boot_ok = 0;
+
 while (1) {
 	if ($ign) {
-		if (time - $last_dtr > $last_dtr_timeout || $read_zero > 0) {
-			$last_dtr_val = 0 if ($read_zero > 0); # поверофнулся типа
+		my $elapsed = Time::HiRes::time - $last_ignition;
+		
+		my $timeout = $last_dtr ? $IGNITION_ON_PERIOD : $IGNITION_OFF_PERIOD;
+		
+		if ($elapsed >= $timeout) {
+			$last_dtr = !$last_dtr;
 			
-			$last_dtr_timeout = $last_dtr_val ? 1.5 : 0.5;
-			$last_dtr_val = !$last_dtr_val;
-			$last_dtr = time;
-			$read_zero = 0;
-			$port->dtr_active($last_dtr_val);
+			print "^" if $last_dtr;
 			
-			print "^" if ($last_dtr_val);
+			$port->dtr_active($last_dtr) if $ign == 1;
+			$port->dtr_active(!$last_dtr) if $ign == 2;
+			
+			$last_ignition = Time::HiRes::time;
 		}
 	}
+	
 	$port->write("AT");
 	
 	my $c = readb($port);
@@ -199,23 +205,10 @@ while (1) {
 		}
 		last;
 	} elsif ($c == 0) {
-		++$read_zero;
-	} elsif ($c >= 0) {
 		printf("%02X", $c);
 	} else {
 		print ".";
 	}
-}
-
-sub loader_alive {
-	my ($port) = @_;
-	$port->write(".");
-	my $c = readb($port);
-	if ($c ne 0x4F) {
-		warn sprintf("[loader_alive] Invalid answer 0x%02X\n", $c);
-		return 0;
-	}
-	return 1;
 }
 
 sub set_port_baudrate {
@@ -258,7 +251,7 @@ sub write_boot {
 	
 	my $c = readb($port);
 	return 1 if ($c == 0xC1 || $c == 0xB1 || $c == 0x01);
-	warn sprintf("Invalid answer: %02X\n", $c);
+	die sprintf("Invalid answer: %02X\n", $c);
 	
 	return 0;
 }

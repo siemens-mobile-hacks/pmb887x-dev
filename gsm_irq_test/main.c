@@ -18,10 +18,11 @@ int main(void) {
 	
 	if (PLL_RECLOCK) {
 		PLL_OSC = 0x00030101;
-		PLL_CON1 = 0x00220002;
-		PLL_CON2 = 0x0000E070;
-		PLL_CON3 = 0x10000302;
-		// USART_CLC(USART0) = 2 << MOD_CLC_RMC_SHIFT;
+		PLL_CON0 = 0x1120080B;
+		PLL_CON1 = 0x00020002;
+		PLL_CON2 = 0x1000F377;
+		PLL_CON3 = 0x10000303;
+		USART_CLC(USART0) = 1 << MOD_CLC_RMC_SHIFT;
 	}
 	
 	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
@@ -52,7 +53,7 @@ int main(void) {
 	
 	while (true) {
 		printf("period: %d us [%d]\n", period, cnt);
-		wdt_serve();
+		// wdt_serve();
 	}
 	
 	return 0;

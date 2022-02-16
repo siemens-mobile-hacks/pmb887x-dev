@@ -101,8 +101,8 @@
 #define	NVIC_TPU_INT1_IRQ		120
 #define	NVIC_GPRSCU_INT0_IRQ	121
 #define	NVIC_GPRSCU_INT1_IRQ	122
-#define	NVIC_CIF_UNK1_IRQ		130
 #define	NVIC_CIF_UNK0_IRQ		138
+#define	NVIC_CIF_UNK1_IRQ		139
 #define	NVIC_CIF_UNK2_IRQ		140
 #define	NVIC_MCI_IRQ			148
 #define	NVIC_I2C_SINGLE_REQ_IRQ	155
@@ -888,6 +888,8 @@
 /* Clock Control Register */
 #define	CAPCOM_CLC(base)			MMIO32((base) + 0x00)
 
+#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
+
 #define	CAPCOM_CPISEL(base)			MMIO32((base) + 0x04)
 #define	CAPCOM_CPISEL_C1C0IS		BIT(0)
 #define	CAPCOM_CPISEL_C3C2IS		BIT(1)
@@ -895,8 +897,6 @@
 #define	CAPCOM_CPISEL_C7C6IS		BIT(3)
 #define	CAPCOM_CPISEL_T0INIS		BIT(4)
 #define	CAPCOM_CPISEL_T1INIS		BIT(5)
-
-#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
 
 /* Module Identifier Register */
 #define	CAPCOM_ID(base)				MMIO32((base) + 0x08)
@@ -1382,24 +1382,63 @@
 
 // PLL
 // Looks like CGU module, registers collected using tests on real hardware (using "black box" method).
-#define	PLL_BASE				0xF4500000
-#define	PLL_OSC					MMIO32(PLL_BASE + 0xA0)
+#define	PLL_BASE						0xF4500000
+#define	PLL_OSC							MMIO32(PLL_BASE + 0xA0)
+#define	PLL_OSC_LOCK					BIT(0)
+#define	PLL_OSC_NDIV					GENMASK(3, 16)			 // Feedback divider (multiply by N+1)
+#define	PLL_OSC_NDIV_SHIFT				16
 
-#define	PLL_CON0				MMIO32(PLL_BASE + 0xA4)
+#define	PLL_CON0						MMIO32(PLL_BASE + 0xA4)
+#define	PLL_CON0_PLL1_K2				GENMASK(3, 0)			 // div by (K1 * 6 + (K2 - 1))
+#define	PLL_CON0_PLL1_K2_SHIFT			0
+#define	PLL_CON0_PLL1_K1				GENMASK(4, 3)
+#define	PLL_CON0_PLL1_K1_SHIFT			3
+#define	PLL_CON0_PLL2_K2				GENMASK(3, 8)			 // div by (K1 * 6 + (K2 - 1))
+#define	PLL_CON0_PLL2_K2_SHIFT			8
+#define	PLL_CON0_PLL2_K1				GENMASK(4, 11)
+#define	PLL_CON0_PLL2_K1_SHIFT			11
+#define	PLL_CON0_PLL3_K2				GENMASK(3, 16)			 // div by (K1 * 6 + (K2 - 1))
+#define	PLL_CON0_PLL3_K2_SHIFT			16
+#define	PLL_CON0_PLL3_K1				GENMASK(4, 19)
+#define	PLL_CON0_PLL3_K1_SHIFT			19
+#define	PLL_CON0_PLL4_K2				GENMASK(3, 24)			 // div by (K1 * 6 + (K2 - 1))
+#define	PLL_CON0_PLL4_K2_SHIFT			24
+#define	PLL_CON0_PLL4_K1				GENMASK(4, 27)
+#define	PLL_CON0_PLL4_K1_SHIFT			27
 
-#define	PLL_CON1				MMIO32(PLL_BASE + 0xA8)
-#define	PLL_CON1_FSYS_DIV_EN	BIT(25)					 // Enable fsys divider and div fsys by 4
-#define	PLL_CON1_FSYS_DIV		GENMASK(2, 28)			 // Fsys diviver (work if FSYS_DIV_EN=1)
-#define	PLL_CON1_FSYS_DIV_SHIFT	28
+#define	PLL_CON1						MMIO32(PLL_BASE + 0xA8)
+#define	PLL_CON1_FSYS_CLKSEL			GENMASK(2, 16)			 // Source clock for fSYS (OSC_DIV1: fSYS=fOSC, PLL_DIV2: fSYS=fPLL / 2)
+#define	PLL_CON1_FSYS_CLKSEL_SHIFT		16
+#define	PLL_CON1_FSYS_CLKSEL_BYPASS		0x0
+#define	PLL_CON1_FSYS_CLKSEL_PLL_DIV2	0x20000
+#define	PLL_CON1_FSYS_CLKSEL_DISABLE	0x30000
+#define	PLL_CON1_AHB_CLKSEL				GENMASK(3, 20)			 // Source clock for fPLL
+#define	PLL_CON1_AHB_CLKSEL_SHIFT		20
+#define	PLL_CON1_AHB_CLKSEL_BYPASS		0x0
+#define	PLL_CON1_AHB_CLKSEL_PLL0		0x200000
+#define	PLL_CON1_AHB_CLKSEL_PLL1		0x300000
+#define	PLL_CON1_AHB_CLKSEL_PLL2		0x400000
+#define	PLL_CON1_AHB_CLKSEL_PLL3		0x500000
+#define	PLL_CON1_AHB_CLKSEL_PLL4		0x600000
+#define	PLL_CON1_FSTM_DIV_EN			BIT(25)					 // Enable fSTM divider
+#define	PLL_CON1_FSTM_DIV				GENMASK(2, 28)			 // fSTM divider value (n^2)
+#define	PLL_CON1_FSTM_DIV_SHIFT			28
+#define	PLL_CON1_FSTM_DIV_1				0x0
+#define	PLL_CON1_FSTM_DIV_2				0x10000000
+#define	PLL_CON1_FSTM_DIV_4				0x20000000
+#define	PLL_CON1_FSTM_DIV_8				0x30000000
 
-#define	PLL_CON2				MMIO32(PLL_BASE + 0xAC)
+#define	PLL_CON2						MMIO32(PLL_BASE + 0xAC)
+#define	PLL_CON2_CPU_DIV				GENMASK(2, 8)
+#define	PLL_CON2_CPU_DIV_SHIFT			8
+#define	PLL_CON2_CPU_DIV_EN				BIT(12)
 
-#define	PLL_STAT				MMIO32(PLL_BASE + 0xB0)
+#define	PLL_STAT						MMIO32(PLL_BASE + 0xB0)
 
-#define	PLL_CON3				MMIO32(PLL_BASE + 0xB4)
+#define	PLL_CON3						MMIO32(PLL_BASE + 0xB4)
 
 /* Service Routing Control Register */
-#define	PLL_SRC					MMIO32(PLL_BASE + 0xCC)
+#define	PLL_SRC							MMIO32(PLL_BASE + 0xCC)
 
 
 // RTC [MOD_NUM=F049, MOD_REV=00, MOD_32BIT=C0]
@@ -1906,6 +1945,12 @@
 /* Module Identifier Register */
 #define	DSP_ID		MMIO32(DSP_BASE + 0x08)
 
+#define	DSP_UNK0	MMIO32(DSP_BASE + 0x1C)
+
+#define	DSP_UNK1	MMIO32(DSP_BASE + 0x24)
+
+#define	DSP_RAM(n)	MMIO32(DSP_BASE + 0x1000 + ((n) * 0x4))
+
 
 // GPRSCU [MOD_NUM=F003, MOD_REV=00, MOD_32BIT=C0]
 // Looks like GPRS Cypher Uinit module, but not sure.
@@ -1998,12 +2043,12 @@
 #define	TPU_PLLCON2_INIT			BIT(1)
 
 /* Service Routing Control Register */
-#define	TPU_UNK_SRC(n)				MMIO32(TPU_BASE + 0xE8 + ((n) * 0x4))
+#define	TPU_UNK_SRC(n)				MMIO32(TPU_BASE + 0xE0 + ((n) * 0x4))
 
 /* Service Routing Control Register */
 #define	TPU_SRC(n)					MMIO32(TPU_BASE + 0xF8 + ((n) * 0x4))
 
-#define	TPU_RAM(n)					MMIO32(TPU_BASE + 0x1800 + ((n) * 0x4))
+#define	TPU_RAM(n)					MMIO32(TPU_BASE + 0x1000 + ((n) * 0x4))
 
 
 // CIF [MOD_NUM=F052, MOD_REV=00, MOD_32BIT=C0]

@@ -99,7 +99,7 @@ sub dumpReg {
 		
 		if (%{$reg->{fields}}) {
 			my $known = 0;
-			for my $field (values %{$reg->{fields}}) {
+			for my $field (sort { $a->{start} <=> $b->{start} } values %{$reg->{fields}}) {
 				$known |= $field->{mask};
 				
 				my $val = ($value & $field->{mask}) >> $field->{start};
