@@ -13,7 +13,7 @@ use Sie::Utils;
 my $cpu_file = dirname(__FILE__).'/../lib/gen/cpu.h';
 my $cpu_str = "#pragma once\n\n";
 
-for my $cpu ("pmb8875", "pmb8876") {
+for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	my $cpu_meta = Sie::CpuMetadata->new($cpu);
 	
 	my $file = dirname(__FILE__).'/../lib/gen/'.$cpu.'_regs.h';
@@ -64,7 +64,7 @@ close F;
 my $board_file = dirname(__FILE__).'/../lib/gen/board.h';
 my $board_str = "#pragma once\n\n";
 
-for my $board ("EL71", "CX75") {
+for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	my $board_meta = Sie::BoardMetadata->new($board);
 	
 	my $file = dirname(__FILE__).'/../lib/gen/board_'.$board.'.h';
@@ -75,6 +75,10 @@ for my $board ("EL71", "CX75") {
 	
 	$str .= "// GPIO numbers\n";
 	$str .= getGpioHeader($board_meta->gpios(), 0);
+	$str .= "\n";
+	
+	$str .= "// Keypad\n";
+	$str .= getKeysHeader($board_meta->{keys});
 	$str .= "\n";
 	
 	$board_str .= "#ifdef BOARD_".$board."\n";
@@ -99,10 +103,20 @@ sub getCommonRegsHeader {
 	});
 }
 
+sub getKeysHeader {
+	my ($keys) = @_;
+	my @header;
+	for my $kp_name (getSortedKeys($keys, 'code')) {
+		my $kp = $keys->{$kp_name};
+		push @header, ["#define", "KP_".$kp_name, sprintf("0x%08X", $kp->{code})];
+	}
+	return printTable(\@header)."\n";
+}
+
 sub getGpioHeader {
 	my ($gpios, $cpu) = @_;
 	my @header;
-	for my $gpio_name (getSortedKeys($gpios)) {
+	for my $gpio_name (getSortedKeys($gpios, 'id')) {
 		my $gpio = $gpios->{$gpio_name};
 		if ($cpu) {
 			push @header, ["#define", "GPIO_".$gpio_name, $gpio->{id}];

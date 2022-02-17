@@ -28,6 +28,22 @@ sub gpios {
 	return $self->{gpios};
 }
 
+sub getCpus {
+	my $path = getDataDir();
+	opendir my $fp, $path or die "opendir($path): $!";
+	my @files = readdir $fp;
+	closedir $fp;
+	
+	my $cpus = [];
+	for my $file (@files) {
+		next if !-f $path."/".$file;
+		next if $file !~ /^pmb.*?\.cfg$/i;
+		$file =~ s/\.cfg$//gi;
+		push @$cpus, $file;
+	}
+	return $cpus;
+}
+
 sub setGpios {
 	my ($self, $gpio_map) = @_;
 	

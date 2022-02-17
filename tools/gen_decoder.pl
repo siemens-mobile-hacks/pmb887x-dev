@@ -18,12 +18,13 @@ for my $module (@{$cpu_meta->getAllModules()}) {
 
 my @cpus;
 my @modules;
-my @gpios;
 
-for my $cpu ("pmb8875", "pmb8876") {
+my $cpu_to_idx = {};
+my $cpu_idx = 0;
+
+for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	my $cpu_meta = Sie::CpuMetadata->new($cpu);
 	
-	my $gpios_var = lc($cpu_meta->{name})."_gpios";
 	my $irqs_var = lc($cpu_meta->{name})."_irqs";
 	
 	my $irqs = {};
@@ -34,16 +35,6 @@ for my $cpu ("pmb8875", "pmb8876") {
 		}
 	}
 	
-	my @gpios;
-	for my $gpio_name (getSortedKeys($cpu_meta->gpios(), 'id')) {
-		my $gpio = $cpu_meta->gpios()->{$gpio_name};
-		push @gpios, [
-			'"GPIO_PIN'.$gpio->{id}.'_'.$gpio->{name}.'",',
-			uc($cpu_meta->{name})."_GPIO_".$gpio->{name}.",",
-			"GPIO_PIN".$gpio->{id}
-		];
-	}
-	
 	my @irqs;
 	for my $irq_name (getSortedKeys($irqs)) {
 		push @irqs, ['"'.$irq_name.'",', uc($cpu_meta->{name})."_".$irq_name."_IRQ,", 'NVIC_CON'.$irqs->{$irq_name}];
@@ -51,10 +42,6 @@ for my $cpu ("pmb8875", "pmb8876") {
 	
 	$str .= "static pmb887x_cpu_meta_irq_t ".$irqs_var."[] = {\n";
 	$str .= printTable(\@irqs, "\t{", "},");
-	$str .= "};\n\n";
-	
-	$str .= "static pmb887x_cpu_meta_gpio_t ".$gpios_var."[] = {\n";
-	$str .= printTable(\@gpios, "\t{", "},");
 	$str .= "};\n\n";
 	
 	my @modules_ref;
@@ -75,14 +62,43 @@ for my $cpu ("pmb8875", "pmb8876") {
 	
 	my $modules_var = lc($cpu_meta->{name})."_modules";
 	
+	$cpu_to_idx->{$cpu_meta->{name}} = $cpu_idx++;
+	
 	push @cpus, [
 		'"'.$cpu_meta->{name}.'",',
 		"$irqs_var,",
 		"ARRAY_SIZE($irqs_var),",
-		"$gpios_var,",
-		"ARRAY_SIZE($gpios_var),",
 		"$modules_var,",
 		"ARRAY_SIZE($modules_var)"
+	];
+}
+
+my @boards;
+for my $board (@{Sie::BoardMetadata::getBoards()}) {
+	my $board_meta = Sie::BoardMetadata->new($board);
+	my $cpu_meta = $board_meta->cpu;
+	
+	my $gpios_var = "board_".lc($board)."_gpios";
+	
+	my @gpios;
+	for my $gpio_name (getSortedKeys($cpu_meta->gpios(), 'id')) {
+		my $gpio = $cpu_meta->gpios()->{$gpio_name};
+		push @gpios, [
+			'"GPIO_PIN'.$gpio->{id}.'_'.($gpio->{alias} ? $gpio->{name}."_".$gpio->{alias} : $gpio->{name}).'",',
+			uc($cpu_meta->{name})."_GPIO_".$gpio->{name}.",",
+			"GPIO_PIN".$gpio->{id}
+		];
+	}
+	
+	$str .= "static pmb887x_cpu_meta_gpio_t ".$gpios_var."[] = {\n";
+	$str .= printTable(\@gpios, "\t{", "},");
+	$str .= "};\n\n";
+	
+	push @boards, [
+		'"'.$board_meta->{name}.'",',
+		"&cpus_metadata[".$cpu_to_idx->{$board_meta->{cpu}->{name}}."],",
+		"$gpios_var,",
+		"ARRAY_SIZE($gpios_var)",
 	];
 }
 
@@ -90,9 +106,17 @@ $str .= "static pmb887x_cpu_meta_t cpus_metadata[] = {\n";
 $str .= printTable(\@cpus, "\t{", "},");
 $str .= "};\n";
 
+$str .= "static pmb887x_board_meta_t boards_metadata[] = {\n";
+$str .= printTable(\@boards, "\t{", "},");
+$str .= "};\n";
+
 $str .= '
-pmb887x_cpu_meta_t *pmb887x_get_metadata(int cpu) {
+pmb887x_cpu_meta_t *pmb887x_get_cpu_meta(int cpu) {
 	return &cpus_metadata[cpu];
+}
+
+pmb887x_board_meta_t *pmb887x_get_board_meta(int board) {
+	return &boards_metadata[board];
 }
 ';
 

@@ -14,7 +14,7 @@ my $json = {
 	cpus	=> {},
 	boards	=> {}
 };
-for my $cpu ("pmb8875", "pmb8876") {
+for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	my $cpu_meta = Sie::CpuMetadata->new($cpu);
 	
 	$cpu_meta->buildRegIndex();
@@ -83,7 +83,7 @@ for my $cpu ("pmb8875", "pmb8876") {
 	};
 }
 
-for my $board ("EL71", "CX75") {
+for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	my $board_meta = Sie::BoardMetadata->new($board);
 	my $gpio_module = $board_meta->cpu()->{modules}->{GPIO};
 	

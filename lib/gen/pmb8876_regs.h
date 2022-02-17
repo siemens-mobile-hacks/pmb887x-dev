@@ -3,73 +3,73 @@
 
 // GPIO numbers
 #define	GPIO_KP_IN0		0
-#define	GPIO_CIF_D5		83
-#define	GPIO_DSPIN1		63
-#define	GPIO_PIPESTAT2	66
-#define	GPIO_TRACEPKT3	72
-#define	GPIO_TRACEPKT0	69
-#define	GPIO_TRACEPKT1	70
-#define	GPIO_FCDP_RB	77
-#define	GPIO_CIF_D0		78
-#define	GPIO_CIF_D2		80
-#define	GPIO_CIF_D1		79
-#define	GPIO_CIF_D4		82
-#define	GPIO_CIF_D3		81
-#define	GPIO_PIPESTAT0	68
-#define	GPIO_PIPESTAT1	67
-#define	GPIO_DSPOUT1	62
-#define	GPIO_RF_CLK		59
-#define	GPIO_CIF_D6		84
-#define	GPIO_I2S1_CLK1	112
-#define	GPIO_CIF_PD		113
-#define	GPIO_MMCI_CMD	104
-#define	GPIO_MMCI_DAT0	105
-#define	GPIO_MMCI_CLK	106
-#define	GPIO_CIF_VSYNC	88
-#define	GPIO_MMCI_DAT1	99
-#define	GPIO_CLKOUT2	89
-#define	GPIO_CIF_D7		85
-#define	GPIO_CIF_PCLK	86
-#define	GPIO_CIF_HSYNC	87
-#define	GPIO_USART1_CTS	19
-#define	GPIO_USART1_TXD	17
-#define	GPIO_USART1_RTS	18
+#define	GPIO_KP_IN1		1
 #define	GPIO_KP_IN2		2
 #define	GPIO_KP_IN3		3
 #define	GPIO_KP_IN4		4
 #define	GPIO_KP_IN5		5
-#define	GPIO_KP_OUT1	8
 #define	GPIO_KP_IN6		6
 #define	GPIO_KP_OUT0	7
-#define	GPIO_USART0_TXD	12
-#define	GPIO_USART0_RXD	11
+#define	GPIO_KP_OUT1	8
 #define	GPIO_KP_OUT2	9
 #define	GPIO_KP_OUT3	10
+#define	GPIO_USART0_RXD	11
+#define	GPIO_USART0_TXD	12
+#define	GPIO_USART0_RTS	13
+#define	GPIO_USART0_CTS	14
 #define	GPIO_DSPOUT0	15
 #define	GPIO_USART1_RXD	16
-#define	GPIO_USART0_CTS	14
-#define	GPIO_USART0_RTS	13
+#define	GPIO_USART1_TXD	17
+#define	GPIO_USART1_RTS	18
+#define	GPIO_USART1_CTS	19
 #define	GPIO_USB_DPLUS	20
-#define	GPIO_I2C_SDA	29
-#define	GPIO_I2C_SCL	28
 #define	GPIO_USB_DMINUS	21
+#define	GPIO_I2C_SCL	28
+#define	GPIO_I2C_SDA	29
 #define	GPIO_DIF_HD		39
 #define	GPIO_T_OUT0		43
-#define	GPIO_T_OUT3		46
 #define	GPIO_T_OUT1		44
 #define	GPIO_T_OUT2		45
-#define	GPIO_T_OUT6		49
-#define	GPIO_T_OUT7		50
+#define	GPIO_T_OUT3		46
 #define	GPIO_T_OUT4		47
 #define	GPIO_T_OUT5		48
-#define	GPIO_T_OUT12	55
-#define	GPIO_T_OUT11	54
-#define	GPIO_T_OUT10	53
+#define	GPIO_T_OUT6		49
+#define	GPIO_T_OUT7		50
 #define	GPIO_T_OUT9		52
-#define	GPIO_CLKOUT0	58
+#define	GPIO_T_OUT10	53
+#define	GPIO_T_OUT11	54
+#define	GPIO_T_OUT12	55
 #define	GPIO_RF_STR0	56
 #define	GPIO_RF_STR1	57
-#define	GPIO_KP_IN1		1
+#define	GPIO_CLKOUT0	58
+#define	GPIO_RF_CLK		59
+#define	GPIO_DSPOUT1	62
+#define	GPIO_DSPIN1		63
+#define	GPIO_PIPESTAT2	66
+#define	GPIO_PIPESTAT1	67
+#define	GPIO_PIPESTAT0	68
+#define	GPIO_TRACEPKT0	69
+#define	GPIO_TRACEPKT1	70
+#define	GPIO_TRACEPKT3	72
+#define	GPIO_FCDP_RB	77
+#define	GPIO_CIF_D0		78
+#define	GPIO_CIF_D1		79
+#define	GPIO_CIF_D2		80
+#define	GPIO_CIF_D3		81
+#define	GPIO_CIF_D4		82
+#define	GPIO_CIF_D5		83
+#define	GPIO_CIF_D6		84
+#define	GPIO_CIF_D7		85
+#define	GPIO_CIF_PCLK	86
+#define	GPIO_CIF_HSYNC	87
+#define	GPIO_CIF_VSYNC	88
+#define	GPIO_CLKOUT2	89
+#define	GPIO_MMCI_DAT1	99
+#define	GPIO_MMCI_CMD	104
+#define	GPIO_MMCI_DAT0	105
+#define	GPIO_MMCI_CLK	106
+#define	GPIO_I2S1_CLK1	112
+#define	GPIO_CIF_PD		113
 
 
 // IRQ numbers
@@ -2138,10 +2138,10 @@
 // CIF [MOD_NUM=F052, MOD_REV=00, MOD_32BIT=C0]
 // Looks like DIF (Camera Interface) module, but not sure.
 #define	CIF_BASE	0xF7000000
-#define	CIF_UNK0	MMIO32(CIF_BASE + 0x00)
-
 /* Clock Control Register */
 #define	CIF_CLC		MMIO32(CIF_BASE + 0x00)
+
+#define	CIF_UNK0	MMIO32(CIF_BASE + 0x00)
 
 /* Module Identifier Register */
 #define	CIF_ID		MMIO32(CIF_BASE + 0x08)
