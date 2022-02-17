@@ -108,6 +108,11 @@ static int command_handler(int irq) {
 				value = 0x00010090;
 			}
 			
+			if (addr == (uint32_t) &I2C_TXD) {
+				//if (value == 0x00140E62)
+				//	value = 0x005F4662;
+			}
+			
 			if (!skip) {
 				if (c == 'W') { // 4
 					REG(addr) = value;

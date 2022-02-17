@@ -1,0 +1,67 @@
+[
+	{
+		"name":		"debug_pickoff",
+		"addr":		0xA04D319C,
+		"args":		["uint32", "exit", "uint32"]
+	},
+	{
+		"name":		"debug1",
+		"addr":		0xA04D3018,
+		"args":		["cstr", "uint32"]
+	},
+	{
+		"name":		"debug2",
+		"addr":		0xA08D5C56,
+		"args":		["uint32", "uint32", "uint32", "uint32", "cstr"]
+	},
+	{
+		"name":		"debug3",
+		"addr":		0xA04D3068,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"pasic_i2c_transfer",
+		"addr":		0xA057D920,
+		"args":		["uint8", "uint8", "uint8*", "uint8", "uint8"]
+	},
+	{
+		"name":		"debug_flash_exit",
+		"addr":		0xA05702A8,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"debug_eefull_error",
+		"addr":		0xa05712c0,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"debug_imei_error",
+		"addr":		0xa0585a80,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"pasic_poweroff",
+		"addr":		0xa04fd51c,
+		"args":		[]
+	},
+	{
+		"name":		"poweroff",
+		"addr":		0xa04d2778,
+		"args":		[]
+	},
+	{
+		"name":		"cmp1",
+		"addr":		0xa05494f4,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"cmp2",
+		"addr":		0xa05494d8,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"fuck",
+		"addr":		0xa0549404,
+		"args":		["uint32"]
+	}
+]

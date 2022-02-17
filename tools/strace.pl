@@ -20,7 +20,7 @@ $| = 1;
 
 my $gdb = Sie::GDBClient->new;
 
-my $functions = getFunctions($ARGV[0] || getDataDir()."/trace/EL71.json");
+my $functions = getFunctions(getDataDir()."/trace/".($ARGV[0] || "EL71").".json");
 my $variables = {};
 
 while (1) {

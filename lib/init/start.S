@@ -33,6 +33,12 @@ _start:
 	/* stack for sys mode */
 	ldr sp, =_stack_sys
 	
+	/* stack for fiq mode */
+	bic r1, r0, #0x1f
+	orr r1, r1, #0x11
+	msr cpsr, r1
+	ldr sp, =_stack_irq
+	
 	/* stack for irq mode */
 	bic r1, r0, #0x1f
 	orr r1, r1, #0x12

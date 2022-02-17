@@ -142,20 +142,7 @@ int main(void) {
 	cpu_enable_irq(true);
 	NVIC_CON(NVIC_TPU_INT0_IRQ) = 1;
 	NVIC_CON(NVIC_TPU_INT1_IRQ) = 1;
-	/*
- 12  MHz: 2, 2, 1, 6
- 18  MHz: 2, 2, 1, 4
- 
- 26  MHz: 1, 1, 1, 0
- 52  MHz: 2, 2, 1, 1
- 78  MHz: 2, 1, 1, 0
- 104 MHz: 3, 1, 1, 0
- 156 MHz: 2, 2, 1, 0
- 208 MHz: 3, 2, 1, 0
- 260 MHz: 4, 2, 1, 0
- 312 MHz: 5, 2, 1, 0
- 
- */
+	
 	struct clock_config_t clocks[] = {
 		{ .ndiv = 2, .k1 = 15, .k2 = 7, .cpu_div = 3, .freq = 2 },
 		{ .ndiv = 3, .k1 = 1, .k2 = 1, .cpu_div = 1, .freq = 104 },
