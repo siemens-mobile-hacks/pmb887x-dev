@@ -30,6 +30,10 @@ for my $cpu ("pmb8875", "pmb8876") {
 		}
 	}
 	
+	$str .= "// GPIO numbers\n";
+	$str .= getGpioHeader($cpu_meta->gpios(), 1);
+	$str .= "\n";
+	
 	$str .= "// IRQ numbers\n";
 	$str .= getIrqsHeader($irqs);
 	$str .= "\n";
@@ -70,7 +74,7 @@ for my $board ("EL71", "CX75") {
 	$str .= "#define ".uc($board_meta->cpu()->{name})."\n\n";
 	
 	$str .= "// GPIO numbers\n";
-	$str .= getGpioHeader($board_meta->gpios());
+	$str .= getGpioHeader($board_meta->gpios(), 0);
 	$str .= "\n";
 	
 	$board_str .= "#ifdef BOARD_".$board."\n";
@@ -96,10 +100,17 @@ sub getCommonRegsHeader {
 }
 
 sub getGpioHeader {
-	my ($gpios) = @_;
+	my ($gpios, $cpu) = @_;
 	my @header;
 	for my $gpio_name (getSortedKeys($gpios)) {
-		push @header, ["#define", "GPIO_".$gpio_name, $gpios->{$gpio_name}];
+		my $gpio = $gpios->{$gpio_name};
+		if ($cpu) {
+			push @header, ["#define", "GPIO_".$gpio_name, $gpio->{id}];
+		} else {
+			if ($gpio->{alias}) {
+				push @header, ["#define", "GPIO_".$gpio->{alias}, "GPIO_".$gpio_name];
+			}
+		}
 	}
 	return printTable(\@header)."\n";
 }

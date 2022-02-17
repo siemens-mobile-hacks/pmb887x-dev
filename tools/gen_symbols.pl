@@ -34,9 +34,9 @@ sub genModuleSymbols {
 	my $alt_names = {};
 	if ($module->{name} eq "GPIO") {
 		for my $gpio_name (keys %{$cpu_meta->gpios()}) {
-			my $gpio_num = $cpu_meta->gpios()->{$gpio_name};
-			my $gpio_addr = $module->{regs}->{PIN}->{start} + ($gpio_num * $module->{regs}->{PIN}->{step});
-			$alt_names->{$gpio_addr} = "GPIO_PIN".$gpio_num."_".$gpio_name;
+			my $gpio = $cpu_meta->gpios()->{$gpio_name};
+			my $gpio_addr = $module->{regs}->{PIN}->{start} + ($gpio->{id} * $module->{regs}->{PIN}->{step});
+			$alt_names->{$gpio_addr} = "GPIO_PIN".$gpio->{id}."_".($gpio->{alias} ? $gpio->{name}."_".$gpio->{alias} : $gpio->{name});
 		}
 	}
 	

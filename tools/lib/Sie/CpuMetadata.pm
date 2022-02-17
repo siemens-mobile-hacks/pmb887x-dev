@@ -29,8 +29,17 @@ sub gpios {
 }
 
 sub setGpios {
-	my ($self, $gpios) = @_;
-	$self->{gpios} = $gpios;
+	my ($self, $gpio_map) = @_;
+	
+	for my $gpio_cpu (keys %$gpio_map) {
+		my $gpio_board = $gpio_map->{$gpio_cpu};
+		
+		next if $gpio_board eq $gpio_cpu;
+		
+		if (exists $self->{gpios}->{$gpio_cpu}) {
+			$self->{gpios}->{$gpio_cpu}->{alias} = $gpio_board;
+		}
+	}
 }
 
 sub buildRegIndex {
@@ -43,9 +52,9 @@ sub buildRegIndex {
 		my $alt_names = {};
 		if ($module->{name} eq "GPIO") {
 			for my $gpio_name (keys %{$self->gpios()}) {
-				my $gpio_num = $self->gpios()->{$gpio_name};
-				my $gpio_addr = $module->{regs}->{PIN}->{start} + ($gpio_num * $module->{regs}->{PIN}->{step});
-				$alt_names->{$gpio_addr} = "GPIO_PIN".$gpio_num."_".$gpio_name;
+				my $gpio = $self->gpios()->{$gpio_name};
+				my $gpio_addr = $module->{regs}->{PIN}->{start} + ($gpio->{id} * $module->{regs}->{PIN}->{step});
+				$alt_names->{$gpio_addr} = "GPIO_PIN".$gpio->{id}."_".($gpio->{alias} ? $gpio->{name}."_".$gpio->{alias} : $gpio->{name});
 			}
 		}
 		
@@ -172,15 +181,24 @@ sub loadCPU {
 		
 		next if !length($line);
 		
-		my ($name, $addr, $type, $id, $irqs) = split("\t", $line);
-		
-		push @{$self->{available_modules}}, {
-			id		=> parseAnyInt($id),
-			type	=> $type,
-			base	=> parseAnyInt($addr),
-			name	=> $name,
-			irqs	=> $irqs ? [split(/\s*,\s*/, $irqs)] : []
-		};
+		if ($line =~ /^\.gpio/) {
+			my ($key, $name, $id) = split("\t", $line);
+			$self->{gpios}->{$name} = {
+				id		=> parseAnyInt($id),
+				name	=> $name,
+				alias	=> undef
+			};
+		} else {
+			my ($name, $addr, $type, $id, $irqs) = split("\t", $line);
+			
+			push @{$self->{available_modules}}, {
+				id		=> parseAnyInt($id),
+				type	=> $type,
+				base	=> parseAnyInt($addr),
+				name	=> $name,
+				irqs	=> $irqs ? [split(/\s*,\s*/, $irqs)] : []
+			};
+		}
 	}
 	close $fp;
 	

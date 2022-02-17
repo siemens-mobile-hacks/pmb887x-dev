@@ -89,12 +89,14 @@ for my $board ("EL71", "CX75") {
 	
 	my @gpios;
 	for my $gpio_name (keys %{$board_meta->gpios()}) {
-		my $gpio_id = $board_meta->gpios()->{$gpio_name};
+		my $gpio = $board_meta->gpios()->{$gpio_name};
 		
 		push @gpios, {
-			name	=> $gpio_name,
-			id		=> int($gpio_id),
-			addr	=> $gpio_module->{base} + $gpio_module->{regs}->{PIN}->{start} + $gpio_module->{regs}->{PIN}->{step} * $gpio_id
+			name		=> ($gpio->{alias} ? $gpio->{name}."_".$gpio->{alias} : $gpio->{name}),
+			orig_name	=> $gpio->{name},
+			alias		=> $gpio->{alias},
+			id			=> int($gpio->{id}),
+			addr		=> $gpio_module->{base} + $gpio_module->{regs}->{PIN}->{start} + $gpio_module->{regs}->{PIN}->{step} * $gpio->{id}
 		};
 	}
 	

@@ -20,16 +20,10 @@ my @cpus;
 my @modules;
 my @gpios;
 
-my $board_meta = Sie::BoardMetadata->new("EL71");
-
-my $gpio_var = "common_gpios";
-for my $gpio_name (getSortedKeys($board_meta->gpios())) {
-	push @gpios, ['"GPIO_PIN'.$board_meta->gpios()->{$gpio_name}.'_'.$gpio_name.'",', $board_meta->gpios()->{$gpio_name}.",", "GPIO_PIN".$board_meta->gpios()->{$gpio_name}];
-}
-
 for my $cpu ("pmb8875", "pmb8876") {
 	my $cpu_meta = Sie::CpuMetadata->new($cpu);
 	
+	my $gpios_var = lc($cpu_meta->{name})."_gpios";
 	my $irqs_var = lc($cpu_meta->{name})."_irqs";
 	
 	my $irqs = {};
@@ -40,13 +34,27 @@ for my $cpu ("pmb8875", "pmb8876") {
 		}
 	}
 	
-	my @irqs;
-	for my $irq_name (getSortedKeys($irqs)) {
-		push @irqs, ['"'.$irq_name.'",', $irqs->{$irq_name}.",", 'NVIC_CON'.$irqs->{$irq_name}];
+	my @gpios;
+	for my $gpio_name (getSortedKeys($cpu_meta->gpios(), 'id')) {
+		my $gpio = $cpu_meta->gpios()->{$gpio_name};
+		push @gpios, [
+			'"GPIO_PIN'.$gpio->{id}.'_'.$gpio->{name}.'",',
+			uc($cpu_meta->{name})."_GPIO_".$gpio->{name}.",",
+			"GPIO_PIN".$gpio->{id}
+		];
 	}
 	
-	$str .= "static pmb887x_cpu_meta_irq_t ".lc($cpu_meta->{name})."_irqs[] = {\n";
+	my @irqs;
+	for my $irq_name (getSortedKeys($irqs)) {
+		push @irqs, ['"'.$irq_name.'",', uc($cpu_meta->{name})."_".$irq_name."_IRQ,", 'NVIC_CON'.$irqs->{$irq_name}];
+	}
+	
+	$str .= "static pmb887x_cpu_meta_irq_t ".$irqs_var."[] = {\n";
 	$str .= printTable(\@irqs, "\t{", "},");
+	$str .= "};\n\n";
+	
+	$str .= "static pmb887x_cpu_meta_gpio_t ".$gpios_var."[] = {\n";
+	$str .= printTable(\@gpios, "\t{", "},");
 	$str .= "};\n\n";
 	
 	my @modules_ref;
@@ -71,16 +79,12 @@ for my $cpu ("pmb8875", "pmb8876") {
 		'"'.$cpu_meta->{name}.'",',
 		"$irqs_var,",
 		"ARRAY_SIZE($irqs_var),",
-		"$gpio_var,",
-		"ARRAY_SIZE($gpio_var),",
+		"$gpios_var,",
+		"ARRAY_SIZE($gpios_var),",
 		"$modules_var,",
 		"ARRAY_SIZE($modules_var)"
 	];
 }
-
-$str .= "static pmb887x_cpu_meta_gpio_t ".$gpio_var."[] = {\n";
-$str .= printTable(\@gpios, "\t{", "},");
-$str .= "};\n\n";
 
 $str .= "static pmb887x_cpu_meta_t cpus_metadata[] = {\n";
 $str .= printTable(\@cpus, "\t{", "},");

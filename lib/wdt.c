@@ -30,7 +30,7 @@ void wdt_init_custom(uint32_t interval) {
 		SCU_WDTCON1 = 0x8;
 		_set_einit(1);
 		
-		GPIO_PIN(GPIO_DSPOUT1_PM_WADOG) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
+		GPIO_PIN(GPIO_PM_WADOG) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
 		last_wdt_serve = stopwatch_get();
 	#endif
 }
@@ -38,6 +38,6 @@ void wdt_init_custom(uint32_t interval) {
 void wdt_serve(void) {
 	if (stopwatch_elapsed_ms(last_wdt_serve) < wdt_interval)
 		return;
-	gpio_toggle(GPIO_DSPOUT1_PM_WADOG);
+	gpio_toggle(GPIO_PM_WADOG);
 	last_wdt_serve = stopwatch_get();
 }

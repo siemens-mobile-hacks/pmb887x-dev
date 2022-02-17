@@ -26,7 +26,7 @@ sub cpu {
 
 sub gpios {
 	my ($self) = @_;
-	return $self->{gpios};
+	return $self->{cpu}->{gpios};
 }
 
 sub loadBoard {
@@ -54,8 +54,8 @@ sub loadBoard {
 			my $value = $2;
 			
 			if ($key eq "gpio") {
-				my ($gpio_name, $gpio_num) = split(/\s+/, $value);
-				$self->{gpios}->{$gpio_name} = parseAnyInt($gpio_num);
+				my ($gpio_name, $gpio_cpu_name) = split(/\s+/, $value);
+				$self->{gpios}->{$gpio_cpu_name} = $gpio_name;
 			} elsif ($key eq "cpu") {
 				$self->{cpu} = Sie::CpuMetadata->new($value);
 			}

@@ -56,6 +56,16 @@ sub genCpuHeader {
 	
 	push @header, "";
 	
+	for my $gpio_name (getSortedKeys($cpu_meta->gpios(), 'id')) {
+		my $gpio = $cpu_meta->gpios()->{$gpio_name};
+		push @header, [
+			"#define ".uc($cpu_meta->{name})."_GPIO_".$gpio->{name},
+			$gpio->{id}
+		];
+	}
+	
+	push @header, "";
+	
 	for my $irq_name (getSortedKeys($irqs)) {
 		push @header, ["#define $irq_name", $irqs->{$irq_name}];
 	}
