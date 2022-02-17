@@ -53,7 +53,9 @@ sub setGpios {
 		next if $gpio_board eq $gpio_cpu;
 		
 		if (exists $self->{gpios}->{$gpio_cpu}) {
-			$self->{gpios}->{$gpio_cpu}->{alias} = $gpio_board;
+			$self->{gpios}->{$gpio_cpu}->{alias} = $gpio_board->{name};
+			$self->{gpios}->{$gpio_cpu}->{mode} = $gpio_board->{mode};
+			$self->{gpios}->{$gpio_cpu}->{value} = $gpio_board->{value};
 		}
 	}
 }
@@ -202,7 +204,9 @@ sub loadCPU {
 			$self->{gpios}->{$name} = {
 				id		=> parseAnyInt($id),
 				name	=> $name,
-				alias	=> undef
+				alias	=> undef,
+				mode	=> "none",
+				value	=> undef
 			};
 		} else {
 			my ($name, $addr, $type, $id, $irqs) = split("\t", $line);

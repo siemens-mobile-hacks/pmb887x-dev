@@ -66,7 +66,7 @@ sub genBoardHeader {
 		my $kp = $board_meta->{keys}->{$kp_name};
 		push @header, ["#define ".uc($board_meta->{name})."_KP_".$kp_name, sprintf("0x%08X", $kp->{code})];
 	}
-
+	
 	return printTable(\@header)."\n";
 }
 

@@ -74,8 +74,23 @@ sub loadBoard {
 			my $value = $2;
 			
 			if ($key eq "gpio") {
-				my ($gpio_name, $gpio_cpu_name) = split(/\s+/, $value);
-				$self->{gpios}->{$gpio_cpu_name} = $gpio_name;
+				my ($gpio_name, $gpio_cpu_name, $cfg) = split(/\s+/, $value);
+				
+				my $mode = "none";
+				my $value = undef;
+				
+				if ($cfg) {
+					if ($cfg =~ /INPUT=(\d+)/) {
+						$value = $1 ? 1 : 0;
+						$mode = "input";
+					}
+				}
+				
+				$self->{gpios}->{$gpio_cpu_name} = {
+					name	=> $gpio_name,
+					mode	=> $mode,
+					value	=> $value
+				};
 			} elsif ($key eq "cpu") {
 				$self->{cpu} = Sie::CpuMetadata->new($value);
 			} elsif ($key eq "ram") {
@@ -83,8 +98,11 @@ sub loadBoard {
 			} elsif ($key eq "vendor") {
 				$self->{vendor} = $value;
 			} elsif ($key eq "flash") {
-				my ($vid, $pid) = split(/:/, $value);
-				$self->{flash} = [hex($vid), hex($pid)];
+				my @flashes = map {
+					my ($vid, $pid) = split(/:/, $_);
+					(hex($vid) << 16) | hex($pid)
+				} split(/\s*,\s*/, $value);
+				$self->{flash} = [@flashes];
 			} elsif ($key eq "key") {
 				my ($kp_name, $kp_in_str, $kp_out_str, $map) = split(/\t+/, $value);
 				
@@ -105,7 +123,8 @@ sub loadBoard {
 					name		=> $kp_name,
 					in			=> \@kp_in_arr,
 					out			=> \@kp_out_arr,
-					code		=> $keycode
+					code		=> $keycode,
+					map			=> $map ? [split(/\s*,\s*/, $map)] : []
 				};
 				$self->{keys}->{$kp_name} = $kp_data;
 			}
