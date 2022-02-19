@@ -84,18 +84,20 @@ sub resolveRef {
 sub decodeArgs {
 	my ($gdb, $func, $regs, $variables) = @_;
 	
-	my $arg_id = 0;
 	my @decoded;
 	
-	my $sp_index = 0;
-	for my $arg (@{$func->{args}}) {
-		my $v = 0;
-		if ($arg_id < 4) {
-			$v = $regs->{"r$arg_id"};
+	my $get_arg = sub {
+		my $n = shift;
+		if ($n < 4) {
+			return $regs->{"r$n"};
 		} else {
-			$v = unpack("L", $gdb->readMem($regs->{sp} + (4 * $sp_index), 4));
-			$sp_index++;
+			return unpack("L", $gdb->readMem($regs->{sp} + (4 * (4 - $n)), 4));
 		}
+	};
+	
+	my $arg_id = 0;
+	for my $arg (@{$func->{args}}) {
+		my $v = $get_arg->($arg_id);
 		
 		my $ptr = [];
 		
@@ -116,6 +118,10 @@ sub decodeArgs {
 			push @decoded, sprintf("%d", $v);
 		} elsif ($arg eq "ptr") {
 			push @decoded, sprintf("*0x%08X", $v);
+		} elsif ($arg eq "memcmp") {
+			my $sz = $get_arg->(2);
+			my $mem = $gdb->readMem($v, $sz);
+			push @decoded, sprintf("*0x%08X(%s)", $v, bin2hex($mem));
 		} elsif ($arg eq "exit") {
 			my $index = 0;
 			my $str = "";
@@ -256,4 +262,18 @@ sub removeBreakpoints {
 		}
 	}
 	return 1;
+}
+
+sub bin2hex {
+	my $hex = shift;
+	$hex =~ s/([\W\w])/sprintf("%02X", ord($1))/ge;
+	return $hex;
+}
+
+sub hex2bin {
+	my $hex = shift;
+	$hex =~ s/\s+//gim;
+	$hex = "0$hex" if (length($hex) % 2 != 0);
+	$hex =~ s/([A-F0-9]{2})/chr(hex($1))/ge;
+	return $hex;
 }

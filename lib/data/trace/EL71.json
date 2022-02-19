@@ -589,7 +589,8 @@
 	{
 		"name":		"HexToDec",
 		"addr":		0xA0FBC79C,
-		"args":		[]
+		"args":		[],
+		"skip":		true
 	},
 	{
 		"name":		"GetCurrentTrackFilename",
