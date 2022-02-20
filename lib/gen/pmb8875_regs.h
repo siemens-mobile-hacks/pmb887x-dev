@@ -117,9 +117,9 @@
 #define	NVIC_SCU_EXTI6_IRQ		62
 #define	NVIC_SCU_EXTI7_IRQ		63
 #define	NVIC_PLL_IRQ			65
-#define	NVIC_I2C_INT0_IRQ		66
-#define	NVIC_I2C_INT1_IRQ		67
-#define	NVIC_I2C_INT2_IRQ		68
+#define	NVIC_I2C_DATA_IRQ		66
+#define	NVIC_I2C_PROTO_IRQ		67
+#define	NVIC_I2C_ERR_IRQ		68
 #define	NVIC_AMC_INT0_IRQ		70
 #define	NVIC_AMC_INT1_IRQ		71
 #define	NVIC_CAPCOM0_T0_IRQ		72
@@ -1001,6 +1001,8 @@
 /* Clock Control Register */
 #define	CAPCOM_CLC(base)			MMIO32((base) + 0x00)
 
+#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
+
 #define	CAPCOM_CPISEL(base)			MMIO32((base) + 0x04)
 #define	CAPCOM_CPISEL_C1C0IS		BIT(0)
 #define	CAPCOM_CPISEL_C3C2IS		BIT(1)
@@ -1008,8 +1010,6 @@
 #define	CAPCOM_CPISEL_C7C6IS		BIT(3)
 #define	CAPCOM_CPISEL_T0INIS		BIT(4)
 #define	CAPCOM_CPISEL_T1INIS		BIT(5)
-
-#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
 
 /* Module Identifier Register */
 #define	CAPCOM_ID(base)				MMIO32((base) + 0x08)
@@ -1630,6 +1630,13 @@
 /* Clock Control Register */
 #define	I2C_CLC						MMIO32(I2C_BASE + 0x00)
 
+/* Port Input Select Register */
+#define	I2C_PISEL					MMIO32(I2C_BASE + 0x04)
+#define	I2C_PISEL_SCL_IS0			BIT(0)
+#define	I2C_PISEL_SCL_IS1			BIT(1)
+#define	I2C_PISEL_SDA_IS0			BIT(4)
+#define	I2C_PISEL_SDA_IS1			BIT(5)
+
 /* Module Identifier Register */
 #define	I2C_ID						MMIO32(I2C_BASE + 0x08)
 
@@ -1668,13 +1675,6 @@
 #define	I2C_SYSCON_CI_4				0xC000000
 #define	I2C_SYSCON_WMEN				BIT(31)					 // Write Mirror Enable
 
-/* Port Input Select Register */
-#define	I2C_PISEL					MMIO32(I2C_BASE + 0x10)
-#define	I2C_PISEL_SCL_IS0			BIT(0)
-#define	I2C_PISEL_SCL_IS1			BIT(1)
-#define	I2C_PISEL_SDA_IS0			BIT(4)
-#define	I2C_PISEL_SDA_IS1			BIT(5)
-
 /* Bus Control Register */
 #define	I2C_BUSCON					MMIO32(I2C_BASE + 0x14)
 #define	I2C_BUSCON_SDAEN0			BIT(0)					 // Enable Input for Data Pin 0
@@ -1696,10 +1696,10 @@
 
 /* Receive Transmit Buffer */
 #define	I2C_RTB						MMIO32(I2C_BASE + 0x18)
-#define	I2C_RTB_BYTE0				GENMASK(8, 0)
-#define	I2C_RTB_BYTE0_SHIFT			0
 #define	I2C_RTB_BYTE1				GENMASK(8, 8)
 #define	I2C_RTB_BYTE1_SHIFT			8
+#define	I2C_RTB_BYTE0				GENMASK(8, 8)
+#define	I2C_RTB_BYTE0_SHIFT			8
 #define	I2C_RTB_BYTE2				GENMASK(8, 16)
 #define	I2C_RTB_BYTE2_SHIFT			16
 #define	I2C_RTB_BYTE3				GENMASK(8, 24)
@@ -1728,6 +1728,15 @@
 #define	I2C_WHBSYSCON_CLRSTP		BIT(25)					 // Clear Stop Master Bit
 #define	I2C_WHBSYSCON_CLRWMEN		BIT(30)					 // Set Write Mirror Enable Bit
 #define	I2C_WHBSYSCON_SETWMEN		BIT(31)					 // Clear Write Mirror Enable Bit
+
+/* Service Routing Control Register */
+#define	I2C_ERR_SRC					MMIO32(I2C_BASE + 0xF4)
+
+/* Service Routing Control Register */
+#define	I2C_PROTO_SRC				MMIO32(I2C_BASE + 0xF8)
+
+/* Service Routing Control Register */
+#define	I2C_DATA_SRC				MMIO32(I2C_BASE + 0xFC)
 
 
 // GPTU0 [MOD_NUM=0001, MOD_REV=00, MOD_32BIT=C0]

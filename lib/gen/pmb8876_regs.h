@@ -971,8 +971,6 @@
 /* Clock Control Register */
 #define	CAPCOM_CLC(base)			MMIO32((base) + 0x00)
 
-#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
-
 #define	CAPCOM_CPISEL(base)			MMIO32((base) + 0x04)
 #define	CAPCOM_CPISEL_C1C0IS		BIT(0)
 #define	CAPCOM_CPISEL_C3C2IS		BIT(1)
@@ -980,6 +978,8 @@
 #define	CAPCOM_CPISEL_C7C6IS		BIT(3)
 #define	CAPCOM_CPISEL_T0INIS		BIT(4)
 #define	CAPCOM_CPISEL_T1INIS		BIT(5)
+
+#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
 
 /* Module Identifier Register */
 #define	CAPCOM_ID(base)				MMIO32((base) + 0x08)
@@ -2138,10 +2138,10 @@
 // CIF [MOD_NUM=F052, MOD_REV=00, MOD_32BIT=C0]
 // Looks like DIF (Camera Interface) module, but not sure.
 #define	CIF_BASE	0xF7000000
+#define	CIF_UNK0	MMIO32(CIF_BASE + 0x00)
+
 /* Clock Control Register */
 #define	CIF_CLC		MMIO32(CIF_BASE + 0x00)
-
-#define	CIF_UNK0	MMIO32(CIF_BASE + 0x00)
 
 /* Module Identifier Register */
 #define	CIF_ID		MMIO32(CIF_BASE + 0x08)
@@ -2608,8 +2608,8 @@
 
 /* Transmission Data Register */
 #define	I2C_TXD								MMIO32(I2C_BASE + 0x8000)
-#define	I2C_TXD_BYTE0						GENMASK(8, 0)
-#define	I2C_TXD_BYTE0_SHIFT					0
+#define	I2C_TXD_BYTE0						GENMASK(8, 8)
+#define	I2C_TXD_BYTE0_SHIFT					8
 #define	I2C_TXD_BYTE1						GENMASK(8, 8)
 #define	I2C_TXD_BYTE1_SHIFT					8
 #define	I2C_TXD_BYTE2						GENMASK(8, 16)
@@ -2619,10 +2619,10 @@
 
 /* Reception Data Register */
 #define	I2C_RXD								MMIO32(I2C_BASE + 0xC000)
-#define	I2C_RXD_BYTE0						GENMASK(8, 0)
-#define	I2C_RXD_BYTE0_SHIFT					0
 #define	I2C_RXD_BYTE1						GENMASK(8, 8)
 #define	I2C_RXD_BYTE1_SHIFT					8
+#define	I2C_RXD_BYTE0						GENMASK(8, 8)
+#define	I2C_RXD_BYTE0_SHIFT					8
 #define	I2C_RXD_BYTE2						GENMASK(8, 16)
 #define	I2C_RXD_BYTE2_SHIFT					16
 #define	I2C_RXD_BYTE3						GENMASK(8, 24)
