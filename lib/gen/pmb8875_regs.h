@@ -43,7 +43,7 @@
 #define	GPIO_RF_STR1	57
 #define	GPIO_CLKOUT0	58
 #define	GPIO_RF_CLK		59
-#define	GPIO_DSPOUT		62
+#define	GPIO_DSPOUT1	62
 #define	GPIO_DSPIN1		63
 #define	GPIO_PIPESTAT2	66
 #define	GPIO_PIPESTAT1	67
@@ -78,8 +78,8 @@
 #define	NVIC_USART0_RX_IRQ		6
 #define	NVIC_USART0_ERR_IRQ		7
 #define	NVIC_USART0_CTS_IRQ		8
-#define	NVIC_USART0_ABSTART_IRQ	9
-#define	NVIC_USART0_ABDET_IRQ	10
+#define	NVIC_USART0_ABDET_IRQ	9
+#define	NVIC_USART0_ABSTART_IRQ	10
 #define	NVIC_USART0_TMO_IRQ		11
 #define	NVIC_USB_IRQ			25
 #define	NVIC_USART1_TX_IRQ		26
@@ -87,8 +87,8 @@
 #define	NVIC_USART1_RX_IRQ		28
 #define	NVIC_USART1_ERR_IRQ		29
 #define	NVIC_USART1_CTS_IRQ		30
-#define	NVIC_USART1_ABSTART_IRQ	31
-#define	NVIC_USART1_ABDET_IRQ	32
+#define	NVIC_USART1_ABDET_IRQ	31
+#define	NVIC_USART1_ABSTART_IRQ	32
 #define	NVIC_USART1_TMO_IRQ		33
 #define	NVIC_DMAC_IRQ			35
 #define	NVIC_DMAC_CH0_IRQ		36
@@ -562,8 +562,8 @@
 #define	USART_IMSC_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_IMSC_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_IMSC_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_IMSC_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_IMSC_ABDET				BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_IMSC_ABDET				BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_IMSC_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_IMSC_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_RIS(base)					MMIO32((base) + 0x68)
@@ -572,8 +572,8 @@
 #define	USART_RIS_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_RIS_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_RIS_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_RIS_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_RIS_ABDET					BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_RIS_ABDET					BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_RIS_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_RIS_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_MIS(base)					MMIO32((base) + 0x6C)
@@ -582,8 +582,8 @@
 #define	USART_MIS_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_MIS_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_MIS_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_MIS_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_MIS_ABDET					BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_MIS_ABDET					BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_MIS_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_MIS_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_ICR(base)					MMIO32((base) + 0x70)
@@ -592,8 +592,8 @@
 #define	USART_ICR_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_ICR_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_ICR_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_ICR_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_ICR_ABDET					BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_ICR_ABDET					BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_ICR_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_ICR_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_ISR(base)					MMIO32((base) + 0x74)
@@ -602,8 +602,8 @@
 #define	USART_ISR_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_ISR_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_ISR_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_ISR_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_ISR_ABDET					BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_ISR_ABDET					BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_ISR_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_ISR_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_TMO(base)					MMIO32((base) + 0x7C)
@@ -1625,13 +1625,109 @@
 
 
 // I2C [MOD_NUM=0046, MOD_REV=00, MOD_32BIT=00]
-// Looks like I2C module, but not sure.
-#define	I2C_BASE	0xF4800000
+// I2C from TC1100 official public datasheet.
+#define	I2C_BASE					0xF4800000
 /* Clock Control Register */
-#define	I2C_CLC		MMIO32(I2C_BASE + 0x00)
+#define	I2C_CLC						MMIO32(I2C_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	I2C_ID		MMIO32(I2C_BASE + 0x08)
+#define	I2C_ID						MMIO32(I2C_BASE + 0x08)
+
+/* System Control Register */
+#define	I2C_SYSCON					MMIO32(I2C_BASE + 0x10)
+#define	I2C_SYSCON_ADR				BIT(0)					 // Bit ADR is set after a start condition in slave mode
+#define	I2C_SYSCON_AL				BIT(1)					 // Arbitration Lost
+#define	I2C_SYSCON_SLA				BIT(2)					 // Slave
+#define	I2C_SYSCON_LRB				BIT(3)					 // Last Received Bit
+#define	I2C_SYSCON_BB				BIT(4)					 // Bus Busy
+#define	I2C_SYSCON_IRQD				BIT(5)					 // IIC Interrupt Request Bit for Data Transfer Events
+#define	I2C_SYSCON_IRQP				BIT(6)					 // IIC Interrupt Request Bit for Protocol Events
+#define	I2C_SYSCON_IRQE				BIT(7)					 // IIC Interrupt Request Bit for Data Transmission End
+#define	I2C_SYSCON_CO				GENMASK(3, 8)			 // Counter of Transmitted Bytes Since Last Data Interrupt.
+#define	I2C_SYSCON_CO_SHIFT			8
+#define	I2C_SYSCON_RMEN				BIT(15)					 // Read Mirror Enable
+#define	I2C_SYSCON_M10				BIT(16)					 // 10-bit address mode
+#define	I2C_SYSCON_RSC				BIT(17)					 // Repeated Start Condition
+#define	I2C_SYSCON_MOD				GENMASK(2, 18)			 // Basic Operating Mode
+#define	I2C_SYSCON_MOD_SHIFT		18
+#define	I2C_SYSCON_MOD_DISABLED		0x0
+#define	I2C_SYSCON_MOD_SLAVE		0x40000
+#define	I2C_SYSCON_MOD_MASTER		0x80000
+#define	I2C_SYSCON_MOD_MULTI_MASTER	0xC0000
+#define	I2C_SYSCON_BUM				BIT(20)					 // Busy Master
+#define	I2C_SYSCON_ACKDIS			BIT(21)					 // Acknowledge Pulse Disable
+#define	I2C_SYSCON_INT				BIT(22)					 // Interrupt Delete Select
+#define	I2C_SYSCON_TRX				BIT(23)					 // Transmit Select
+#define	I2C_SYSCON_IGE				BIT(24)					 // Ignore IRQE
+#define	I2C_SYSCON_STP				BIT(25)					 // Stop Master
+#define	I2C_SYSCON_CI				GENMASK(2, 26)			 // Length of the Receive/Transmit Buffer
+#define	I2C_SYSCON_CI_SHIFT			26
+#define	I2C_SYSCON_CI_1				0x0
+#define	I2C_SYSCON_CI_2				0x4000000
+#define	I2C_SYSCON_CI_3				0x8000000
+#define	I2C_SYSCON_CI_4				0xC000000
+#define	I2C_SYSCON_WMEN				BIT(31)					 // Write Mirror Enable
+
+/* Port Input Select Register */
+#define	I2C_PISEL					MMIO32(I2C_BASE + 0x10)
+#define	I2C_PISEL_SCL_IS0			BIT(0)
+#define	I2C_PISEL_SCL_IS1			BIT(1)
+#define	I2C_PISEL_SDA_IS0			BIT(4)
+#define	I2C_PISEL_SDA_IS1			BIT(5)
+
+/* Bus Control Register */
+#define	I2C_BUSCON					MMIO32(I2C_BASE + 0x14)
+#define	I2C_BUSCON_SDAEN0			BIT(0)					 // Enable Input for Data Pin 0
+#define	I2C_BUSCON_SDAEN1			BIT(1)					 // Enable Input for Data Pin 1
+#define	I2C_BUSCON_SCLEN0			BIT(4)					 // Enable Input for Clock Pin 0
+#define	I2C_BUSCON_SCLEN1			BIT(5)					 // Enable Input for Clock Pin 1
+#define	I2C_BUSCON_BRP				GENMASK(8, 8)			 // Baud Rate Prescaler
+#define	I2C_BUSCON_BRP_SHIFT		8
+#define	I2C_BUSCON_ICA				GENMASK(10, 16)			 // Node Address
+#define	I2C_BUSCON_ICA_SHIFT		16
+#define	I2C_BUSCON_PREDIV			GENMASK(2, 29)			 // Pre Divider for Baud Rate Generation
+#define	I2C_BUSCON_PREDIV_SHIFT		29
+#define	I2C_BUSCON_PREDIV_1			0x0
+#define	I2C_BUSCON_PREDIV_8			0x20000000
+#define	I2C_BUSCON_PREDIV_64		0x40000000
+#define	I2C_BUSCON_BRPMOD			BIT(31)					 // Baud Rate Prescaler Mode
+#define	I2C_BUSCON_BRPMOD_MODE0		0x0
+#define	I2C_BUSCON_BRPMOD_MODE1		0x80000000
+
+/* Receive Transmit Buffer */
+#define	I2C_RTB						MMIO32(I2C_BASE + 0x18)
+#define	I2C_RTB_BYTE0				GENMASK(8, 0)
+#define	I2C_RTB_BYTE0_SHIFT			0
+#define	I2C_RTB_BYTE1				GENMASK(8, 8)
+#define	I2C_RTB_BYTE1_SHIFT			8
+#define	I2C_RTB_BYTE2				GENMASK(8, 16)
+#define	I2C_RTB_BYTE2_SHIFT			16
+#define	I2C_RTB_BYTE3				GENMASK(8, 24)
+#define	I2C_RTB_BYTE3_SHIFT			24
+
+/* Write Hardware Bits Control Register */
+#define	I2C_WHBSYSCON				MMIO32(I2C_BASE + 0x20)
+#define	I2C_WHBSYSCON_CLRAL			BIT(1)					 // Clear Arbitration Lost Bit
+#define	I2C_WHBSYSCON_SETAL			BIT(2)					 // Set Arbitration Lost Bit
+#define	I2C_WHBSYSCON_CLRIRQD		BIT(5)					 // Clear IIC Interrupt Request Bit for Data Transfer Events Bit
+#define	I2C_WHBSYSCON_CLRIRQP		BIT(6)					 // Clear IIC Interrupt Request Bit for Protocol Events Bit
+#define	I2C_WHBSYSCON_CLRIRQE		BIT(7)					 // Clear IIC Interrupt Request Bit for Data Transmission End Bit
+#define	I2C_WHBSYSCON_SETIRQD		BIT(8)					 // Set IIC Interrupt Request Bit for Data Transfer Events Bit
+#define	I2C_WHBSYSCON_SETIRQP		BIT(9)					 // Set IIC Interrupt Request Bit for Protocol Events Bit
+#define	I2C_WHBSYSCON_SETIRQE		BIT(10)					 // Set IIC Interrupt Request Bit for Data Transmission End Bit
+#define	I2C_WHBSYSCON_CLRRMEN		BIT(14)					 // Clear Read Mirror Enable Bit
+#define	I2C_WHBSYSCON_SETRMEN		BIT(15)					 // Set Read Mirror Enable Bit
+#define	I2C_WHBSYSCON_CLRRSC		BIT(16)					 // Clear Repeated Start Condition Bit
+#define	I2C_WHBSYSCON_SETRSC		BIT(17)					 // Set Repeated Start Condition Bit
+#define	I2C_WHBSYSCON_CLRBUM		BIT(19)					 // Clear Busy Master Bit
+#define	I2C_WHBSYSCON_SETBUM		BIT(20)					 // Set Busy Master Bit
+#define	I2C_WHBSYSCON_CLRACKDIS		BIT(21)					 // Clear Acknowledge Pulse Disable Bit
+#define	I2C_WHBSYSCON_SETACKDIS		BIT(22)					 // Set Acknowledge Pulse Disable Bit
+#define	I2C_WHBSYSCON_CLRTRX		BIT(23)					 // Clear Transmit Select Bit
+#define	I2C_WHBSYSCON_SETTRX		BIT(24)					 // Set Transmit Select Bit
+#define	I2C_WHBSYSCON_CLRSTP		BIT(25)					 // Clear Stop Master Bit
+#define	I2C_WHBSYSCON_CLRWMEN		BIT(30)					 // Set Write Mirror Enable Bit
+#define	I2C_WHBSYSCON_SETWMEN		BIT(31)					 // Clear Write Mirror Enable Bit
 
 
 // GPTU0 [MOD_NUM=0001, MOD_REV=00, MOD_32BIT=C0]

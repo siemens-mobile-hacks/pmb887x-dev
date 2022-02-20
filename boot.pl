@@ -194,7 +194,7 @@ while (1) {
 		} else {
 			while (1) {
 				if ($send_noise) {
-					$port->write(chr(rand(0xFF)));
+					$port->write("\x09\x01\x00\x02\x04\x0E\x80\x11");
 				}
 				
 				my $c = readb($port);

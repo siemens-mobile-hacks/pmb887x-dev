@@ -23,7 +23,7 @@ sub main {
 	my $rts = 0;
 	my $flasher = [];
 	my $exec_file = "../siemens-linux/kernel/arch/arm/boot/Image";
-	my $exec_addr = '0xA8008000';
+	my $exec_addr = '0xA8000000';
 	my $as_hex = 0;
 	my $run_picocom = 0;
 	my $read_OTP = 0;
@@ -834,7 +834,7 @@ sub write_boot {
 	$port->write(chr($chk));
 	
 	my $c = readb($port);
-	return 1 if ($c == 0xC1);
+	return 1 if ($c == 0xC1 || $c == 0xB1 || $c == 0x01);
 	
 	warn sprintf("Invalid answer: %02X\n", $c);
 	return 0;

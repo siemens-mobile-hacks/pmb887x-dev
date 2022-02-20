@@ -78,8 +78,8 @@
 #define	NVIC_USART0_RX_IRQ		6
 #define	NVIC_USART0_ERR_IRQ		7
 #define	NVIC_USART0_CTS_IRQ		8
-#define	NVIC_USART0_ABSTART_IRQ	9
-#define	NVIC_USART0_ABDET_IRQ	10
+#define	NVIC_USART0_ABDET_IRQ	9
+#define	NVIC_USART0_ABSTART_IRQ	10
 #define	NVIC_USART0_TMO_IRQ		11
 #define	NVIC_SIM_UNK0_IRQ		22
 #define	NVIC_SIM_UNK1_IRQ		23
@@ -90,8 +90,8 @@
 #define	NVIC_USART1_RX_IRQ		28
 #define	NVIC_USART1_ERR_IRQ		29
 #define	NVIC_USART1_CTS_IRQ		30
-#define	NVIC_USART1_ABSTART_IRQ	31
-#define	NVIC_USART1_ABDET_IRQ	32
+#define	NVIC_USART1_ABDET_IRQ	31
+#define	NVIC_USART1_ABSTART_IRQ	32
 #define	NVIC_USART1_TMO_IRQ		33
 #define	NVIC_DMAC_IRQ			35
 #define	NVIC_DMAC_CH0_IRQ		36
@@ -570,8 +570,8 @@
 #define	USART_IMSC_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_IMSC_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_IMSC_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_IMSC_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_IMSC_ABDET				BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_IMSC_ABDET				BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_IMSC_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_IMSC_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_RIS(base)					MMIO32((base) + 0x68)
@@ -580,8 +580,8 @@
 #define	USART_RIS_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_RIS_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_RIS_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_RIS_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_RIS_ABDET					BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_RIS_ABDET					BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_RIS_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_RIS_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_MIS(base)					MMIO32((base) + 0x6C)
@@ -590,8 +590,8 @@
 #define	USART_MIS_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_MIS_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_MIS_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_MIS_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_MIS_ABDET					BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_MIS_ABDET					BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_MIS_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_MIS_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_ICR(base)					MMIO32((base) + 0x70)
@@ -600,8 +600,8 @@
 #define	USART_ICR_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_ICR_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_ICR_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_ICR_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_ICR_ABDET					BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_ICR_ABDET					BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_ICR_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_ICR_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_ISR(base)					MMIO32((base) + 0x74)
@@ -610,8 +610,8 @@
 #define	USART_ISR_RX					BIT(2)					 // Receive interrupt mask
 #define	USART_ISR_ERR					BIT(3)					 // Error interrupt mask
 #define	USART_ISR_CTS					BIT(4)					 // CTS interrupt mask
-#define	USART_ISR_ABSTART				BIT(5)					 // Autobaud start interrupt mask
-#define	USART_ISR_ABDET					BIT(6)					 // Autobaud detected interrupt mask
+#define	USART_ISR_ABDET					BIT(5)					 // Autobaud detected interrupt mask
+#define	USART_ISR_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_ISR_TMO					BIT(7)					 // RX timeout interrupt mask
 
 #define	USART_TMO(base)					MMIO32((base) + 0x7C)
@@ -971,6 +971,8 @@
 /* Clock Control Register */
 #define	CAPCOM_CLC(base)			MMIO32((base) + 0x00)
 
+#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
+
 #define	CAPCOM_CPISEL(base)			MMIO32((base) + 0x04)
 #define	CAPCOM_CPISEL_C1C0IS		BIT(0)
 #define	CAPCOM_CPISEL_C3C2IS		BIT(1)
@@ -978,8 +980,6 @@
 #define	CAPCOM_CPISEL_C7C6IS		BIT(3)
 #define	CAPCOM_CPISEL_T0INIS		BIT(4)
 #define	CAPCOM_CPISEL_T1INIS		BIT(5)
-
-#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
 
 /* Module Identifier Register */
 #define	CAPCOM_ID(base)				MMIO32((base) + 0x08)
@@ -2608,9 +2608,25 @@
 
 /* Transmission Data Register */
 #define	I2C_TXD								MMIO32(I2C_BASE + 0x8000)
+#define	I2C_TXD_BYTE0						GENMASK(8, 0)
+#define	I2C_TXD_BYTE0_SHIFT					0
+#define	I2C_TXD_BYTE1						GENMASK(8, 8)
+#define	I2C_TXD_BYTE1_SHIFT					8
+#define	I2C_TXD_BYTE2						GENMASK(8, 16)
+#define	I2C_TXD_BYTE2_SHIFT					16
+#define	I2C_TXD_BYTE3						GENMASK(8, 24)
+#define	I2C_TXD_BYTE3_SHIFT					24
 
 /* Reception Data Register */
 #define	I2C_RXD								MMIO32(I2C_BASE + 0xC000)
+#define	I2C_RXD_BYTE0						GENMASK(8, 0)
+#define	I2C_RXD_BYTE0_SHIFT					0
+#define	I2C_RXD_BYTE1						GENMASK(8, 8)
+#define	I2C_RXD_BYTE1_SHIFT					8
+#define	I2C_RXD_BYTE2						GENMASK(8, 16)
+#define	I2C_RXD_BYTE2_SHIFT					16
+#define	I2C_RXD_BYTE3						GENMASK(8, 24)
+#define	I2C_RXD_BYTE3_SHIFT					24
 
 
 // MMICIF [MOD_NUM=F053, MOD_REV=00, MOD_32BIT=C0]
