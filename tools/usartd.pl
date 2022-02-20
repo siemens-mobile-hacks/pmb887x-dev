@@ -3,6 +3,7 @@ use warnings;
 use strict;
 use IO::Socket::UNIX;
 use IO::Select;
+use Time::HiRes;
 
 my $BOOTLOADERS = {
 	ServiceMode => [
@@ -57,6 +58,7 @@ my $server = IO::Socket::UNIX->new(
 while (my $client = $server->accept()) {
 	$client->blocking(0);
 	processClient($client);
+	print "-> disconnected\n";
 }
 
 sub processClient {
@@ -65,62 +67,73 @@ sub processClient {
 	my $select = new IO::Select;
 	$select->add($client);
 	
-	my $rx;
+	print "-> connected new client, sending AT\n";
 	
-	if ($select->can_write(1)) {
+	while (1) {
 		$client->send("ATAT");
-	} else {
-		print "Timeout...\n";
-		return;
-	}
-	
-	if ($select->can_read(1)) {
-		$client->recv($rx, 1);
-		if ($rx eq "\xC0" || $rx eq "\xB0") {
-			print "Device: NewSGOLD\n" if ($rx eq "\xC0");
-			print "Device: SGOLD\n" if ($rx eq "\xB0");
-		} else {
-			print "Unknown response  ".sprintf("%02X", ord($rx))."\n";
-			return;
+		
+		my $ack = readFromSock($select, 1, 0.2);
+		return if !defined $ack;
+		
+		if ($ack eq "\xC0" || $ack eq "\xB0") {
+			print "-> device: NewSGOLD\n" if ($ack eq "\xC0");
+			print "-> device: SGOLD\n" if ($ack eq "\xB0");
+			last;
 		}
-	} else {
-		print "Timeout...\n";
-		return;
 	}
 	
 	for my $c (mkBootCode($ARGV[0] || 'ServiceMode')) {
-		if ($select->can_write(1)) {
-			$client->send(chr($c));
-		}
+		$client->send(chr($c));
 	}
 	
-	if ($select->can_read(1)) {
-		$client->recv($rx, 1);
-		if ($rx eq "\xC1" || $rx eq "\xB1") {
-			print "Boot code loaded.\n";
-		} else {
-			print "Unknown response: ".sprintf("%02X", ord($rx))."\n";
-			return;
-		}
+	my $ack = readFromSock($select, 1, 2);
+	return if !defined $ack;
+	
+	if ($ack eq "\xC1" || $ack eq "\xB1") {
+		print "-> boot code loaded.\n";
 	} else {
-		print "Timeout...\n";
-		return;
+		print "-> unknown response: ".sprintf("%02X", ord($ack))."\n";
 	}
 	
 	while ($client->opened) {
-		if ($select->can_read(1)) {
-			$client->recv($rx, 1);
-			last if !length($rx);
-			
-			if ($rx =~ /[^\t\n\x20-x7e]/) {
-				print "\n" if (ord($rx) == 0xFF);
-			} else {
-				print $rx;
-			}
+		my $c = readFromSock($select, 1, 2);
+		return if !defined $c;
+		
+		if ($c =~ /[^\t\n\x20-x7e]/) {
+			print "\n" if (ord($c) == 0xFF);
+		} else {
+			print $c;
 		}
 	}
 	
 	print "Disconnected!\n";
+}
+
+sub readFromSock {
+	my ($select, $size, $timeout) = @_;
+	
+	my $end = Time::HiRes::time + $timeout;
+	my $readed = 0;
+	my $data = "";
+	
+	while ($readed < $size) {
+		my $new_timeout = $timeout - ($end - Time::HiRes::time);
+		
+		last if ($new_timeout <= 0);
+		
+		my @fp = $select->can_read($new_timeout);
+		if (@fp) {
+			my $rx;
+			
+			my $ret = sysread $fp[0], $rx, $size - $readed;
+			return undef if !$ret;
+			
+			$readed += $ret;
+			$data .= $rx;
+		}
+	}
+	
+	return $data;
 }
 
 sub mkBootCode {
