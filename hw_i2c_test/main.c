@@ -79,6 +79,21 @@ static void i2c_hw_init(void) {
 	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
 }	
 
+static void i2c_hw_write_fifo(uint32_t value, int offset) {
+	if (!i2c_state.size) {
+		printf("WTF, internal buffer underflow\n");
+		while (true);
+	}
+	
+	int size = MIN(4 - offset, i2c_state.size);
+	for (int i = 0; i < size; i++) {
+		value |= *i2c_state.buffer++ << (8 * (offset + i));
+		i2c_state.size--;
+	}
+	
+	I2C_TXD = value;
+}
+
 static void i2c_hw_read_fifo(void) {
 	while (I2C_FFSSTAT > 0) {
 		if (!i2c_state.size) {
@@ -125,7 +140,11 @@ __IRQ void irq_handler(void) {
 	} else if (irqn == NVIC_I2C_BURST_REQ_IRQ) {
 		printf("-> NVIC_I2C_BURST_REQ_IRQ\n");
 		if ((I2C_RIS & I2C_RIS_BREQ_INT)) {
-			i2c_hw_read_fifo();
+			if ((i2c_state.addr & 1)) {
+				i2c_hw_read_fifo();
+			} else {
+				i2c_hw_write_fifo(0, 0);
+			}
 			I2C_ICR = I2C_ICR_BREQ_INT;
 		} else {
 			printf("Unknown I2C_RIS: %08X\n", I2C_RIS);
@@ -134,6 +153,7 @@ __IRQ void irq_handler(void) {
 	} else if (irqn == NVIC_I2C_SINGLE_REQ_IRQ) {
 		printf("-> NVIC_I2C_SINGLE_REQ_IRQ\n");
 		if ((I2C_RIS & I2C_RIS_LSREQ_INT)) {
+			printf("--> I2C_RIS_LSREQ_INT\n");
 			if ((i2c_state.addr & 1)) {
 				if (!i2c_state.addr_sent) {
 					I2C_TXD = i2c_state.addr;
@@ -150,16 +170,32 @@ __IRQ void irq_handler(void) {
 					i2c_state.addr_sent = true;
 				}
 				
-				int size = MIN(4 - offset, i2c_state.size);
-				for (int i = 0; i < size; i++) {
-					value |= *i2c_state.buffer++ << (8 * (offset + i));
-					i2c_state.size--;
-				}
-				
-				I2C_TXD = value;
+				i2c_hw_write_fifo(value, offset);
 			}
 			I2C_ICR = I2C_ICR_LSREQ_INT;
+		} else if ((I2C_RIS & I2C_RIS_SREQ_INT)) {
+			printf("--> I2C_RIS_SREQ_INT\n");
+			if ((i2c_state.addr & 1)) {
+				if (!i2c_state.addr_sent) {
+					I2C_TXD = i2c_state.addr;
+					i2c_state.addr_sent = true;
+				} else {
+					i2c_hw_read_fifo();
+				}
+			} else {
+				int offset = 0;
+				uint32_t value = 0;
+				if (!i2c_state.addr_sent) {
+					value |= i2c_state.addr;
+					offset = 1;
+					i2c_state.addr_sent = true;
+				}
+				
+				i2c_hw_write_fifo(value, offset);
+			}
+			I2C_ICR = I2C_ICR_SREQ_INT;
 		} else if ((I2C_RIS & I2C_RIS_LBREQ_INT)) {
+			printf("--> I2C_RIS_LBREQ_INT\n");
 			i2c_hw_read_fifo();
 			I2C_ICR = I2C_ICR_LBREQ_INT;
 		} else {
@@ -177,7 +213,7 @@ __IRQ void irq_handler(void) {
 			I2C_PIRQSC = I2C_PIRQSC_RX;
 		} else if ((I2C_PIRQSS & I2C_PIRQSS_NACK)) {
 			printf("-> I2C_PIRQSS_NACK\n");
-			I2C_PIRQSC = I2C_PIRQSC_NACK;
+			I2C_PIRQSC = I2C_PIRQSM_NACK;
 			i2c_state.code = ERR_NACK;
 		} else {
 			printf("Unknown I2C_PIRQSS: %08X\n", I2C_PIRQSS);
@@ -278,7 +314,7 @@ int main(void) {
 	uint8_t data[64] = {0xFF};
 	data[0] = 0x44;
 	data[1] = 0x24;
-	hw_i2c_write(D1601AA_I2C_ADDR, data, 2);
+	hw_i2c_write(D1601AA_I2C_ADDR, data, 3);
 	
 	hw_i2c_read(D1601AA_I2C_ADDR, data, 64);
 	
