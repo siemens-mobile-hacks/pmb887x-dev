@@ -22,6 +22,15 @@ int main(void) {
 		PLL_CON2 = 0x1000F377;
 		PLL_CON3 = 0x10000303;
 		USART_CLC(USART0) = 1 << MOD_CLC_RMC_SHIFT;
+		/*
+		PLL_OSC = 0x00030101;
+		PLL_CON0 = 0x1120080B;
+		PLL_CON1 = 0x00220002;
+		PLL_CON2 = 0x0000E070;
+		//PLL_CON3 = 0x10000302;
+		USART_CLC(USART0) = 2 << MOD_CLC_RMC_SHIFT;
+		STM_CLC = 0x001A1A14;
+		*/
 	}
 	
 	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
@@ -40,7 +49,6 @@ int main(void) {
 	TPU_OFFSET = 0;
 	TPU_INT(0) = 0;
 	TPU_INT(1) = 30000;
-	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
 	
 	last = stopwatch_get();
 	
@@ -49,6 +57,7 @@ int main(void) {
 	
 	TPU_SRC(0) = MOD_SRC_SRE;
 	TPU_SRC(1) = MOD_SRC_SRE;
+	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
 	
 	while (true) {
 		printf("period: %d us [%d]\n", period, cnt);
