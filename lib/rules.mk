@@ -70,7 +70,7 @@ GENERATED_BINS = $(PROJECT).elf $(PROJECT).bin $(PROJECT).old.elf $(PROJECT).map
 
 TGT_CPPFLAGS += -MD
 TGT_CPPFLAGS += -Wall -Wundef $(INCLUDES)
-TGT_CPPFLAGS += $(INCLUDES) $(OPENCM3_DEFS)
+TGT_CPPFLAGS += $(INCLUDES)
 
 TGT_CFLAGS += $(OPT) $(CSTD) -ggdb3
 TGT_CFLAGS += $(ARCH_FLAGS)
@@ -87,7 +87,7 @@ TGT_CXXFLAGS += -Wextra -Wshadow -Wredundant-decls -Weffc++
 
 TGT_ASFLAGS += $(OPT) $(ARCH_FLAGS) -ggdb3
 
-TGT_LDFLAGS += -T$(LDSCRIPT) -L$(OPENCM3_DIR)/lib -nostartfiles
+TGT_LDFLAGS += -T$(LDSCRIPT) -nostartfiles
 TGT_LDFLAGS += $(ARCH_FLAGS)
 TGT_LDFLAGS += -Wl,--gc-sections
 # OPTIONAL
