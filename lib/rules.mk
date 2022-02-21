@@ -10,6 +10,7 @@ BOARD ?= EL71
 INCLUDES += $(patsubst %,-I%, . $(LIB_DIR))
 
 LIB_AFILES += $(LIB_DIR)/init/start.S
+LIB_CFILES += $(LIB_DIR)/libc.c
 LIB_CFILES += $(LIB_DIR)/init/reset_handler.c
 LIB_CFILES += $(LIB_DIR)/usart.c
 LIB_CFILES += $(LIB_DIR)/i2c.c
@@ -17,7 +18,6 @@ LIB_CFILES += $(LIB_DIR)/printf.c
 LIB_CFILES += $(LIB_DIR)/wdt.c
 LIB_CFILES += $(LIB_DIR)/stopwatch.c
 LIB_CFILES += $(LIB_DIR)/cpu.c
-LIB_CFILES += $(LIB_DIR)/libc.c
 
 ifeq ($(BOOT),intram)
 	ARCH_FLAGS += -DBOOT_INTRAM
@@ -34,7 +34,7 @@ ifeq ($(BOOT),flash)
 	LDSCRIPT = $(LIB_DIR)/ld/flash.ld
 endif
 
-ARCH_FLAGS += -mcpu=arm926ej-s -DBOARD_$(BOARD)
+ARCH_FLAGS += -march=armv5te -mtune=arm926ej-s -msoft-float -mfloat-abi=soft -ffreestanding -DBOARD_$(BOARD)
 
 ############################################################################
 
@@ -68,7 +68,7 @@ OBJS += $(AFILES:%.S=$(BUILD_DIR)/%.o)
 
 GENERATED_BINS = $(PROJECT).elf $(PROJECT).bin $(PROJECT).old.elf $(PROJECT).map $(PROJECT).list $(PROJECT).lss
 
-TGT_CPPFLAGS += -MD -flto
+TGT_CPPFLAGS += -MD
 TGT_CPPFLAGS += -Wall -Wundef $(INCLUDES)
 TGT_CPPFLAGS += $(INCLUDES) $(OPENCM3_DEFS)
 
@@ -89,8 +89,6 @@ TGT_ASFLAGS += $(OPT) $(ARCH_FLAGS) -ggdb3
 
 TGT_LDFLAGS += -T$(LDSCRIPT) -L$(OPENCM3_DIR)/lib -nostartfiles
 TGT_LDFLAGS += $(ARCH_FLAGS)
-TGT_LDFLAGS += -specs=nano.specs
-TGT_LDFLAGS += -u _printf_float
 TGT_LDFLAGS += -Wl,--gc-sections
 # OPTIONAL
 #TGT_LDFLAGS += -Wl,-Map=$(PROJECT).map

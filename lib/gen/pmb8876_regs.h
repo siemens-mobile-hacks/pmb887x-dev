@@ -971,6 +971,8 @@
 /* Clock Control Register */
 #define	CAPCOM_CLC(base)			MMIO32((base) + 0x00)
 
+#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
+
 #define	CAPCOM_CPISEL(base)			MMIO32((base) + 0x04)
 #define	CAPCOM_CPISEL_C1C0IS		BIT(0)
 #define	CAPCOM_CPISEL_C3C2IS		BIT(1)
@@ -978,8 +980,6 @@
 #define	CAPCOM_CPISEL_C7C6IS		BIT(3)
 #define	CAPCOM_CPISEL_T0INIS		BIT(4)
 #define	CAPCOM_CPISEL_T1INIS		BIT(5)
-
-#define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
 
 /* Module Identifier Register */
 #define	CAPCOM_ID(base)				MMIO32((base) + 0x08)
@@ -2596,6 +2596,8 @@
 #define	I2C_ICR_SREQ_INT					BIT(1)						 // Single Request Interrupt
 #define	I2C_ICR_LBREQ_INT					BIT(2)						 // Last Burst Request Interrupt
 #define	I2C_ICR_BREQ_INT					BIT(3)						 // Burst Request Interrupt
+#define	I2C_ICR_I2C_ERR_INT					BIT(4)						 // I2C Error Interrupt
+#define	I2C_ICR_I2C_P_INT					BIT(5)						 // I2C Protocol Interrupt
 
 /* Interrupt Set Register */
 #define	I2C_ISR								MMIO32(I2C_BASE + 0x90)
@@ -2608,10 +2610,10 @@
 
 /* Transmission Data Register */
 #define	I2C_TXD								MMIO32(I2C_BASE + 0x8000)
-#define	I2C_TXD_BYTE0						GENMASK(8, 8)
-#define	I2C_TXD_BYTE0_SHIFT					8
 #define	I2C_TXD_BYTE1						GENMASK(8, 8)
 #define	I2C_TXD_BYTE1_SHIFT					8
+#define	I2C_TXD_BYTE0						GENMASK(8, 8)
+#define	I2C_TXD_BYTE0_SHIFT					8
 #define	I2C_TXD_BYTE2						GENMASK(8, 16)
 #define	I2C_TXD_BYTE2_SHIFT					16
 #define	I2C_TXD_BYTE3						GENMASK(8, 24)

@@ -1696,10 +1696,10 @@
 
 /* Receive Transmit Buffer */
 #define	I2C_RTB						MMIO32(I2C_BASE + 0x18)
-#define	I2C_RTB_BYTE1				GENMASK(8, 8)
-#define	I2C_RTB_BYTE1_SHIFT			8
 #define	I2C_RTB_BYTE0				GENMASK(8, 8)
 #define	I2C_RTB_BYTE0_SHIFT			8
+#define	I2C_RTB_BYTE1				GENMASK(8, 8)
+#define	I2C_RTB_BYTE1_SHIFT			8
 #define	I2C_RTB_BYTE2				GENMASK(8, 16)
 #define	I2C_RTB_BYTE2_SHIFT			16
 #define	I2C_RTB_BYTE3				GENMASK(8, 24)

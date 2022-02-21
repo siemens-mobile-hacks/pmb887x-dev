@@ -1,13 +1,12 @@
 ENTRY(_start)
 
 MEMORY {
-	/* 96k (sram) - 0x2000 (payload offset) */
-	ram (rwx) : ORIGIN = 0x00082000, LENGTH = 88k
+	ram (rwx) : ORIGIN = 0x00082000, LENGTH = 96k-0x2000
 }
 
 SECTIONS {
 	.text : {
-		*(.text.startup)
+		*(.startup)
 		*(.text*)	/* Program code */
 		. = ALIGN(4);
 		*(.rodata*)	/* Read-only data */

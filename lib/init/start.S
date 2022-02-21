@@ -1,6 +1,6 @@
 .global _start
 .arm
-.section .text.startup
+.section .startup
 
 #ifdef BOOT_FLASH
 .int 0xFFFFFFFF
@@ -30,9 +30,6 @@ _start:
 	
 	mrs r0, cpsr
 	
-	/* stack for sys mode */
-	ldr sp, =_stack_sys
-	
 	/* stack for fiq mode */
 	bic r1, r0, #0x1f
 	orr r1, r1, #0x11
@@ -45,10 +42,11 @@ _start:
 	msr cpsr, r1
 	ldr sp, =_stack_irq
 	
-	/* back to sys mode */
+	/* stack for sys mode */
 	msr cpsr, r0
+	ldr sp, =_stack_sys
 	
-	bl reset_handler
+	b reset_handler
 
 .global _vectors_table_start
 .global _vectors_table_handlers

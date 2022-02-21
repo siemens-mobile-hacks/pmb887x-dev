@@ -9,6 +9,8 @@
 #endif
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #define PMB8876_SYSTEM_FREQ 26000000
 
@@ -28,8 +30,6 @@
 #define GET_BIT(value, shift, mask)				(((value) >> shift) & mask)
 
 #define __IRQ __attribute__((interrupt))
-
-#include "libc.h"
 
 #include "gen/board.h"
 #include "gen/cpu.h"

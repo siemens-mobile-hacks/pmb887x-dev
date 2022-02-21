@@ -10,7 +10,7 @@ extern funcp_t __fini_array_start, __fini_array_end;
 
 void __attribute__ ((weak)) reset_handler(void) {
 	volatile uint32_t *src, *dest;
-	funcp_t *fp;
+	volatile funcp_t *fp;
 	
 	// Unmount BootROM from 0x00000000
 	REG(0xf440007C) &= ~1;
