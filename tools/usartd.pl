@@ -83,7 +83,12 @@ sub processClient {
 	}
 	
 	for my $c (mkBootCode($ARGV[0] || 'ServiceMode')) {
-		$client->send(chr($c));
+		if ($select->can_write(3)) {
+			$client->send(chr($c));
+		} else {
+			print "-> write timeout\n";
+			last;
+		}
 	}
 	
 	my $ack = readFromSock($select, 1, 2);
@@ -140,7 +145,23 @@ sub mkBootCode {
 	my ($name) = @_;
 	
 	my $boot = $BOOTLOADERS->{$name};
+	if (!$boot) {
+		$boot = [];
+		
+		open(F, "<", $name) or die "open($name): $!";
+		while (!eof(F)) {
+			read F, my $chunk, 4096;
+			
+			for (my $i = 0; $i < length($chunk); $i++) {
+				push @$boot, ord(substr($chunk, $i, 1));
+			}
+		}
+		close F;
+	}
+	
 	my $len = scalar(@$boot);
+	
+	print "-> boot: $name [$len bytes]\n";
 	
 	my @payload = (0x30, $len & 0xFF, ($len >> 8) & 0xFF);
 	

@@ -90,7 +90,7 @@
 #define	NVIC_USART1_ABDET_IRQ	31
 #define	NVIC_USART1_ABSTART_IRQ	32
 #define	NVIC_USART1_TMO_IRQ		33
-#define	NVIC_DMAC_IRQ			35
+#define	NVIC_DMAC_ERR_IRQ		35
 #define	NVIC_DMAC_CH0_IRQ		36
 #define	NVIC_DMAC_CH1_IRQ		37
 #define	NVIC_DMAC_CH2_IRQ		38
@@ -172,6 +172,10 @@
 #define	NVIC_TPU_INT1_IRQ		120
 #define	NVIC_GPRSCU_INT0_IRQ	121
 #define	NVIC_GPRSCU_INT1_IRQ	122
+#define	NVIC_DIF_INT0_IRQ		134
+#define	NVIC_DIF_INT1_IRQ		135
+#define	NVIC_DIF_INT2_IRQ		136
+#define	NVIC_DIF_INT3_IRQ		137
 
 
 // Common regs for all modules
@@ -611,50 +615,115 @@
 
 // DIF [MOD_NUM=F043, MOD_REV=00, MOD_32BIT=C0]
 // DIF (Display Interface)
-#define	DIF_BASE	0xF1B00000
+#define	DIF_BASE		0xF1B00000
 /* Clock Control Register */
-#define	DIF_CLC		MMIO32(DIF_BASE + 0x00)
+#define	DIF_CLC			MMIO32(DIF_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	DIF_ID		MMIO32(DIF_BASE + 0x08)
+#define	DIF_ID			MMIO32(DIF_BASE + 0x08)
 
-#define	DIF_UNK0	MMIO32(DIF_BASE + 0x10)
+/* RUN Control Register */
+#define	DIF_RUNCTRL		MMIO32(DIF_BASE + 0x10)
+#define	DIF_RUNCTRL_RUN	BIT(0)									 // Enable DIF Interface
 
-#define	DIF_UNK1	MMIO32(DIF_BASE + 0x24)
+#define	DIF_CON0		MMIO32(DIF_BASE + 0x20)
 
-#define	DIF_UNK2	MMIO32(DIF_BASE + 0x28)
+#define	DIF_CON1		MMIO32(DIF_BASE + 0x24)
 
-#define	DIF_UNK3	MMIO32(DIF_BASE + 0x2C)
+#define	DIF_CON2		MMIO32(DIF_BASE + 0x28)
 
-#define	DIF_UNK4	MMIO32(DIF_BASE + 0x30)
+#define	DIF_CON3		MMIO32(DIF_BASE + 0x2C)
 
-#define	DIF_UNK5	MMIO32(DIF_BASE + 0x38)
+#define	DIF_CON4		MMIO32(DIF_BASE + 0x30)
 
-#define	DIF_UNK6	MMIO32(DIF_BASE + 0x4C)
+#define	DIF_STAT		MMIO32(DIF_BASE + 0x38)
+#define	DIF_STAT_BUSY	BIT(0)
 
-#define	DIF_UNK7	MMIO32(DIF_BASE + 0x50)
+#define	DIF_CON5		MMIO32(DIF_BASE + 0x3C)
 
-#define	DIF_UNK8	MMIO32(DIF_BASE + 0x54)
+#define	DIF_CON6		MMIO32(DIF_BASE + 0x40)
 
-#define	DIF_UNK9	MMIO32(DIF_BASE + 0x58)
+#define	DIF_CON7		MMIO32(DIF_BASE + 0x44)
 
-#define	DIF_UNK10	MMIO32(DIF_BASE + 0x5C)
+#define	DIF_CON8		MMIO32(DIF_BASE + 0x48)
 
-#define	DIF_UNK11	MMIO32(DIF_BASE + 0x60)
+#define	DIF_CON9		MMIO32(DIF_BASE + 0x4C)
 
-#define	DIF_UNK12	MMIO32(DIF_BASE + 0x64)
+#define	DIF_PROG(n)		MMIO32(DIF_BASE + 0x50 + ((n) * 0x4))
 
-#define	DIF_UNK13	MMIO32(DIF_BASE + 0xA0)
+#define	DIF_CON10		MMIO32(DIF_BASE + 0x68)
 
-#define	DIF_UNK14	MMIO32(DIF_BASE + 0xA4)
+#define	DIF_CON11		MMIO32(DIF_BASE + 0x6C)
 
-#define	DIF_UNK15	MMIO32(DIF_BASE + 0xC4)
+#define	DIF_CON12		MMIO32(DIF_BASE + 0x70)
 
-#define	DIF_UNK16	MMIO32(DIF_BASE + 0xCC)
+#define	DIF_CON13		MMIO32(DIF_BASE + 0xA0)
 
-#define	DIF_UNK17	MMIO32(DIF_BASE + 0xD4)
+#define	DIF_CON14		MMIO32(DIF_BASE + 0xA4)
 
-#define	DIF_TXD		MMIO32(DIF_BASE + 0x8000)
+/* Raw Interrupt Status Register */
+#define	DIF_RIS			MMIO32(DIF_BASE + 0xC0)
+#define	DIF_RIS_EVENT0	BIT(0)
+#define	DIF_RIS_EVENT1	BIT(1)
+#define	DIF_RIS_EVENT2	BIT(2)
+#define	DIF_RIS_EVENT3	BIT(3)
+#define	DIF_RIS_EVENT4	BIT(4)
+#define	DIF_RIS_EVENT5	BIT(5)
+#define	DIF_RIS_EVENT6	BIT(6)
+#define	DIF_RIS_EVENT7	BIT(7)
+#define	DIF_RIS_EVENT8	BIT(8)
+
+/* Interrupt Mask Control Register */
+#define	DIF_IMSC		MMIO32(DIF_BASE + 0xC4)
+#define	DIF_IMSC_EVENT0	BIT(0)
+#define	DIF_IMSC_EVENT1	BIT(1)
+#define	DIF_IMSC_EVENT2	BIT(2)
+#define	DIF_IMSC_EVENT3	BIT(3)
+#define	DIF_IMSC_EVENT4	BIT(4)
+#define	DIF_IMSC_EVENT5	BIT(5)
+#define	DIF_IMSC_EVENT6	BIT(6)
+#define	DIF_IMSC_EVENT7	BIT(7)
+#define	DIF_IMSC_EVENT8	BIT(8)
+
+/* Masked Interrupt Status */
+#define	DIF_MIS			MMIO32(DIF_BASE + 0xC8)
+#define	DIF_MIS_EVENT0	BIT(0)
+#define	DIF_MIS_EVENT1	BIT(1)
+#define	DIF_MIS_EVENT2	BIT(2)
+#define	DIF_MIS_EVENT3	BIT(3)
+#define	DIF_MIS_EVENT4	BIT(4)
+#define	DIF_MIS_EVENT5	BIT(5)
+#define	DIF_MIS_EVENT6	BIT(6)
+#define	DIF_MIS_EVENT7	BIT(7)
+#define	DIF_MIS_EVENT8	BIT(8)
+
+/* Interrupt Clear Register */
+#define	DIF_ICR			MMIO32(DIF_BASE + 0xCC)
+#define	DIF_ICR_EVENT0	BIT(0)
+#define	DIF_ICR_EVENT1	BIT(1)
+#define	DIF_ICR_EVENT2	BIT(2)
+#define	DIF_ICR_EVENT3	BIT(3)
+#define	DIF_ICR_EVENT4	BIT(4)
+#define	DIF_ICR_EVENT5	BIT(5)
+#define	DIF_ICR_EVENT6	BIT(6)
+#define	DIF_ICR_EVENT7	BIT(7)
+#define	DIF_ICR_EVENT8	BIT(8)
+
+/* Interrupt Set Register */
+#define	DIF_ISR			MMIO32(DIF_BASE + 0xD0)
+#define	DIF_ISR_EVENT0	BIT(0)
+#define	DIF_ISR_EVENT1	BIT(1)
+#define	DIF_ISR_EVENT2	BIT(2)
+#define	DIF_ISR_EVENT3	BIT(3)
+#define	DIF_ISR_EVENT4	BIT(4)
+#define	DIF_ISR_EVENT5	BIT(5)
+#define	DIF_ISR_EVENT6	BIT(6)
+#define	DIF_ISR_EVENT7	BIT(7)
+#define	DIF_ISR_EVENT8	BIT(8)
+
+#define	DIF_CON15		MMIO32(DIF_BASE + 0xD4)
+
+#define	DIF_TXD			MMIO32(DIF_BASE + 0x8000)
 
 
 // USB [MOD_NUM=F047, MOD_REV=00, MOD_32BIT=C0]
@@ -769,15 +838,15 @@
 #define	DMAC_RAW_TC_STATUS_CH7					BIT(7)
 
 /* Status of the error interrupt prior to masking */
-#define	DMAC_RAW_ERR_CLEAR						MMIO32(DMAC_BASE + 0x18)
-#define	DMAC_RAW_ERR_CLEAR_CH0					BIT(0)
-#define	DMAC_RAW_ERR_CLEAR_CH1					BIT(1)
-#define	DMAC_RAW_ERR_CLEAR_CH2					BIT(2)
-#define	DMAC_RAW_ERR_CLEAR_CH3					BIT(3)
-#define	DMAC_RAW_ERR_CLEAR_CH4					BIT(4)
-#define	DMAC_RAW_ERR_CLEAR_CH5					BIT(5)
-#define	DMAC_RAW_ERR_CLEAR_CH6					BIT(6)
-#define	DMAC_RAW_ERR_CLEAR_CH7					BIT(7)
+#define	DMAC_RAW_ERR_STATUS						MMIO32(DMAC_BASE + 0x18)
+#define	DMAC_RAW_ERR_STATUS_CH0					BIT(0)
+#define	DMAC_RAW_ERR_STATUS_CH1					BIT(1)
+#define	DMAC_RAW_ERR_STATUS_CH2					BIT(2)
+#define	DMAC_RAW_ERR_STATUS_CH3					BIT(3)
+#define	DMAC_RAW_ERR_STATUS_CH4					BIT(4)
+#define	DMAC_RAW_ERR_STATUS_CH5					BIT(5)
+#define	DMAC_RAW_ERR_STATUS_CH6					BIT(6)
+#define	DMAC_RAW_ERR_STATUS_CH7					BIT(7)
 
 /* Channel enable status */
 #define	DMAC_EN_CHAN							MMIO32(DMAC_BASE + 0x1C)
@@ -897,18 +966,18 @@
 
 #define	DMAC_CH_SRC_ADDR(n)						MMIO32(DMAC_BASE + 0x100 + ((n) * 0x20))
 
-#define	DMAC_CH_DST_ADDR						MMIO32(DMAC_BASE + 0x104)
+#define	DMAC_CH_DST_ADDR(n)						MMIO32(DMAC_BASE + 0x104 + ((n) * 0x20))
 
-#define	DMAC_CH_LLI								MMIO32(DMAC_BASE + 0x108)
+#define	DMAC_CH_LLI(n)							MMIO32(DMAC_BASE + 0x108 + ((n) * 0x20))
 #define	DMAC_CH_LLI_LM							BIT(0)										 // AHB master select for loading the next LLI
 #define	DMAC_CH_LLI_LM_AHB1						0x0
 #define	DMAC_CH_LLI_LM_AHB2						0x1
-#define	DMAC_CH_LLI_LLI							GENMASK(29, 2)								 // Linked list item
-#define	DMAC_CH_LLI_LLI_SHIFT					2
+#define	DMAC_CH_LLI_ITEM						GENMASK(29, 2)								 // Linked list item
+#define	DMAC_CH_LLI_ITEM_SHIFT					2
 
 #define	DMAC_CH_CONTROL(n)						MMIO32(DMAC_BASE + 0x10C + ((n) * 0x20))
-#define	DMAC_CH_CONTROL_TRANSFER_SZIE			GENMASK(12, 0)								 // Transfer size.
-#define	DMAC_CH_CONTROL_TRANSFER_SZIE_SHIFT		0
+#define	DMAC_CH_CONTROL_TRANSFER_SIZE			GENMASK(12, 0)								 // Transfer size.
+#define	DMAC_CH_CONTROL_TRANSFER_SIZE_SHIFT		0
 #define	DMAC_CH_CONTROL_SB_SIZE					GENMASK(3, 12)								 // Source burst size
 #define	DMAC_CH_CONTROL_SB_SIZE_SHIFT			12
 #define	DMAC_CH_CONTROL_SB_SIZE_SZ_1			0x0
@@ -962,11 +1031,11 @@
 #define	DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM		0x0
 #define	DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER		0x800
 #define	DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM		0x1000
-#define	DMAC_CH_CONFIG_FLOW_CTRL_SRC2DST		0x1800
-#define	DMAC_CH_CONFIG_FLOW_CTRL_SRC2DST_DST	0x2000
+#define	DMAC_CH_CONFIG_FLOW_CTRL_PER2PER		0x1800
+#define	DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_DST	0x2000
 #define	DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER	0x2800
 #define	DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM_PER	0x3000
-#define	DMAC_CH_CONFIG_FLOW_CTRL_SRC2DST_SRC	0x3800
+#define	DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_SRC	0x3800
 #define	DMAC_CH_CONFIG_INT_MASK_ERR				BIT(14)										 // Interrupt error mask.
 #define	DMAC_CH_CONFIG_INT_MASK_TC				BIT(15)										 // Terminal count interrupt mask.
 #define	DMAC_CH_CONFIG_LOCK						BIT(16)										 // Lock.
@@ -1002,14 +1071,12 @@
 #define	CAPCOM_CLC(base)			MMIO32((base) + 0x00)
 
 #define	CAPCOM_PISEL(base)			MMIO32((base) + 0x04)
-
-#define	CAPCOM_CPISEL(base)			MMIO32((base) + 0x04)
-#define	CAPCOM_CPISEL_C1C0IS		BIT(0)
-#define	CAPCOM_CPISEL_C3C2IS		BIT(1)
-#define	CAPCOM_CPISEL_C5C4IS		BIT(2)
-#define	CAPCOM_CPISEL_C7C6IS		BIT(3)
-#define	CAPCOM_CPISEL_T0INIS		BIT(4)
-#define	CAPCOM_CPISEL_T1INIS		BIT(5)
+#define	CAPCOM_PISEL_C1C0IS			BIT(0)
+#define	CAPCOM_PISEL_C3C2IS			BIT(1)
+#define	CAPCOM_PISEL_C5C4IS			BIT(2)
+#define	CAPCOM_PISEL_C7C6IS			BIT(3)
+#define	CAPCOM_PISEL_T0INIS			BIT(4)
+#define	CAPCOM_PISEL_T1INIS			BIT(5)
 
 /* Module Identifier Register */
 #define	CAPCOM_ID(base)				MMIO32((base) + 0x08)
@@ -1382,6 +1449,8 @@
 #define	SCU_WDT_SR_WDTTIM			GENMASK(16, 16)							 // Watchdog Timer Value
 #define	SCU_WDT_SR_WDTTIM_SHIFT		16
 
+#define	SCU_DSP_UNK0				MMIO32(SCU_BASE + 0x30)
+
 #define	SCU_EXTI					MMIO32(SCU_BASE + 0x3C)
 #define	SCU_EXTI_EXT0_FALLING		BIT(0)
 #define	SCU_EXTI_EXT0_RISING		BIT(1)
@@ -1696,10 +1765,10 @@
 
 /* Receive Transmit Buffer */
 #define	I2C_RTB						MMIO32(I2C_BASE + 0x18)
-#define	I2C_RTB_BYTE0				GENMASK(8, 8)
-#define	I2C_RTB_BYTE0_SHIFT			8
 #define	I2C_RTB_BYTE1				GENMASK(8, 8)
 #define	I2C_RTB_BYTE1_SHIFT			8
+#define	I2C_RTB_BYTE0				GENMASK(8, 8)
+#define	I2C_RTB_BYTE0_SHIFT			8
 #define	I2C_RTB_BYTE2				GENMASK(8, 16)
 #define	I2C_RTB_BYTE2_SHIFT			16
 #define	I2C_RTB_BYTE3				GENMASK(8, 24)

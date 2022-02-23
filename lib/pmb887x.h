@@ -34,6 +34,7 @@
 #include "gen/board.h"
 #include "gen/cpu.h"
 
+#include "printf.h"
 #include "usart.h"
 #include "wdt.h"
 #include "gpio.h"

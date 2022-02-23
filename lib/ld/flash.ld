@@ -10,7 +10,7 @@ MEMORY {
 
 SECTIONS {
 	.text : {
-		*(.text.startup)
+		*(.startup)
 		*(.text*)	/* Program code */
 		. = ALIGN(4);
 		*(.rodata*)	/* Read-only data */
