@@ -52,7 +52,7 @@ my $BOOTLOADERS = {
 my @mode_payload = (
 	ord('A'), ord('T'),
 	ord('A'), ord('T'),
-	mk_boot("NormalMode")
+	mk_boot("ServiceMode")
 );
 
 sub boot_module_init {
@@ -61,7 +61,8 @@ sub boot_module_init {
 	$port->read_char_time(1000);
 	$port->read_const_time(1000);
 	
-	::set_port_baudrate($port, 1600000);
+	::set_port_baudrate($port, 115200);
+	#::set_port_baudrate($port, 1600000);
 	$port->write("OK");
 	print "Wait for ack...\n";
 	while ($port->read(1) ne ".") {

@@ -314,7 +314,7 @@ int main(void) {
 	uint8_t data[64] = {0xFF};
 	data[0] = 0x44;
 	data[1] = 0x24;
-	hw_i2c_write(D1601AA_I2C_ADDR, data, 3);
+//	hw_i2c_write(D1601AA_I2C_ADDR, data, 3);
 	
 	hw_i2c_read(D1601AA_I2C_ADDR, data, 64);
 	

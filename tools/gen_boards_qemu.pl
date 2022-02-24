@@ -65,6 +65,8 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	
 	push @boards, [
 		'"'.$board_meta->{name}.'",',
+		$board_meta->{width}.",",
+		$board_meta->{height}.",",
 		"CPU_".uc($board_meta->{cpu}->{name}).",",
 		"$flashes_var,",
 		"ARRAY_SIZE($flashes_var),",

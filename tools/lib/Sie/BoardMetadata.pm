@@ -93,8 +93,8 @@ sub loadBoard {
 				};
 			} elsif ($key eq "cpu") {
 				$self->{cpu} = Sie::CpuMetadata->new($value);
-			} elsif ($key eq "ram") {
-				$self->{ram} = parseAnyInt($value);
+			} elsif ($key =~ /^width|height|ram$/) {
+				$self->{$key} = parseAnyInt($value);
 			} elsif ($key eq "vendor") {
 				$self->{vendor} = $value;
 			} elsif ($key eq "flash") {
