@@ -101,7 +101,10 @@ sub decodeArgs {
 		
 		my $ptr = [];
 		
-		if ($arg =~ /^uint(32|16|8)/) {
+		if ($arg =~ /^(r\d+|sp|lr|pc)$/) {
+			my $r = $1;
+			push @decoded, "$r=".$regs->{$r};
+		} elsif ($arg =~ /^uint(32|16|8)/) {
 			my $size = $1;
 			
 			($v, $ptr) = resolveRef($gdb, $v, $arg, $size);
@@ -171,6 +174,18 @@ sub decodeArgs {
 	}
 	
 	if (@decoded) {
+		if ($func->{name} =~ /^GBS_CreateProc/) {
+			my $name = $decoded[1];
+			$name =~ s/.*?"(.*?)".*?/$1/g;
+			$name =~ s/\s/_/g;
+			
+			$variables->{$decoded[0]} = $decoded[0]."_".$name;
+			
+			$decoded[0] = $variables->{$decoded[0]};
+		} elsif ($func->{name} =~ /^GBS_(.*?)$/) {
+			$decoded[0] = $variables->{$decoded[0]} if exists $variables->{$decoded[0]};
+		}
+		
 		if ($func->{name} =~ /^NU_Create_(.*?)$/) {
 			my $name = $decoded[1];
 			$name =~ s/.*?"(.*?)".*?/$1/g;

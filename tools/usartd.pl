@@ -67,37 +67,41 @@ sub processClient {
 	my $select = new IO::Select;
 	$select->add($client);
 	
+	my $boot = $ARGV[0] || 'ServiceMode';
+	
 	print "-> connected new client, sending AT\n";
 	
-	while (1) {
-		$client->send("ATAT");
+	if ($boot ne 'none') {
+		while (1) {
+			$client->send("ATAT");
+			
+			my $ack = readFromSock($select, 1, 0.2);
+			return if !defined $ack;
+			
+			if ($ack eq "\xC0" || $ack eq "\xB0") {
+				print "-> device: NewSGOLD\n" if ($ack eq "\xC0");
+				print "-> device: SGOLD\n" if ($ack eq "\xB0");
+				last;
+			}
+		}
 		
-		my $ack = readFromSock($select, 1, 0.2);
+		for my $c (mkBootCode($boot)) {
+			if ($select->can_write(3)) {
+				$client->send(chr($c));
+			} else {
+				print "-> write timeout\n";
+				last;
+			}
+		}
+		
+		my $ack = readFromSock($select, 1, 2);
 		return if !defined $ack;
 		
-		if ($ack eq "\xC0" || $ack eq "\xB0") {
-			print "-> device: NewSGOLD\n" if ($ack eq "\xC0");
-			print "-> device: SGOLD\n" if ($ack eq "\xB0");
-			last;
-		}
-	}
-	
-	for my $c (mkBootCode($ARGV[0] || 'ServiceMode')) {
-		if ($select->can_write(3)) {
-			$client->send(chr($c));
+		if ($ack eq "\xC1" || $ack eq "\xB1") {
+			print "-> boot code loaded.\n";
 		} else {
-			print "-> write timeout\n";
-			last;
+			print "-> unknown response: ".sprintf("%02X", ord($ack))."\n";
 		}
-	}
-	
-	my $ack = readFromSock($select, 1, 2);
-	return if !defined $ack;
-	
-	if ($ack eq "\xC1" || $ack eq "\xB1") {
-		print "-> boot code loaded.\n";
-	} else {
-		print "-> unknown response: ".sprintf("%02X", ord($ack))."\n";
 	}
 	
 	while ($client->opened) {

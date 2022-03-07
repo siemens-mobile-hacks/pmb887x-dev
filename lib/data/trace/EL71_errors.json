@@ -60,18 +60,13 @@
 		"args":		["cstr"]
 	},
 	{
-		"name":		"usart_send_common",
-		"addr":		0xa000a640,
-		"args":		["uint32", "uint32"]
+		"name":		"LCDRedrawLAYER",
+		"addr":		0xa0954060,
+		"args":		["ptr"]
 	},
 	{
-		"name":		"usart_send",
-		"addr":		0xa000a6cc,
-		"args":		["uint32"]
-	},
-	{
-		"name":		"CreateGBSproc",
-		"addr":		0xA0092221,
-		"args":		["int32","cstr","ptr","int32","int32"]
+		"name":		"dbug_disp_err",
+		"addr":		0xa051c5d0,
+		"args":		["cstr"]
 	}
 ]

@@ -1066,32 +1066,32 @@
 	{
 		"name":		"GBS_SendMessage",
 		"addr":		0xA0091EAB,
-		"args":		["int32","int32","ptr"]
+		"args":		["uint32","int32","ptr"]
 	},
 	{
 		"name":		"GBS_ReciveMessage",
 		"addr":		0xA009130B,
-		"args":		["ptr"]
+		"args":		["uint32"]
 	},
 	{
 		"name":		"GBS_AcceptMessage",
 		"addr":		0xA0091855,
-		"args":		[]
+		"args":		["uint32"]
 	},
 	{
 		"name":		"GBS_ClearMessage",
 		"addr":		0xA009153B,
-		"args":		[]
+		"args":		["uint32"]
 	},
 	{
 		"name":		"GBS_PendMessage",
 		"addr":		0xA00917B9,
-		"args":		["ptr"]
+		"args":		["uint32"]
 	},
 	{
-		"name":		"CreateGBSproc",
+		"name":		"GBS_CreateProc",
 		"addr":		0xA0092221,
-		"args":		["int32","cstr","ptr","int32","int32"]
+		"args":		["uint32","cstr","ptr","int32","int32"]
 	},
 	{
 		"name":		"CSM_root",
