@@ -22,7 +22,9 @@ sub main {
 	my $dtr = -1;
 	my $rts = 0;
 	my $flasher = [];
-	my $exec_file = "../siemens-linux/kernel/arch/arm/boot/Image";
+	my $exec_linux = "../linux/arch/arm/boot/Image";
+	my $exec_linux_dtb = "../linux/arch/arm/boot/dts/siemens-el71.dtb";
+	my $exec_file;
 	my $exec_addr = '0xA8000000';
 	my $as_hex = 0;
 	my $run_picocom = 0;
@@ -41,6 +43,8 @@ sub main {
 		"help"			=> \$help, 
 		"hex"			=> \$as_hex, 
 		"picocom"		=> \$run_picocom, 
+		"linux=s"		=> \$exec_linux, 
+		"linux-dtb=s"	=> \$exec_linux_dtb, 
 		"exec=s"		=> \$exec_file, 
 		"exec-addr=s"	=> \$exec_addr, 
 		"dump-otp"		=> \$read_OTP
@@ -279,6 +283,49 @@ sub main {
 					printf("Exec %08X...\n", $exec_addr);
 					chaos_goto($port, $exec_addr);
 				}
+				
+				# Run Linux from RAM
+				if ($exec_linux) {
+					die "Invalid kernel addr" if (($exec_addr & 0xFFFFF) != 0);
+					
+					my $preloader_addr = $exec_addr;
+					my $kernel_addr = $exec_addr + 0x8000;
+					
+					my $dtb = read_file($exec_linux_dtb);
+					my $kernel = read_file($exec_linux);
+					
+					my $dtb_addr = $kernel_addr + length($kernel);
+					
+					my $align = (1 << 20) * 3;
+					$dtb_addr += ($align - ($dtb_addr % $align)) if ($dtb_addr % $align);
+					
+					my $preloader = join("", 
+						hex2bin("0000A0E310808FE2001098E50C808FE2002098E51C804FE202F988E2"), # linux_boot.S
+						pack("V", 0xFFFFFFFF), # machine_id
+						pack("V", $dtb_addr), # dts/atags
+					);
+					
+					chaos_keep_alive($port);
+					
+					print "Exec linux!\n";
+					print "Kernel: $exec_linux [".sprintf("0x%08X", $kernel_addr)."]\n";
+					print "DTB: $exec_linux_dtb [".sprintf("0x%08X", $dtb_addr)."]\n";
+					print "\n";
+					
+					printf("Load preloader to RAM (%08X)... (size=%d)\n", $preloader_addr, length($preloader));
+					chaos_write_ram($port, $preloader_addr, $preloader, 1024 * 4) or die("load error");
+					print "\n";
+					
+					printf("Load dtb to RAM (%08X)... (size=%d)\n", $dtb_addr, length($dtb));
+					chaos_write_ram($port, $dtb_addr, $dtb, 1024 * 4) or die("load error");
+					print "\n";
+					
+					printf("Load kernel to RAM (%08X)... (size=%d)\n", $kernel_addr, length($kernel));
+					chaos_write_ram($port, $kernel_addr, $kernel, 1024 * 4) or die("load error");
+					
+					printf("Exec %08X...\n", $preloader_addr);
+					chaos_goto($port, $preloader_addr);
+				}
 			} else {
 				printf("Invalid answer: %02X\n", $c);
 				printf("Chaos bootloader not found!\n\n");
@@ -291,7 +338,7 @@ sub main {
 			}
 			
 			if ($as_hex) {
-				while (($c = readb($port)) != 0) {
+				while (($c = readb($port)) != 0 || 1) {
 					if ($c > -1) {
 						my $str = chr($c);
 						printf("%s | %02X\n", ($str =~ /[[:print:]]/ ? "'".$str."'" : " ? "), $c);
