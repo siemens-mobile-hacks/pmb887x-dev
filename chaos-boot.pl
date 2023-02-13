@@ -296,7 +296,7 @@ sub main {
 					
 					my $dtb_addr = $kernel_addr + length($kernel);
 					
-					my $align = (1 << 20) * 3;
+					my $align = (1 << 20) * 4;
 					$dtb_addr += ($align - ($dtb_addr % $align)) if ($dtb_addr % $align);
 					
 					my $preloader = join("", 

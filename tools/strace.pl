@@ -81,95 +81,152 @@ sub resolveRef {
 	return ($v, $ptr);
 }
 
+sub readFuncArg {
+	my ($gdb, $regs, $n) = @_;
+	if ($n < 0) {
+		return unpack("L", $gdb->readMem($regs->{sp} - 4 * $n, 4));
+	} elsif ($n < 4) {
+		return $regs->{"r$n"};
+	} else {
+		return unpack("L", $gdb->readMem($regs->{sp} + (4 * (4 - $n)), 4));
+	}
+}
+
+sub readFuncArgWithType {
+	my ($gdb, $regs, $n, $type, $for_debug) = @_;
+	
+	my $ptr = [];
+	
+	my $v = readFuncArg($gdb, $regs, $n);
+	if ($type =~ /^uint(32|16|8)/) {
+		my $size = $1;
+		($v, $ptr) = resolveRef($gdb, $v, $type, $size);
+		
+		if ($for_debug) {
+			return ($ptr, sprintf("0x%X", $v));
+		} else {
+			return $v;
+		}
+	} elsif ($type =~ /^int(32|16|8)/) {
+		my $size = $1;
+		($v, $ptr) = resolveRef($gdb, $v, $type, $size);
+		
+		my $sign = $v & (1 << $size);
+		$v = ($sign ? -1 : 1) * ($v & ~$sign);
+		
+		if ($for_debug) {
+			return ($ptr, $v);
+		} else {
+			return $v;
+		}
+	} elsif ($type eq "ptr") {
+		if ($for_debug) {
+			return ($ptr, sprintf("0x%X", $v));
+		} else {
+			return $v;
+		}
+	} elsif ($type eq "memcmp") {
+		my $sz = readFuncArgWithType($gdb, $regs, 2, "uint32", 0);
+		my $mem = $gdb->readMem($v, $sz);
+		if ($for_debug) {
+			return ($ptr, sprintf("*0x%08X(%s)", $v, bin2hex($mem)));
+		} else {
+			return $mem;
+		}
+	} elsif ($type eq "exit") {
+		my $index = 0;
+		my $str = "";
+		
+		while (1) {
+			my $c = $gdb->readMem($v + $index, 1);
+			
+			last if (ord($c) > 0xA0 && $index >= 2);
+			
+			$str .= $c if ($index >= 2);
+			
+			last if ($c eq "\0");
+			
+			$index++;
+		}
+		
+		if ($for_debug) {
+			return ($ptr, sprintf("(*0x%08X)", $v).'"'.escapeStr($str).'"');
+		} else {
+			return $str;
+		}
+	} elsif ($type =~ /^cstr/) {
+		my $index = 0;
+		my $chunk = 64;
+		my $str = "";
+		
+		($v, $ptr) = resolveRef($gdb, $v, $type, 32);
+		
+		while (1) {
+			my $c = $gdb->readMem($v + $index, $chunk);
+			
+			$str .= $c;
+			
+			my $zero = index($str, "\0");
+			if ($zero >= 0) {
+				$str = substr($str, 0, $zero);
+				last;
+			}
+			
+			$index += $chunk;
+		}
+		
+		if ($for_debug) {
+			# return ($ptr, sprintf("(*0x%08X)", $v).'"'.escapeStr($str).'"');
+			return ($ptr, '"'.escapeStr($str).'"');
+		} else {
+			return $str;
+		}
+	} elsif ($type eq "ptr") {
+		if ($for_debug) {
+			return ($ptr, sprintf("*0x%08X", $v));
+		} else {
+			return $v;
+		}
+	} elsif ($type =~ /^(r\d+|sp|lr|pc)$/) {
+		my $r = $1;
+		
+		if ($for_debug) {
+			return ($ptr, "$r=".$regs->{$r});
+		} else {
+			return $regs->{$r};
+		}
+	
+	} elsif ($type eq "fmt") {
+		my $fmt = readFuncArgWithType($gdb, $regs, $n, "cstr", 0);
+		my $str = parseSprintf($fmt, sub {
+			my ($part_id, $part_type) = @_;
+			return readFuncArgWithType($gdb, $regs, -($part_id + 1), $part_type, 0);
+		});
+		
+		if ($for_debug) {
+			return ($ptr, '"'.escapeStr($str).'"');
+		} else {
+			return $v;
+		}
+	}
+	
+	if ($for_debug) {
+		return ($ptr, sprintf("UNK(*%08X)", $v));
+	} else {
+		return $v;
+	}
+}
+
 sub decodeArgs {
 	my ($gdb, $func, $regs, $variables) = @_;
 	
 	my @decoded;
 	
-	my $get_arg = sub {
-		my $n = shift;
-		if ($n < 4) {
-			return $regs->{"r$n"};
-		} else {
-			return unpack("L", $gdb->readMem($regs->{sp} + (4 * (4 - $n)), 4));
-		}
-	};
-	
 	my $arg_id = 0;
-	for my $arg (@{$func->{args}}) {
-		my $v = $get_arg->($arg_id);
-		
-		my $ptr = [];
-		
-		if ($arg =~ /^(r\d+|sp|lr|pc)$/) {
-			my $r = $1;
-			push @decoded, "$r=".$regs->{$r};
-		} elsif ($arg =~ /^uint(32|16|8)/) {
-			my $size = $1;
-			
-			($v, $ptr) = resolveRef($gdb, $v, $arg, $size);
-			
-			push @decoded, sprintf("0x%02X", $v);
-		} elsif ($arg =~ /^int(32|16|8)/) {
-			my $size = $1;
-			
-			($v, $ptr) = resolveRef($gdb, $v, $arg, $size);
-			
-			my $sign = $v & (1 << $size);
-			$v = ($sign ? -1 : 1) * ($v & ~$sign);
-			
-			push @decoded, sprintf("%d", $v);
-		} elsif ($arg eq "ptr") {
-			push @decoded, sprintf("*0x%08X", $v);
-		} elsif ($arg eq "memcmp") {
-			my $sz = $get_arg->(2);
-			my $mem = $gdb->readMem($v, $sz);
-			push @decoded, sprintf("*0x%08X(%s)", $v, bin2hex($mem));
-		} elsif ($arg eq "exit") {
-			my $index = 0;
-			my $str = "";
-			
-			while (1) {
-				my $c = $gdb->readMem($v + $index, 1);
-				
-				last if (ord($c) > 0xA0 && $index >= 2);
-				
-				$str .= $c if ($index >= 2);
-				
-				last if ($c eq "\0");
-				
-				$index++;
-			}
-			
-			push @decoded, sprintf("(*0x%08X)", $v).'"'.escapeStr($str).'"';
-		} elsif ($arg =~ /^cstr/) {
-			my $index = 0;
-			my $chunk = 64;
-			my $str = "";
-			
-			($v, $ptr) = resolveRef($gdb, $v, $arg, 32);
-			
-			while (1) {
-				my $c = $gdb->readMem($v + $index, $chunk);
-				
-				$str .= $c;
-				
-				my $zero = index($str, "\0");
-				if ($zero >= 0) {
-					$str = substr($str, 0, $zero);
-					last;
-				}
-				
-				$index += $chunk;
-			}
-			
-			push @decoded, sprintf("(*0x%08X)", $v).'"'.escapeStr($str).'"';
-		} else {
-			push @decoded, sprintf("UNK(*%08X)", $v);
-		}
-		
+	for my $type (@{$func->{args}}) {
+		my ($ptr, $arg_value) = readFuncArgWithType($gdb, $regs, $arg_id, $type, 1);
+		push @decoded, $arg_value;
 		$decoded[scalar(@decoded) - 1] = "(".join("->", @$ptr).")".$decoded[scalar(@decoded) - 1] if @$ptr;
-		
 		$arg_id++;
 	}
 	
@@ -277,6 +334,42 @@ sub removeBreakpoints {
 		}
 	}
 	return 1;
+}
+
+sub parseSprintf {
+	my ($fmt, $callback) = @_;
+	
+	my @args;
+	
+	my $process_fmt = sub {
+		my ($part) = @_;
+		
+		if ($part =~ /^%\d*(d|u|ld|lu)$/) {
+			my $type = $1 eq "d" ? "int32" : "uint32";
+			push @args, $callback->(scalar(@args), $type);
+		} elsif ($part =~ /^%\d*(l?[xX])$/) {
+			push @args, $callback->(scalar(@args), "uint32");
+		} elsif ($part =~ /^%\d*(lld|llu)$/) {
+			my $type = $1 eq "d" ? "int64" : "uint64";
+			push @args, $callback->(scalar(@args), $type);
+		} elsif ($part =~ /^%\f*f$/) {
+			push @args, $callback->(scalar(@args), "float");
+		} elsif ($part =~ /^%\d*s$/) {
+			push @args, $callback->(scalar(@args), "cstr");
+		} elsif ($part =~ /^%\d*\.\*s$/) {
+			push @args, $callback->(scalar(@args), "nstr");
+		} elsif ($part =~ /^%c$/) {
+			push @args, $callback->(scalar(@args), "char");
+		} else {
+			die("unknown part: $part\n");
+		}
+		
+		return $part;
+	};
+	
+	$fmt =~ s/(%(%|([l0-9]*)[dxulf]+|[0-9]*s|\.\*s|c))/$process_fmt->($1)/seg;
+	
+	return sprintf($fmt, @args);
 }
 
 sub bin2hex {

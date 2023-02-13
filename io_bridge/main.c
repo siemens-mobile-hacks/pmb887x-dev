@@ -16,8 +16,8 @@ int main(void) {
 	i2c_init();
 	i2c_smbus_write_byte(0x31, 0xE, 0b11);
 	
-	usart_set_speed(USART0, UART_SPEED_115200);
-	//usart_set_speed(USART0, UART_SPEED_1600000);
+	//usart_set_speed(USART0, UART_SPEED_115200);
+	usart_set_speed(USART0, UART_SPEED_1600000);
 	while (usart_getc(USART0) != 'O');
 	while (usart_getc(USART0) != 'K');
 	usart_putc(USART0, '.');
@@ -35,7 +35,7 @@ int main(void) {
 }
 
 static int command_handler(int irq) {
-	uint32_t value, addr;
+	uint32_t value = 0, addr;
 	if (usart_has_byte(USART0)) {
 		char c = usart_getc(USART0);
 		
@@ -73,9 +73,9 @@ static int command_handler(int irq) {
 				value = 0x2000;
 			}
 			
-			if (addr == (uint32_t) &GPTU_SRC0(GPTU0)) {
-				value = 0;
-			}
+		//	if (addr == (uint32_t) &(GPTU_SRC(GPTU0))) {
+		//		value = 0;
+		//	}
 			
 			if (addr == (uint32_t) &TPU_COUNTER && value >= 0x875) {
 				// value = 0x875;

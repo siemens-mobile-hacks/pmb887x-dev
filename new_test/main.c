@@ -59,6 +59,14 @@ int main(void) {
 	wdt_init();
 	cpu_enable_irq(false);
 	
+	printf("%08X\n", GPIO_PIN(58));
+	printf("%08X\n", MMIO32(0xF4300108));
+	printf("%08X\n", MMIO16(0xF4300108));
+	
+	GPIO_PIN(58) = 0x00000700;
+	
+	while (true);
+	
 	for (int i = 0; i < 0x200; i++)
 		NVIC_CON(i) = 1;
 	

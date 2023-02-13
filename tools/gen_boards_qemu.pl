@@ -63,21 +63,31 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	$str .= printTable(\@flashes, "\t", ",");
 	$str .= "};\n\n";
 	
-	push @boards, [
-		'"'.$board_meta->{name}.'",',
-		$board_meta->{width}.",",
-		$board_meta->{height}.",",
-		"CPU_".uc($board_meta->{cpu}->{name}).",",
-		"$flashes_var,",
-		"ARRAY_SIZE($flashes_var),",
-		"$keymap_var,",
-		"ARRAY_SIZE($keymap_var),",
-		"$gpio_var,",
-		"ARRAY_SIZE($gpio_var)",
-	];
+	my @board = (
+		name				=> '"'.$board_meta->{name}.'"',
+		width				=> $board_meta->{width},
+		height				=> $board_meta->{height},
+		display				=> $board_meta->{display} ? '"'.$board_meta->{display}.'"' : 'NULL',
+		display_rotation	=> $board_meta->{display_rotation},
+		cpu					=> 'CPU_'.uc($board_meta->{cpu}->{name}),
+		flash_banks			=> $flashes_var,
+		flash_banks_cnt		=> "ARRAY_SIZE($flashes_var)",
+		keymap				=> $keymap_var,
+		keymap_cnt			=> "ARRAY_SIZE($keymap_var)",
+		fixed_gpios			=> $gpio_var,
+		fixed_gpios_cnt		=> "ARRAY_SIZE($gpio_var)"
+	);
+	
+	my @board_table;
+	for (my $i = 0; $i < scalar(@board); $i += 2) {
+		push @board_table, [".".$board[$i], "= ".$board[$i + 1].","];
+	}
+	
+	push @boards, "\t{\n".printTable(\@board_table, "\t\t")."\n\t},";
 	
 	$board_idx++;
 }
+
 
 $str .= "static pmb887x_board_t boards_list[] = {\n";
 $str .= printTable(\@boards, "\t{", "},");

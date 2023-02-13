@@ -55,6 +55,7 @@ sub loadBoard {
 	$self->{flash} = [0, 0];
 	$self->{vendor} = "Unknown";
 	$self->{keys} = {};
+	$self->{display_rotation} = 0;
 	
 	open my $fp, "<$file" or die("open($file): $!");
 	while (my $line = <$fp>) {
@@ -97,6 +98,14 @@ sub loadBoard {
 				$self->{$key} = parseAnyInt($value);
 			} elsif ($key eq "vendor") {
 				$self->{vendor} = $value;
+			} elsif ($key eq "display") {
+				my @pairs = split(/\s*,\s*/, $value);
+				$self->{display} = shift @pairs;
+				
+				for my $pair (@pairs) {
+					my ($pair_k, $pair_v) = split(/=/, $pair);
+					$self->{"display_".$pair_k} = $pair_v;
+				}
 			} elsif ($key eq "flash") {
 				my @flashes = map {
 					my ($vid, $pid) = split(/:/, $_);

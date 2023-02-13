@@ -1,0 +1,17 @@
+[
+	{
+		"name":		"NU_Create_Task",
+		"addr":		0xA009CA14,
+		"args":		["ptr","cstr","ptr","ptr","int32","ptr","ptr","int32","uint8","int32","uint8","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Task",
+		"addr":		0xA009CB30,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"wtf",
+		"addr":		0xa04af6a8,
+		"args":		[]
+	}
+]

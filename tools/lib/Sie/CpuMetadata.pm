@@ -200,14 +200,29 @@ sub loadCPU {
 		next if !length($line);
 		
 		if ($line =~ /^\.gpio/) {
-			my ($key, $name, $id) = split("\t", $line);
+			my ($key, $name, $id, $alt_list) = split("\t", $line);
 			$self->{gpios}->{$name} = {
 				id		=> parseAnyInt($id),
 				name	=> $name,
 				alias	=> undef,
 				mode	=> "none",
-				value	=> undef
+				value	=> undef,
+				alt		=> [{id => 0, name => "GPIO", flags => "IO"}]
 			};
+			
+			if ($alt_list) {
+				for my $alt (split(/\s*,\s*/, $alt_list)) {
+					if ($alt =~ /^ALT(\d+)_(I|O|IO)S=(.*?)$/i) {
+						push @{$self->{gpios}->{$name}->{alt}}, {
+							id		=> int($1) + 1,
+							name	=> $3,
+							flags	=> $2
+						};
+					} else {
+						die "Invalid ALT: $alt";
+					}
+				}
+			}
 		} else {
 			my ($name, $addr, $type, $id, $irqs) = split("\t", $line);
 			

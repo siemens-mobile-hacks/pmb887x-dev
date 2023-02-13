@@ -205,7 +205,7 @@ sub genModuleHeader {
 				}
 				
 				if ($field->{size} > 1) {
-					push @header, ["#define", $prefix.$field_name_prepared, "GENMASK(".$field->{size}.", ".$field->{start}.")", $descr];
+					push @header, ["#define", $prefix.$field_name_prepared, "GENMASK(".($field->{start} + $field->{size} - 1).", ".$field->{start}.")", $descr];
 					push @header, ["#define", $prefix.$field_name_prepared."_SHIFT", $field->{start}];
 				} else {
 					push @header, ["#define", $prefix.$field_name_prepared, "BIT(".$field->{start}.")", $descr];
