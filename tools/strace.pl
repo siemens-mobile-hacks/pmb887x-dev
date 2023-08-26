@@ -4,7 +4,7 @@ use strict;
 use File::Basename;
 use lib dirname(__FILE__).'/lib';
 use Data::Dumper;
-use JSON::XS;
+use JSON::PP;
 use Sie::GDBClient;
 use Sie::Utils;
 
@@ -20,10 +20,10 @@ $| = 1;
 
 my $gdb = Sie::GDBClient->new;
 
-my $functions = getFunctions(getDataDir()."/trace/".($ARGV[0] || "EL71").".json");
-my $variables = {};
-
 while (1) {
+	my $functions = getFunctions(getDataDir()."/trace/".($ARGV[0] || "EL71").".json");
+	my $variables = {};
+	
 	print STDERR "Connecting...\n";
 	while (!$gdb->connect) {
 		sleep(1);
@@ -31,7 +31,9 @@ while (1) {
 	print STDERR "GDB found.\n";
 	
 	# add breakpoints
-	next if !addBreakpoints($gdb, $functions);
+	for my $func (values %$functions) {
+		addBreakpoint($gdb, $func);
+	}
 	
 	while ($gdb->connected) {
 		# start program
@@ -41,12 +43,36 @@ while (1) {
 		my $regs = $gdb->registers();
 		last if !$regs;
 		
-		my $func = $functions->{$regs->{pc}};
-		
-		printf("%08X: %s(%s) from 0x%08X\n", $func->{addr}, $func->{name}, decodeArgs($gdb, $func, $regs, $variables), $regs->{lr});
-		
-		# stop
-		last if !$gdb->continue('s');
+		if ($stop_info->{watchpoint}) {
+			die sprintf("Unknown watchpoint: %08X", $stop_info->{watchpoint}->{addr})
+				if !exists $functions->{$stop_info->{watchpoint}->{addr}};
+			
+			my $func = $functions->{$stop_info->{watchpoint}->{addr}};
+			my $old_value = unpack("L", $gdb->readMem($func->{addr}, 4));
+			
+			# remove breakpoint
+			last if !removeBreakpoint($gdb, $func);
+			
+			# step
+			last if !$gdb->continue('s');
+			
+			my $new_value = unpack("L", $gdb->readMem($func->{addr}, 4));
+			printf("%08X: %s %08X -> %08X from 0x%08X\n", $func->{addr}, $func->{name}, $old_value, $new_value, $regs->{pc});
+			
+			# add watchpoint again
+			last if !addBreakpoint($gdb, $func);
+		} else {
+			die sprintf("Unknown breakpoint: %08X", $regs->{pc})
+				if !exists $functions->{$regs->{pc}};
+			
+			my $func = $functions->{$regs->{pc}};
+			printf("%08X: %s(%s) from 0x%08X\n", $func->{addr}, $func->{name}, decodeArgs($gdb, $func, $regs, $variables), $regs->{lr});
+			printRegisters($regs) if $func->{regs};
+			printStack($gdb, $regs, $func->{stack}) if $func->{stack};
+			
+			# step
+			last if !$gdb->continue('s');
+		}
 	}
 	print STDERR "GDB is lost!\n";
 	sleep(1);
@@ -273,7 +299,7 @@ sub getFunctions {
 	$json =~ s/0x([a-f0-9]+)/hex($1)/gei;
 	
 	my $functions = {};
-	for my $func (@{JSON::XS->new->decode($json)}) {
+	for my $func (@{JSON::PP->new->relaxed(1)->decode($json)}) {
 		next if $func->{skip};
 		
 		if (($func->{addr} & 1)) {
@@ -285,6 +311,16 @@ sub getFunctions {
 	}
 	
 	return $functions;
+}
+
+sub printStack {
+	my ($gdb, $regs, $deep) = @_;
+	
+	for (my $i = 0; $i < $deep; $i++) {
+		my $addr = $regs->{sp} - 4 * $i;
+		my $val = unpack("L", $gdb->readMem($addr, 4));
+		printf("SP[%d] %08X: %08X\n", $i, $addr, $val);
+	}
 }
 
 sub printRegisters {
@@ -312,9 +348,19 @@ sub _escapeChar {
 	return $_[0];
 }
 
-sub addBreakpoints {
-	my ($gdb, $functions) = @_;
-	for my $func (values %$functions) {
+sub addBreakpoint {
+	my ($gdb, $func) = @_;
+	if ($func->{watch}) {
+		if ($func->{watch} eq "w") {
+			return 0 if !$gdb->addBreakPoint(2, $func->{addr}, 4);
+		} elsif ($func->{watch} eq "r") {
+			return 0 if !$gdb->addBreakPoint(3, $func->{addr}, 4);
+		} elsif ($func->{watch} eq "rw") {
+			return 0 if !$gdb->addBreakPoint(4, $func->{addr}, 4);
+		} else {
+			die "Invalid watch: ".$func->{watch};
+		}
+	} else {
 		if ($func->{thumb}) {
 			return 0 if !$gdb->addBreakPoint(0, $func->{addr}, 2);
 		} else {
@@ -324,9 +370,19 @@ sub addBreakpoints {
 	return 1;
 }
 
-sub removeBreakpoints {
-	my ($gdb, $functions) = @_;
-	for my $func (values %$functions) {
+sub removeBreakpoint {
+	my ($gdb, $func) = @_;
+	if ($func->{watch}) {
+		if ($func->{watch} eq "w") {
+			return 0 if !$gdb->removeBreakPoint(2, $func->{addr}, 4);
+		} elsif ($func->{watch} eq "r") {
+			return 0 if !$gdb->removeBreakPoint(3, $func->{addr}, 4);
+		} elsif ($func->{watch} eq "rw") {
+			return 0 if !$gdb->removeBreakPoint(4, $func->{addr}, 4);
+		} else {
+			die "Invalid watch: ".$func->{watch};
+		}
+	} else {
 		if ($func->{thumb}) {
 			return 0 if !$gdb->removeBreakPoint(0, $func->{addr}, 2);
 		} else {

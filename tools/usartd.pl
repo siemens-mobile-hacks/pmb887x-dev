@@ -108,7 +108,7 @@ sub processClient {
 		my $c = readFromSock($select, 1, 2);
 		return if !defined $c;
 		
-		if ($c =~ /[^\t\n\x20-x7e]/) {
+		if ($c =~ /[^\t\n\x20-\x7E]/) {
 			print "\n" if (ord($c) == 0xFF);
 		} else {
 			print $c;

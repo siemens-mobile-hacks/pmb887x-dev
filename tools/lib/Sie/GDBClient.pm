@@ -52,19 +52,19 @@ sub connect {
 
 sub addBreakPoint {
 	my ($self, $type, $addr, $len) = @_;
-	my ($ret) = $self->exec('Z', [sprintf("%08x", $type), sprintf("%08x", $addr), sprintf("%08x", $len)], "OK");
+	my ($ret) = $self->exec('Z', [sprintf("%x", $type), sprintf("%x", $addr), sprintf("%x", $len)], "OK");
 	return $ret == CMD_OK;
 }
 
 sub removeBreakPoint {
 	my ($self, $type, $addr, $len) = @_;
-	my ($ret) = $self->exec('z', [sprintf("%08x", $type), sprintf("%08x", $addr), sprintf("%08x", $len)], "OK");
+	my ($ret) = $self->exec('z', [sprintf("%x", $type), sprintf("%x", $addr), sprintf("%x", $len)], "OK");
 	return $ret == CMD_OK;
 }
 
 sub readMem {
 	my ($self, $addr, $size) = @_;
-	my ($ret, $response) = $self->exec('m', [sprintf("%08x", $addr), sprintf("%08x", $size)]);
+	my ($ret, $response) = $self->exec('m', [sprintf("%x", $addr), sprintf("%x", $size)]);
 	return undef if ($ret != CMD_OK);
 	
 	if (length($response) != $size * 2) {
@@ -117,6 +117,13 @@ sub continue {
 	} elsif ($reason eq "T") {
 		$info->{type} = "signal";
 		$info->{code} = hex substr($response, 1, 2);
+		
+		if ($response =~ /([ra]?watch):([a-f0-9]+);/) {
+			$info->{watchpoint} = {
+				type	=> $1,
+				addr	=> hex $2
+			};
+		}
 	} elsif ($reason eq "X" || $reason eq "W") {
 		$info->{type} = "exit";
 		$info->{code} = hex substr($response, 1, 2);
