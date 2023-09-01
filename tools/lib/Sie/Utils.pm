@@ -7,7 +7,24 @@ use base 'Exporter';
 use List::Util qw(min max);
 use POSIX qw(ceil);
 
-our @EXPORT = qw|getDataDir parseAnyInt getSortedKeys printTable|;
+our @EXPORT = qw|getDataDir parseAnyInt getSortedKeys printTable bin2hex hex2bin|;
+
+sub bin2hex {
+	my ($bin) = @_;
+	$bin =~ s/([\W\w])/sprintf("%02X", ord($1))/ge;
+	return $bin;
+}
+
+sub hex2bin {
+	my ($hex) = @_;
+	
+	$hex = join("", @$hex) if (ref($hex) eq "ARRAY");
+	
+	$hex =~ s/\s+//gim;
+	$hex = "0$hex" if (length($hex) % 2 != 0);
+	$hex =~ s/([A-F0-9]{2})/chr(hex($1))/gie;
+	return $hex;
+}
 
 sub getDataDir {
 	return dirname(__FILE__).'/../../../lib/data';

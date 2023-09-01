@@ -3,6 +3,12 @@
 static volatile stopwatch_t last = 0;
 static volatile uint32_t period = 0;
 static volatile uint32_t cnt = 0;
+static volatile uint32_t val = 0;
+
+static volatile stopwatch_t last2 = 0;
+static volatile uint32_t period2 = 0;
+static volatile uint32_t cnt2 = 0;
+static volatile uint32_t val2 = 0;
 
 const bool PLL_RECLOCK = false;
 
@@ -29,10 +35,20 @@ int main(void) {
 		PLL_CON0 = 0x1120080B;
 		PLL_CON1 = 0x00220002;
 		PLL_CON2 = 0x0000E070;
-		//PLL_CON3 = 0x10000302;
+		PLL_CON3 = 0x10000302;
 		USART_CLC(USART0) = 2 << MOD_CLC_RMC_SHIFT;
 		STM_CLC = 0x001A1A14;
 	}
+	
+	uint32_t ahb_freq = cpu_get_ahb_freq();
+	uint32_t cpu_freq = cpu_get_freq();
+	uint32_t sys_freq = cpu_get_sys_freq();
+	uint32_t stm_freq = cpu_get_stm_freq();
+	printf("By registers:\n");
+	printf("fAHB: %d MHz\n", ahb_freq / 1000000);
+	printf("fCPU: %d MHz\n", cpu_freq / 1000000);
+	printf("fSYS: %d MHz\n", sys_freq / 1000000);
+	printf("fSTM: %d MHz\n", stm_freq / 1000000);
 	
 	TPU_CLC = 2 << MOD_CLC_RMC_SHIFT;
 	TPU_PLLCON0 = 1 << TPU_PLLCON0_K_DIV_SHIFT;
@@ -49,8 +65,9 @@ int main(void) {
 	
 	TPU_OVERFLOW = 9999;
 	TPU_OFFSET = 0;
+	
 	TPU_INT(0) = 0;
-	TPU_INT(1) = 30000;
+	TPU_INT(1) = 9000;
 	
 	TPU_SRC(0) = MOD_SRC_CLRR;
 	TPU_SRC(1) = MOD_SRC_CLRR;
@@ -58,15 +75,28 @@ int main(void) {
 	TPU_SRC(0) = MOD_SRC_SRE;
 	TPU_SRC(1) = MOD_SRC_SRE;
 	
+	stopwatch_init();
+	
 	last = stopwatch_get();
+	last2 = stopwatch_get();
+	
 	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
 	
 	volatile uint32_t last_cnt = 0;
+	volatile uint32_t last_cnt2 = 0;
+	
 	while (true) {
+		cpu_enable_irq(false);
 		if (cnt != last_cnt) {
-			printf("period: %d us [%d]\n", period, cnt);
+			printf("period1: %d us [%d / %d]\n", period, cnt, val);
 			last_cnt = cnt;
 		}
+		
+		if (cnt2 != last_cnt2) {
+			printf("period2: %d us [%d / %d]\n", period2, cnt2, val2);
+			last_cnt2 = cnt2;
+		}
+		cpu_enable_irq(true);
 		
 		if (cnt >= 10)
 			break;
@@ -98,13 +128,18 @@ __IRQ void irq_handler(void) {
 	if (irqn == NVIC_TPU_INT0_IRQ) {
 		period = stopwatch_elapsed_us(last);
 		last = stopwatch_get();
+		val = TPU_COUNTER;
 		
 		cnt++;
 		
 		TPU_SRC(0) |= MOD_SRC_CLRR;
 	} else if (irqn == NVIC_TPU_INT1_IRQ) {
-		printf("IRQ FIRED: %X\n", irqn);
-		while (1);
+		period2 = stopwatch_elapsed_us(last2);
+		last2 = stopwatch_get();
+		val2 = TPU_COUNTER;
+		
+		cnt2++;
+		
 		TPU_SRC(1) |= MOD_SRC_CLRR;
 	}
 	

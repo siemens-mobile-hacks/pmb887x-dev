@@ -88,7 +88,7 @@ sub registers {
 	
 	my $cnt = min(scalar(@$names), length($response_bin) / $size);
 	
-	if (scalar(@$names) > $cnt) {
+	if (scalar(@$names) != $cnt) {
 		print STDERR "[gdb-client] Invalid registers count (expected ".scalar(@$names).", but received $cnt)\n";
 		return undef;
 	}

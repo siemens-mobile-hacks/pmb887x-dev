@@ -21,14 +21,14 @@ $| = 1;
 my $gdb = Sie::GDBClient->new;
 
 while (1) {
-	my $functions = getFunctions(getDataDir()."/trace/".($ARGV[0] || "EL71").".json");
-	my $variables = {};
-	
 	print STDERR "Connecting...\n";
 	while (!$gdb->connect) {
 		sleep(1);
 	}
 	print STDERR "GDB found.\n";
+	
+	my $functions = getFunctions(getDataDir()."/trace/".($ARGV[0] || "EL71").".json");
+	my $variables = {};
 	
 	# add breakpoints
 	for my $func (values %$functions) {
@@ -56,8 +56,20 @@ while (1) {
 			# step
 			last if !$gdb->continue('s');
 			
-			my $new_value = unpack("L", $gdb->readMem($func->{addr}, 4));
-			printf("%08X: %s %08X -> %08X from 0x%08X\n", $func->{addr}, $func->{name}, $old_value, $new_value, $regs->{pc});
+			if ($func->{watch} eq "r") {
+				printf("%08X: %s %08X from 0x%08X\n", $func->{addr}, $func->{name}, $old_value, $regs->{pc});
+			} else {
+				my $new_value = unpack("L", $gdb->readMem($func->{addr}, 4));
+				printf("%08X: %s %08X -> %08X from 0x%08X\n", $func->{addr}, $func->{name}, $old_value, $new_value, $regs->{pc});
+			}
+			
+			printRegisters($regs) if $func->{regs};
+			printStack($gdb, $regs, $func->{stack}) if $func->{stack};
+			
+			for my $dump_addr (@{$func->{dump}}) {
+				my $val = unpack("L", $gdb->readMem($dump_addr, 4));
+				printf("  %08X: %08X\n", $dump_addr, $val);
+			}
 			
 			# add watchpoint again
 			last if !addBreakpoint($gdb, $func);
@@ -69,6 +81,11 @@ while (1) {
 			printf("%08X: %s(%s) from 0x%08X\n", $func->{addr}, $func->{name}, decodeArgs($gdb, $func, $regs, $variables), $regs->{lr});
 			printRegisters($regs) if $func->{regs};
 			printStack($gdb, $regs, $func->{stack}) if $func->{stack};
+			
+			for my $dump_addr (@{$func->{dump}}) {
+				my $val = unpack("L", $gdb->readMem($dump_addr, 4));
+				printf("  %08X: %08X\n", $dump_addr, $val);
+			}
 			
 			# step
 			last if !$gdb->continue('s');
@@ -155,7 +172,15 @@ sub readFuncArgWithType {
 		my $sz = readFuncArgWithType($gdb, $regs, 2, "uint32", 0);
 		my $mem = $gdb->readMem($v, $sz);
 		if ($for_debug) {
-			return ($ptr, sprintf("*0x%08X(%s)", $v, bin2hex($mem)));
+			return ($ptr, $v ? sprintf("*0x%08X(%s)", $v, bin2hex($mem)) : "NULL");
+		} else {
+			return $mem;
+		}
+	} elsif ($type =~ /^memdump:(\d+)/) {
+		my $sz = $1;
+		my $mem = $gdb->readMem($v, $sz);
+		if ($for_debug) {
+			return ($ptr, $v ? sprintf("*0x%08X(%s)", $v, bin2hex($mem)) : "NULL");
 		} else {
 			return $mem;
 		}
@@ -352,11 +377,11 @@ sub addBreakpoint {
 	my ($gdb, $func) = @_;
 	if ($func->{watch}) {
 		if ($func->{watch} eq "w") {
-			return 0 if !$gdb->addBreakPoint(2, $func->{addr}, 4);
+			return 0 if !$gdb->addBreakPoint(2, $func->{addr}, $func->{size} || 4);
 		} elsif ($func->{watch} eq "r") {
-			return 0 if !$gdb->addBreakPoint(3, $func->{addr}, 4);
+			return 0 if !$gdb->addBreakPoint(3, $func->{addr}, $func->{size} || 4);
 		} elsif ($func->{watch} eq "rw") {
-			return 0 if !$gdb->addBreakPoint(4, $func->{addr}, 4);
+			return 0 if !$gdb->addBreakPoint(4, $func->{addr}, $func->{size} || 4);
 		} else {
 			die "Invalid watch: ".$func->{watch};
 		}
@@ -374,11 +399,11 @@ sub removeBreakpoint {
 	my ($gdb, $func) = @_;
 	if ($func->{watch}) {
 		if ($func->{watch} eq "w") {
-			return 0 if !$gdb->removeBreakPoint(2, $func->{addr}, 4);
+			return 0 if !$gdb->removeBreakPoint(2, $func->{addr}, $func->{size} || 4);
 		} elsif ($func->{watch} eq "r") {
-			return 0 if !$gdb->removeBreakPoint(3, $func->{addr}, 4);
+			return 0 if !$gdb->removeBreakPoint(3, $func->{addr}, $func->{size} || 4);
 		} elsif ($func->{watch} eq "rw") {
-			return 0 if !$gdb->removeBreakPoint(4, $func->{addr}, 4);
+			return 0 if !$gdb->removeBreakPoint(4, $func->{addr}, $func->{size} || 4);
 		} else {
 			die "Invalid watch: ".$func->{watch};
 		}
