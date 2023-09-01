@@ -44,16 +44,28 @@ my $BOOTLOADERS = {
 	]
 };
 
-my $SOCK_PATH = "/tmp/siemens.sock";
+my $server;
 
-unlink $SOCK_PATH if -e $SOCK_PATH;
+if (exists $ENV{TCP} && $ENV{TCP}) {
+	$server = IO::Socket::INET->new(
+		LocalHost	=> '127.0.0.1',
+		LocalPort	=> '11111',
+		Proto		=> 'tcp',
+		Listen		=> 5,
+		Reuse		=> 1
+	);
+} else {
+	my $SOCK_PATH = "/tmp/siemens.sock";
 
-my $server = IO::Socket::UNIX->new(
-	Type		=> SOCK_STREAM(),
-	Local		=> $SOCK_PATH,
-	Listen		=> 1,
-	Blocking	=> 1
-) or die("socket: $!");
+	unlink $SOCK_PATH if -e $SOCK_PATH;
+
+	$server = IO::Socket::UNIX->new(
+		Type		=> SOCK_STREAM(),
+		Local		=> $SOCK_PATH,
+		Listen		=> 1,
+		Blocking	=> 1
+	) or die("socket: $!");
+}
 
 while (my $client = $server->accept()) {
 	$client->blocking(0);
