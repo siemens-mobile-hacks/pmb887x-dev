@@ -1578,54 +1578,60 @@
 
 
 // SCCU
-// Something about deep sleep, looks like as "SCCU" in the Teltonika TM1Q user manual
-#define	SCCU_BASE						0xF4600000
-#define	SCCU_CON						MMIO32(SCCU_BASE + 0x10)
+// Controlling MCU sleep. Very similar to "SCCU" description in the Teltonika TM1Q user manual.
+#define	SCCU_BASE					0xF4600000
+#define	SCCU_CON0					MMIO32(SCCU_BASE + 0x10)
 
-/* 32khz sleep timer reload (13bit) */
-#define	SCCU_SLEEP_REL					MMIO32(SCCU_BASE + 0x14)
+/* Sleep timer reload */
+#define	SCCU_TIMER_REL				MMIO32(SCCU_BASE + 0x14)
+#define	SCCU_TIMER_REL_VALUE		GENMASK(12, 0)
+#define	SCCU_TIMER_REL_VALUE_SHIFT	0
 
-/* 32khz sleep timer counter (13bit) */
-#define	SCCU_SLEEP_CNT					MMIO32(SCCU_BASE + 0x18)
+/* Sleep timer counter */
+#define	SCCU_TIMER_CNT				MMIO32(SCCU_BASE + 0x18)
+#define	SCCU_TIMER_CNT_VALUE		GENMASK(12, 0)
+#define	SCCU_TIMER_CNT_VALUE_SHIFT	0
 
-#define	SCCU_SLEEP_CON0					MMIO32(SCCU_BASE + 0x1C)
-#define	SCCU_SLEEP_CON0_CAL				BIT(0)						 // Calibration?
-#define	SCCU_SLEEP_CON0_SLEEP			BIT(1)						 // Allow sleep
-#define	SCCU_SLEEP_CON0_RESET			BIT(2)						 // Reset counetr
+#define	SCCU_CON1					MMIO32(SCCU_BASE + 0x1C)
+#define	SCCU_CON1_CAL				BIT(0)						 // Calibration?
+#define	SCCU_CON1_TIMER_START		BIT(1)						 // Start sleep timer
+#define	SCCU_CON1_TIMER_RESET		BIT(2)						 // Reset sleep timer
 
-#define	SCCU_CAL						MMIO32(SCCU_BASE + 0x24)
-#define	SCCU_CAL_VALUE0					GENMASK(12, 0)
-#define	SCCU_CAL_VALUE0_SHIFT			0
-#define	SCCU_CAL_VALUE1					GENMASK(25, 13)
-#define	SCCU_CAL_VALUE1_SHIFT			13
+#define	SCCU_CAL					MMIO32(SCCU_BASE + 0x24)
+#define	SCCU_CAL_VALUE0				GENMASK(12, 0)
+#define	SCCU_CAL_VALUE0_SHIFT		0
+#define	SCCU_CAL_VALUE1				GENMASK(25, 13)
+#define	SCCU_CAL_VALUE1_SHIFT		13
 
-#define	SCCU_SLEEP_CON1					MMIO32(SCCU_BASE + 0x28)
-#define	SCCU_SLEEP_CON1_DIV				GENMASK(7, 0)
-#define	SCCU_SLEEP_CON1_DIV_SHIFT		0
+#define	SCCU_TIMER_DIV				MMIO32(SCCU_BASE + 0x28)
+#define	SCCU_TIMER_DIV_VALUE		GENMASK(7, 0)
+#define	SCCU_TIMER_DIV_VALUE_SHIFT	0
 
-#define	SCCU_SLEEP_CON2					MMIO32(SCCU_BASE + 0x2C)
-#define	SCCU_SLEEP_CON2_SLEEP			BIT(0)
-#define	SCCU_SLEEP_CON2_WAKEUP			BIT(1)
+#define	SCCU_SLEEP_CTRL				MMIO32(SCCU_BASE + 0x2C)
+#define	SCCU_SLEEP_CTRL_SLEEP		BIT(0)						 // Enter sleep
+#define	SCCU_SLEEP_CTRL_WAKEUP		BIT(1)						 // Force exit sleep
 
-#define	SCCU_SLEEP_CON3					MMIO32(SCCU_BASE + 0x30)
-#define	SCCU_SLEEP_CON3_UNK				GENMASK(7, 0)
-#define	SCCU_SLEEP_CON3_UNK_SHIFT		0
-#define	SCCU_SLEEP_CON3_SUB				GENMASK(17, 16)				 // Substract this value from RELOAD (???)
-#define	SCCU_SLEEP_CON3_SUB_SHIFT		16
+#define	SCCU_CON2					MMIO32(SCCU_BASE + 0x30)
+#define	SCCU_CON2_UNK				GENMASK(7, 0)
+#define	SCCU_CON2_UNK_SHIFT			0
+#define	SCCU_CON2_REL_SUB			GENMASK(17, 16)				 // Substract this value from TIMER_REL (???)
+#define	SCCU_CON2_REL_SUB_SHIFT		16
 
-#define	SCCU_SLEEP_CON4					MMIO32(SCCU_BASE + 0x34)
+#define	SCCU_CON3					MMIO32(SCCU_BASE + 0x34)
 
-#define	SCCU_CLOCK_STAT					MMIO32(SCCU_BASE + 0x40)
-#define	SCCU_CLOCK_STAT_FOSC			BIT(0)
-#define	SCCU_CLOCK_STAT_FOSC_RTC_32K	0x0
-#define	SCCU_CLOCK_STAT_FOSC_XTAL		0x1
-#define	SCCU_CLOCK_STAT_FTPU_EN			BIT(1)
+#define	SCCU_STAT					MMIO32(SCCU_BASE + 0x40)
+#define	SCCU_STAT_CPU				BIT(0)						 // CPU sleep status
+#define	SCCU_STAT_CPU_SLEEP			0x0
+#define	SCCU_STAT_CPU_NORMAL		0x1
+#define	SCCU_STAT_TPU				BIT(1)						 // TPU sleep status
+#define	SCCU_STAT_TPU_SLEEP			0x0
+#define	SCCU_STAT_TPU_NORMAL		0x2
 
 /* Service Routing Control Register */
-#define	SCCU_WAKE_SRC					MMIO32(SCCU_BASE + 0xA0)
+#define	SCCU_WAKE_SRC				MMIO32(SCCU_BASE + 0xA0)
 
 /* Service Routing Control Register */
-#define	SCCU_UNK_SRC					MMIO32(SCCU_BASE + 0xA8)
+#define	SCCU_UNK_SRC				MMIO32(SCCU_BASE + 0xA8)
 
 
 // RTC [MOD_NUM=F049, MOD_REV=00, MOD_32BIT=C0]
@@ -2560,10 +2566,10 @@
 // CIF [MOD_NUM=F052, MOD_REV=00, MOD_32BIT=C0]
 // Looks like DIF (Camera Interface) module, but not sure.
 #define	CIF_BASE	0xF7000000
+#define	CIF_UNK0	MMIO32(CIF_BASE + 0x00)
+
 /* Clock Control Register */
 #define	CIF_CLC		MMIO32(CIF_BASE + 0x00)
-
-#define	CIF_UNK0	MMIO32(CIF_BASE + 0x00)
 
 /* Module Identifier Register */
 #define	CIF_ID		MMIO32(CIF_BASE + 0x08)

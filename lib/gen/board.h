@@ -1,18 +1,14 @@
 #pragma once
 
-#ifdef BOARD_C81
-#include "board_C81.h"
+#ifdef BOARD_SIEMENS_C81
+#include "board_siemens_c81.h"
 #endif
 
-#ifdef BOARD_CX75
-#include "board_CX75.h"
+#ifdef BOARD_SIEMENS_CX75
+#include "board_siemens_cx75.h"
 #endif
 
-#ifdef BOARD_SL75
-#include "board_SL75.h"
-#endif
-
-#ifdef BOARD_EL71
-#include "board_EL71.h"
+#ifdef BOARD_SIEMENS_EL71
+#include "board_siemens_el71.h"
 #endif
 

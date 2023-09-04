@@ -67,7 +67,13 @@ my $board_str = "#pragma once\n\n";
 for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	my $board_meta = Sie::BoardMetadata->new($board);
 	
-	my $file = dirname(__FILE__).'/../lib/gen/board_'.$board.'.h';
+	my $board_name = uc($board_meta->{name});
+	$board_name =~ s/-/_/g;
+	
+	my $board_file = lc($board_meta->{name});
+	$board_file =~ s/-/_/g;
+	
+	my $file = dirname(__FILE__).'/../lib/gen/board_'.$board_file.'.h';
 	my $str = "#pragma once\n";
 	$str .= "#include <stdint.h>\n\n";
 	
@@ -81,8 +87,8 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	$str .= getKeysHeader($board_meta->{keys});
 	$str .= "\n";
 	
-	$board_str .= "#ifdef BOARD_".$board."\n";
-	$board_str .= "#include \"board_".$board.".h\"\n";
+	$board_str .= "#ifdef BOARD_".$board_name."\n";
+	$board_str .= "#include \"board_".$board_file.".h\"\n";
 	$board_str .= "#endif\n\n";
 	
 	open(F, ">$file") or die "open($file): $!";
