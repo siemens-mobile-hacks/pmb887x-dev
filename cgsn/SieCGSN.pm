@@ -398,7 +398,7 @@ sub _parseIni {
 	my $hash = {};
 	my $ref;
 	for my $line (split(/(\r\n|\n|\r)/, $ini)) {
-		$line =~ s/;.*?$//g; # комментарии
+		$line =~ s/[;#].*?$//g; # комментарии
 		$line =~ s/^\s+|\s+$//g;
 		
 		if ($line =~ /^([^=]+)=(.*?)$/ && $ref) {

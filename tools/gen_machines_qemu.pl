@@ -21,7 +21,7 @@ static void pmb887x_{board}_class_init(ObjectClass *oc, void *data) {
 	mc->block_default_type = IF_PFLASH;
 	mc->ignore_memory_transaction_failures = true;
 	mc->default_cpu_type = ARM_CPU_TYPE_NAME("arm926");
-	mc->default_ram_size = {ram} * 1024 * 1024;
+	mc->default_ram_size = 0;
 	pmb887x_class_init(oc, data);
 }
 
@@ -57,15 +57,17 @@ sub genBoardInfo {
 	my ($board_meta) = @_;
 	
 	my $cpu_name = uc($board_meta->{cpu}->{name});
-	my $board_def = "BOARD_".uc($board_meta->{name});
-	my $machine_name = lc($board_meta->{vendor})."-".lc($board_meta->{name});
-	my $machine_name_id = lc($board_meta->{vendor})."_".lc($board_meta->{name});
+	my $board_def = "BOARD_".uc($board_meta->{vendor})."_".uc($board_meta->{model});
+	my $machine_name = lc($board_meta->{vendor})."-".lc($board_meta->{model});
+	my $machine_name_id = lc($board_meta->{vendor})."_".lc($board_meta->{model});
+	
+	$board_def =~ s/-/_/g;
+	$machine_name_id =~ s/-/_/g;
 	
 	my $str = $BOARD_DEF_TPL;
 	$str =~ s/{board}/$machine_name_id/g;
 	$str =~ s/{model}/$board_meta->{name}/g;
 	$str =~ s/{vendor}/$board_meta->{vendor}/g;
-	$str =~ s/{ram}/$board_meta->{ram}/g;
 	$str =~ s/{machine_name}/$machine_name/g;
 	$str =~ s/{cpu_name}/$cpu_name/g;
 	$str =~ s/{board_def}/$board_def/g;

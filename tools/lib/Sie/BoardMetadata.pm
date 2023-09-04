@@ -51,97 +51,80 @@ sub loadBoard {
 	my $file = getDataDir().'/board/'.$board.'.cfg';
 	
 	$self->{name} = $board;
-	$self->{ram} = 16;
-	$self->{flash} = [0, 0];
-	$self->{vendor} = "Unknown";
 	$self->{keys} = {};
-	$self->{display_rotation} = 0;
+	$self->{memory} = {};
 	
-	open my $fp, "<$file" or die("open($file): $!");
-	while (my $line = <$fp>) {
-		next if $line =~ /^(\/\/|#)/;
-		
-		# Replace comments
-		$line =~ s/\/\*.*?\*\///sig;
-		
-		# Normalize spaces
-		$line =~ s/[\t]+/\t/g;
-		$line =~ s/^\s+|\s+$//g;
-		
-		next if !length($line);
-		
-		if ($line =~ /^\.([\w\d_-]+)\s*(.*?)$/) {
-			my $key = $1;
-			my $value = $2;
-			
-			if ($key eq "gpio") {
-				my ($gpio_name, $gpio_cpu_name, $cfg) = split(/\s+/, $value);
-				
-				my $mode = "none";
-				my $value = undef;
-				
-				if ($cfg) {
-					if ($cfg =~ /INPUT=(\d+)/) {
-						$value = $1 ? 1 : 0;
-						$mode = "input";
-					}
-				}
-				
-				$self->{gpios}->{$gpio_cpu_name} = {
-					name	=> $gpio_name,
-					mode	=> $mode,
-					value	=> $value
-				};
-			} elsif ($key eq "cpu") {
-				$self->{cpu} = Sie::CpuMetadata->new($value);
-			} elsif ($key =~ /^width|height|ram$/) {
-				$self->{$key} = parseAnyInt($value);
-			} elsif ($key eq "vendor") {
-				$self->{vendor} = $value;
-			} elsif ($key eq "display") {
-				my @pairs = split(/\s*,\s*/, $value);
-				$self->{display} = shift @pairs;
-				
-				for my $pair (@pairs) {
-					my ($pair_k, $pair_v) = split(/=/, $pair);
-					$self->{"display_".$pair_k} = $pair_v;
-				}
-			} elsif ($key eq "flash") {
-				my @flashes = map {
-					my ($vid, $pid) = split(/:/, $_);
-					(hex($vid) << 16) | hex($pid)
-				} split(/\s*,\s*/, $value);
-				$self->{flash} = [@flashes];
-			} elsif ($key eq "key") {
-				my ($kp_name, $kp_in_str, $kp_out_str, $map) = split(/\t+/, $value);
-				
-				my @kp_in_arr = map { parseAnyInt($_) } split(/\s*,\s*/, $kp_in_str);
-				my @kp_out_arr = map { parseAnyInt($_) } split(/\s*,\s*/, $kp_out_str);
-				
-				my $keycode = 0;
-				
-				for my $kp_in (@kp_in_arr) {
-					$keycode |= 1 << $kp_in;
-				}
-				
-				for my $kp_out (@kp_out_arr) {
-					$keycode |= 1 << (8 + $kp_out);
-				}
-				
-				my $kp_data = {
-					name		=> $kp_name,
-					in			=> \@kp_in_arr,
-					out			=> \@kp_out_arr,
-					code		=> $keycode,
-					map			=> $map ? [split(/\s*,\s*/, $map)] : []
-				};
-				$self->{keys}->{$kp_name} = $kp_data;
-			}
+	my $cfg = parseIniFile($file);
+	
+	$self->{display} = $cfg->{display};
+	$self->{model} = $cfg->{device}->{model};
+	$self->{vendor} = $cfg->{device}->{vendor};
+	$self->{cpu} = Sie::CpuMetadata->new($cfg->{device}->{cpu});
+	
+	if (exists $cfg->{'gpio-aliases'}) {
+		for my $gpio_cpu_name (keys %{$cfg->{'gpio-aliases'}}) {
+			my $gpio_name = $cfg->{'gpio-aliases'}->{$gpio_cpu_name};
+			$self->{gpios}->{$gpio_cpu_name} = {
+				name	=> $gpio_name,
+				mode	=> "none",
+				value	=> undef
+			};
 		}
 	}
+	
+	if (exists $cfg->{'gpio-inputs'}) {
+		for my $gpio_cpu_name (keys %{$cfg->{'gpio-inputs'}}) {
+			my $gpio_value = $cfg->{'gpio-inputs'}->{$gpio_cpu_name};
+			$self->{gpios}->{$gpio_cpu_name}->{mode} = 'input';
+			$self->{gpios}->{$gpio_cpu_name}->{value} = $gpio_value;
+		}
+	}
+	
+	for my $cs (keys %{$cfg->{'memory'}}) {
+		my $m = $cfg->{'memory'}->{$cs};
+		if ($m =~ /^flash:([a-f0-9]+):([a-f0-9]+)$/i) {
+			$self->{memory}->{$cs} = {
+				type	=> "flash",
+				vid		=> hex $1,
+				pid		=> hex $2
+			};
+		} elsif ($m =~ /^ram:(\d+)m$/i) {
+			$self->{memory}->{$cs} = {
+				type	=> "ram",
+				size	=> $1 * 1024 * 1024
+			};
+		} else {
+			die "Invalid memory: $m";
+		}
+	}
+	
+	if (exists $cfg->{'keyboard'}) {
+		for my $kp_name (keys %{$cfg->{'keyboard'}}) {
+			my ($kp_in_str, $kp_out_str) = split(":", $cfg->{'keyboard'}->{$kp_name});
+			
+			my @kp_in_arr = map { int($_) } split(/\s*,\s*/, $kp_in_str);
+			my @kp_out_arr = map { int($_) } split(/\s*,\s*/, $kp_out_str);
+			
+			my $keycode = 0;
+			
+			for my $kp_in (@kp_in_arr) {
+				$keycode |= 1 << $kp_in;
+			}
+			
+			for my $kp_out (@kp_out_arr) {
+				$keycode |= 1 << (8 + $kp_out);
+			}
+			
+			$self->{keys}->{$kp_name} = {
+				in			=> \@kp_in_arr,
+				out			=> \@kp_out_arr,
+				code		=> $keycode,
+			};
+		}
+	}
+	
 	$self->{cpu}->setGpios($self->{gpios});
 	
-	close $fp;
 }
 
 1;

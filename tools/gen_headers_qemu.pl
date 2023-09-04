@@ -18,13 +18,6 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	$cpu_id++;
 }
 
-my $board_id = 0;
-for my $board (@{Sie::BoardMetadata::getBoards()}) {
-	my $board_meta = Sie::BoardMetadata->new($board);
-	$str .= genBoardHeader($board_meta, $board_id);
-	$board_id++;
-}
-
 my $cpu_meta = Sie::CpuMetadata->new("generic");
 $str .= getCommonRegsHeader($cpu_meta, $cpu_meta->{common});
 for my $module (@{$cpu_meta->getAllModules()}) {
@@ -40,34 +33,6 @@ sub getCommonRegsHeader {
 		regs		=> $regs,
 		common		=> 1
 	});
-}
-
-sub genBoardHeader {
-	my ($board_meta, $board_id) = @_;
-	
-	my @header;
-	push @header, "/* BOARD: ".$board_meta->{name}." */";
-	push @header, ["#define BOARD_".uc($board_meta->{name}), $board_id];
-	push @header, "";
-	
-	push @header, "// gpios";
-	for my $gpio_name (getSortedKeys($board_meta->gpios(), 'id')) {
-		my $gpio = $board_meta->gpios()->{$gpio_name};
-		push @header, [
-			"#define ".uc($board_meta->{name})."_GPIO_".($gpio->{alias} || $gpio->{name}),
-			uc($board_meta->{cpu}->{name})."_GPIO_".$gpio->{name}
-		];
-	}
-	
-	push @header, "";
-	push @header, "// keys";
-	
-	for my $kp_name (getSortedKeys($board_meta->{keys}, 'code')) {
-		my $kp = $board_meta->{keys}->{$kp_name};
-		push @header, ["#define ".uc($board_meta->{name})."_KP_".$kp_name, sprintf("0x%08X", $kp->{code})];
-	}
-	
-	return printTable(\@header)."\n";
 }
 
 sub genCpuHeader {
@@ -94,8 +59,19 @@ sub genCpuHeader {
 	for my $gpio_name (getSortedKeys($cpu_meta->gpios(), 'id')) {
 		my $gpio = $cpu_meta->gpios()->{$gpio_name};
 		push @header, [
-			"#define ".uc($cpu_meta->{name})."_GPIO_".$gpio->{name},
+			"#define ".uc($cpu_meta->{name})."_GPIO_PIN".$gpio->{id},
 			$gpio->{id}
+		];
+	}
+	
+	push @header, "";
+	
+	for my $gpio_name (getSortedKeys($cpu_meta->gpios(), 'id')) {
+		my $gpio = $cpu_meta->gpios()->{$gpio_name};
+		next if $gpio->{name} =~ /^PIN(\d+)$/;
+		push @header, [
+			"#define ".uc($cpu_meta->{name})."_GPIO_".$gpio->{name},
+			uc($cpu_meta->{name})."_GPIO_PIN".$gpio->{id}
 		];
 	}
 	

@@ -3,7 +3,7 @@ OPT ?= -O2
 CSTD ?= -std=c11
 CXXSTD ?= -std=c++17
 BOOT ?= intram
-BOARD ?= EL71
+BOARD ?= SIEMENS_EL71
 
 ############################################################################
 

@@ -41,11 +41,12 @@ if ($raw) {
 		
 		$json->{boards}->{$board} = {
 			cpu		=> $board_meta->cpu()->{name},
-			flash	=> $board_meta->{flash},
+			memory	=> $board_meta->{memory},
 			keys	=> $board_meta->{keys},
-			ram		=> $board_meta->{ram},
-			gpios	=> $board_meta->{gpios},
 			vendor	=> $board_meta->{vendor},
+			model	=> $board_meta->{model},
+			display	=> $board_meta->{display},
+			gpios	=> $board_meta->{gpios},
 		};
 	}
 } else {

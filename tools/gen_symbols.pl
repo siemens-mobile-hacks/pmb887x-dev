@@ -9,7 +9,7 @@ use Sie::CpuMetadata;
 use Sie::BoardMetadata;
 use Sie::Utils;
 
-my $board = $ENV{BOARD} || "EL71";
+my $board = $ENV{BOARD} || "siemens-el71";
 my $gen_idc = $ARGV[0] || 0;
 
 my $board_meta = Sie::BoardMetadata->new($board);

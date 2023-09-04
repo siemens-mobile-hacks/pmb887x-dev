@@ -19,9 +19,15 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	my $board_meta = Sie::BoardMetadata->new($board);
 	my $cpu_meta = $board_meta->cpu;
 	
-	my $keymap_var = "board_".lc($board_meta->{name})."_keymap";
-	my $gpio_var = "board_".lc($board_meta->{name})."_fixed_gpio";
-	my $flashes_var = "board_".lc($board_meta->{name})."_flashes";
+	my $board_name = uc($board_meta->{vendor})."_".uc($board_meta->{model});
+	$board_name =~ s/-/_/g;
+	
+	my $board_id = lc($board_meta->{vendor})."_".lc($board_meta->{model});
+	$board_id =~ s/-/_/g;
+	
+	my $keymap_var = "board_".$board_id."_keymap";
+	my $gpio_var = "board_".$board_id."_fixed_gpio";
+	my $flashes_var = "board_".$board_id."_flashes";
 	
 	my @keys;
 	for my $kp_name (getSortedKeys($board_meta->{keys}, 'code')) {
@@ -30,7 +36,7 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 		for my $qemu_key (@{$kp->{map}}) {
 			push @keys, [
 				"[Q_KEY_CODE_".$qemu_key."]",
-				"= ".uc($board_meta->{name})."_KP_".$kp->{name}
+				"= ".$board_name."_KP_".$kp->{name}
 			];
 		}
 	}
@@ -40,7 +46,7 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 		my $gpio = $board_meta->gpios()->{$gpio_name};
 		if ($gpio->{mode} eq "input") {
 			push @gpios, [
-				uc($board_meta->{name})."_GPIO_".($gpio->{alias} || $gpio->{name}).",",
+				$board_name."_GPIO_".($gpio->{alias} || $gpio->{name}).",",
 				$gpio->{value}
 			];
 		}
@@ -64,7 +70,7 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	$str .= "};\n\n";
 	
 	my @board = (
-		name				=> '"'.$board_meta->{name}.'"',
+		name				=> '"'.$board_meta->{vendor}.' '.$board_meta->{model}.'"',
 		width				=> $board_meta->{width},
 		height				=> $board_meta->{height},
 		display				=> $board_meta->{display} ? '"'.$board_meta->{display}.'"' : 'NULL',

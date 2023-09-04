@@ -4,10 +4,11 @@ use warnings;
 use strict;
 use File::Basename;
 use base 'Exporter';
+use File::Slurp qw(read_file);
 use List::Util qw(min max);
 use POSIX qw(ceil);
 
-our @EXPORT = qw|getDataDir parseAnyInt getSortedKeys printTable bin2hex hex2bin|;
+our @EXPORT = qw|getDataDir parseAnyInt getSortedKeys printTable bin2hex hex2bin parseIniFile|;
 
 sub bin2hex {
 	my ($bin) = @_;
@@ -101,6 +102,70 @@ sub printTable {
 	$out =~ s/[ \t]+$//gm;
 	
 	return $out;
+}
+
+sub parseIniFile {
+	my ($file) = @_;
+	my $hash = {};
+	my $ref;
+	
+	my $ini = scalar(read_file($file));
+	
+	my $escapes = {
+		n		=> "\n",
+		r		=> "\r",
+		t		=> "\t",
+		"'"		=> "'",
+		'"'		=> '"',
+		"\\"	=> "\\"
+	};
+	
+	for my $line (split(/(\r\n|\n|\r)/, $ini)) {
+		# standalone comments
+		next if $line =~ /^\s*[#;].*?$/i;
+		
+		if ($line =~ /^\s*\[([\w\d_-]+)\]\s*$/i) {
+			$hash->{$1} = {};
+			$ref = $hash->{$1};
+		} elsif ($line =~ /^\s*([\w\d_-]+)\s*=\s*(['"]?)(.*?)$/i) {
+			my ($k, $escape, $v) = ($1, $2, $3);
+			if ($escape) {
+				my $new_value = "";
+				my $slash_escape = 0;
+				my $success = 0;
+				
+				for (my $i = 0; $i < length($v); $i++) {
+					my $c = substr($v, $i, 1);
+					
+					if ($slash_escape) {
+						die "Invalid escape \\$c" if !exists $escapes->{$c};
+						$new_value .= $escapes->{$c};
+						$slash_escape = 0;
+					} elsif ($c eq "\\") {
+						$slash_escape = 1;
+					} elsif ($c eq $escape) {
+						$success = 1;
+						last;
+					} else {
+						$new_value .= $c;
+					}
+				}
+				
+				die "Invalid string: $v" if !$success;
+				
+				$v = $new_value;
+			} else {
+				$v =~ s/[;#].*?$//g; # comments in value
+				$v =~ s/^\s+|\s+$//g; # trim
+			}
+			
+			# parse hex values
+			$v = hex $v if $v =~ /^(0x[a-f0-9]+)$/i;
+			
+			$ref->{$k} = $v;
+		}
+	}
+	return $hash;
 }
 
 sub getArgvOpts {

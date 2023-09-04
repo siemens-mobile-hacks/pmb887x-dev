@@ -13,7 +13,7 @@ if (scalar(@ARGV) != 2) {
 	exit;
 }
 
-my $board = $ENV{BOARD} || "EL71";
+my $board = $ENV{BOARD} || "siemens-el71";
 
 my $addr = hex $ARGV[0];
 my $value = hex $ARGV[1];

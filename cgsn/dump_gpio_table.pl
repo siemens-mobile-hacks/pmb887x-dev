@@ -6,7 +6,7 @@ use lib dirname(__FILE__).'/../tools/lib';
 use Data::Dumper;
 use Sie::BoardMetadata;
 
-my $board_meta = Sie::BoardMetadata->new("EL71");
+my $board_meta = Sie::BoardMetadata->new("siemens-el71");
 my $cpu_meta = $board_meta->cpu();
 
 if (!-f "/tmp/gpio.bin") {

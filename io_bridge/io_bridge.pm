@@ -72,7 +72,7 @@ sub boot_module_init {
 	
 	cmd_ping($port);
 	
-	my $board = $ENV{BOARD} || "EL71";
+	my $board = $ENV{BOARD} || "siemens-el71";
 	
 	my $board_meta = Sie::BoardMetadata->new($board);
 	my $cpu_meta = $board_meta->cpu();

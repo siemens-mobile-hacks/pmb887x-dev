@@ -8,7 +8,7 @@ use Sie::BoardMetadata;
 
 my $gen_symbols = !!$ARGV[0];
 
-my $board_meta = Sie::BoardMetadata->new("EL71");
+my $board_meta = Sie::BoardMetadata->new("siemens-el71");
 my $cpu_meta = $board_meta->cpu();
 
 my $irqs = {};
