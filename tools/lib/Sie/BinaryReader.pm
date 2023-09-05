@@ -2,9 +2,10 @@ package Sie::BinaryReader;
 
 use warnings;
 use strict;
+use IO::String;
 
 sub new {
-	my ($class, $file) = @_;
+	my ($class) = @_;
 	my $self = {};
 	return bless $self => $class;
 }
@@ -17,6 +18,21 @@ sub open {
 	seek($self->{handle}, 0, 2) or die("seek: $!");
 	$self->{size} = tell($self->{handle});
 	$self->seek(0);
+}
+
+sub openString {
+	my ($self, $var) = @_;
+	$self->close() if $self->{handle};
+	my $fp = IO::String->new($var);
+	$self->{handle} = $fp;
+	seek($self->{handle}, 0, 2) or die("seek: $!");
+	$self->{size} = tell($self->{handle});
+	$self->seek(0);
+}
+
+sub offset {
+	my ($self) = @_;
+	return tell($self->{handle});
 }
 
 sub size {
