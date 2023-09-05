@@ -17,5 +17,10 @@
 		"addr":		0xA057D920,
 		"args":		["uint8", "uint8", "uint8*", "uint8", "uint8"],
 		"skip":		false
+	}, {
+		"name":		"debug_flash_exit",
+		"addr":		0xa05702a8,
+		"args":		["uint32", "uint32", "uint32", "uint32"],
+		"skip":		false
 	}
 ]
