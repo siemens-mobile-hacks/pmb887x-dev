@@ -36,10 +36,10 @@ void detect_flash(uint32_t base) {
 	printf("CFI/PRI/OTP DUMP:\n");
 	for (uint32_t i = 0; i < 1024; i++) {
 		uint16_t v = read_cfi(base, i);
-		if (i && (i % 64) == 0) {
+		if (i && (i % 32) == 0) {
 			printf("\n");
 		}
-		printf("%02X", v & 0xFF);
+		printf("%04X ", v);
 	}
 	printf("\n");
 	
