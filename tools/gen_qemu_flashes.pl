@@ -34,6 +34,7 @@ for my $dump_file (@files) {
 	my @partitions;
 	my $flash_offset = 0;
 	
+<<<<<<< HEAD
 	if (@{$info->{pri}->{regions}}) {
 		for my $region (@{$info->{pri}->{regions}}) {
 			my @erase_regions;
@@ -77,16 +78,50 @@ for my $dump_file (@files) {
 	
 	# Hardware partitions
 	print "static const struct pmb887x_flash_cfg_part_t ${var_name}_parts[] = {\n";
+=======
+	for my $region (@{$info->{pri}->{regions}}) {
+		my @erase_regions;
+		
+		my $part_size = 0;
+		for my $erase (@{$region->{erase_regions}}) {
+			 push @erase_regions, sprintf("{ 0x%X, 0x%X, 0x%X }", $part_size, $erase->{blocks} * $erase->{block_size}, $erase->{block_size});
+			 $part_size += $erase->{blocks} * $erase->{block_size};
+		}
+		
+		# Erase regions
+		print "const struct pmb887x_flash_erase_region_t ${var_name}_erase_regions_".$region->{id}."[] = {\n";
+		print "\t".join(",\n\t", @erase_regions)."\n";
+		print "};\n";
+		
+		for (my $i = 0; $i < $region->{identical_banks}; $i++) {
+			push @partitions, sprintf("{ 0x%08X, 0x%08X, %s, %s }", $flash_offset, $part_size,
+				"${var_name}_erase_regions_".$region->{id},
+				"ARRAY_SIZE(${var_name}_erase_regions_".$region->{id}.")");
+			$flash_offset += $part_size;
+		}
+	}
+	
+	# Hardware partitions
+	print "const struct pmb887x_flash_cfg_part_t ${var_name}_parts[] = {\n";
+>>>>>>> 0662253 (misc)
 	print "\t".join(",\n\t", @partitions)."\n";
 	print "};\n";
 	
 	# CFI dump
+<<<<<<< HEAD
 	print "static const uint8_t ${var_name}_cfi[] = {\n";
+=======
+	print "const uint8_t ${var_name}_cfi[] = {\n";
+>>>>>>> 0662253 (misc)
 	print dumpHex("\t", $info->{cfi_bin});
 	print "};\n";
 	
 	# PRI dump
+<<<<<<< HEAD
 	print "static const uint8_t ${var_name}_pri[] = {\n";
+=======
+	print "const uint8_t ${var_name}_pri[] = {\n";
+>>>>>>> 0662253 (misc)
 	print dumpHex("\t", $info->{pri_bin});
 	print "};\n";
 	
@@ -117,7 +152,11 @@ for my $dump_file (@files) {
 	
 	push @flashes, "\t{\n".printTable(\@flash_table, "\t\t")."\n\t},";
 }
+<<<<<<< HEAD
 print "static const pmb887x_flash_cfg_t flashes[] = {\n";
+=======
+print "const pmb887x_flash_cfg_t flashes[] = {\n";
+>>>>>>> 0662253 (misc)
 print join("\n", @flashes)."\n";
 print "};\n";
 
