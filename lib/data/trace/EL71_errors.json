@@ -22,5 +22,35 @@
 		"addr":		0xa05702a8,
 		"args":		["uint32", "uint32", "uint32", "uint32"],
 		"skip":		false
-	}
+	},
+	{
+		"name":		"NU_Create_Timer",
+		"addr":		0xA009E868,
+		"args":		["ptr","cstr","ptr","int32","int32","int32","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Timer",
+		"addr":		0xA009E8DC,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Create_Queue",
+		"addr":		0xA00A06C8,
+		"args":		["ptr","cstr","ptr","int32","uint8","int32","uint8"]
+	},
+	{
+		"name":		"NU_Delete_Queue",
+		"addr":		0xA00A0768,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Send_To_Queue",
+		"addr":		0xA00A0788,
+		"args":		["ptr","ptr","int32","int32"]
+	},
+	{
+		"name":		"NU_Receive_From_Queue",
+		"addr":		0xA00A082C,
+		"args":		["ptr","ptr","int32","ptr","int32"]
+	},
 ]

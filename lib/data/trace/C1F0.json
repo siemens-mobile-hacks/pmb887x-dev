@@ -1,0 +1,93 @@
+[
+	{
+		"name":		"debug_error",
+		"addr":		0xA01C6070,
+		"args":		["cstr"],
+	}, {
+		"name":		"debug_error2",
+		"addr":		0xA01C6020,
+		"args":		["cstr"],
+	}, {
+		"name":		"debug_pickoff",
+		"addr":		0xA01C61A4,
+		"args":		["uint32", "exit", "uint32"]
+	}, {
+		"name":		"debug_pickoff_not_fatal",
+		"addr":		0xa01c626c,
+		"args":		["uint32", "exit", "uint32"]
+	}, {
+		"name":		"modeman_unk",
+		"addr":		0xA00A8BD0,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	}, {
+		"name":		"modeman_unk_switch",
+		"addr":		0xA02438A8,
+		"args":		["uint32"]
+	}, {
+		"name":		"modeman_unk",
+		"addr":		0x23B4,
+		"watch":	"w"
+	}, {
+		"name":		"unk_debug2",
+		"addr":		0xA0361084,
+		"args":		["cstr", "int32", "ctr"],
+	}, {
+		"name":		"unk_debug3",
+		"addr":		0xA0360CE8,
+		"args":		["cstr"],
+	}, {
+		"name":		"unk_debug3",
+		"addr":		0xa0360e74,
+		"args":		["cstr"],
+	}, {
+		"name":		"unk_debug3",
+		"addr":		0xa0360ef8,
+		"args":		["cstr"],
+	}, {
+		"name":		"unk_debug333",
+		"addr":		0xa02430d8,
+		"args":		[],
+		"regs":		true,
+	},
+	{
+		"name":		"NU_Create_Queue",
+		"addr":		0xa00a7318,
+		"args":		["ptr","cstr","ptr","int32","uint8","int32","uint8"]
+	},
+	{
+		"name":		"NU_Send_To_Queue",
+		"addr":		0xa00a73d8,
+		"args":		["ptr","ptr","int32","int32"]
+	},
+	{
+		"name":		"NU_Receive_From_Queue",
+		"addr":		0xa00a747c,
+		"args":		["ptr","ptr","int32","ptr","int32"]
+	},
+	{
+		"name":		"Modeman_Enqueue",
+		"addr":		0xa0242e3c,
+		"args":		["uint32"],
+	},
+	{
+		"name":		"NU_Create_Timer",
+		"addr":		0xa00a54b8,
+		"args":		["ptr","cstr","ptr","int32","int32","int32","uint8"]
+	},
+	{
+		"name":		"Modeman_Timeout",
+		"addr":		0xa02430d8,
+		"args":		["uint32"],
+	},
+	{
+		"name":		"Modeman_StartTimeout",
+		"addr":		0xa0242f98,
+		"args":		["uint32"],
+	},
+	{
+		"name":		"pasic_i2c_transfer",
+		"addr":		0xa02723e0,
+		"args":		["uint8", "uint8", "uint8*", "uint8", "uint8"],
+		"skip":		false
+	}
+]

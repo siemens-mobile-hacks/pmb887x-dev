@@ -91,9 +91,9 @@ int main(void) {
 	gpio_init_output(GPIO_LED_FL_EN, GPIO_OS_NONE, GPIO_PS_MANUAL, false, GPIO_PPEN_PUSHPULL, GPIO_PDPU_NONE, false);
 	
 	dump_all_regs();
-	test_vibra();
-	test_backlight();
-	test_pickoff_sound();
+//	test_vibra();
+//	test_backlight();
+//	test_pickoff_sound();
 	
 	printf("Done!\n");
 	

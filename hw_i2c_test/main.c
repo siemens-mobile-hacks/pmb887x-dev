@@ -208,6 +208,7 @@ __IRQ void irq_handler(void) {
 			printf("-> I2C_PIRQSS_TX_END\n");
 			i2c_state.code = ERR_SUCCESS;
 			I2C_PIRQSC = I2C_PIRQSC_TX_END;
+		//	I2C_ENDDCTRL = I2C_ENDDCTRL_SETEND;
 		} else if ((I2C_PIRQSS & I2C_PIRQSS_RX)) {
 			printf("-> I2C_PIRQSS_RX\n");
 			I2C_PIRQSC = I2C_PIRQSC_RX;
