@@ -34,26 +34,45 @@ for my $dump_file (@files) {
 	my @partitions;
 	my $flash_offset = 0;
 	
-	for my $region (@{$info->{pri}->{regions}}) {
+	if (@{$info->{pri}->{regions}}) {
+		for my $region (@{$info->{pri}->{regions}}) {
+			my @erase_regions;
+			
+			my $part_size = 0;
+			for my $erase (@{$region->{erase_regions}}) {
+				 push @erase_regions, sprintf("{ 0x%X, 0x%X, 0x%X }", $part_size, $erase->{blocks} * $erase->{block_size}, $erase->{block_size});
+				 $part_size += $erase->{blocks} * $erase->{block_size};
+			}
+			
+			# Erase regions
+			print "const struct pmb887x_flash_erase_region_t ${var_name}_erase_regions_".$region->{id}."[] = {\n";
+			print "\t".join(",\n\t", @erase_regions)."\n";
+			print "};\n";
+			
+			for (my $i = 0; $i < $region->{identical_banks}; $i++) {
+				push @partitions, sprintf("{ 0x%08X, 0x%08X, %s, %s }", $flash_offset, $part_size,
+					"${var_name}_erase_regions_".$region->{id},
+					"ARRAY_SIZE(${var_name}_erase_regions_".$region->{id}.")");
+				$flash_offset += $part_size;
+			}
+		}
+	} elsif (@{$info->{cfi}->{erase_regions}}) {
 		my @erase_regions;
-		
 		my $part_size = 0;
-		for my $erase (@{$region->{erase_regions}}) {
+		
+		for my $erase (@{$info->{cfi}->{erase_regions}}) {
 			 push @erase_regions, sprintf("{ 0x%X, 0x%X, 0x%X }", $part_size, $erase->{blocks} * $erase->{block_size}, $erase->{block_size});
-			 $part_size += $erase->{blocks} * $erase->{block_size};
+			$part_size += $erase->{blocks} * $erase->{block_size};
 		}
 		
 		# Erase regions
-		print "const struct pmb887x_flash_erase_region_t ${var_name}_erase_regions_".$region->{id}."[] = {\n";
+		print "const struct pmb887x_flash_erase_region_t ${var_name}_erase_regions_0[] = {\n";
 		print "\t".join(",\n\t", @erase_regions)."\n";
 		print "};\n";
 		
-		for (my $i = 0; $i < $region->{identical_banks}; $i++) {
-			push @partitions, sprintf("{ 0x%08X, 0x%08X, %s, %s }", $flash_offset, $part_size,
-				"${var_name}_erase_regions_".$region->{id},
-				"ARRAY_SIZE(${var_name}_erase_regions_".$region->{id}.")");
-			$flash_offset += $part_size;
-		}
+		push @partitions, sprintf("{ 0x%08X, 0x%08X, %s, %s }", 0, $part_size, "${var_name}_erase_regions_0", "ARRAY_SIZE(${var_name}_erase_regions_0)");
+	} else {
+		die "Unknown flash geometry!";
 	}
 	
 	# Hardware partitions
