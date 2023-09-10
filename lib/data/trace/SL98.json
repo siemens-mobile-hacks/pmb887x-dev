@@ -1,0 +1,8 @@
+[
+	{
+		"name":		"debug2",
+		"addr":		0xa0519760,
+		"args":		[],
+		"regs":		true
+	}
+]

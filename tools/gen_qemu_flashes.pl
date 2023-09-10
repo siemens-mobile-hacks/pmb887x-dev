@@ -45,7 +45,7 @@ for my $dump_file (@files) {
 			}
 			
 			# Erase regions
-			print "const struct pmb887x_flash_erase_region_t ${var_name}_erase_regions_".$region->{id}."[] = {\n";
+			print "static const struct pmb887x_flash_erase_region_t ${var_name}_erase_regions_".$region->{id}."[] = {\n";
 			print "\t".join(",\n\t", @erase_regions)."\n";
 			print "};\n";
 			
@@ -66,7 +66,7 @@ for my $dump_file (@files) {
 		}
 		
 		# Erase regions
-		print "const struct pmb887x_flash_erase_region_t ${var_name}_erase_regions_0[] = {\n";
+		print "static const struct pmb887x_flash_erase_region_t ${var_name}_erase_regions_0[] = {\n";
 		print "\t".join(",\n\t", @erase_regions)."\n";
 		print "};\n";
 		
@@ -76,17 +76,17 @@ for my $dump_file (@files) {
 	}
 	
 	# Hardware partitions
-	print "const struct pmb887x_flash_cfg_part_t ${var_name}_parts[] = {\n";
+	print "static const struct pmb887x_flash_cfg_part_t ${var_name}_parts[] = {\n";
 	print "\t".join(",\n\t", @partitions)."\n";
 	print "};\n";
 	
 	# CFI dump
-	print "const uint8_t ${var_name}_cfi[] = {\n";
+	print "static const uint8_t ${var_name}_cfi[] = {\n";
 	print dumpHex("\t", $info->{cfi_bin});
 	print "};\n";
 	
 	# PRI dump
-	print "const uint8_t ${var_name}_pri[] = {\n";
+	print "static const uint8_t ${var_name}_pri[] = {\n";
 	print dumpHex("\t", $info->{pri_bin});
 	print "};\n";
 	
@@ -117,7 +117,7 @@ for my $dump_file (@files) {
 	
 	push @flashes, "\t{\n".printTable(\@flash_table, "\t\t")."\n\t},";
 }
-print "const pmb887x_flash_cfg_t flashes[] = {\n";
+print "static const pmb887x_flash_cfg_t flashes[] = {\n";
 print join("\n", @flashes)."\n";
 print "};\n";
 

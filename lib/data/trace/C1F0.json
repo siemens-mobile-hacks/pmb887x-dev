@@ -89,5 +89,11 @@
 		"addr":		0xa02723e0,
 		"args":		["uint8", "uint8", "uint8*", "uint8", "uint8"],
 		"skip":		false
+	},
+	{
+		"name":		"some_flash_error",
+		"addr":		0xa0267544,
+		"args":		["uint32", "uint32", "uint32", "uint32"],
+		"skip":		false
 	}
 ]
