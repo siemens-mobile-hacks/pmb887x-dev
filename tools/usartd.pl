@@ -69,10 +69,7 @@ if (exists $ENV{TCP} && $ENV{TCP}) {
 
 while (my $client = $server->accept()) {
 	$client->blocking(0);
-<<<<<<< HEAD
 	$client->autoflush(1);
-=======
->>>>>>> 0662253 (misc)
 	processClient($client);
 	print "-> disconnected\n";
 }
@@ -150,11 +147,7 @@ sub readFromSock {
 		if (@fp) {
 			my $rx;
 			
-<<<<<<< HEAD
 			my $ret = sysread($fp[0], $rx, $size - $readed);
-=======
-			my $ret = sysread $fp[0], $rx, $size - $readed;
->>>>>>> 0662253 (misc)
 			return undef if !$ret;
 			
 			$readed += $ret;

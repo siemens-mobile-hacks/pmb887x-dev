@@ -34,7 +34,6 @@ for my $dump_file (@files) {
 	my @partitions;
 	my $flash_offset = 0;
 	
-<<<<<<< HEAD
 	if (@{$info->{pri}->{regions}}) {
 		for my $region (@{$info->{pri}->{regions}}) {
 			my @erase_regions;
@@ -76,9 +75,6 @@ for my $dump_file (@files) {
 		die "Unknown flash geometry!";
 	}
 	
-	# Hardware partitions
-	print "static const struct pmb887x_flash_cfg_part_t ${var_name}_parts[] = {\n";
-=======
 	for my $region (@{$info->{pri}->{regions}}) {
 		my @erase_regions;
 		
@@ -102,26 +98,17 @@ for my $dump_file (@files) {
 	}
 	
 	# Hardware partitions
-	print "const struct pmb887x_flash_cfg_part_t ${var_name}_parts[] = {\n";
->>>>>>> 0662253 (misc)
+	print "static const struct pmb887x_flash_cfg_part_t ${var_name}_parts[] = {\n";
 	print "\t".join(",\n\t", @partitions)."\n";
 	print "};\n";
 	
 	# CFI dump
-<<<<<<< HEAD
 	print "static const uint8_t ${var_name}_cfi[] = {\n";
-=======
-	print "const uint8_t ${var_name}_cfi[] = {\n";
->>>>>>> 0662253 (misc)
 	print dumpHex("\t", $info->{cfi_bin});
 	print "};\n";
 	
 	# PRI dump
-<<<<<<< HEAD
 	print "static const uint8_t ${var_name}_pri[] = {\n";
-=======
-	print "const uint8_t ${var_name}_pri[] = {\n";
->>>>>>> 0662253 (misc)
 	print dumpHex("\t", $info->{pri_bin});
 	print "};\n";
 	
@@ -152,11 +139,8 @@ for my $dump_file (@files) {
 	
 	push @flashes, "\t{\n".printTable(\@flash_table, "\t\t")."\n\t},";
 }
-<<<<<<< HEAD
+
 print "static const pmb887x_flash_cfg_t flashes[] = {\n";
-=======
-print "const pmb887x_flash_cfg_t flashes[] = {\n";
->>>>>>> 0662253 (misc)
 print join("\n", @flashes)."\n";
 print "};\n";
 
