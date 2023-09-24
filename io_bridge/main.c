@@ -14,7 +14,7 @@ int main(void) {
 	wdt_init();
 	
 	i2c_init();
-	i2c_smbus_write_byte(0x31, 0xE, 0b11);
+	//i2c_smbus_write_byte(0x31, 0xE, 0b11);
 	
 	//usart_set_speed(USART0, UART_SPEED_115200);
 	usart_set_speed(USART0, UART_SPEED_1600000);
