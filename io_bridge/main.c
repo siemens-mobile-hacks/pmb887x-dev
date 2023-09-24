@@ -110,7 +110,12 @@ static int command_handler(int irq) {
 			
 			// Low freq i2c clock
 			if (addr == (uint32_t) &I2C_FDIVCFG) {
-				value = 0x00010090;
+				//value = 0x00010090;
+			}
+			
+			// Low freq i2c clock
+			if (addr == (uint32_t) &I2C_CLC) {
+				value = 0xFF << MOD_CLC_RMC_SHIFT;
 			}
 			
 			if (addr == (uint32_t) &I2C_TXD) {

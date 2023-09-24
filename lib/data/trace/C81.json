@@ -1,0 +1,33 @@
+[
+	{
+		"name":		"debug_pickoff",
+		"addr":		0xA01CE3F8,
+		"args":		["uint32", "exit", "uint32"],
+		"stop":		true
+	},
+	{
+		"name":		"debug_error",
+		"addr":		0xA01CE274,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"flash_error",
+		"addr":		0xA026680C,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"disp_error",
+		"addr":		0xa020a168,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"disp_type",
+		"addr":		0xa8dc9cbe,
+		"watch":	"w"
+	},
+	{
+		"name":		"flash_error_code",
+		"addr":		0xa01e73d4,
+		"args":		["uint32", "uint32"]
+	},
+]

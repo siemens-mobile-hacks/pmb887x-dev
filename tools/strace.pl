@@ -87,6 +87,8 @@ while (1) {
 				printf("  %08X: %08X\n", $dump_addr, $val);
 			}
 			
+			exit if $func->{stop};
+			
 			# step
 			last if !$gdb->continue('s');
 		}
