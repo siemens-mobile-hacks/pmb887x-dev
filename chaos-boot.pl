@@ -4,8 +4,8 @@ use Device::SerialPort;
 use Getopt::Long;
 use File::Basename qw|dirname|;
 use Time::HiRes qw|usleep time|;
-use Linux::Termios2;
 use POSIX qw( :termios_h );
+use if ("$^O" ne "darwin"), "Linux::Termios2";
 use Data::Dumper;
 no utf8;
 
@@ -889,11 +889,14 @@ sub write_boot {
 
 sub set_port_baudrate {
 	my ($port, $baudrate) = @_;
-	my $termios = Linux::Termios2->new;
-	$termios->getattr($port->FILENO);
-	$termios->setospeed($baudrate);
-	$termios->setispeed($baudrate);
-	$termios->setattr($port->FILENO, TCSANOW);
+	if ("$^O" =~ /linux/i) {
+		require Linux::Termios2;
+		my $termios = Linux::Termios2->new;
+		$termios->getattr($port->FILENO);
+		$termios->setospeed($baudrate);
+		$termios->setispeed($baudrate);
+		$termios->setattr($port->FILENO, TCSANOW);
+	}
 	return -1;
 }
 

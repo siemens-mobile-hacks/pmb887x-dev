@@ -2620,7 +2620,7 @@
 
 
 // AMC [MOD_NUM=F024, MOD_REV=00, MOD_32BIT=C0]
-// Looks like AMC (Analog Measurement Controller? ADC?) module, but not sure.
+// Analog Measurment Controller or ADC. Datasheet not found.
 #define	AMC_BASE				0xF4C00000
 /* Clock Control Register */
 #define	AMC_CLC					MMIO32(AMC_BASE + 0x00)
@@ -2629,20 +2629,59 @@
 #define	AMC_ID					MMIO32(AMC_BASE + 0x08)
 
 #define	AMC_CON0				MMIO32(AMC_BASE + 0x14)
-#define	AMC_CON0_CH				GENMASK(31, 28)
-#define	AMC_CON0_CH_SHIFT		28
 
 #define	AMC_CON1				MMIO32(AMC_BASE + 0x18)
+#define	AMC_CON1_CH				GENMASK(5, 0)
+#define	AMC_CON1_CH_SHIFT		0
+#define	AMC_CON1_CH_OFF			0x0
+#define	AMC_CON1_CH_M0			0x1
+#define	AMC_CON1_CH_M1			0x2
+#define	AMC_CON1_CH_M2			0x3
+#define	AMC_CON1_CH_M3			0x4
+#define	AMC_CON1_CH_M4			0x5
+#define	AMC_CON1_CH_M5			0x6
+#define	AMC_CON1_CH_M6			0x7
+#define	AMC_CON1_CH_M7			0x8
+#define	AMC_CON1_CH_M8			0x9
+#define	AMC_CON1_CH_M9			0xA
+#define	AMC_CON1_CH_M10			0xB
+#define	AMC_CON1_PA_INV			BIT(6)
+#define	AMC_CON1_PA_FAST		BIT(11)
+#define	AMC_CON1_MODE			GENMASK(14, 12)
+#define	AMC_CON1_MODE_SHIFT		12
+#define	AMC_CON1_MODE_V			0x0
+#define	AMC_CON1_MODE_I_30		0x1000
+#define	AMC_CON1_MODE_I_60		0x2000
+#define	AMC_CON1_MODE_I_90		0x3000
+#define	AMC_CON1_MODE_I_120		0x4000
+#define	AMC_CON1_MODE_I_150		0x5000
+#define	AMC_CON1_MODE_I_180		0x6000
+#define	AMC_CON1_MODE_I_210		0x7000
+#define	AMC_CON1_FREQ			GENMASK(18, 16)
+#define	AMC_CON1_FREQ_SHIFT		16
+#define	AMC_CON1_COUNT			GENMASK(21, 19)
+#define	AMC_CON1_COUNT_SHIFT	19
+#define	AMC_CON1_REF_CH			GENMASK(24, 22)
+#define	AMC_CON1_REF_CH_SHIFT	22
+#define	AMC_CON1_REF_CH_OFF		0x0
+#define	AMC_CON1_SINGLE			BIT(27)
+#define	AMC_CON1_TRIG			BIT(28)
+#define	AMC_CON1_ON				BIT(29)
+#define	AMC_CON1_START			BIT(31)
 
 #define	AMC_STAT				MMIO32(AMC_BASE + 0x1C)
-#define	AMC_STAT_AVAIL			GENMASK(2, 0)
-#define	AMC_STAT_AVAIL_SHIFT	0
+#define	AMC_STAT_INDEX			GENMASK(2, 0)
+#define	AMC_STAT_INDEX_SHIFT	0
 #define	AMC_STAT_BUSY			BIT(30)
 #define	AMC_STAT_READY			BIT(31)
 
 #define	AMC_FIFO(n)				MMIO32(AMC_BASE + 0x20 + ((n) * 0x4))
 
-#define	AMC_CON2				MMIO32(AMC_BASE + 0x40)
+#define	AMC_PLLCON				MMIO32(AMC_BASE + 0x40)
+#define	AMC_PLLCON_K			GENMASK(7, 0)
+#define	AMC_PLLCON_K_SHIFT		0
+#define	AMC_PLLCON_L			GENMASK(15, 8)
+#define	AMC_PLLCON_L_SHIFT		8
 
 /* Service Routing Control Register */
 #define	AMC_SRC(n)				MMIO32(AMC_BASE + 0xF0 + ((n) * 0x4))

@@ -6,7 +6,6 @@ use Device::SerialPort;
 use Getopt::Long;
 use File::Basename qw|dirname|;
 use Time::HiRes qw|usleep time|;
-use Linux::Termios2;
 use POSIX qw( :termios_h );
 use Data::Dumper;
 no utf8;
@@ -358,12 +357,16 @@ sub sendAt($$$) {
 }
 
 sub setSpeed($$) {
-	my ($self, $baudrate) = @_;
-	my $termios = Linux::Termios2->new;
-	$termios->getattr($self->{port}->FILENO);
-	$termios->setospeed($baudrate);
-	$termios->setispeed($baudrate);
-	$termios->setattr($self->{port}->FILENO, TCSANOW);
+	my ($port, $baudrate) = @_;
+	if ("$^O" =~ /linux/i) {
+		require Linux::Termios2;
+		my $termios = Linux::Termios2->new;
+		$termios->getattr($port->FILENO);
+		$termios->setospeed($baudrate);
+		$termios->setispeed($baudrate);
+		$termios->setattr($port->FILENO, TCSANOW);
+	}
+	return -1;
 }
 
 sub loadConfig {

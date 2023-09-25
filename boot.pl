@@ -4,7 +4,6 @@ use Device::SerialPort;
 use File::Basename;
 use lib dirname(__FILE__).'/tools/lib';
 use Time::HiRes qw|usleep|;
-use if ("$^O" ne "darwin"), "Linux::Termios2";
 use Time::HiRes;
 use POSIX qw( :termios_h );
 no utf8;
@@ -213,11 +212,14 @@ while (1) {
 
 sub set_port_baudrate {
 	my ($port, $baudrate) = @_;
-	my $termios = Linux::Termios2->new;
-	$termios->getattr($port->FILENO);
-	$termios->setospeed($baudrate);
-	$termios->setispeed($baudrate);
-	$termios->setattr($port->FILENO, TCSANOW);
+	if ("$^O" =~ /linux/i) {
+		require Linux::Termios2;
+		my $termios = Linux::Termios2->new;
+		$termios->getattr($port->FILENO);
+		$termios->setospeed($baudrate);
+		$termios->setispeed($baudrate);
+		$termios->setattr($port->FILENO, TCSANOW);
+	}
 	return -1;
 }
 

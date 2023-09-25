@@ -26,6 +26,8 @@ void __attribute__ ((weak)) reset_handler(void) {
 		*dest = *src;
 	
 	// Setup handlers
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 	funcp_t *cpu_vector = (funcp_t *) 0x20;
 	*cpu_vector++ = reset_handler;
 	*cpu_vector++ = undef_handler;
@@ -35,6 +37,7 @@ void __attribute__ ((weak)) reset_handler(void) {
 	*cpu_vector++ = reserved_handler;
 	*cpu_vector++ = irq_handler;
 	*cpu_vector++ = fiq_handler;
+#pragma GCC diagnostic pop 
 	
 	// Constructors
 	for (fp = &__preinit_array_start; fp < &__preinit_array_end; fp++)
