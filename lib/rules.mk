@@ -97,7 +97,7 @@ TGT_LDFLAGS += -Wl,--print-gc-sections
 endif
 
 #LDLIBS += -Wl,--start-group -lc_nano -lgcc -lnosys -Wl,--end-group
-LDLIBS += -Wl,--start-group -nostdlib -lgcc -lnosys -Wl,--end-group
+LDLIBS += -Wl,--start-group -nostdlib -lgcc -Wl,--end-group
 
 # Burn in legacy hell fortran modula pascal yacc idontevenwat
 .SUFFIXES:
