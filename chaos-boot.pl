@@ -11,6 +11,8 @@ no utf8;
 
 $| = 1;
 
+my $use_chaos = 0;
+
 main();
 
 sub main {
@@ -47,7 +49,8 @@ sub main {
 		"linux-dtb=s"	=> \$exec_linux_dtb, 
 		"exec=s"		=> \$exec_file, 
 		"exec-addr=s"	=> \$exec_addr, 
-		"dump-otp"		=> \$read_OTP
+		"dump-otp"		=> \$read_OTP,
+		"use-chaos"		=> \$use_chaos
 	});
 	
 	$ign = 2 if ($ign2);
@@ -194,16 +197,21 @@ sub main {
 			if ($c == 0xA5) {
 				usleep(200 * 1000);
 				
-				# Странная проверка в PV Буте
-				$port->write("\x55");
-				$c = readb($port);
-				
-				if ($c != 0xAA) {
-					printf("Boot init error (answer=%02X)\n", $c);
-					exit(1);
+				if (!$use_chaos) {
+					# Странная проверка в PV Буте
+					$port->write("\x55");
+					$c = readb($port);
+					
+					if ($c != 0xAA) {
+						printf("Boot init error (answer=%02X)\n", $c);
+						exit(1);
+					}
 				}
 				
 				chaos_ping($port) || exit(1);
+				chaos_keep_alive($port);
+				chaos_keep_alive($port);
+				chaos_keep_alive($port);
 				chaos_keep_alive($port);
 				if ($speed != $boot_speed) {
 					chaos_set_speed($port, $speed) or exit(1);
@@ -460,6 +468,11 @@ sub chaos_read_info {
 		return 0;
 	}
 	
+	if ($use_chaos) {
+		print "Information dump: ".bin2hex($raw)." (chaos not supported!)\n";
+		exit;
+	}
+	
 #	BYTE strModelName[16];					// - model
 #	BYTE strManufacturerName[16];			// - manufacturer
 #	BYTE strIMEI[16];						//- IMEI (in ASCII)
@@ -535,13 +548,17 @@ sub chaos_set_speed {
 		921600 => 0x05, 
 		1228800 => 0x06, 
 		1600000 => 0x07, 
-		1500000 => 0x08
+		1500000 => 0x08,
+		1625000 => 0x07,
+		3250000	=> 0x09,
 	);
 	
 	if (!exists($CHAOS_SPEEDS{$speed})) {
 		warn("Invalid speed $speed! Allowed: ".split(", ", keys(%CHAOS_SPEEDS)));
 		return 0;
 	}
+	
+	print "sending: ".$CHAOS_SPEEDS{$speed}."\n";
 	
 	my $old_speed = $port->baudrate;
 	$port->write("H".chr($CHAOS_SPEEDS{$speed}));
@@ -550,11 +567,15 @@ sub chaos_set_speed {
 	if ($c == 0x68) {
 		++$step;
 		set_port_baudrate($port, $speed);
-		$port->write("A");
-		$c = readb($port);
-		if ($c == 0x48) {
-			# Успешно установили скорость
-			return 1;
+		for (my $i = 0; $i < 1; $i++) {
+			$port->write("A");
+			$c = readb($port);
+			if ($c == 0x48) {
+				# Успешно установили скорость
+				return 1;
+			} else {
+				print "err: $c\n";
+			}
 		}
 	}
 	set_port_baudrate($port, $old_speed);
@@ -814,6 +835,9 @@ sub mk_chaos_boot {
 	# Модифицированный бут chaos/PV (из boot)
 	
 	my $alt_boot = dirname(__FILE__)."/boot/pv_boot_x85.hex";
+	
+	$alt_boot = dirname(__FILE__)."/boot/chaos_x85.hex" if $use_chaos;
+	
 	my $data = "";
 	if (-f $alt_boot) {
 		print "Using boot from $alt_boot\n";
