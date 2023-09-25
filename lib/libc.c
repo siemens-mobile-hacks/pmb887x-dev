@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
-#include <string.h>
+#include <stddef.h>
 
 void *memcpy(void *dest, const void *src, size_t len) {
 	char *d = dest;
