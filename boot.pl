@@ -4,7 +4,7 @@ use Device::SerialPort;
 use File::Basename;
 use lib dirname(__FILE__).'/tools/lib';
 use Time::HiRes qw|usleep|;
-use Linux::Termios2;
+use if ("$^O" ne "darwin"), "Linux::Termios2";
 use Time::HiRes;
 use POSIX qw( :termios_h );
 no utf8;

@@ -2,3 +2,5 @@
 *.elf
 *.bin
 */bin/*
+boot/*.hex
+*.d
