@@ -4,6 +4,10 @@
 #include "board_siemens_cx75.h"
 #endif
 
+#ifdef BOARD_SIEMENS_SL75
+#include "board_siemens_sl75.h"
+#endif
+
 #ifdef BOARD_SIEMENS_C81
 #include "board_siemens_c81.h"
 #endif

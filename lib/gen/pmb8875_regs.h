@@ -168,8 +168,8 @@
 #define	NVIC_I2C_DATA_IRQ		66
 #define	NVIC_I2C_PROTO_IRQ		67
 #define	NVIC_I2C_ERR_IRQ		68
-#define	NVIC_AMC_INT0_IRQ		70
-#define	NVIC_AMC_INT1_IRQ		71
+#define	NVIC_ADC_INT0_IRQ		70
+#define	NVIC_ADC_INT1_IRQ		71
 #define	NVIC_CAPCOM0_T0_IRQ		72
 #define	NVIC_CAPCOM0_T1_IRQ		73
 #define	NVIC_CAPCOM0_CC0_IRQ	74
@@ -2619,72 +2619,77 @@
 #define	STM_CAP		MMIO32(STM_BASE + 0x2C)
 
 
-// AMC [MOD_NUM=F024, MOD_REV=00, MOD_32BIT=C0]
-// Analog Measurment Controller or ADC. Datasheet not found.
-#define	AMC_BASE				0xF4C00000
+// ADC [MOD_NUM=F024, MOD_REV=00, MOD_32BIT=C0]
+// ADC. Datasheet not found.
+#define	ADC_BASE				0xF4C00000
 /* Clock Control Register */
-#define	AMC_CLC					MMIO32(AMC_BASE + 0x00)
+#define	ADC_CLC					MMIO32(ADC_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	AMC_ID					MMIO32(AMC_BASE + 0x08)
+#define	ADC_ID					MMIO32(ADC_BASE + 0x08)
 
-#define	AMC_CON0				MMIO32(AMC_BASE + 0x14)
+#define	ADC_CON0				MMIO32(ADC_BASE + 0x14)
 
-#define	AMC_CON1				MMIO32(AMC_BASE + 0x18)
-#define	AMC_CON1_CH				GENMASK(5, 0)
-#define	AMC_CON1_CH_SHIFT		0
-#define	AMC_CON1_CH_OFF			0x0
-#define	AMC_CON1_CH_M0			0x1
-#define	AMC_CON1_CH_M1			0x2
-#define	AMC_CON1_CH_M2			0x3
-#define	AMC_CON1_CH_M3			0x4
-#define	AMC_CON1_CH_M4			0x5
-#define	AMC_CON1_CH_M5			0x6
-#define	AMC_CON1_CH_M6			0x7
-#define	AMC_CON1_CH_M7			0x8
-#define	AMC_CON1_CH_M8			0x9
-#define	AMC_CON1_CH_M9			0xA
-#define	AMC_CON1_CH_M10			0xB
-#define	AMC_CON1_PA_INV			BIT(6)
-#define	AMC_CON1_PA_FAST		BIT(11)
-#define	AMC_CON1_MODE			GENMASK(14, 12)
-#define	AMC_CON1_MODE_SHIFT		12
-#define	AMC_CON1_MODE_V			0x0
-#define	AMC_CON1_MODE_I_30		0x1000
-#define	AMC_CON1_MODE_I_60		0x2000
-#define	AMC_CON1_MODE_I_90		0x3000
-#define	AMC_CON1_MODE_I_120		0x4000
-#define	AMC_CON1_MODE_I_150		0x5000
-#define	AMC_CON1_MODE_I_180		0x6000
-#define	AMC_CON1_MODE_I_210		0x7000
-#define	AMC_CON1_FREQ			GENMASK(18, 16)
-#define	AMC_CON1_FREQ_SHIFT		16
-#define	AMC_CON1_COUNT			GENMASK(21, 19)
-#define	AMC_CON1_COUNT_SHIFT	19
-#define	AMC_CON1_REF_CH			GENMASK(24, 22)
-#define	AMC_CON1_REF_CH_SHIFT	22
-#define	AMC_CON1_REF_CH_OFF		0x0
-#define	AMC_CON1_SINGLE			BIT(27)
-#define	AMC_CON1_TRIG			BIT(28)
-#define	AMC_CON1_ON				BIT(29)
-#define	AMC_CON1_START			BIT(31)
+#define	ADC_CON1				MMIO32(ADC_BASE + 0x18)
+#define	ADC_CON1_CH				GENMASK(5, 0)							 // Gains: M0=0.5, M1=0.44, M2=0.5, M9=0.5, M0_M9=1
+#define	ADC_CON1_CH_SHIFT		0
+#define	ADC_CON1_CH_OFF			0x0
+#define	ADC_CON1_CH_M0_P		0x1
+#define	ADC_CON1_CH_M1_P		0x2
+#define	ADC_CON1_CH_M2_P		0x3
+#define	ADC_CON1_CH_M7_N		0x8
+#define	ADC_CON1_CH_M8_N		0x9
+#define	ADC_CON1_CH_M9_N		0xA
+#define	ADC_CON1_CH_M10_N		0xB
+#define	ADC_CON1_CH_M0_M9_N		0x12
+#define	ADC_CON1_PREAMP_INV		BIT(6)
+#define	ADC_CON1_PREAMP_FAST	BIT(11)
+#define	ADC_CON1_MODE			GENMASK(14, 12)
+#define	ADC_CON1_MODE_SHIFT		12
+#define	ADC_CON1_MODE_V			0x0
+#define	ADC_CON1_MODE_I_30		0x1000
+#define	ADC_CON1_MODE_I_60		0x2000
+#define	ADC_CON1_MODE_I_90		0x3000
+#define	ADC_CON1_MODE_I_120		0x4000
+#define	ADC_CON1_MODE_I_150		0x5000
+#define	ADC_CON1_MODE_I_180		0x6000
+#define	ADC_CON1_MODE_I_210		0x7000
+#define	ADC_CON1_FREQ			GENMASK(18, 16)
+#define	ADC_CON1_FREQ_SHIFT		16
+#define	ADC_CON1_COUNT			GENMASK(21, 19)
+#define	ADC_CON1_COUNT_SHIFT	19
+#define	ADC_CON1_REF_CH			GENMASK(24, 22)
+#define	ADC_CON1_REF_CH_SHIFT	22
+#define	ADC_CON1_REF_CH_OFF		0x0
+#define	ADC_CON1_REF_CH_M0_P	0x400000
+#define	ADC_CON1_REF_CH_M1_P	0x800000
+#define	ADC_CON1_REF_CH_M2_P	0xC00000
+#define	ADC_CON1_REF_CH_M7_N	0x2000000
+#define	ADC_CON1_REF_CH_M8_N	0x2400000
+#define	ADC_CON1_REF_CH_M9_N	0x2800000
+#define	ADC_CON1_REF_CH_M10_N	0x2C00000
+#define	ADC_CON1_REF_CH_M0_M9_N	0x4800000
+#define	ADC_CON1_SINGLE			BIT(27)
+#define	ADC_CON1_TRIG			BIT(28)
+#define	ADC_CON1_ON				BIT(29)
+#define	ADC_CON1_START			BIT(31)
 
-#define	AMC_STAT				MMIO32(AMC_BASE + 0x1C)
-#define	AMC_STAT_INDEX			GENMASK(2, 0)
-#define	AMC_STAT_INDEX_SHIFT	0
-#define	AMC_STAT_BUSY			BIT(30)
-#define	AMC_STAT_READY			BIT(31)
+#define	ADC_STAT				MMIO32(ADC_BASE + 0x1C)
+#define	ADC_STAT_INDEX			GENMASK(2, 0)
+#define	ADC_STAT_INDEX_SHIFT	0
+#define	ADC_STAT_BUSY			BIT(30)
+#define	ADC_STAT_READY			BIT(31)
 
-#define	AMC_FIFO(n)				MMIO32(AMC_BASE + 0x20 + ((n) * 0x4))
+#define	ADC_FIFO(n)				MMIO32(ADC_BASE + 0x20 + ((n) * 0x4))
 
-#define	AMC_PLLCON				MMIO32(AMC_BASE + 0x40)
-#define	AMC_PLLCON_K			GENMASK(7, 0)
-#define	AMC_PLLCON_K_SHIFT		0
-#define	AMC_PLLCON_L			GENMASK(15, 8)
-#define	AMC_PLLCON_L_SHIFT		8
+#define	ADC_PLLCON				MMIO32(ADC_BASE + 0x40)
+#define	ADC_PLLCON_K			GENMASK(7, 0)
+#define	ADC_PLLCON_K_SHIFT		0
+#define	ADC_PLLCON_L			GENMASK(15, 8)
+#define	ADC_PLLCON_L_SHIFT		8
 
 /* Service Routing Control Register */
-#define	AMC_SRC(n)				MMIO32(AMC_BASE + 0xF0 + ((n) * 0x4))
+#define	ADC_SRC(n)				MMIO32(ADC_BASE + 0xF0 + ((n) * 0x4))
 
 
 // KEYPAD [MOD_NUM=F046, MOD_REV=00, MOD_32BIT=C0]
