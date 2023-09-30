@@ -9,6 +9,8 @@ use if $^O eq "MSWin32", "Win::SerialPort";
 use POSIX;
 use Data::Dumper;
 use Time::HiRes;
+use IO::Socket;
+use IO::Socket::UNIX;
 
 sub new {
 	my ($class, $device) = @_;
@@ -18,13 +20,60 @@ sub new {
 	};
 	bless $self, $class;
 	
-	if ($^O eq "MSWin32") {
+	if ($device =~ /^unix:(.*?)$/i) {
+		$self->_initUnixServer($1);
+	} elsif ($device =~ /^tcp:(.*?):(\d+)$/i) {
+		$self->_iniTcpServer($1, $2);
+	} elsif ($^O eq "MSWin32") {
 		$self->_initSerialWindows($device);
 	} else {
 		$self->_initSerialUnix($device);
 	}
 	
 	return $self;
+}
+
+sub _iniTcpServer {
+	my ($self, $host, $port) = @_;
+	
+	$self->{is_serial} = 0;
+	
+	my $server = IO::Socket::INET->new(
+		LocalHost	=> $host,
+		LocalPort	=> $port,
+		Proto		=> 'tcp',
+		Listen		=> 5,
+		Reuse		=> 1
+	) or die("socket: $!");
+	
+	$server->blocking(1);
+	
+	print "Waiting client to tcp socket ($host:$port)...\n";
+	$self->{handle} = $server->accept();
+	$self->{handle}->blocking(0);
+	$self->{select} = IO::Select->new($self->{handle});
+}
+
+sub _initUnixServer {
+	my ($self, $device) = @_;
+	
+	unlink $device if -e $device;
+	
+	$self->{is_serial} = 0;
+	
+	my $server = IO::Socket::UNIX->new(
+		Type		=> SOCK_STREAM(),
+		Local		=> $device,
+		Listen		=> 1,
+		Blocking	=> 1
+	) or die("socket: $!");
+	
+	$server->blocking(1);
+	
+	print "Waiting client to unix socket ($device)...\n";
+	$self->{handle} = $server->accept();
+	$self->{handle}->blocking(0);
+	$self->{select} = IO::Select->new($self->{handle});
 }
 
 sub _initSerialWindows {
@@ -202,13 +251,13 @@ sub write {
 
 sub dtr {
 	my ($self, $flag) = @_;
-	$self->{port}->dtr_active($flag);
-	$self->{port}->rts_active(0);
+	$self->{port}->dtr_active($flag) if $self->{is_serial};
+	$self->{port}->rts_active(0) if $self->{is_serial};
 }
 
 sub rts {
 	my ($self, $flag) = @_;
-	$self->{port}->rts_active($flag);
+	$self->{port}->rts_active($flag) if $self->{is_serial};
 }
 
 sub sendAt {

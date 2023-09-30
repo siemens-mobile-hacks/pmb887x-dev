@@ -51,7 +51,7 @@ sub loadBootCode {
 	
 	$serial->write(genPayload($code));
 	
-	my $response = $serial->getChar(300);
+	my $response = $serial->getChar(1000);
 	
 	return (1, "Success.") if $response == 0xc1 || $response == 0xB1;
 	return (0, "Phone denied bootloader.") if $response == 0x1C || $response == 0x1B;
