@@ -19,26 +19,49 @@ sub new {
 	bless $self, $class;
 	
 	if ($^O eq "MSWin32") {
-		$self->{is_serial} = 1;
-		$self->{port} = Win::SerialPort->new($device);
-		die "open($device): $!" if !$self->{port};
+		$self->_initSerialWindows($device);
 	} else {
-		if (-S $device || -p $device) {
-			$self->{is_serial} = 0;
-			print "Is Not Serial!\n";
-		} else {
-			$self->{is_serial} = 1;
-			$self->{port} = Device::SerialPort->new($device);
-			die "open($device): $!" if !$self->{port};
-		}
-		
-		$self->{handle} = new IO::Handle->new_from_fd($self->{port}->FILENO, "a");
-		die "IO::Handle error: $!" if !$self->{handle};
-		$self->{handle}->blocking(0);
-		$self->{select} = IO::Select->new($self->{handle});
+		$self->_initSerialUnix($device);
 	}
 	
 	return $self;
+}
+
+sub _initSerialWindows {
+	my ($self, $device) = @_;
+	
+	$self->{is_serial} = 1;
+	$self->{port} = Win::SerialPort->new($device, 1);
+	die "open($device): $!" if !$self->{port};
+	
+	# Initial port setup
+	$self->{port}->baudrate(115200);
+	$self->{port}->databits(8);
+	$self->{port}->parity("none");
+	$self->{port}->stopbits(1);
+	$self->{port}->datatype('raw');
+	$self->{port}->binary('Y');
+	$self->{port}->write_settings or die("write_settings: $!");
+}
+
+sub _initSerialUnix {
+	my ($self, $device) = @_;
+	
+	$self->{is_serial} = 1;
+	$self->{port} = Device::SerialPort->new($device);
+	die "open($device): $!" if !$self->{port};
+	
+	# Initial port setup
+	$self->{port}->baudrate(115200);
+	$self->{port}->databits(8);
+	$self->{port}->parity("none");
+	$self->{port}->stopbits(1);
+	$self->{port}->write_settings or die("write_settings: $!");
+	
+	$self->{handle} = new IO::Handle->new_from_fd($self->{port}->FILENO, "a");
+	die "IO::Handle error: $!" if !$self->{handle};
+	$self->{handle}->blocking(0);
+	$self->{select} = IO::Select->new($self->{handle});
 }
 
 sub setSpeed {
@@ -46,11 +69,6 @@ sub setSpeed {
 	if ($self->{is_serial}) {
 		if (ref($self->{port}) eq "Win::SerialPort") {
 			$self->{port}->baudrate($speed);
-			$self->{port}->databits(8);
-			$self->{port}->parity("none");
-			$self->{port}->stopbits(1);
-			$self->{port}->datatype('raw');
-			$self->{port}->binary('Y');
 			$self->{port}->write_settings or die("write_settings: $!");
 		} elsif ("$^O" =~ /linux/i) {
 			require Linux::Termios2;
@@ -68,30 +86,29 @@ sub setSpeed {
 
 sub getChar {
 	my ($self, $timeout) = @_;
-	my $data = $self->{port}->readChunk($timeout);
+	my $data = $self->readChunk(1, $timeout);
 	return length($data) ? ord($data) : -1;
 }
 
 sub readByte {
 	my ($self, $timeout) = @_;
-	return $self->{port}->readChunk($timeout);
+	return $self->readChunk(1, $timeout);
 }
 
 sub readChunk {
 	my ($self, $size, $timeout) = @_;
 	
+	$timeout ||= 10000;
+	
 	if (ref($self->{port}) eq "Win::SerialPort") {
+		my $start = Time::HiRes::time * 1000;
+		
 		$self->{port}->read_interval($timeout);
 		$self->{port}->read_char_time($timeout);
 		$self->{port}->read_const_time($timeout);
 		
-		$self->{port}->read_bg(1);
-		while (1) {
-			my ($done, $cnt, $data) = $self->{port}->read_done(1);
-			return $data // "" if $done;
-		}
-		
-		return "";
+		my ($count, $data) = $self->{port}->read(1);
+		return $count ? $data : "";
 	} else {
 		$timeout = ($timeout || 0) / 1000;
 		
@@ -112,6 +129,8 @@ sub readChunk {
 
 sub read {
 	my ($self, $size, $timeout) = @_;
+	
+	$timeout ||= 10000;
 	
 	if (ref($self->{port}) eq "Win::SerialPort") {
 		$self->{port}->read_interval($timeout);
@@ -143,8 +162,10 @@ sub read {
 sub write {
 	my ($self, $data, $timeout) = @_;
 	
+	$timeout ||= 10000;
+	
 	if (ref($self->{port}) eq "Win::SerialPort") {
-		$self->{port}->write_char_time(length($data) / $timeout);
+		$self->{port}->write_char_time($timeout);
 		$self->{port}->write_const_time($timeout);
 		return $self->{port}->write($data);
 	} else {
@@ -179,9 +200,21 @@ sub write {
 	}
 }
 
+sub dtr {
+	my ($self, $flag) = @_;
+	$self->{port}->dtr_active($flag);
+	$self->{port}->rts_active(0);
+}
+
+sub rts {
+	my ($self, $flag) = @_;
+	$self->{port}->rts_active($flag);
+}
+
 sub sendAt {
 	my ($self, $cmd, $response_type, $timeout) = @_;
 	
+	$timeout //= 10000;
 	$timeout = ($timeout || 0) / 1000;
 	
 	my $start = Time::HiRes::time;
@@ -246,6 +279,8 @@ sub close {
 	my ($self) = @_;
 	$self->{port}->close if $self->{port};
 	$self->{handle}->close if $self->{handle};
+	undef $self->{port};
+	undef $self->{handle};
 }
 
 sub DESTROY {

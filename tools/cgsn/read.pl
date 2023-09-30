@@ -11,6 +11,8 @@ use Sie::Utils;
 use Sie::BoardMetadata;
 use Getopt::Long;
 
+$| = 1;
+
 my %options = (
 	board		=> "siemens-el71",
 	device		=> "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0",
