@@ -8,23 +8,24 @@ use File::Slurp qw(read_file);
 use List::Util qw(min max);
 use POSIX qw(ceil);
 
-our @EXPORT = qw|getDataDir parseAnyInt getSortedKeys printTable bin2hex hex2bin parseIniFile|;
+our @EXPORT = qw|getDataDir parseAnyInt getSortedKeys printTable bin2hex hex2bin parseIniFile hexdump|;
 
-sub bin2hex {
-	my ($bin) = @_;
-	$bin =~ s/([\W\w])/sprintf("%02X", ord($1))/ge;
-	return $bin;
+sub bin2hex($) {
+	my ($text) = @_;
+	$text =~ s/(.)/sprintf("%02X", ord($1))/ges;
+	return $text;
 }
 
-sub hex2bin {
-	my ($hex) = @_;
+sub hex2bin($) {
+	my ($text) = @_;
 	
-	$hex = join("", @$hex) if (ref($hex) eq "ARRAY");
+	$text = "0$text" if (length($text) % 2 != 0);
 	
-	$hex =~ s/\s+//gim;
-	$hex = "0$hex" if (length($hex) % 2 != 0);
-	$hex =~ s/([A-F0-9]{2})/chr(hex($1))/gie;
-	return $hex;
+	die "Input string must be hexadecimal string" if (!defined $text || $text !~ /^([a-f0-9]+)$/i);
+	
+	$text =~ s/(..)/chr(hex($1))/ges;
+	
+	return $text;
 }
 
 sub getDataDir {
@@ -166,6 +167,36 @@ sub parseIniFile {
 		}
 	}
 	return $hash;
+}
+
+sub hexdump {
+	my ($addr, $data) = @_;
+	
+	my $chunk = 16;
+	my $size = length($data);
+	
+	for (my $i = 0; $i < $size; $i += $chunk) {
+		my @hex;
+		my @raw;
+		
+		for (my $j = 0; $j < $chunk; $j++) {
+			last if $i + $j >= $size;
+			
+			my $c = substr($data, $i + $j, 1);
+			
+			push @hex, "" if $j == 7;
+			
+			push @hex, sprintf("%02X", ord($c));
+			
+			if ($c =~ /^[[:print:]]+$/is) {
+				push @raw, $c;
+			} else {
+				push @raw, ".";
+			}
+		}
+		
+		printf("%08X  %s  |%s|\n", $addr + $i, join(" ", @hex), join("", @raw));
+	}
 }
 
 sub getArgvOpts {
