@@ -3,7 +3,7 @@
 		"name":		"debug2",
 		"addr":		0xA08D5C56,
 		"args":		["cstr", "uint32", "uint32", "uint32", "fmt"],
-		"skip":		false
+		"skip":		true
 	}, {
 		"name":		"debug_pickoff",
 		"addr":		0xA04D319C,
@@ -22,35 +22,33 @@
 		"addr":		0xa05702a8,
 		"args":		["uint32", "uint32", "uint32", "uint32"],
 		"skip":		false
+	}, {
+		"name":		"acc",
+		"addr":		0xa8e26fcc,
+		"watch":	"w"
+	}, {
+		"name":		"aaaaa",
+		"addr":		0xa0544fd8,
+		"args":		[],
 	},
 	{
-		"name":		"NU_Create_Timer",
-		"addr":		0xA009E868,
-		"args":		["ptr","cstr","ptr","int32","int32","int32","uint8"]
+		"name":		"NU_Create_Mailbox",
+		"addr":		0xA009D684,
+		"args":		["ptr","cstr","uint8"]
 	},
 	{
-		"name":		"NU_Delete_Timer",
-		"addr":		0xA009E8DC,
+		"name":		"NU_Delete_Mailbox",
+		"addr":		0xA009D6B0,
 		"args":		["ptr"]
 	},
 	{
-		"name":		"NU_Create_Queue",
-		"addr":		0xA00A06C8,
-		"args":		["ptr","cstr","ptr","int32","uint8","int32","uint8"]
+		"name":		"NU_Send_To_Mailbox",
+		"addr":		0xA009D6D0,
+		"args":		["ptr","ptr","int32"]
 	},
 	{
-		"name":		"NU_Delete_Queue",
-		"addr":		0xA00A0768,
-		"args":		["ptr"]
-	},
-	{
-		"name":		"NU_Send_To_Queue",
-		"addr":		0xA00A0788,
-		"args":		["ptr","ptr","int32","int32"]
-	},
-	{
-		"name":		"NU_Receive_From_Queue",
-		"addr":		0xA00A082C,
-		"args":		["ptr","ptr","int32","ptr","int32"]
+		"name":		"NU_Receive_From_Mailbox",
+		"addr":		0xA009D734,
+		"args":		["ptr","ptr","int32"]
 	},
 ]
