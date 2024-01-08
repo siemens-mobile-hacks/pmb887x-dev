@@ -57,7 +57,7 @@ sub connect {
 
 sub handshake {
 	my ($self) = @_;
-	my $response = $self->{serial}->sendAt("ATQ0 V1 E0\r", undef, 100);
+	my $response = $self->{serial}->sendAt("ATQ0 V1 E0\r", undef, 50);
 	return 0 if $response->{status} ne "OK";
 	return 1;
 }

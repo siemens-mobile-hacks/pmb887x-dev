@@ -32,7 +32,7 @@ sub detectPhone {
 		$serial->write("AT");
 		
 		print ".";
-		my $c = $serial->getChar(20);
+		my $c = $serial->getChar(5);
 		
 		if ($c == 0xB0 || $c == 0xC0) {
 			my $type = ($c == 0xB0 ? "SGOLD" : "SGOLD2");

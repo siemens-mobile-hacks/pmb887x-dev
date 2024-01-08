@@ -3,6 +3,7 @@ package Sie::BinaryReader;
 use warnings;
 use strict;
 use IO::String;
+use Fcntl qw(SEEK_SET SEEK_CUR SEEK_END);
 
 sub new {
 	my ($class) = @_;
@@ -15,7 +16,7 @@ sub open {
 	$self->close() if $self->{handle};
 	open(my $fp, "<$file") or die("open(F, <$file): $!");
 	$self->{handle} = $fp;
-	seek($self->{handle}, 0, 2) or die("seek: $!");
+	seek($self->{handle}, 0, SEEK_END) or die("seek: $!");
 	$self->{size} = tell($self->{handle});
 	$self->seek(0);
 }
@@ -25,7 +26,7 @@ sub openString {
 	$self->close() if $self->{handle};
 	my $fp = IO::String->new($var);
 	$self->{handle} = $fp;
-	seek($self->{handle}, 0, 2) or die("seek: $!");
+	seek($self->{handle}, 0, SEEK_END) or die("seek: $!");
 	$self->{size} = tell($self->{handle});
 	$self->seek(0);
 }
@@ -79,6 +80,27 @@ sub readInt16BE {
 	return unpack("!n", $self->readBytes(2));
 }
 
+# uint24
+sub readUInt24 {
+	my ($self) = @_;
+	return unpack("V", "\0".$self->readBytes(3)) >> 8;
+}
+
+sub readUInt24BE {
+	my ($self) = @_;
+	return unpack("N", $self->readBytes(3)."\0") >> 8;
+}
+
+sub readInt24 {
+	my ($self) = @_;
+	return unpack("!V", "\0".$self->readBytes(3)) >> 8;
+}
+
+sub readInt24BE {
+	my ($self) = @_;
+	return unpack("!N", $self->readBytes(3)."\0") >> 8;
+}
+
 # uint32
 sub readUInt32 {
 	my ($self) = @_;
@@ -102,7 +124,8 @@ sub readInt32BE {
 
 sub seek {
 	my ($self, $offset) = @_;
-	seek($self->{handle}, $offset, 0) or die("seek: $!");
+	die "Unexpected EOF, offset=$offset" if $offset > $self->{size};
+	seek($self->{handle}, $offset, SEEK_SET) or die("seek: $!");
 	return $self;
 }
 
@@ -111,9 +134,20 @@ sub eof {
 	return eof($self->{handle});
 }
 
+sub readCString {
+	my ($self) = @_;
+	my $str = "";
+	while (1) {
+		my $c = $self->readBytes(1);
+		last if $c eq "\0";
+		$str .= $c;
+	}
+	return $str;
+}
+
 sub readBytes {
 	my ($self, $size) = @_;
-	my $readed = sysread($self->{handle}, my $data, $size);
+	my $readed = read($self->{handle}, my $data, $size);
 	die "Unexpected EOF, size=$size, readed=$readed" if $readed != $size;
 	return $data;
 }
