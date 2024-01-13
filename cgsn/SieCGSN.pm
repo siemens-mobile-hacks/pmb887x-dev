@@ -456,4 +456,15 @@ sub hex2bin {
 	return $hex;
 }
 
+sub hex2bin($) {
+	my ($text) = @_;
+	
+	die "Input string must be hexadecimal string" if (!defined $text || $text !~ /^([a-f0-9]+)$/i);
+	die "Hexadecimal input string must have an even length" if length($text) % 2 != 0;
+	
+	$text =~ s/(..)/chr(hex($1))/ge;
+	
+	return $text;
+}
+
 1;

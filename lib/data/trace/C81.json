@@ -30,4 +30,22 @@
 		"addr":		0xa01e73d4,
 		"args":		["uint32", "uint32"]
 	},
+	{
+		"name":		"JamGetErrorStr",
+		"addr":		0xa09e0028,
+		"args":		["uint32"],
+		"skip":		false
+	},
+	{
+		"name":		"some_error_log",
+		"addr":		0xa09e0468,
+		"args":		["cstr"],
+		"skip":		false
+	},
+	{
+		"name":		"shit",
+		"addr":		0xa0ab57b0,
+		"args":		["uint32"],
+		"skip":		false
+	},
 ]

@@ -71,6 +71,10 @@ while (1) {
 				printf("  %08X: %08X\n", $dump_addr, $val);
 			}
 			
+			if ($func->{type}) {
+				print "VALUE=".readFuncArgWithType($gdb, {r0 => $func->{addr}}, 0, $func->{type}, 1)."\n";
+			}
+			
 			# add watchpoint again
 			last if !addBreakpoint($gdb, $func);
 		} else {

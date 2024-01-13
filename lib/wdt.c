@@ -1,5 +1,8 @@
 #include "wdt.h"
 
+static stopwatch_t start_execution = 0;
+static uint32_t wdt_timeout = 0;
+
 static stopwatch_t last_wdt_serve = 0;
 static uint32_t wdt_interval = 0;
 
@@ -12,6 +15,11 @@ static void _set_einit(bool flag) {
 
 void wdt_init() {
 	wdt_init_custom(550);
+}
+
+void wdt_set_max_execution_time(uint32_t ms) {
+	start_execution = stopwatch_get();
+	wdt_timeout = ms;
 }
 
 void wdt_init_custom(uint32_t interval) {
@@ -38,6 +46,10 @@ void wdt_init_custom(uint32_t interval) {
 void wdt_serve(void) {
 	if (stopwatch_elapsed_ms(last_wdt_serve) < wdt_interval)
 		return;
+	
+	if (wdt_timeout && stopwatch_elapsed_ms(start_execution) >= wdt_timeout)
+		return;
+	
 	gpio_toggle(GPIO_PM_WADOG);
 	last_wdt_serve = stopwatch_get();
 }
