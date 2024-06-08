@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@v3
       - name: Build
         run: |
+          apt install libfile-slurp-perl
           mkdir ./generated
           perl tools/gen_symbols.pl gen_all ./generated
       - name: Upload artifact
