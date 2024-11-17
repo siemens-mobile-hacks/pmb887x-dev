@@ -1,8 +1,6 @@
 .section .text
 .arm
-
 B	start
-
 @ ---------------------------------------------------------------------------
 	.long 0, 0, 0, 0, 0, 0, 0, 0, 0
 	.ascii "SIEMENS_BOOTCODE"
@@ -10,103 +8,108 @@ B	start
 	.long 0, 0, 0, 0 @ bootkey
 	.long 0, 0, 0, 0
 @ ---------------------------------------------------------------------------
-
 start:
+	@ disable interrupts
 	MRS	R0, CPSR
 	ORR	R0, R0,	#0xC0
 	MSR	CPSR_c,	R0
-	
+
+	@ enable write to einit-protected registers
 	MOV	R0, #0
 	BL	set_einit
-	
+
+	@ disable first watchdog
 	LDR	R1, =0xF4400000
-	LDR	R0, [R1,#0x7C]
+	LDR	R0, [R1,#0x7C] @ SCU_ROMAMCR
 	BIC	R0, R0,	#1
-	STR	R0, [R1,#0x7C]
+	STR	R0, [R1,#0x7C] @ SCU_ROMAMCR
 	MOV	R0, #8
-	STR	R0, [R1,#0x28]
-	
+	STR	R0, [R1,#0x28] @ SCU_ROMAMCR
+
+	@ disable write to einit-protected registers
 	MOV	R0, #1
 	BL	set_einit
-	
+
+	@ init external watchdog
 	MOV	R10, #0x3E00
-	BL	sub_9AC
-	
+	BL	init_watchdog
+
+	@ send ACK
 	MOV	R0, #0xA5
 	BL	tx_byte
-
-loc_A4:
+@ ---------------------------------------------------------------------------
+startwait:
 	BL	rx_byte
 	CMP	R0, #0x41 @ 'A'
-	BEQ	loc_BC
+	BEQ	stopwait
 	CMP	R0, #0x2E @ '.'
 	BLEQ	serve_watchdog
-	B	loc_A4
-
-loc_BC:
-	BL	sub_6F4
-	BL	sub_8E4
-
+	B	startwait
+@ ---------------------------------------------------------------------------
+stopwait:
+	BL	ebu_init_sdram
+	BL	read_info
+@ ---------------------------------------------------------------------------
 cmd_ping:
 	MOV	R0, #0x52 @ 'R'
 	BL	tx_byte
-
+@ ---------------------------------------------------------------------------
 loop:
 	BL	rx_byte
-	CMP	R0, #0x41 @ 'A'
+	CMP	R0, #0x41 @ 'A' ping
 	BEQ	cmd_ping
-	CMP	R0, #0x48 @ 'H'
+	CMP	R0, #0x48 @ 'H' set baudrate
 	BEQ	cmd_speed
-	CMP	R0, #0x49 @ 'I'
+	CMP	R0, #0x49 @ 'I' get info
 	BEQ	cmd_info
-	CMP	R0, #0x51 @ 'Q'
+	CMP	R0, #0x51 @ 'Q' quit
 	BEQ	cmd_quit
-	CMP	R0, #0x54 @ 'T'
+	CMP	R0, #0x54 @ 'T' test for FFs
 	BEQ	cmd_test
-	CMP	R0, #0x52 @ 'R'
+	CMP	R0, #0x52 @ 'R' read block
 	BEQ	cmd_read
-	CMP	R0, #0x46 @ 'F'
+	CMP	R0, #0x46 @ 'F' write block
 	BEQ	cmd_flash
-	CMP	R0, #0x43 @ 'C'
+	CMP	R0, #0x43 @ 'C' read CFI
 	BEQ	read_cfi
-	CMP	R0, #0x2E @ '.'
+	CMP	R0, #0x2E @ '.' keepalive
 	BLEQ	serve_watchdog
 	B	loop
-
+@ ---------------------------------------------------------------------------
 cmd_test:
-	BL	sub_5B4
+	BL	rx_r6_r7
 
-loc_120:
+ct_l:
 	LDMIA	R6!, {R0,R1}
 	AND	R0, R0,	R1
 	CMN	R0, #1
 	MOVNE	R0, #0
-	BNE	loc_13C
+	BNE	ct_e
 	SUBS	R7, R7,	#8
-	BNE	loc_120
+	BNE	ct_l
 
-loc_13C:
+ct_e:
 	BL	tx_byte
 	B	loop
-
+@ ---------------------------------------------------------------------------
 read_cfi:
-	BL	sub_5B4
+	BL	rx_r6_r7
 	BL	sub_920
 	SUBS	R6, R10, #0x10
 	STR	R0, [R6]
 	MOV	R7, #4
-	B	loc_1E0
-
+	B	i_loop
+@ ---------------------------------------------------------------------------
 cmd_read:
-	BL	sub_5B4
+	BL	rx_r6_r7
 	MOV	R8, #0
 
-loc_164:
+r_loop:
 	LDRB	R0, [R6],#1
 	EOR	R8, R8,	R0
 	BL	tx_byte
 	SUBS	R7, R7,	#1
-	BNE	loc_164
+	BNE	r_loop
 	MOV	R0, #0x4F
 	BL	tx_byte
 	MOV	R0, #0x4B
@@ -116,7 +119,7 @@ loc_164:
 	MOV	R0, #0
 	BL	tx_byte
 	B	loop
-
+@ ---------------------------------------------------------------------------
 cmd_speed:
 	BL	rx_byte
 	MOV	R6, R0
@@ -124,79 +127,92 @@ cmd_speed:
 	BL	tx_byte
 	MOV	R0, #0xA00
 
-loc_1B0:
+cs_w:
 	SUBS	R0, R0,	#1
-	BNE	loc_1B0
+	BNE	cs_w
 	MOV	R0, R6
-	BL	set_uart_speed
+	BL	set_speed
 
-loc_1C0:
+cs_a:
+	@ waiting for 'A',
+	@ not serving watchdog
 	BL	rx_byte
-	CMP	R0, #0x41
-	BNE	loc_1C0
-	MOV	R0, #0x48
+	CMP	R0, #0x41 @ 'A'
+	BNE	cs_a
+	@ answer: OK
+	MOV	R0, #0x48 @ 'H'
 	BL	tx_byte
 	B	loop
-
+@ ---------------------------------------------------------------------------
 cmd_info:
+	@ flash info block
 	MOV	R6, R10
 	MOV	R7, #0x80
 
-loc_1E0:
+i_loop:
 	LDRB	R0, [R6],#1
 	BL	tx_byte
 	SUBS	R7, R7,	#1
-	BNE	loc_1E0
+	BNE	i_loop
 	B	loop
-
+@ ---------------------------------------------------------------------------
 cmd_flash:
-	BL	sub_5B4
+	BL	rx_r6_r7
 	MOV	R4, #0xA8000000
 	MOV	R5, R7
 	MOV	R8, #0
 
-loc_204:
+cf_r:
 	BL	serve_watchdog
 	BL	rx_byte
 	EOR	R8, R8,	R0
 	STRB	R0, [R4],#1
 	SUBS	R5, R5,	#1
-	BNE	loc_204
+	BNE	cf_r
 	BL	rx_byte
 	CMP	R0, R8
-	BEQ	loc_23C
+	BEQ	check_bounds
+
+	@ checksum error
 	MOV	R0, #0xBB
 	BL	tx_byte
 	MOV	R0, #0xBB
 	BL	tx_byte
+
 	B	loop
 
-loc_23C:
+check_bounds:
 	MOV	R0, #0x40000
 	SUB	R0, R0, #1
-	
+
 	MOV	R1, R6
 	ADD	R2, R6,	R7
 	SUB	R2, R2,	#1
 	BIC	R1, R1,	R0
 	BIC	R2, R2,	R0
 	CMP	R1, R2
-	BEQ	loc_274
+	BEQ	check_flash_vendor
+
+	@ bounds error
 	MOV	R0, #0xFF
 	BL	tx_byte
 	MOV	R0, #0xFF
 	BL	tx_byte
+
 	B	loop
 
-loc_274:
+check_flash_vendor:
 	MOV	R8, #0xA8000000
 	LDRH	R0, [R10,#0x50]
+	@ Intel (0089:xxxx) or ST (0020:xxxx)
 	CMP	R0, #0x89
 	CMPNE	R0, #0x20
-	BEQ	loc_2B8
+	BEQ	erase_intel
+	@ AMD (0001:xxxx or 0004:xxxx)
 	CMP	R0, #1
 	CMPNE	R0, #4
-	BEQ	loc_3D0
+	BEQ	erase_amd
+	@ uknown flash vendor error
 	MOV	R0, #0xCC
 	BL	tx_byte
 	MOV	R0, #0xCC
@@ -207,39 +223,40 @@ loc_274:
 	BL	tx_byte
 	B	loop
 
-loc_2B8:
+erase_intel:
+	@ ERASE_BEGIN
 	MOV	R0, #1
 	BL	tx_byte
 	MOV	R0, #1
 	BL	tx_byte
-	MOV	R0, #0x60
+	MOV	R0, #0x60 @ Block to lock/unlock/lock-down
 	STRH	R0, [R6]
-	MOV	R0, #0xD0
+	MOV	R0, #0xD0 @ Block Unlock
 	STRH	R0, [R6]
 	NOP
-	MOV	R0, #0x20
+	MOV	R0, #0x20 @ BlockEraseSetup
 	STRH	R0, [R6]
-	MOV	R0, #0xD0
+	MOV	R0, #0xD0 @ BlockEraseConfirm
 	STRH	R0, [R6]
 
-loc_2EC:
+i_el:
 	BL	serve_watchdog
-	MOV	R0, #0x70
+	MOV	R0, #0x70 @ StatusRead
 	STRH	R0, [R6]
 	LDRH	R0, [R6]
 	TST	R0, #0x80
-	BEQ	loc_2EC
+	BEQ	i_el
 	TST	R0, #0x3A
 	BNE	i_err
-	MOV	R0, #0xFF
+	MOV	R0, #0xFF @ ArrayMode
 	STRH	R0, [R6]
-	
-	@ erase ack
+
+	@ ERASE_ACK
 	MOV	R0, #2
 	BL	tx_byte
 	MOV	R0, #2
 	BL	tx_byte
-	
+
 	LDRB	R0, [R10,#0x55]
 	MOV	R3, #1
 	MOV	R3, R3,LSL R0
@@ -251,40 +268,44 @@ i_xwl:
 	BL	serve_watchdog
 	LDRB	R0, [R10,#0x56]
 	CMP	R0, #2
-	MOVNE	R0, #0xE8
-	MOVEQ	R0, #0xE9
+	MOVNE	R0, #0xE8 @ Buffer Prog.Setup (Intel)
+	MOVEQ	R0, #0xE9 @ Buffer Prog.Setup (ST)
 	STRH	R0, [R4]
+
+	@ send word count
 	SUB	R0, R3,	#1
 	STRH	R0, [R4]
-	MOV	R1, R3
 
+	@ sending data
+	MOV	R1, R3
 i_sl:
 	LDRH	R0, [R8],#2
 	STRH	R0, [R4],#2
 	SUBS	R1, R1,	#1
 	BNE	i_sl
-	MOV	R0, #0xD0
+	MOV	R0, #0xD0 @ confirm
 	STRH	R0, [R6]
 
 i_wl:
 	LDRH	R0, [R6]
 	TST	R0, #0x80
 	BEQ	i_wl
-	
 	TST	R0, #0x3A
 	BNE	i_err
-	
 	SUBS	R5, R5,	R3
 	BHI	i_xwl
 	MOV	R0, #0xFF
 	STRH	R0, [R6]
+
+	@ FLASH_WRITE_ACK
 	MOV	R0, #3
 	BL	tx_byte
 	MOV	R0, #3
 	BL	tx_byte
-	B	loc_4B0
+	B	flash_checksum
 
 i_err:
+	@ write error
 	MOV	R0, #0x50
 	STRH	R0, [R6]
 	MOV	R0, #0xFF
@@ -294,14 +315,16 @@ i_err:
 	BL	tx_byte
 	B	loop
 
-loc_3D0:
+erase_amd:
+	@ ERASE_BEGIN
 	MOV	R0, #1
 	BL	tx_byte
 	MOV	R0, #1
 	BL	tx_byte
+
 	MOV	R1, R6
-	MOV	R0, #0xE0
-	BL	sub_974
+	MOV	R0, #0xE0 @ ????
+	BL	send_flash_cmd
 	MOV	R0, #0xA0
 	STRH	R0, [R1]
 	MOV	R0, #1
@@ -311,85 +334,94 @@ loc_3D0:
 	MOV	R0, #0
 	STRH	R0, [R1]
 	MOV	R1, R6
-	MOV	R0, #0x80
-	BL	sub_974
-	MOV	R0, #0x30
-	BL	sub_974
+	MOV	R0, #0x80 @ SectorEraseCmd1
+	BL	send_flash_cmd
+	MOV	R0, #0x30 @ SectorEraseCmd2
+	BL	send_flash_cmd
 
-loc_420:
+wait_for_erase_amd:
 	BL	serve_watchdog
 	LDR	R0, [R6]
 	CMN	R0, #1
-	BNE	loc_420
+	BNE	wait_for_erase_amd
+
+	@ ERASE_ACK
 	MOV	R0, #2
 	BL	tx_byte
 	MOV	R0, #2
 	BL	tx_byte
+
 	MOV	R1, R6
-	MOV	R0, #0x20 @ ' '
-	BL	sub_974
+	MOV	R0, #0x20 @ Unlock Bypass Entry
+	BL	send_flash_cmd
 	MOV	R4, R6
 	MOV	R5, R7,LSR#1
 
-loc_454:
+a_xwl:
 	BL	serve_watchdog
-	MOV	R0, #0xA0
+	MOV	R0, #0xA0 @ Unlock Bypass Program
 	STRH	R0, [R6]
 	LDRH	R0, [R8]
 	STRH	R0, [R4]
 
-loc_468:
+a_wl:
 	LDRH	R1, [R4]
 	CMP	R1, R0
-	BNE	loc_468
+	BNE	a_wl
 	ADD	R8, R8,	#2
 	ADD	R4, R4,	#2
 	SUBS	R5, R5,	#1
-	BNE	loc_454
+	BNE	a_xwl
 	MOV	R0, #0x90
 	STRH	R0, [R6]
 	MOV	R0, #0
 	STRH	R0, [R6]
 	MOV	R0, #0xF0
 	STRH	R0, [R6]
-	MOV	R0, #3
-	BL	tx_byte
-	MOV	R0, #3
-	BL	tx_byte
-	B	loc_4B0
 
-loc_4B0:
+	@ FLASH_WRITE_ACK
+	MOV	R0, #3
+	BL	tx_byte
+	MOV	R0, #3
+	BL	tx_byte
+	B	flash_checksum
+
+flash_checksum:
 	MOV	R8, #0
 	MOV	R1, R6
 	MOV	R2, R7,LSR#1
 
-loc_4BC:
+cks_l:
 	LDRH	R0, [R1],#2
 	ADD	R8, R8,	R0
 	SUBS	R2, R2,	#1
-	BNE	loc_4BC
+	BNE	cks_l
+
+	@ send checksum
 	MOV	R0, R8
 	BL	tx_byte
 	MOV	R0, R8,LSR#8
 	BL	tx_byte
+
+	@ send OK
 	MOV	R0, #0x4F @ 'O'
 	BL	tx_byte
 	MOV	R0, #0x4B @ 'K'
 	BL	tx_byte
-	B	loop
 
-set_uart_speed:
+	B	loop
+@ ---------------------------------------------------------------------------
+set_speed:
 	ADR	R1, speeds_list
 	LDR	R1, [R1,R0,LSL#2]
-	MOV	R2, #0xF1000000
+	MOV	R2, #0xF1000000 @ USART0_CLC
 	MOV	R0, R1,LSR#16
-	STR	R0, [R2,#0x14]
+	STR	R0, [R2,#0x14] @ USART0_BG
 	MOV	R0, R1,LSL#16
 	MOV	R0, R0,LSR#16
-	STR	R0, [R2,#0x18]
+	STR	R0, [R2,#0x18] @ USART0_FDV
 	BX	LR
 
-@ ---------------------------------------------------------------------------
 speeds_list:
 	.long 0x001901d8 @ 57600/0x1d8=122.033898*0x1a=3172.881348
 	.long 0x000c01d8 @ 115200/0x1d8=244.067797*13=3172.881361
@@ -399,38 +431,36 @@ speeds_list:
 	.long 0x00000127 @ 921600/0x127=3124.067797
 	.long 0x0000018a @ 1228800/0x18a=3118.781726
 	.long 0x00000000 @ 1600000/0x200=3125
-	.long 0x000001d0 @ 1500000/0x1d0=3232.758621
 @ ---------------------------------------------------------------------------
-
 tx_byte:
 	MOV	R2, #0xF1000000
-	LDR	R1, [R2,#0x20]
+	LDR	R1, [R2,#0x20] @ USART0_TXB
 	BIC	R1, R1,	#0xFF
 	ORR	R1, R0,	R1
-	STR	R1, [R2,#0x20]
+	STR	R1, [R2,#0x20] @ USART0_TXB
 
-loc_548:
-	LDR	R1, [R2,#0x68]
+tx_w:
+	LDR	R1, [R2,#0x68] @ USART0_FCSTAT
 	ANDS	R1, R1,	#2
-	BEQ	loc_548
-	LDR	R1, [R2,#0x70]
+	BEQ	tx_w
+	LDR	R1, [R2,#0x70] @ USART0_ICR
 	ORR	R1, R1,	#2
-	STR	R1, [R2,#0x70]
+	STR	R1, [R2,#0x70] @ USART0_ICR
 	B	serve_watchdog
-
+@ ---------------------------------------------------------------------------
 rx_byte:
 	MOV	R1, #0xF1000000
-	LDR	R0, [R1,#0x68]
+	LDR	R0, [R1,#0x68] @ USART0_FCSTAT
 	ANDS	R0, R0,	#4
 	BEQ	rx_byte
-	LDR	R0, [R1,#0x70]
+	LDR	R0, [R1,#0x70] @ USART0_ICR
 	ORR	R0, R0,	#4
-	STR	R0, [R1,#0x70]
-	LDR	R0, [R1,#0x24]
+	STR	R0, [R1,#0x70] @ USART0_ICR
+	LDR	R0, [R1,#0x24] @ USART0_RXB
 	AND	R0, R0,	#0xFF
 	BX	LR
-
-sub_58C:
+@ ---------------------------------------------------------------------------
+rx_word:
 	MOV	R3, LR
 	BL	rx_byte
 	MOV	R4, R0,LSL#24
@@ -441,32 +471,32 @@ sub_58C:
 	BL	rx_byte
 	ORR	R0, R4,	R0
 	BX	R3
-
-sub_5B4:
+@ ---------------------------------------------------------------------------
+rx_r6_r7:
 	MOV	R5, LR
-	BL	sub_58C
+	BL	rx_word
 	MOV	R6, R0
 	CMP	R6, #0x10000000
 	ADDCS	R6, R0,	R9
-	BL	sub_58C
+	BL	rx_word
 	MOV	R7, R0
 	BX	R5
-
+@ ---------------------------------------------------------------------------
 set_einit:
 	LDR	R3, =0xF4400000
-	LDR	R1, [R3,#0x24]
+	LDR	R1, [R3,#0x24] @ SCU_WDTCON0
 	BIC	R1, R1,	#0xE
 	ORR	R1, R1,	#0xF0
-	LDR	R2, [R3,#0x28]
+	LDR	R2, [R3,#0x28] @ SCU_WDTCON1
 	AND	R2, R2,	#0xC
 	ORR	R1, R1,	R2
-	STR	R1, [R3,#0x24]
+	STR	R1, [R3,#0x24] @ SCU_WDTCON0
 	BIC	R1, R1,	#0xD
 	ORR	R1, R1,	#2
 	ORR	R0, R0,	R1
-	STR	R0, [R3,#0x24]
+	STR	R0, [R3,#0x24] @ SCU_WDTCON0
 	BX	LR
-
+@ ---------------------------------------------------------------------------
 sub_608:
 	ADD	R1, R5,	#0x31
 	LDR	R0, =0x522600
@@ -532,39 +562,42 @@ loc_6E4:
 	CMP	R0, #1
 	BX	LR
 
-sub_6F4:
+ebu_init_sdram:
 	MOV	R7, LR
 	MOV	R9, #0x10000000
 	MOV	R1, #0xF0000000
-	
-	MOV	R0, #0xA8000000  
-	ADD	R0, R0, #0x41
-	
-	STR	R0, [R1,#0x88]
-	LDR	R0, =0x30720200
-	STR	R0, [R1,#0xC8]
-	MOV	R0, #6
-	STR	R0, [R1,#0x40]
-	LDR	R0, =0x891C70
-	STR	R0, [R1,#0x50]
-	MOV	R0, #0x23
-	STR	R0, [R1,#0x60]
 
-loc_72C:
+	MOV	R0, #0xA8000000
+	ADD	R0, R0, #0x41
+
+	STR	R0, [R1,#0x88] @ ADDRSEL1
+	LDR	R0, =0x30720200
+	STR	R0, [R1,#0xC8] @ BUSCON1
+	MOV	R0, #6
+	STR	R0, [R1,#0x40] @ SDRMREF0
+	LDR	R0, =0x891C70
+	STR	R0, [R1,#0x50] @ SDRMCON0
+	MOV	R0, #0x23
+	STR	R0, [R1,#0x60] @ SDRMOD0
+
+ebu_init_flash:
+	@ init flash in EBU
 	MOV	R1, #0xF0000000
 	LDR	R0, =0xA0000011
-	STR	R0, [R1,#0x80]
+	STR	R0, [R1,#0x80] @ ADDRSEL0
 	LDR	R0, =0x522600
-	STR	R0, [R1,#0xC0]
+	STR	R0, [R1,#0xC0] @ BUSCON0
+
+	@ read phone info
 	LDR	R2, =0x534C
 	LDR	R0, =0xA0000200
 	LDRH	R1, [R0,#2]
 	CMP	R1, R2
 	BNE	loc_774
 	LDRH	R8, [R0]
-	LDR	R4, =0xA000065C
-	LDR	R5, =0xA0000238
-	LDR	R6, =0xA0000210
+	LDR	R4, =0xA000065C @ IMEI
+	LDR	R5, =0xA0000238 @ HASH
+	LDR	R6, =0xA0000210 @ phone info
 	ANDS	R0, R8,	#2
 	ADDNE	R4, R4,	#4
 	ADDNE	R5, R5,	#4
@@ -576,9 +609,9 @@ loc_774:
 	CMP	R1, R2
 	BNE	loc_7BC
 	LDRH	R8, [R0]
-	LDR	R4, =0xA003E410
-	LDR	R5, =0xA003E400
-	LDR	R6, =0xA003E000
+	LDR	R4, =0xA003E410 @ IMEI
+	LDR	R5, =0xA003E400 @ HASH
+	LDR	R6, =0xA003E000 @ phone info
 
 loc_794:
 	MOV	R1, R10
@@ -605,10 +638,10 @@ loc_7C8:
 	STR	R1, [R10,#0x40]
 	STRH	R8, [R10,#0x48]
 	MOV	R0, #0x90
-	BL	sub_974
+	BL	send_flash_cmd
 	LDRH	R0, [R1]
 	STRH	R0, [R10,#0x50]
-	BL	sub_998
+	BL	send_flash_reset
 	LDRH	R0, [R1]
 	LDRH	R2, [R10,#0x50]
 	SUBS	R0, R0,	R2
@@ -616,17 +649,17 @@ loc_7C8:
 	streqh	R0, [R10,#0x52]
 	BEQ	loc_850
 	MOV	R0, #0x90
-	BL	sub_974
+	BL	send_flash_cmd
 	LDRH	R0, [R1,#2]
 	STRH	R0, [R10,#0x52]
-	BL	sub_998
+	BL	send_flash_reset
 	ADD	R5, R9,	#0xA0000000
 	LDR	R6, =0xF0000080
 	BL	sub_608
 	BNE	loc_850
 	CMP	R5, #0xB2000000
 	MOVEQ	R9, #0x12000000
-	BEQ	loc_72C
+	BEQ	ebu_init_flash
 	LDR	R6, =0xF0000090
 	BL	sub_608
 	BNE	loc_850
@@ -651,7 +684,7 @@ loc_850:
 	MOV	R4, #0x100
 
 loc_88C:
-	BL	sub_974
+	BL	send_flash_cmd
 	MOV	R6, R4
 
 loc_894:
@@ -661,10 +694,10 @@ loc_894:
 	BNE	loc_894
 	ADD	R1, R9,	#0xA0000000
 	MOV	R0, #0x90
-	BL	sub_974
+	BL	send_flash_cmd
 	MOV	R0, #0
 	STRH	R0, [R1]
-	BL	sub_998
+	BL	send_flash_reset
 	LDR	R0, =0x3F7E532
 	ADD	R2, R10, #0x80
 
@@ -682,7 +715,7 @@ loc_8DC:
 loc_8E0:
 	BX	R7
 
-sub_8E4:
+read_info:
 	MOV	R6, #0x3800
 	LDR	R5, =0xEDB88320
 	MOV	R4, #0
@@ -731,26 +764,29 @@ sub_960:
 	SUBS	R2, R2,	#1
 	BNE	sub_960
 	BX	LR
-
-sub_974:
+@ ---------------------------------------------------------------------------
+send_flash_cmd:
 	MOV	R3, #0xAA
-	ADD	R2, R1,	#0xA00
-	STRH	R3, [R2,#0xAA]
-	MOV	R3, #0x55
-	ADD	R2, R1,	#0x500
-	STRH	R3, [R2,#0x54]
-	ADD	R2, R1,	#0xA00
-	STRH	R0, [R2,#0xAA]
-	BX	LR
+	ADD	R2, R1,	#0xA00 @ 0xA0000A00
+	STRH	R3, [R2,#0xAA] @ 0xA0000AAA
 
-sub_998:
+	MOV	R3, #0x55
+	ADD	R2, R1,	#0x500 @ 0xA0000500
+	STRH	R3, [R2,#0x54] @ 0xA0000554
+
+	ADD	R2, R1,	#0xA00 @ 0xA0000A00
+	STRH	R0, [R2,#0xAA] @ 0xA0000AAA
+
+	BX	LR
+@ ---------------------------------------------------------------------------
+send_flash_reset:
 	MOV	R0, #0xF0
 	STRH	R0, [R1]
 	MOV	R0, #0xFF
 	STRH	R0, [R1]
 	BX	LR
-
-sub_9AC:
+@ ---------------------------------------------------------------------------
+init_watchdog:
 	LDR	R0, =0xF4300000
 	MOV	R2, #0x100
 	STR	R2, [R1]
@@ -761,11 +797,11 @@ sub_9AC:
 	LDR	R1, =0xF4300118
 	SUB	R2, R1,	#0xCC
 	CMP	R0, #0x14
-	BNE	loc_9E0
+	BNE	iwd_1a
 	ADD	R1, R1,	#0x60
 	ADD	R2, R2,	#4
 
-loc_9E0:
+iwd_1a:
 	ADD	R3, R2,	#4
 	SUB	R4, R3,	#0xC
 	MOV	R12, R1
@@ -775,28 +811,30 @@ loc_9E0:
 	STR	R0, [R3]
 	MOV	R0, #0x500
 	STR	R0, [R1]
-	
+
 	MOV     R0, #0x4000
-	ORR     R0, R0, #0x510              
-	
+	ORR     R0, R0, #0x510
+
 	STR	R0, [R4]
 	LDR	R1, =0xF4B00000
-	LDR	R11, [R1,#0x20]
-	B	loc_A3C
-
+	LDR	R11, [R1,#0x20] @ STM_4
+	B	switch_watchdog
+@ ---------------------------------------------------------------------------
 serve_watchdog:
+	@ read timer
 	LDR	R2, =0xF4B00000
-	LDR	R0, [R2,#0x20]
+	LDR	R0, [R2,#0x20] @ STM_4
 	SUB	R1, R0,	R11
 	CMP	R1, #0x200
-	BCC	locret_A5C
+	BCC	swd_exit
+	@ save timer value
 	MOV	R11, R0
-	B	loc_A3C
-
+	B	switch_watchdog
+@ ---------------------------------------------------------------------------
 cmd_quit:
-	BL	loc_A3C
-
-loc_A3C:
+	BL	switch_watchdog
+@ ---------------------------------------------------------------------------
+switch_watchdog:
 	LDR	R0, [R12]
 	MOV	R0, R0,LSL#22
 	LDR	R2, [R12]
@@ -805,8 +843,8 @@ loc_A3C:
 	AND	R0, R0,	#1
 	ORR	R0, R2,	R0,LSL#9
 	STR	R0, [R12]
-
-locret_A5C:
+@ ---------------------------------------------------------------------------
+swd_exit:
 	BX	LR
-
+@ ---------------------------------------------------------------------------
 .end
