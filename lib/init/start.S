@@ -46,6 +46,7 @@ _start:
 	msr cpsr, r0
 	ldr sp, =_stack_sys
 	
+	mov r12, lr
 	b reset_handler
 
 .global _vectors_table_start
