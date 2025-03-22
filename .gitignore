@@ -4,3 +4,5 @@
 */bin/*
 boot/*.hex
 *.d
+build
+gbs.txt
