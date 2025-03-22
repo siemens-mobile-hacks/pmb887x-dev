@@ -1,6 +1,6 @@
 #/bin/bash
 set -e
 set -x
-[[ -d build ]] || cmake -B build
+cmake -B build -DBOARD=$BOARD
 cmake --build build
 perl ../../boot.pl --boot=build/app.bin --picocom $@

@@ -1,6 +1,6 @@
 #/bin/bash
 set -e
 set -x
-[[ -d build ]] || cmake -B build
+cmake -B build -DBOARD=$BOARD
 cmake --build build
 perl ../../chaos-boot.pl --exec=build/app.bin $@
