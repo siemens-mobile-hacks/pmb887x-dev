@@ -72,9 +72,11 @@ int main(void) {
 			break;
 
 		if ((i % 0x100000) == 0) {
+			printf(".");
 			wdt_serve();
 		}
 	}
+	printf("\n");
 	printf("done!\n");
 
 	wdt_serve();
@@ -84,9 +86,11 @@ int main(void) {
 		ram[i] = (i * 4) ^ 0xDEAD926E;
 
 		if ((i % 0x100000) == 0) {
+			printf(".");
 			wdt_serve();
 		}
 	}
+	printf("\n");
 	printf("done!\n");
 
 	wdt_serve();
@@ -101,9 +105,11 @@ int main(void) {
 		}
 
 		if ((i % 0x100000) == 0) {
+			printf(".");
 			wdt_serve();
 		}
 	}
+	printf("\n");
 	printf("done!\n");
 	printf("ram end: %08X %dM [marker: %08X]\n", end, end / 1024 / 1024, ram[end / 4] ^ 0xDEAD926E);
 

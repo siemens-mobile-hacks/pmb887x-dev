@@ -14,7 +14,7 @@ static const uint32_t regs[] = {
 	#if defined(PMB8876)
 	// cat ../lib/gen/pmb8876_regs.h  | grep -P -i '#define[\t]+([a-z0-9]*)_BASE' -i | awk '{print $2}' | sort | uniq | sed 's/$/,/g'
 	AFC_BASE,
-	AMC_BASE,
+	ADC_BASE,
 	CAPCOM0_BASE,
 	CAPCOM1_BASE,
 	CIF_BASE,
@@ -49,7 +49,7 @@ static const uint32_t regs[] = {
 	#elif defined(PMB8875)
 	// cat ../lib/gen/pmb8875_regs.h  | grep -P -i '#define[\t]+([a-z0-9]*)_BASE' -i | awk '{print $2}' | sort | uniq | sed 's/$/,/g'
 	AFC_BASE,
-	AMC_BASE,
+	ADC_BASE,
 	CAPCOM0_BASE,
 	CAPCOM1_BASE,
 	DIF_BASE,

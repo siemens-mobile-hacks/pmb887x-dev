@@ -31,6 +31,7 @@ add_compile_options(-mcpu=arm926ej-s -mthumb-interwork -msoft-float -mlittle-end
 include_directories(${PMB887X_LIB_PATH})
 add_link_options(-Wl,-z,max-page-size=1 -ffreestanding -nostartfiles -Wl,--gc-sections)
 add_compile_definitions(BOARD_${BOARD})
+add_compile_definitions(BOOT_${BOOT})
 
 if (BOOT STREQUAL "intram")
 	add_compile_definitions(BOOT_INTRAM)
@@ -40,7 +41,7 @@ elseif (BOOT STREQUAL "extram")
 	add_link_options(-Wl,-T,${PMB887X_LIB_PATH}/ld/extram.ld)
 elseif (BOOT STREQUAL "flash")
 	add_compile_definitions(BOOT_FLASH)
-	add_link_options(-Wl,-T,${PMB887X_LIB_PATH}/ld/flash)
+	add_link_options(-Wl,-T,${PMB887X_LIB_PATH}/ld/flash.ld)
 endif()
 
 function(target_output_bin target)

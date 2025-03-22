@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.15)
+
+set(CMAKE_TOOLCHAIN_FILE ../../lib/toolchain.cmake)
+
+project(app LANGUAGES C)
+add_subdirectory(${PMB887X_LIB_PATH} libpmb887x)
+
+add_executable(app main.c)
+target_compile_options(app PRIVATE -Os)
+target_link_libraries(app PRIVATE pmb887x)
+target_output_bin(app)

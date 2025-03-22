@@ -146,6 +146,7 @@ static void test3(void) {
 		max_cnt = MAX(max_cnt, GPTU_T2(GPTU0));
 		//printf("%08X\n", GPTU_T0CBA(GPTU0));
 	}
+	max_cnt = MAX(max_cnt, GPTU_T2(GPTU0));
 	uint32_t elapsed = stopwatch_elapsed_ms(start);
 	
 	printf("max_cnt=%08X\n", max_cnt);

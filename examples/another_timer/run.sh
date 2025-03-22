@@ -1,2 +1,6 @@
-#!/bin/bash
-perl ../chaos-boot.pl --exec=app.bin --exec-addr=0xA8000000 --ign $@
+#/bin/bash
+set -e
+set -x
+[[ -d build ]] || cmake -B build
+cmake --build build
+perl ../../boot.pl --boot=build/app.bin $@

@@ -4,10 +4,10 @@ set(CMAKE_TOOLCHAIN_FILE toolchain.cmake)
 
 project(pmb887x LANGUAGES C ASM)
 add_compile_options(-Os)
-add_library(pmb887x STATIC
+add_library(pmb887x OBJECT
 	init/start.S
-	libc.c
 	init/reset_handler.c
+	libc.c
 	usart.c
 	i2c.c
 	printf.c

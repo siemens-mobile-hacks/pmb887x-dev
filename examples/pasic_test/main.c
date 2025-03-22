@@ -9,6 +9,7 @@ static void dump_all_regs(void) {
 		printf(", 0x%02X", v);
 		wdt_serve();
 	}
+	printf("\n");
 }
 
 int main(void) {

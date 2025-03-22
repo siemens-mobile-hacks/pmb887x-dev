@@ -24,7 +24,7 @@ sub main {
 	my $dtr = -1;
 	my $rts = 0;
 	my $flasher = [];
-	my $exec_linux = "../linux/arch/arm/boot/Image";
+	my $exec_linux = undef; # "../linux/arch/arm/boot/Image";
 	my $exec_linux_dtb = "../linux/arch/arm/boot/dts/siemens-el71.dtb";
 	my $exec_file;
 	my $exec_addr = '0xA8000000';

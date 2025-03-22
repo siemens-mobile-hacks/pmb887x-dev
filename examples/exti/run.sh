@@ -1,3 +1,6 @@
 #/bin/bash
-export PERL5LIB=.
-perl ../../boot.pl --boot=app.bin $@
+set -e
+set -x
+[[ -d build ]] || cmake -B build
+cmake --build build
+perl ../../boot.pl --boot=build/app.bin $@

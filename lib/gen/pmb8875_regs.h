@@ -1,5 +1,4 @@
 #pragma once
-#include <pmb887x.h>
 
 // GPIO numbers
 #define	GPIO_KP_IN0		0
