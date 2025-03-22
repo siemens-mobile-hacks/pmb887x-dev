@@ -4,11 +4,13 @@ CSTD ?= -std=c11
 CXXSTD ?= -std=c++17
 BOOT ?= intram
 BOARD ?= SIEMENS_EL71
+USE_LIB ?= 1
 
 ############################################################################
 
 INCLUDES += $(patsubst %,-I%, . $(LIB_DIR))
 
+ifeq ($(USE_LIB),1)
 LIB_AFILES += $(LIB_DIR)/init/start.S
 LIB_CFILES += $(LIB_DIR)/libc.c
 LIB_CFILES += $(LIB_DIR)/init/reset_handler.c
@@ -18,6 +20,7 @@ LIB_CFILES += $(LIB_DIR)/printf.c
 LIB_CFILES += $(LIB_DIR)/wdt.c
 LIB_CFILES += $(LIB_DIR)/stopwatch.c
 LIB_CFILES += $(LIB_DIR)/cpu.c
+endif
 
 ifeq ($(BOOT),intram)
 	ARCH_FLAGS += -DBOOT_INTRAM

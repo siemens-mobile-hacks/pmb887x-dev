@@ -79,6 +79,7 @@ int main(void) {
 	uint32_t LR = r12;
 
 	wdt_init();
+	stopwatch_init();
 
 	printf("LR=%08X\n", LR);
 	printf("SCU_CHIPID=%08X\r\n", SCU_CHIPID);
@@ -88,6 +89,12 @@ int main(void) {
 		printf("EBU_BUSCON%d: %08X\r\n", j, EBU_BUSCON(j));
 	}
 	printf("----\r\n");
+
+	for (int i = 0; i < 3; i++) {
+		printf("[%d/3] Please, release TP!\r\n", i);
+		stopwatch_msleep_wd(1000);
+	}
+	printf("<------------------------- cut here\r\n");
 
 	flash_base = 0xA0000000;
 	for (int j = 0; j < 4; j++) {

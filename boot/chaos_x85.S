@@ -1,12 +1,22 @@
 .section .text
 .arm
 B	start
+
+@ ---------------------------------------------------------------------------
+@ GLOBAL REGISTERS:
+@ R9 = real_flash_addr - 0xA0000000
+@ R10 = flash info (128 bytes)
+@ R11 = timer value
+@ R12 = watchdog gpio value
+@ ---------------------------------------------------------------------------
+
 @ ---------------------------------------------------------------------------
 	.long 0, 0, 0, 0, 0, 0, 0, 0, 0
 	.ascii "SIEMENS_BOOTCODE"
-	.long 3, 0
-	.long 0, 0, 0, 0 @ bootkey
-	.long 0, 0, 0, 0
+	.long 0x00000003	@ boot mode + boot mode function (0x0003 = flasher mode)
+	.long 0			@ speed
+	.long 0, 0, 0, 0	@ bootkey
+	.long 0, 0, 0, 0	@ unknown, but present in chaos loader
 @ ---------------------------------------------------------------------------
 start:
 	@ disable interrupts
@@ -29,6 +39,9 @@ start:
 	@ disable write to einit-protected registers
 	MOV	R0, #1
 	BL	set_einit
+
+	@ set stack
+	mov SP, #0x18000
 
 	@ init external watchdog
 	MOV	R10, #0x3E00
@@ -72,13 +85,106 @@ loop:
 	BEQ	cmd_flash
 	CMP	R0, #0x43 @ 'C' read CFI
 	BEQ	read_cfi
+	cmp	r0, #0x57 @ 'W' write RAM
+	beq	cmd_write
+	cmp	r0, #0x47 @ 'G' goto
+	beq	cmd_goto
+	cmp	r0, #0xFF
+	beq	cmd_read8
 	CMP	R0, #0x2E @ '.' keepalive
 	BLEQ	serve_watchdog
 	B	loop
 @ ---------------------------------------------------------------------------
+cmd_read8:
+	LDR	r0, =0xF0000080
+	LDR	r0, [r0]
+	bl	tx_word
+
+	LDR	r0, =0xF0000088
+	LDR	r0, [r0]
+	bl	tx_word
+
+	LDR	r0, =0xF0000090
+	LDR	r0, [r0]
+	bl	tx_word
+
+	LDR	r0, =0xF0000098
+	LDR	r0, [r0]
+	bl	tx_word
+
+	LDR	r0, =0xF00000C0
+	LDR	r0, [r0]
+	bl	tx_word
+
+	LDR	r0, =0xF00000C8
+	LDR	r0, [r0]
+	bl	tx_word
+
+	LDR	r0, =0xF00000D0
+	LDR	r0, [r0]
+	bl	tx_word
+
+	LDR	r0, =0xF00000D8
+	LDR	r0, [r0]
+	bl	tx_word
+
+	B	loop
+
+tx_word:
+	mov	r9,lr
+	mov	r3,r0
+
+	lsr	r0,r3,#0
+	bl	tx_byte
+
+	lsr	r0,r3,#8
+	bl	tx_byte
+
+	lsr	r0,r3,#16
+	bl	tx_byte
+
+	lsr	r0,r3,#24
+	bl	tx_byte
+
+	bx	r9
+
+@ ---------------------------------------------------------------------------
+cmd_goto:
+	BL	rx_r6_r7
+	CMP	R6, R7
+	BNE	checksum_error
+
+	BLEQ	cjmpr6
+	B	loop
+cjmpr6:
+	MOV	R0, #0x4F
+	BL	tx_byte
+	MOV	R0, #0x4B
+	BL	tx_byte
+
+	LDR	R0, =serve_watchdog
+	LDR	R1, =rx_byte
+	LDR	R2, =tx_byte
+	MOV	PC, R6
+@ ---------------------------------------------------------------------------
+cmd_write:
+	BL	rx_r6_r7
+	MOV	R8, #0
+cw_r:
+	BL	serve_watchdog
+	BL	rx_byte
+	EOR	R8, R8,	R0
+	STRB	R0, [R6],#1
+	SUBS	R7, R7,	#1
+	BNE	cw_r
+
+	BL	rx_byte
+	CMP	R0, R8
+	BNE	checksum_error
+	B	send_ok
+@ ---------------------------------------------------------------------------
 cmd_test:
 	BL	rx_r6_r7
-
 ct_l:
 	LDMIA	R6!, {R0,R1}
 	AND	R0, R0,	R1
@@ -87,7 +193,6 @@ ct_l:
 	BNE	ct_e
 	SUBS	R7, R7,	#8
 	BNE	ct_l
-
 ct_e:
 	BL	tx_byte
 	B	loop
@@ -110,14 +215,19 @@ r_loop:
 	BL	tx_byte
 	SUBS	R7, R7,	#1
 	BNE	r_loop
+
+	@ send OK
 	MOV	R0, #0x4F
 	BL	tx_byte
 	MOV	R0, #0x4B
 	BL	tx_byte
+
+	@ send CHK
 	MOV	R0, R8
 	BL	tx_byte
 	MOV	R0, #0
 	BL	tx_byte
+
 	B	loop
 @ ---------------------------------------------------------------------------
 cmd_speed:
@@ -173,6 +283,7 @@ cf_r:
 	CMP	R0, R8
 	BEQ	check_bounds
 
+checksum_error:
 	@ checksum error
 	MOV	R0, #0xBB
 	BL	tx_byte
@@ -403,6 +514,7 @@ cks_l:
 	MOV	R0, R8,LSR#8
 	BL	tx_byte
 
+send_ok:
 	@ send OK
 	MOV	R0, #0x4F @ 'O'
 	BL	tx_byte
@@ -477,8 +589,12 @@ rx_r6_r7:
 	MOV	R5, LR
 	BL	rx_word
 	MOV	R6, R0
-	CMP	R6, #0x10000000
-	ADDCS	R6, R0,	R9
+
+	@ addr >= 0xA0000000 && addr < #0xA8000000
+	AND	R0, R0, #0xF8000000
+	CMP	R0, #0xA0000000
+	ADDEQ	R6, R6,	R9
+
 	BL	rx_word
 	MOV	R7, R0
 	BX	R5
@@ -654,8 +770,8 @@ loc_7C8:
 	LDRH	R0, [R1,#2]
 	STRH	R0, [R10,#0x52]
 	BL	send_flash_reset
-	ADD	R5, R9,	#0xA0000000
-	LDR	R6, =0xF0000080
+	ADD	R5, R9,	#0xA0000000 @ -> B0000000
+	LDR	R6, =0xF0000080 @ ADDRSEL0
 	BL	sub_608
 	BNE	loc_850
 	CMP	R5, #0xB2000000
@@ -833,6 +949,8 @@ serve_watchdog:
 	B	switch_watchdog
 @ ---------------------------------------------------------------------------
 cmd_quit:
+	@ fast power-off
+	BL	switch_watchdog
 	BL	switch_watchdog
 @ ---------------------------------------------------------------------------
 switch_watchdog:
