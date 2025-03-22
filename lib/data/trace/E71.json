@@ -1,0 +1,22 @@
+[
+	{
+		"name":		"SetScrollSpeed",
+		"addr":		0xa0a2b9ce,
+		"args":		[]
+	},
+	{
+		"name":		"SetHeaderScrollText",
+		"addr":		0xA0A285B8,
+		"args":		[]
+	}, {
+		"name":		"init_virtual_heap",
+		"addr":		0xa04cdbf8,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"],
+		"skip":		false
+	}, {
+		"name": "afc",
+		"addr": 0xa0ba4a52,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"],
+
+	}
+]

@@ -1,0 +1,40 @@
+[
+	{
+		"name":		"debug_pickoff",
+		"addr":		0xA01CEE50,
+		"args":		["uint32", "exit", "uint32"],
+		"stop":		false
+	},
+	{
+		"name":		"debug_pickoff",
+		"addr":		0xA01ABF5C,
+		"args":		["uint32", "uint32"],
+		"stop":		false
+	},
+	{
+		"name":		"flash_error",
+		"addr":		0xA0254E5C,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"],
+		"skip":		true
+	},
+	{
+		"name":		"zalupa",
+		"addr":		0xa8f7dbd4,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"],
+		"skip":		true
+	},
+	{
+		"name":		"zalupa2",
+		"addr":		0xa03eba68,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"],
+		"skip":		true
+	},
+	{
+		"name":		"zalupa3",
+		"addr":		0xa8f7dbf8,
+		"args":		["uint32"],
+		"skip":		true
+	}
+]
+
+

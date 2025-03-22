@@ -1,0 +1,13 @@
+[
+	{
+		"name":		"poweroff",
+		"addr":		0x00082d74,
+		"args":		[],
+	},
+	{
+		"name":		"CMD",
+		"addr":		0x00080030,
+		"size":		1,
+		"watch":	"w",
+	},
+]
