@@ -1,3 +1,5 @@
+.cache
+.clangd
 *.o
 *.elf
 *.bin

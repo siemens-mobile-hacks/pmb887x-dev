@@ -1,4 +1,5 @@
 #pragma once
+#include <pmb887x.h>
 
 // GPIO numbers
 #define	GPIO_KP_IN0		0
@@ -160,13 +161,13 @@
 #define	NVIC_SCU_UNK2_IRQ		60
 #define	NVIC_SCU_EXTI5_IRQ		61
 #define	NVIC_SCU_EXTI6_IRQ		62
-#define	NVIC_SCU_EXTI7_IRQ		63
 #define	NVIC_SCCU_UNK_IRQ		63
+#define	NVIC_SCU_EXTI7_IRQ		63
 #define	NVIC_SCCU_WAKE_IRQ		64
 #define	NVIC_PLL_IRQ			65
 #define	NVIC_I2C_DATA_IRQ		66
 #define	NVIC_I2C_PROTO_IRQ		67
-#define	NVIC_I2C_ERR_IRQ		68
+#define	NVIC_I2C_END_IRQ		68
 #define	NVIC_ADC_INT0_IRQ		70
 #define	NVIC_ADC_INT1_IRQ		71
 #define	NVIC_CAPCOM0_T0_IRQ		72
@@ -189,22 +190,22 @@
 #define	NVIC_CAPCOM1_CC5_IRQ	89
 #define	NVIC_CAPCOM1_CC6_IRQ	90
 #define	NVIC_CAPCOM1_CC7_IRQ	91
-#define	NVIC_GPTU0_SRC0_IRQ		92
-#define	NVIC_GPTU0_SRC1_IRQ		93
-#define	NVIC_GPTU0_SRC2_IRQ		94
-#define	NVIC_GPTU0_SRC3_IRQ		95
-#define	NVIC_GPTU0_SRC4_IRQ		96
-#define	NVIC_GPTU0_SRC5_IRQ		97
-#define	NVIC_GPTU0_SRC6_IRQ		98
-#define	NVIC_GPTU0_SRC7_IRQ		99
-#define	NVIC_GPTU1_SRC0_IRQ		100
-#define	NVIC_GPTU1_SRC1_IRQ		101
-#define	NVIC_GPTU1_SRC2_IRQ		102
-#define	NVIC_GPTU1_SRC3_IRQ		103
-#define	NVIC_GPTU1_SRC4_IRQ		104
-#define	NVIC_GPTU1_SRC5_IRQ		105
-#define	NVIC_GPTU1_SRC6_IRQ		106
-#define	NVIC_GPTU1_SRC7_IRQ		107
+#define	NVIC_GPTU0_SRC7_IRQ		92
+#define	NVIC_GPTU0_SRC6_IRQ		93
+#define	NVIC_GPTU0_SRC5_IRQ		94
+#define	NVIC_GPTU0_SRC4_IRQ		95
+#define	NVIC_GPTU0_SRC3_IRQ		96
+#define	NVIC_GPTU0_SRC2_IRQ		97
+#define	NVIC_GPTU0_SRC1_IRQ		98
+#define	NVIC_GPTU0_SRC0_IRQ		99
+#define	NVIC_GPTU1_SRC7_IRQ		100
+#define	NVIC_GPTU1_SRC6_IRQ		101
+#define	NVIC_GPTU1_SRC5_IRQ		102
+#define	NVIC_GPTU1_SRC4_IRQ		103
+#define	NVIC_GPTU1_SRC3_IRQ		104
+#define	NVIC_GPTU1_SRC2_IRQ		105
+#define	NVIC_GPTU1_SRC1_IRQ		106
+#define	NVIC_GPTU1_SRC0_IRQ		107
 #define	NVIC_KEYPAD_PRESS_IRQ	108
 #define	NVIC_KEYPAD_UNK0_IRQ	109
 #define	NVIC_KEYPAD_UNK1_IRQ	110
@@ -1837,7 +1838,7 @@
 #define	I2C_SYSCON					MMIO32(I2C_BASE + 0x10)
 #define	I2C_SYSCON_ADR				BIT(0)					 // Bit ADR is set after a start condition in slave mode
 #define	I2C_SYSCON_AL				BIT(1)					 // Arbitration Lost
-#define	I2C_SYSCON_SLA				BIT(2)					 // Slave
+#define	I2C_SYSCON_SLA				BIT(2)					 // The IIC module has been selected as a slave (device address received).
 #define	I2C_SYSCON_LRB				BIT(3)					 // Last Received Bit
 #define	I2C_SYSCON_BB				BIT(4)					 // Bus Busy
 #define	I2C_SYSCON_IRQD				BIT(5)					 // IIC Interrupt Request Bit for Data Transfer Events
@@ -1845,6 +1846,8 @@
 #define	I2C_SYSCON_IRQE				BIT(7)					 // IIC Interrupt Request Bit for Data Transmission End
 #define	I2C_SYSCON_CO				GENMASK(10, 8)			 // Counter of Transmitted Bytes Since Last Data Interrupt.
 #define	I2C_SYSCON_CO_SHIFT			8
+#define	I2C_SYSCON_WM				GENMASK(15, 8)			 // Write Mirror (WMEN=1)
+#define	I2C_SYSCON_WM_SHIFT			8
 #define	I2C_SYSCON_RMEN				BIT(15)					 // Read Mirror Enable
 #define	I2C_SYSCON_M10				BIT(16)					 // 10-bit address mode
 #define	I2C_SYSCON_RSC				BIT(17)					 // Repeated Start Condition
@@ -1858,6 +1861,8 @@
 #define	I2C_SYSCON_ACKDIS			BIT(21)					 // Acknowledge Pulse Disable
 #define	I2C_SYSCON_INT				BIT(22)					 // Interrupt Delete Select
 #define	I2C_SYSCON_TRX				BIT(23)					 // Transmit Select
+#define	I2C_SYSCON_RM				GENMASK(31, 24)			 // Read Mirror (RMEN=1)
+#define	I2C_SYSCON_RM_SHIFT			24
 #define	I2C_SYSCON_IGE				BIT(24)					 // Ignore IRQE
 #define	I2C_SYSCON_STP				BIT(25)					 // Stop Master
 #define	I2C_SYSCON_CI				GENMASK(27, 26)			 // Length of the Receive/Transmit Buffer
@@ -1919,11 +1924,12 @@
 #define	I2C_WHBSYSCON_CLRTRX		BIT(23)					 // Clear Transmit Select Bit
 #define	I2C_WHBSYSCON_SETTRX		BIT(24)					 // Set Transmit Select Bit
 #define	I2C_WHBSYSCON_CLRSTP		BIT(25)					 // Clear Stop Master Bit
+#define	I2C_WHBSYSCON_SETSTP		BIT(26)					 // Set Stop Master Bit
 #define	I2C_WHBSYSCON_CLRWMEN		BIT(30)					 // Set Write Mirror Enable Bit
 #define	I2C_WHBSYSCON_SETWMEN		BIT(31)					 // Clear Write Mirror Enable Bit
 
 /* Service Routing Control Register */
-#define	I2C_ERR_SRC					MMIO32(I2C_BASE + 0xF4)
+#define	I2C_END_SRC					MMIO32(I2C_BASE + 0xF4)
 
 /* Service Routing Control Register */
 #define	I2C_PROTO_SRC				MMIO32(I2C_BASE + 0xF8)
@@ -2628,19 +2634,21 @@
 #define	ADC_ID					MMIO32(ADC_BASE + 0x08)
 
 #define	ADC_CON0				MMIO32(ADC_BASE + 0x14)
+#define	ADC_CON0_EN_VREF		BIT(1)
 
 #define	ADC_CON1				MMIO32(ADC_BASE + 0x18)
-#define	ADC_CON1_CH				GENMASK(5, 0)							 // Gains: M0=0.5, M1=0.44, M2=0.5, M9=0.5, M0_M9=1
+#define	ADC_CON1_CH				GENMASK(5, 0)
 #define	ADC_CON1_CH_SHIFT		0
 #define	ADC_CON1_CH_OFF			0x0
-#define	ADC_CON1_CH_M0_P		0x1
-#define	ADC_CON1_CH_M1_P		0x2
-#define	ADC_CON1_CH_M2_P		0x3
-#define	ADC_CON1_CH_M7_N		0x8
-#define	ADC_CON1_CH_M8_N		0x9
-#define	ADC_CON1_CH_M9_N		0xA
-#define	ADC_CON1_CH_M10_N		0xB
-#define	ADC_CON1_CH_M0_M9_N		0x12
+#define	ADC_CON1_CH_M0			0x1
+#define	ADC_CON1_CH_M1			0x2
+#define	ADC_CON1_CH_M2			0x3
+#define	ADC_CON1_CH_M7			0x8
+#define	ADC_CON1_CH_M8			0x9
+#define	ADC_CON1_CH_M9			0xA
+#define	ADC_CON1_CH_M10			0xB
+#define	ADC_CON1_CH_M0_M9_A		0xC
+#define	ADC_CON1_CH_M0_M9_B		0x12
 #define	ADC_CON1_PREAMP_INV		BIT(6)
 #define	ADC_CON1_PREAMP_FAST	BIT(11)
 #define	ADC_CON1_MODE			GENMASK(14, 12)
@@ -2660,14 +2668,15 @@
 #define	ADC_CON1_REF_CH			GENMASK(24, 22)
 #define	ADC_CON1_REF_CH_SHIFT	22
 #define	ADC_CON1_REF_CH_OFF		0x0
-#define	ADC_CON1_REF_CH_M0_P	0x400000
-#define	ADC_CON1_REF_CH_M1_P	0x800000
-#define	ADC_CON1_REF_CH_M2_P	0xC00000
-#define	ADC_CON1_REF_CH_M7_N	0x2000000
-#define	ADC_CON1_REF_CH_M8_N	0x2400000
-#define	ADC_CON1_REF_CH_M9_N	0x2800000
-#define	ADC_CON1_REF_CH_M10_N	0x2C00000
-#define	ADC_CON1_REF_CH_M0_M9_N	0x4800000
+#define	ADC_CON1_REF_CH_M0		0x400000
+#define	ADC_CON1_REF_CH_M1		0x800000
+#define	ADC_CON1_REF_CH_M2		0xC00000
+#define	ADC_CON1_REF_CH_M7		0x2000000
+#define	ADC_CON1_REF_CH_M8		0x2400000
+#define	ADC_CON1_REF_CH_M9		0x2800000
+#define	ADC_CON1_REF_CH_M10		0x2C00000
+#define	ADC_CON1_REF_CH_M0_M9_A	0x3000000
+#define	ADC_CON1_REF_CH_M0_M9_B	0x4800000
 #define	ADC_CON1_SINGLE			BIT(27)
 #define	ADC_CON1_TRIG			BIT(28)
 #define	ADC_CON1_ON				BIT(29)

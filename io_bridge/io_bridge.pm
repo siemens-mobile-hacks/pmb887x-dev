@@ -149,9 +149,9 @@ sub boot_module_init {
 			my $vv = unpack("V", $data);
 			
 			if ($addr != 0xF4300118) {
-		#		my $descr = $cpu_meta->dumpReg($addr, $vv);
-		#		printf("READ%s from %08X (%08X)%s (from %08X)\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
-		#			$addr, $vv, ($descr ? " $descr" : ""), $from) if ($LOG_IO);
+				my $descr = $cpu_meta->dumpReg($addr, $vv);
+				printf("READ%s from %08X (%08X)%s (from %08X)\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "",
+					$addr, $vv, ($descr ? " $descr" : ""), $from) if ($LOG_IO);
 			}
 		} elsif ($cmd eq "W" || $cmd eq "w" || $cmd eq "O" || $cmd eq "o") {
 			my $addr = unpack("V", substr($buf, 1, 4));
@@ -198,11 +198,11 @@ sub boot_module_init {
 					print $c;
 				}
 			}
-			
+
 			if ($addr != 0xF4300118) {
-			#	my $descr = $cpu_meta->dumpReg($addr, $value);
-			#	printf("WRITE%s %08X to %08X%s (from %08X)%s\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "", 
-			#		$value, $addr, ($descr ? " $descr" : ""), $from, $valid ? "" : " | SKIP!!!!") if ($LOG_IO);
+				my $descr = $cpu_meta->dumpReg($addr, $value);
+				printf("WRITE%s %08X to %08X%s (from %08X)%s\n", $cmd_to_size{$cmd} != 4 ? "[".$cmd_to_size{$cmd}."]" : "",
+					$value, $addr, ($descr ? " $descr" : ""), $from, $valid ? "" : " | SKIP!!!!") if ($LOG_IO);
 			}
 			
 			if ($valid) {

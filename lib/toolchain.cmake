@@ -11,6 +11,9 @@ if (NOT DEFINED BOOT)
 	set(BOOT "intram")
 endif()
 
+string(TOUPPER "${BOARD}" BOARD_ID)
+string(REPLACE "-" "_" BOARD_ID "${BOARD_ID}")
+
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
@@ -30,7 +33,7 @@ set(CMAKE_CXX_COMPILER ${ARM_CXX_COMPILER} CACHE INTERNAL "CMAKE_CXX_COMPILER")
 add_compile_options(-mcpu=arm926ej-s -mthumb-interwork -msoft-float -mlittle-endian -ffreestanding -ffunction-sections -fdata-sections)
 include_directories(${PMB887X_LIB_PATH})
 add_link_options(-Wl,-z,max-page-size=1 -ffreestanding -nostartfiles -Wl,--gc-sections)
-add_compile_definitions(BOARD_${BOARD})
+add_compile_definitions(BOARD_${BOARD_ID})
 add_compile_definitions(BOOT_${BOOT})
 
 if (BOOT STREQUAL "intram")

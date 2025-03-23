@@ -18,6 +18,14 @@ static void dump_all_regs(void) {
 		wdt_serve();
 	}
 	printf("\ndone!\n");
+
+	printf("Dialog on 0x8\n");
+	for (int i = 0; i <= 0xFF; ++i) {
+		uint32_t v = i2c_smbus_read_byte(0x8, i);
+		printf("0x%02X, ", v);
+		wdt_serve();
+	}
+	printf("\ndone!\n");
 }
 
 int main(void) {

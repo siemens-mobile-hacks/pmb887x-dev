@@ -16,8 +16,14 @@ int main(void) {
 	i2c_init();
 	//i2c_smbus_write_byte(0x31, 0xE, 0b11);
 	
-	//usart_set_speed(USART0, UART_SPEED_115200);
+	GPIO_PIN(GPIO_I2C_SCL) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
+	GPIO_PIN(GPIO_I2C_SDA) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
+
+#ifdef PMB8876
 	usart_set_speed(USART0, UART_SPEED_1600000);
+#else
+	usart_set_speed(USART0, UART_SPEED_1600000);
+#endif
 	while (usart_getc(USART0) != 'O');
 	while (usart_getc(USART0) != 'K');
 	usart_putc(USART0, '.');
@@ -98,7 +104,7 @@ static int command_handler(int irq) {
 			}
 			
 			wdt_serve();
-			
+
 			return 1;
 		} else if (c == 'W' || c == 'w' || c == 'O' || c == 'o') { // 4, 2, 3, 1 bytes
 			addr = usart_getc(USART0) << 24 | usart_getc(USART0) << 16 | usart_getc(USART0) << 8 | usart_getc(USART0);
@@ -108,6 +114,7 @@ static int command_handler(int irq) {
 			
 			bool skip = false;
 			
+#ifdef PMB8876
 			// Low freq i2c clock
 			if (addr == (uint32_t) &I2C_FDIVCFG) {
 				//value = 0x00010090;
@@ -122,7 +129,25 @@ static int command_handler(int irq) {
 				//if (value == 0x00140E62)
 				//	value = 0x005F4662;
 			}
-			
+#endif
+
+#ifdef PMB8875
+	if (addr == (uint32_t) &I2C_CLC) {
+		if ((value & MOD_CLC_RMC)) {
+			value &= ~MOD_CLC_RMC;
+			value |= 8 << MOD_CLC_RMC_SHIFT;
+		}
+	}
+
+	if (addr == (uint32_t) &I2C_BUSCON) {
+	//	value &= ~I2C_BUSCON_BRPMOD;
+	//	value |= I2C_BUSCON_BRPMOD_MODE0;
+	}
+#endif
+
+// WRITE[4] F4800014: A0007E11 (I2C_BUSCON): SDAEN0 | SCLEN0 | BRP(0x7E) | PREDIV(8) | BRPMOD(MODE1) (PC: A0A95FDC, LR: A0A95FCC)
+
+
 			if (!skip) {
 				if (c == 'W') { // 4
 					REG(addr) = value;

@@ -117,7 +117,7 @@ void i2c_smbus_read(uint32_t addr, uint8_t reg, uint32_t size, uint8_t *value) {
 	i2c_start_write(addr);
 	i2c_write(reg);
 	i2c_stop();
-	
+
 	i2c_start_read(addr);
 	for (uint32_t i = 0; i < size; i++)
 		value[i] = i2c_read(i != size - 1);

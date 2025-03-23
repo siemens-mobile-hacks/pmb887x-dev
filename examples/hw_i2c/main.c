@@ -303,7 +303,15 @@ static void pickoff(void) {
 	hw_i2c_write(D1601AA_I2C_ADDR, data, 2);
 }
 
+static int hw_i2c_read_smbus(uint8_t addr, uint8_t reg, uint8_t *buffer, int size) {
+	int ret = hw_i2c_write(addr, &reg, 1);
+	if (ret != 0)
+		return ret;
+	return hw_i2c_read(addr, buffer, size);
+}
+
 int main(void) {
+	uint8_t data[0x100] = { };
 	wdt_init();
 	
 	cpu_enable_irq(true);
@@ -312,13 +320,18 @@ int main(void) {
 	
 	i2c_hw_init();
 	
-	uint8_t data[64] = {0xFF};
-	data[0] = 0x44;
-	data[1] = 0x24;
-//	hw_i2c_write(D1601AA_I2C_ADDR, data, 3);
-	
-	hw_i2c_read(D1601AA_I2C_ADDR, data, 64);
-	
+	hw_i2c_read_smbus(D1601AA_I2C_ADDR, 0, data, 1);
+	printf("--------------------------------------------\n");
+
+	hw_i2c_read_smbus(D1601AA_I2C_ADDR, 0, data, 1);
+	printf("--------------------------------------------\n");
+
+	hw_i2c_read_smbus(D1601AA_I2C_ADDR, 0, data, 2);
+	printf("--------------------------------------------\n");
+
+	hw_i2c_read_smbus(D1601AA_I2C_ADDR, 0, data, 6);
+	printf("--------------------------------------------\n");
+
 	// pickoff();
 	
 	printf("Done!\n");

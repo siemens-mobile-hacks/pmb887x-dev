@@ -30,12 +30,12 @@
 #define ULL(x)				(_AC(x, ULL))
 
 #define GENMASK(h, l) \
-	(((~UL(0)) - (UL(1) << (l)) + 1) & \
-	 (~UL(0) >> (BITS_PER_LONG - 1 - (h))))
+(((~UL(0)) - (UL(1) << (l)) + 1) & \
+(~UL(0) >> (BITS_PER_LONG - 1 - (h))))
 
 #define GENMASK_ULL(h, l) \
-	(((~ULL(0)) - (ULL(1) << (l)) + 1) & \
-	 (~ULL(0) >> (BITS_PER_LONG_LONG - 1 - (h))))
+(((~ULL(0)) - (ULL(1) << (l)) + 1) & \
+(~ULL(0) >> (BITS_PER_LONG_LONG - 1 - (h))))
 
 #define REG_BYTE(addr)		MMIO8(addr)
 #define REG_SHORT(addr)		MMIO16(addr)
@@ -49,13 +49,9 @@
 #include "gen/board.h"
 #include "gen/cpu.h"
 
-#include "printf.h"
-#include "usart.h"
-#include "wdt.h"
-#include "gpio.h"
-#include "i2c.h"
-#include "cpu.h"
-#include "stopwatch.h"
+#if !defined(PMB8875) && !defined(PMB8876)
+#error Unknown board!
+#endif
 
 // CPU Vectors
 __IRQ void reset_handler(void);
@@ -66,3 +62,11 @@ __IRQ void data_abort_handler(void);
 __IRQ void reserved_handler(void);
 __IRQ void irq_handler(void);
 __IRQ void fiq_handler(void);
+
+#include "printf.h"
+#include "usart.h"
+#include "wdt.h"
+#include "gpio.h"
+#include "i2c.h"
+#include "cpu.h"
+#include "stopwatch.h"

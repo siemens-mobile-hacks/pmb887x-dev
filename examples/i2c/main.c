@@ -95,6 +95,12 @@ int main(void) {
 //	test_backlight();
 //	test_pickoff_sound();
 	
+	uint32_t v = i2c_smbus_read_byte(D1601AA_I2C_ADDR, 0);
+	printf("%02X: %02X\n", 0, v);
+
+	uint32_t v2 = i2c_smbus_read_byte(D1601AA_I2C_ADDR, 0);
+	printf("%02X: %02X\n", 0, v2);
+
 	printf("Done!\n");
 	
 	return 0;
