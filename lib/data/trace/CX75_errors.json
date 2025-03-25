@@ -1,0 +1,27 @@
+[
+	{
+		"name":		"debug_pickoff",
+		"addr":		0xA07CD184,
+		"args":		["uint32", "exit", "uint32"]
+	},
+	{
+		"name":		"err",
+		"addr":		0xA07CCF58,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"pasic_i2c_message_callback",
+		"addr":		0xA0AC7510,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"i2c_work",
+		"addr":		0xA0A960B0,
+		"args":		["uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"errrrr",
+		"addr":		0xA0A961DC,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32", "uint32", "uint32"]
+	}
+]
