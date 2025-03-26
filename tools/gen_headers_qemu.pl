@@ -159,16 +159,18 @@ sub genModuleHeader {
 		if ($module->{type} eq "AMBA") {
 			$module_descr = sprintf("// %s [AMBA PL%03X]\n", $name, $module->{id} & 0xFFF);
 		} elsif ($module->{type} eq "MODULE") {
-			my $MOD_REV = $module->{id} & 0xFF;
-			my $MOD_NUM = ($module->{id} >> 16) & 0xFFFF;
-			my $MOD_32BIT = ($module->{id} >> 8) & 0xFF;
-			
-			if ($MOD_32BIT != 0xC0) {
-				$MOD_NUM = $MOD_32BIT;
-				$MOD_32BIT = 0;
+			for my $id (@{$module->{ids}}) {
+				my $MOD_REV = $id & 0xFF;
+				my $MOD_NUM = ($id >> 16) & 0xFFFF;
+				my $MOD_32BIT = ($id >> 8) & 0xFF;
+
+				if ($MOD_32BIT != 0xC0) {
+					$MOD_NUM = $MOD_32BIT;
+					$MOD_32BIT = 0;
+				}
+
+				$module_descr .= sprintf("// %s [MOD_NUM=%04X, MOD_REV=%02X, MOD_32BIT=%02X]\n", $name, $MOD_NUM, $MOD_REV, $MOD_32BIT);
 			}
-			
-			$module_descr = sprintf("// %s [MOD_NUM=%04X, MOD_REV=%02X, MOD_32BIT=%02X]\n", $name, $MOD_NUM, $MOD_REV, $MOD_32BIT);
 		} else {
 			$module_descr = sprintf("// %s\n", $name);
 		}

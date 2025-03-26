@@ -161,8 +161,8 @@
 #define	NVIC_SCU_UNK2_IRQ		60
 #define	NVIC_SCU_EXTI5_IRQ		61
 #define	NVIC_SCU_EXTI6_IRQ		62
-#define	NVIC_SCCU_UNK_IRQ		63
 #define	NVIC_SCU_EXTI7_IRQ		63
+#define	NVIC_SCCU_UNK_IRQ		63
 #define	NVIC_SCCU_WAKE_IRQ		64
 #define	NVIC_PLL_IRQ			65
 #define	NVIC_I2C_DATA_IRQ		66
@@ -273,7 +273,7 @@
 
 
 
-// EBU [MOD_NUM=0014, MOD_REV=00, MOD_32BIT=C0]
+// EBU [MOD_NUM=0014, MOD_REV=04, MOD_32BIT=C0]
 // EBU from XMC4500 official public datasheet
 #define	EBU_BASE					0xF0000000
 /* Clock Control Register */
@@ -490,7 +490,7 @@
 #define	EBU_USERCON					MMIO32(EBU_BASE + 0x190)
 
 
-// USART0 [MOD_NUM=0044, MOD_REV=00, MOD_32BIT=00]
+// USART0 [MOD_NUM=0044, MOD_REV=E2, MOD_32BIT=00]
 // ASC0 from Tricore TC1766 official public datasheet
 #define	USART0_BASE						0xF1000000
 #define	USART0							0xF1000000
@@ -658,137 +658,59 @@
 #define	USART_ISR_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_ISR_TMO					BIT(7)					 // RX timeout interrupt mask
 
+#define	USART_UNK(base)					MMIO32((base) + 0x78)
+
 #define	USART_TMO(base)					MMIO32((base) + 0x7C)
+
+
+// SSC [MOD_NUM=0045, MOD_REV=25, MOD_32BIT=00]
+// SSC (SPI)
+#define	SSC_BASE	0xF1100000
+/* Clock Control Register */
+#define	SSC_CLC		MMIO32(SSC_BASE + 0x00)
+
+/* Module Identifier Register */
+#define	SSC_ID		MMIO32(SSC_BASE + 0x08)
+
+#define	SSC_STAT	MMIO32(SSC_BASE + 0x10)
+
+#define	SSC_TB		MMIO32(SSC_BASE + 0x20)
+
+#define	SSC_RB		MMIO32(SSC_BASE + 0x24)
+
+#define	SSC_RXFCON	MMIO32(SSC_BASE + 0x30)
+
+#define	SSC_TXFCON	MMIO32(SSC_BASE + 0x34)
+
+#define	SSC_FSTAT	MMIO32(SSC_BASE + 0x38)
 
 
 // DIF [MOD_NUM=F043, MOD_REV=00, MOD_32BIT=C0]
 // DIF (Display Interface)
-#define	DIF_BASE				0xF1B00000
+#define	DIF_BASE		0xF1B00000
 /* Clock Control Register */
-#define	DIF_CLC					MMIO32(DIF_BASE + 0x00)
+#define	DIF_CLC			MMIO32(DIF_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	DIF_ID					MMIO32(DIF_BASE + 0x08)
+#define	DIF_ID			MMIO32(DIF_BASE + 0x08)
 
-/* RUN Control Register */
-#define	DIF_RUNCTRL				MMIO32(DIF_BASE + 0x10)
-#define	DIF_RUNCTRL_RUN			BIT(0)									 // Enable DIF Interface
+#define	DIF_STAT		MMIO32(DIF_BASE + 0x10)
 
-#define	DIF_CON0				MMIO32(DIF_BASE + 0x20)
+#define	DIF_TB			MMIO32(DIF_BASE + 0x20)
 
-#define	DIF_CON1				MMIO32(DIF_BASE + 0x24)
-#define	DIF_CON1_UNK0			BIT(0)
-#define	DIF_CON1_UNK1			BIT(1)
-#define	DIF_CON1_CS				BIT(6)									 // Use CS1 or CS2
-#define	DIF_CON1_CS_CS1			0x0
-#define	DIF_CON1_CS_CS2			0x40
+#define	DIF_RB			MMIO32(DIF_BASE + 0x24)
 
-/* FIFO config */
-#define	DIF_FIFOCFG				MMIO32(DIF_BASE + 0x28)
-#define	DIF_FIFOCFG_MODE		BIT(0)									 // DATA: CD=1, CMD: CD=0
-#define	DIF_FIFOCFG_MODE_DATA	0x0
-#define	DIF_FIFOCFG_MODE_CMD	0x1
-#define	DIF_FIFOCFG_UNK0		BIT(1)
-#define	DIF_FIFOCFG_UNK1		BIT(4)
-#define	DIF_FIFOCFG_BS			GENMASK(6, 5)							 // Rx/Tx burst size
-#define	DIF_FIFOCFG_BS_SHIFT	5
-#define	DIF_FIFOCFG_BS_8		0x0
-#define	DIF_FIFOCFG_BS_16		0x20
-#define	DIF_FIFOCFG_BS_24		0x40
-#define	DIF_FIFOCFG_BS_32		0x60
+#define	DIF_RXFCON		MMIO32(DIF_BASE + 0x30)
 
-#define	DIF_CON3				MMIO32(DIF_BASE + 0x2C)
+#define	DIF_TXFCON		MMIO32(DIF_BASE + 0x34)
 
-#define	DIF_CON4				MMIO32(DIF_BASE + 0x30)
+#define	DIF_FSTAT		MMIO32(DIF_BASE + 0x38)
 
-#define	DIF_STAT				MMIO32(DIF_BASE + 0x38)
-#define	DIF_STAT_BUSY			BIT(0)
+#define	DIF_TXDMACON	MMIO32(DIF_BASE + 0x58)
 
-#define	DIF_CON5				MMIO32(DIF_BASE + 0x3C)
+#define	DIF_RXDMACON	MMIO32(DIF_BASE + 0x5C)
 
-#define	DIF_CON6				MMIO32(DIF_BASE + 0x40)
-
-#define	DIF_CON7				MMIO32(DIF_BASE + 0x44)
-
-#define	DIF_CON8				MMIO32(DIF_BASE + 0x48)
-
-#define	DIF_CON9				MMIO32(DIF_BASE + 0x4C)
-
-#define	DIF_PROG(n)				MMIO32(DIF_BASE + 0x50 + ((n) * 0x4))
-
-#define	DIF_CON10				MMIO32(DIF_BASE + 0x68)
-
-#define	DIF_CON11				MMIO32(DIF_BASE + 0x6C)
-
-#define	DIF_CON12				MMIO32(DIF_BASE + 0x70)
-
-#define	DIF_CON13				MMIO32(DIF_BASE + 0xA0)
-
-#define	DIF_TX_SIZE				MMIO32(DIF_BASE + 0xA4)
-
-/* Raw Interrupt Status Register */
-#define	DIF_RIS					MMIO32(DIF_BASE + 0xC0)
-#define	DIF_RIS_EVENT0			BIT(0)
-#define	DIF_RIS_EVENT1			BIT(1)
-#define	DIF_RIS_EVENT2			BIT(2)
-#define	DIF_RIS_EVENT3			BIT(3)
-#define	DIF_RIS_EVENT4			BIT(4)
-#define	DIF_RIS_EVENT5			BIT(5)
-#define	DIF_RIS_EVENT6			BIT(6)
-#define	DIF_RIS_EVENT7			BIT(7)
-#define	DIF_RIS_EVENT8			BIT(8)
-
-/* Interrupt Mask Control Register */
-#define	DIF_IMSC				MMIO32(DIF_BASE + 0xC4)
-#define	DIF_IMSC_EVENT0			BIT(0)
-#define	DIF_IMSC_EVENT1			BIT(1)
-#define	DIF_IMSC_EVENT2			BIT(2)
-#define	DIF_IMSC_EVENT3			BIT(3)
-#define	DIF_IMSC_EVENT4			BIT(4)
-#define	DIF_IMSC_EVENT5			BIT(5)
-#define	DIF_IMSC_EVENT6			BIT(6)
-#define	DIF_IMSC_EVENT7			BIT(7)
-#define	DIF_IMSC_EVENT8			BIT(8)
-
-/* Masked Interrupt Status */
-#define	DIF_MIS					MMIO32(DIF_BASE + 0xC8)
-#define	DIF_MIS_EVENT0			BIT(0)
-#define	DIF_MIS_EVENT1			BIT(1)
-#define	DIF_MIS_EVENT2			BIT(2)
-#define	DIF_MIS_EVENT3			BIT(3)
-#define	DIF_MIS_EVENT4			BIT(4)
-#define	DIF_MIS_EVENT5			BIT(5)
-#define	DIF_MIS_EVENT6			BIT(6)
-#define	DIF_MIS_EVENT7			BIT(7)
-#define	DIF_MIS_EVENT8			BIT(8)
-
-/* Interrupt Clear Register */
-#define	DIF_ICR					MMIO32(DIF_BASE + 0xCC)
-#define	DIF_ICR_EVENT0			BIT(0)
-#define	DIF_ICR_EVENT1			BIT(1)
-#define	DIF_ICR_EVENT2			BIT(2)
-#define	DIF_ICR_EVENT3			BIT(3)
-#define	DIF_ICR_EVENT4			BIT(4)
-#define	DIF_ICR_EVENT5			BIT(5)
-#define	DIF_ICR_EVENT6			BIT(6)
-#define	DIF_ICR_EVENT7			BIT(7)
-#define	DIF_ICR_EVENT8			BIT(8)
-
-/* Interrupt Set Register */
-#define	DIF_ISR					MMIO32(DIF_BASE + 0xD0)
-#define	DIF_ISR_EVENT0			BIT(0)
-#define	DIF_ISR_EVENT1			BIT(1)
-#define	DIF_ISR_EVENT2			BIT(2)
-#define	DIF_ISR_EVENT3			BIT(3)
-#define	DIF_ISR_EVENT4			BIT(4)
-#define	DIF_ISR_EVENT5			BIT(5)
-#define	DIF_ISR_EVENT6			BIT(6)
-#define	DIF_ISR_EVENT7			BIT(7)
-#define	DIF_ISR_EVENT8			BIT(8)
-
-#define	DIF_CON14				MMIO32(DIF_BASE + 0xD4)
-
-#define	DIF_FIFO				MMIO32(DIF_BASE + 0x8000)
+#define	DIF_PROG(n)		MMIO32(DIF_BASE + 0x74 + ((n) * 0x4))
 
 
 // USB [MOD_NUM=F047, MOD_REV=00, MOD_32BIT=C0]
@@ -801,7 +723,7 @@
 #define	USB_ID		MMIO32(USB_BASE + 0x08)
 
 
-// NVIC [MOD_NUM=0031, MOD_REV=00, MOD_32BIT=C0]
+// NVIC [MOD_NUM=0031, MOD_REV=01, MOD_32BIT=C0]
 // NVIC module, registers collected using tests on real hardware (using "black box" method).
 #define	NVIC_BASE				0xF2800000
 /* Module Identifier Register */
@@ -1124,7 +1046,7 @@
 #define	DMAC_PCELL_ID3							MMIO32(DMAC_BASE + 0xFFC)
 
 
-// CAPCOM0 [MOD_NUM=0050, MOD_REV=00, MOD_32BIT=00]
+// CAPCOM0 [MOD_NUM=0050, MOD_REV=03, MOD_32BIT=00]
 // CAPCOM from drivers/clocksource/xgold_capcom_timer.c (GPL2)
 #define	CAPCOM0_BASE				0xF4000000
 #define	CAPCOM0						0xF4000000
@@ -1818,7 +1740,7 @@
 #define	RTC_SRC					MMIO32(RTC_BASE + 0xF0)
 
 
-// I2C [MOD_NUM=0046, MOD_REV=00, MOD_32BIT=00]
+// I2C [MOD_NUM=0046, MOD_REV=04, MOD_32BIT=00]
 // I2C from TC1100 official public datasheet.
 #define	I2C_BASE					0xF4800000
 /* Clock Control Register */
@@ -1938,7 +1860,7 @@
 #define	I2C_DATA_SRC				MMIO32(I2C_BASE + 0xFC)
 
 
-// GPTU0 [MOD_NUM=0001, MOD_REV=00, MOD_32BIT=C0]
+// GPTU0 [MOD_NUM=0001, MOD_REV=02, MOD_32BIT=C0]
 // GPTU from Tricore TC1765 official public datasheet
 #define	GPTU0_BASE							0xF4900000
 #define	GPTU0								0xF4900000
@@ -2598,7 +2520,7 @@
 #define	GPTU_SRC(base, n)					MMIO32(base + 0xE0 + ((n) * 0x4))
 
 
-// STM [MOD_NUM=0000, MOD_REV=00, MOD_32BIT=C0]
+// STM [MOD_NUM=0000, MOD_REV=02, MOD_32BIT=C0]
 // STM from Tricore TC1766 official public datasheet
 #define	STM_BASE	0xF4B00000
 /* Clock Control Register */
@@ -2624,7 +2546,7 @@
 #define	STM_CAP		MMIO32(STM_BASE + 0x2C)
 
 
-// ADC [MOD_NUM=F024, MOD_REV=00, MOD_32BIT=C0]
+// ADC [MOD_NUM=F024, MOD_REV=10, MOD_32BIT=C0]
 // ADC. Datasheet not found.
 #define	ADC_BASE				0xF4C00000
 /* Clock Control Register */
@@ -2727,7 +2649,7 @@
 #define	KEYPAD_RELEASE_SRC	MMIO32(KEYPAD_BASE + 0xFC)
 
 
-// DSP [MOD_NUM=F022, MOD_REV=00, MOD_32BIT=C0]
+// DSP [MOD_NUM=F022, MOD_REV=10, MOD_32BIT=C0]
 // Looks like DSP module, but not sure.
 #define	DSP_BASE	0xF6000000
 /* Clock Control Register */
@@ -2743,7 +2665,7 @@
 #define	DSP_RAM(n)	MMIO32(DSP_BASE + 0x1000 + ((n) * 0x4))
 
 
-// GPRSCU [MOD_NUM=F003, MOD_REV=00, MOD_32BIT=C0]
+// GPRSCU [MOD_NUM=F003, MOD_REV=10, MOD_32BIT=C0]
 // Looks like GPRS Cypher Uinit module, but not sure.
 #define	GPRSCU_BASE		0xF6200000
 /* Clock Control Register */

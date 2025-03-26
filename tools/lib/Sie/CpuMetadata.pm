@@ -246,7 +246,8 @@ sub findModuleDef {
 	return 0 if $def->{type} ne $module->{type};
 	
 	if ($def->{type} eq 'MODULE') {
-		return ($def->{id} & ~0xFF) == $module->{id};
+		return 1 if grep { $def->{id} == $_ } @{$module->{ids}};
+		return 0;
 	} elsif ($def->{type} eq 'AMBA') {
 		return ($def->{id} & 0xFFF) == $module->{id};
 	} elsif ($def->{type} eq 'NATIVE') {
@@ -299,15 +300,16 @@ sub loadModules {
 		
 		my $module = $self->parseModule("$path/$file");
 		
-		die sprintf("Module %s:%08X already defined", $module->{type}, $module->{id})
-			if exists $uniq_modules_ids->{$module->{type}.":".$module->{id}};
-		
-		$uniq_modules_ids->{$module->{type}.":".$module->{id}} = 1;
+		for my $id (@{$module->{ids}}) {
+			die sprintf("Module %s:%08X already defined", $module->{type}, $id)
+				if exists $uniq_modules_ids->{$module->{type}.":$id"};
+			$uniq_modules_ids->{$module->{type}.":".$id} = 1;
+		}
 		
 		for my $def (@{$self->{available_modules}}) {
 			if ($self->findModuleDef($def, $module)) {
 				my $new_module = dclone($module);
-				
+				$new_module->{id} = $def->{id};
 				$new_module->{base_name} = $new_module->{name};
 				$new_module->{base} = $def->{base};
 				$new_module->{name} = $def->{name};
@@ -340,7 +342,7 @@ sub parseModule {
 	my ($self, $file, $is_common_data) = @_;
 	
 	my $module = {
-		id			=> 0,
+		ids			=> [],
 		type		=> 'MODULE',
 		regs		=> {},
 		size		=> 0,
@@ -391,7 +393,9 @@ sub parseModule {
 				} else {
 					if ($key eq "type" || $key eq "name" || $key eq "descr") {
 						$module->{$key} = $value;
-					} elsif ($key eq "id" || $key eq "size" || $key eq "multi") {
+					} elsif ($key eq "id") {
+						$module->{ids} = [map { parseAnyInt($_) } split(/\s*,\s*/, $value)];
+					} elsif ($key eq "size" || $key eq "multi") {
 						$module->{$key} = parseAnyInt($value);
 					} else {
 						die("Invalid: '$line'");
@@ -480,6 +484,11 @@ sub parseModule {
 	}
 	close $fp;
 	
+	if ($module->{type} ne "MODULE") {
+		die Dumper($module) if scalar(@{$module->{ids}}) != 1;
+		$module->{id} = $module->{ids}->[0];
+	}
+
 	return $module;
 }
 
