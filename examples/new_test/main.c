@@ -59,50 +59,54 @@ int main(void) {
 	wdt_init();
 	cpu_enable_irq(false);
 	
-	printf("%08X\n", GPIO_PIN(58));
-	printf("%08X\n", MMIO32(0xF4300108));
-	printf("%08X\n", MMIO16(0xF4300108));
-	
-	GPIO_PIN(58) = 0x00000700;
-	
-	while (true);
-	
 	for (int i = 0; i < 0x200; i++)
 		NVIC_CON(i) = 1;
 	
-	uint32_t addr = 0xF7100000;
+	uint32_t addr = 0xF1B00000;
 	
 	write_addr(addr, 0x100);
 	stopwatch_msleep_wd(10);
 	
-	printf("NONE\n");
-	printf("%08X\n", read_addr(addr + 0xC0)); // RIS
-	printf("%08X\n", read_addr(addr + 0xC8)); // MIS
-	
-	stopwatch_msleep_wd(10);
-	
-	printf("ISR\n");
-	write_addr(addr + 0xC4, 1); // IMSC
-	write_addr(addr + 0xD0, 1); // ISR
-	printf("%08X\n", read_addr(addr + 0xC0)); // RIS
-	printf("%08X\n", read_addr(addr + 0xC8)); // MIS
-	
-	printf("irq %d\n", check_irq());
-	
-	stopwatch_msleep_wd(10);
-	
-	printf("IMSC\n");
-	write_addr(addr + 0xC4, 0); // IMSC
-	printf("%08X\n", read_addr(addr + 0xC0)); // RIS
-	printf("%08X\n", read_addr(addr + 0xC8)); // MIS
-	
-	stopwatch_msleep_wd(10);
-	
-	printf("ICR\n");
-	write_addr(addr + 0xCC, 1); // ICR
-	printf("%08X\n", read_addr(addr + 0xC0)); // RIS
-	printf("%08X\n", read_addr(addr + 0xC8)); // MIS
-	
+	for (int i = 0; i < 64; i++) {
+		printf("%08X\n", addr + 0xC0);
+
+		printf("NONE\n");
+		printf("%08X\n", read_addr(addr + 0xC0)); // RIS
+		printf("%08X\n", read_addr(addr + 0xC8)); // MIS
+
+		stopwatch_msleep_wd(10);
+
+		printf("ISR\n");
+		write_addr(addr + 0xC4, 1); // IMSC
+		write_addr(addr + 0xD0, 1); // ISR
+		printf("%08X\n", read_addr(addr + 0xC0)); // RIS
+		printf("%08X\n", read_addr(addr + 0xC8)); // MIS
+
+		int irq = check_irq();
+
+		printf("irq %d\n", irq);
+
+		stopwatch_msleep_wd(10);
+
+		printf("IMSC\n");
+		write_addr(addr + 0xC4, 0); // IMSC
+		printf("%08X\n", read_addr(addr + 0xC0)); // RIS
+		printf("%08X\n", read_addr(addr + 0xC8)); // MIS
+
+		stopwatch_msleep_wd(10);
+
+		printf("ICR\n");
+		write_addr(addr + 0xCC, 1); // ICR
+		printf("%08X\n", read_addr(addr + 0xC0)); // RIS
+		printf("%08X\n", read_addr(addr + 0xC8)); // MIS
+		printf("\n\n");
+
+		addr -= 4;
+
+		if (irq)
+			break;
+	}
+
 	/*
 	for (int i = 0x04; i < 0xFF; i += 4) {
 		printf("%08X + %08X: ", addr + i, addr + i + 0xC);

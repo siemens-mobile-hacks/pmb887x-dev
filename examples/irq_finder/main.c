@@ -13,8 +13,8 @@ volatile int curr_irq = -1;
 static const uint32_t regs[] = {
 	#if defined(PMB8876)
 	// cat ../lib/gen/pmb8876_regs.h  | grep -P -i '#define[\t]+([a-z0-9]*)_BASE' -i | awk '{print $2}' | sort | uniq | sed 's/$/,/g'
-	AFC_BASE,
 	ADC_BASE,
+	AFC_BASE,
 	CAPCOM0_BASE,
 	CAPCOM1_BASE,
 	CIF_BASE,
@@ -34,6 +34,7 @@ static const uint32_t regs[] = {
 	NVIC_BASE,
 	PLL_BASE,
 	RTC_BASE,
+	SCCU_BASE,
 	SCU_BASE,
 	SIM_BASE,
 	STM_BASE,
@@ -48,8 +49,8 @@ static const uint32_t regs[] = {
 	0xF7500000,
 	#elif defined(PMB8875)
 	// cat ../lib/gen/pmb8875_regs.h  | grep -P -i '#define[\t]+([a-z0-9]*)_BASE' -i | awk '{print $2}' | sort | uniq | sed 's/$/,/g'
-	AFC_BASE,
 	ADC_BASE,
+	AFC_BASE,
 	CAPCOM0_BASE,
 	CAPCOM1_BASE,
 	DIF_BASE,
@@ -65,6 +66,7 @@ static const uint32_t regs[] = {
 	NVIC_BASE,
 	PLL_BASE,
 	RTC_BASE,
+	SCCU_BASE,
 	SCU_BASE,
 	STM_BASE,
 	TPU_BASE,

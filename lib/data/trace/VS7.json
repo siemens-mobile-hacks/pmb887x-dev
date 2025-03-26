@@ -1,0 +1,12 @@
+[
+	{
+		"name":		"hw_trace",
+		"addr":		0xA0405A40,
+		"args":		["uint32", "cstr", "uint32"]
+	},
+	{
+		"name":		"assert",
+		"addr":		0xA04242E8,
+		"args":		["cstr", "uint32"]
+	}
+]

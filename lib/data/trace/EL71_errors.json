@@ -1,5 +1,11 @@
 [
 	{
+		"name":		"zzzzz",
+		"addr":		0x000829B4,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"],
+		"skip":		false
+	},
+	{
 		"name":		"debug2",
 		"addr":		0xA08D5C56,
 		"args":		["cstr", "uint32", "uint32", "uint32", "fmt"],
