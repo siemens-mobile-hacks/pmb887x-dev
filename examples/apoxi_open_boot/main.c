@@ -94,6 +94,7 @@ static uint32_t max_erase_size;
 static uint8_t write_buffer[128 * 1024];
 
 #ifndef BOOT_CUSTOM
+// FOR TEST ON EMULATOR
 int main() {
 	wdt_init();
 
@@ -126,7 +127,7 @@ int main() {
 #endif
 
 #ifdef BOOT_CUSTOM
-
+// FOR REAL DEVICE
 __attribute__((interrupt("irq"), used))
 void _start(void) {
 	MMIO32(PRAM_IRQ_HANDLER) = MMIO32(PARAM_OLD_IRQ_HANDLER);
