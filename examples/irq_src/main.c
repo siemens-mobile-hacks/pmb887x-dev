@@ -6,7 +6,7 @@ int main(void) {
 	cpu_enable_irq(false);
 	
 	for (int i = 0; i < 0x200; i++)
-		NVIC_CON(i) = 1;
+		VIC_CON(i) = 1;
 	
 	printf("manual ENABLE irq:\n");
 	SCU_EXTI1_SRC |= MOD_SRC_CLRR;
@@ -57,11 +57,11 @@ __IRQ void prefetch_abort_handler(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = NVIC_CURRENT_IRQ;
+	int irqn = VIC_CURRENT_IRQ;
 	
 	printf("irq: %d\n", irqn);
 	
 	SCU_EXTI1_SRC |= MOD_SRC_CLRR;
 	
-	NVIC_IRQ_ACK = 1;
+	VIC_IRQ_ACK = 1;
 }

@@ -20,7 +20,7 @@ int main(void) {
 	USART_IMSC(USART0) = USART_IMSC_RX;
 	
 	for (int i = 0; i < 0xFF; i++) {
-		NVIC_CON(i) = 1; // RX
+		VIC_CON(i) = 1; // RX
 	}
 	
 	printf("Xuj!\r\n");
@@ -36,7 +36,7 @@ int main(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = NVIC_CURRENT_IRQ;
+	int irqn = VIC_CURRENT_IRQ;
 	
 	// RX
 	if (irqn == 0x6) {
@@ -50,7 +50,7 @@ __IRQ void irq_handler(void) {
 		USART_ICR(USART0) = USART_ICR_ERR | USART_ICR_RX;
 	}
 	
-	NVIC_IRQ_ACK = 1;
+	VIC_IRQ_ACK = 1;
 }
 
 __IRQ void data_abort_handler(void) {

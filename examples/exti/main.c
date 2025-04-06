@@ -13,8 +13,8 @@ int main(void) {
 	SCU_EXTI |= SCU_EXTI_EXT1_RISING;
 	SCU_EXTI |= SCU_EXTI_EXT7_RISING;
 	
-	NVIC_CON(NVIC_SCU_EXTI1_IRQ) = 1;
-	NVIC_CON(NVIC_SCU_EXTI7_IRQ) = 1;
+	VIC_CON(VIC_SCU_EXTI1_IRQ) = 1;
+	VIC_CON(VIC_SCU_EXTI7_IRQ) = 1;
 	
 	// Init slider pins
 	GPIO_PIN(GPIO_OPEN_CLOSE_SW1) = GPIO_IS_ALT2;
@@ -47,21 +47,21 @@ __IRQ void prefetch_abort_handler(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = NVIC_CURRENT_IRQ;
+	int irqn = VIC_CURRENT_IRQ;
 	
 	printf("irq: %d\n", irqn);
 	
-	if (irqn == NVIC_SCU_EXTI1_IRQ) {
+	if (irqn == VIC_SCU_EXTI1_IRQ) {
 		SCU_EXTI1_SRC |= MOD_SRC_CLRR;
 		SCU_EXTI1_SRC |= MOD_SRC_SRE;
 		printf("slider open\n");
 	}
 	
-	if (irqn == NVIC_SCU_EXTI7_IRQ) {
+	if (irqn == VIC_SCU_EXTI7_IRQ) {
 		SCU_EXTI7_SRC |= MOD_SRC_CLRR;
 		SCU_EXTI7_SRC |= MOD_SRC_SRE;
 		printf("slider close\n");
 	}
 	
-	NVIC_IRQ_ACK = 1;
+	VIC_IRQ_ACK = 1;
 }

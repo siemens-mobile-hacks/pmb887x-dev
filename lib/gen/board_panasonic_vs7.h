@@ -4,6 +4,9 @@
 #define PMB8875
 
 // GPIO numbers
+#define	GPIO_DIF_MTSR	GPIO_DIF_DAT
+#define	GPIO_AP_RST		GPIO_DIF_RESET
+#define	GPIO_DIF_MRST	GPIO_DSPIN1
 
 
 // Keypad

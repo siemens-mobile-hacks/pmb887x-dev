@@ -50,8 +50,8 @@ void data_abort_handler2(void) {
 }
 
 static int check_irq() {
-	int irqn = NVIC_CURRENT_IRQ;
-	NVIC_IRQ_ACK = 1;
+	int irqn = VIC_CURRENT_IRQ;
+	VIC_IRQ_ACK = 1;
 	return irqn;
 }
 
@@ -60,48 +60,50 @@ int main(void) {
 	cpu_enable_irq(false);
 	
 	for (int i = 0; i < 0x200; i++)
-		NVIC_CON(i) = 1;
+		VIC_CON(i) = 1;
 	
-	uint32_t addr = 0xF1B00000;
+	uint32_t addr = DIF_BASE;
 	
+	USART_IMSC(USART0);
+
 	write_addr(addr, 0x100);
 	stopwatch_msleep_wd(10);
-	
-	for (int i = 0; i < 64; i++) {
-		printf("%08X\n", addr + 0xC0);
+
+	for (int i = 0x30; i < 0xEC; i += 4) {
+		printf("----------------\n");
+		printf("%08X\n", addr + i);
 
 		printf("NONE\n");
-		printf("%08X\n", read_addr(addr + 0xC0)); // RIS
-		printf("%08X\n", read_addr(addr + 0xC8)); // MIS
+		printf("%08X\n", read_addr(addr + i + 4)); // RIS
+		printf("%08X\n", read_addr(addr + i + 8)); // MIS
 
 		stopwatch_msleep_wd(10);
 
 		printf("ISR\n");
-		write_addr(addr + 0xC4, 1); // IMSC
-		write_addr(addr + 0xD0, 1); // ISR
-		printf("%08X\n", read_addr(addr + 0xC0)); // RIS
-		printf("%08X\n", read_addr(addr + 0xC8)); // MIS
+		write_addr(addr + i + 0, 1); // IMSC
+		write_addr(addr + i + 0x10, 1); // ISR
+		printf("%08X\n", read_addr(addr + i + 4)); // RIS
+		printf("%08X\n", read_addr(addr + i + 8)); // MIS
 
 		int irq = check_irq();
-
 		printf("irq %d\n", irq);
+
+		printf("----------------\n");
 
 		stopwatch_msleep_wd(10);
 
 		printf("IMSC\n");
-		write_addr(addr + 0xC4, 0); // IMSC
-		printf("%08X\n", read_addr(addr + 0xC0)); // RIS
-		printf("%08X\n", read_addr(addr + 0xC8)); // MIS
+		write_addr(addr + i + 0, 0); // IMSC
+		printf("%08X\n", read_addr(addr + i + 4)); // RIS
+		printf("%08X\n", read_addr(addr + i + 8)); // MIS
 
 		stopwatch_msleep_wd(10);
 
 		printf("ICR\n");
-		write_addr(addr + 0xCC, 1); // ICR
-		printf("%08X\n", read_addr(addr + 0xC0)); // RIS
-		printf("%08X\n", read_addr(addr + 0xC8)); // MIS
+		write_addr(addr + i + 0x0C, 1); // ICR
+		printf("%08X\n", read_addr(addr + i + 4)); // RIS
+		printf("%08X\n", read_addr(addr + i + 8)); // MIS
 		printf("\n\n");
-
-		addr -= 4;
 
 		if (irq)
 			break;
@@ -149,7 +151,7 @@ int main(void) {
 		printf("%08X: ", addr + i);
 		write_addr(addr + i, 0xFFFFFFFF);
 		stopwatch_msleep_wd(10);
-		printf("%d\n", NVIC_CURRENT_IRQ);
+		printf("%d\n", VIC_CURRENT_IRQ);
 	}
 	
 	for (int i = 0; i < 32; i++) {

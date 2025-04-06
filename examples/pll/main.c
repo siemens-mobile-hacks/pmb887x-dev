@@ -140,8 +140,8 @@ int main(void) {
 	tpu_init();
 	
 	cpu_enable_irq(true);
-	NVIC_CON(NVIC_TPU_INT0_IRQ) = 1;
-	NVIC_CON(NVIC_TPU_INT1_IRQ) = 1;
+	VIC_CON(VIC_TPU_INT0_IRQ) = 1;
+	VIC_CON(VIC_TPU_INT1_IRQ) = 1;
 	
 	struct clock_config_t clocks[] = {
 		{ .ndiv = 2, .k1 = 15, .k2 = 7, .cpu_div = 3, .freq = 2 },
@@ -194,13 +194,13 @@ __IRQ void prefetch_abort_handler(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = NVIC_CURRENT_IRQ;
+	int irqn = VIC_CURRENT_IRQ;
 	
-	if (irqn == NVIC_TPU_INT0_IRQ) {
+	if (irqn == VIC_TPU_INT0_IRQ) {
 		tpu_cnt++;
 		TPU_SRC(0) |= MOD_SRC_CLRR;
 	}
 	
-	NVIC_IRQ_ACK = 1;
+	VIC_IRQ_ACK = 1;
 }
 

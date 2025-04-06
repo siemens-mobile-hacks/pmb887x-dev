@@ -51,13 +51,13 @@ WRITE[4] F7600068: 0000000F (I2C_ERRIRQSC): RXF_UFL | RXF_OFL | TXF_UFL | TXF_OF
 WRITE[4] F7600084: 0000003F (I2C_IMSC): LSREQ_INT | SREQ_INT | LBREQ_INT | BREQ_INT | I2C_ERR_INT | I2C_P_INT (PC: A057A9F0, LR: A057AEE0)
 WRITE[4] F7600034: 00000002 (I2C_TPSCTRL): TPS(0x02) (PC: A057AF9C, LR: A057AEE0)
 
- READ[4] F280001C: 0000009B (NVIC_CURRENT_IRQ): NUM(0x9B)=I2C_SINGLE_REQ (PC: 000001C8, LR: A00A2B8C)
+ READ[4] F280001C: 0000009B (VIC_CURRENT_IRQ): NUM(0x9B)=I2C_SINGLE_REQ (PC: 000001C8, LR: A00A2B8C)
  READ[4] F7600080: 00000001 (I2C_RIS): LSREQ_INT (PC: A057AB18, LR: 00000930)
 WRITE[4] F7608000: 00000062 (I2C_TXD) (PC: A057A800, LR: A8E35D74)
 WRITE[4] F760008C: 00000001 (I2C_ICR): LSREQ_INT (PC: A057AB58, LR: A8E35D74)
-WRITE[4] F2800014: 00000001 (NVIC_IRQ_ACK) (PC: 00000944, LR: 00000914)
+WRITE[4] F2800014: 00000001 (VIC_IRQ_ACK) (PC: 00000944, LR: 00000914)
 
- READ[4] F280001C: 0000009E (NVIC_CURRENT_IRQ): NUM(0x9E)=I2C_PROTOCOL (PC: 000001C8, LR: A00954D4)
+ READ[4] F280001C: 0000009E (VIC_CURRENT_IRQ): NUM(0x9E)=I2C_PROTOCOL (PC: 000001C8, LR: A00954D4)
  READ[4] F7600074: 00000020 (I2C_PIRQSS): TX_END (PC: A057AA0C, LR: 00000930)
  READ[4] F7600074: 00000020 (I2C_PIRQSS): TX_END (PC: A057AA70, LR: 00000930)
  READ[4] F7600074: 00000020 (I2C_PIRQSS): TX_END (PC: A057AABC, LR: 00000930)
@@ -113,10 +113,10 @@ static void i2c_hw_read_fifo(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = NVIC_CURRENT_IRQ;
+	int irqn = VIC_CURRENT_IRQ;
 	
-	if (irqn == NVIC_I2C_ERROR_IRQ) {
-		printf("-> NVIC_I2C_ERROR_IRQ\n");
+	if (irqn == VIC_I2C_ERROR_IRQ) {
+		printf("-> VIC_I2C_ERROR_IRQ\n");
 		if ((I2C_ERRIRQSS & I2C_ERRIRQSS_RXF_UFL)) {
 			printf("I2C_ERRIRQSS_RXF_UFL\n");
 			i2c_state.code = ERR_UNDERFLOW;
@@ -137,8 +137,8 @@ __IRQ void irq_handler(void) {
 			printf("Unknown I2C_ERRIRQSS: %08X\n", I2C_ERRIRQSS);
 			while (true);
 		}
-	} else if (irqn == NVIC_I2C_BURST_REQ_IRQ) {
-		printf("-> NVIC_I2C_BURST_REQ_IRQ\n");
+	} else if (irqn == VIC_I2C_BURST_REQ_IRQ) {
+		printf("-> VIC_I2C_BURST_REQ_IRQ\n");
 		if ((I2C_RIS & I2C_RIS_BREQ_INT)) {
 			if ((i2c_state.addr & 1)) {
 				i2c_hw_read_fifo();
@@ -150,8 +150,8 @@ __IRQ void irq_handler(void) {
 			printf("Unknown I2C_RIS: %08X\n", I2C_RIS);
 			while (true);
 		}
-	} else if (irqn == NVIC_I2C_SINGLE_REQ_IRQ) {
-		printf("-> NVIC_I2C_SINGLE_REQ_IRQ\n");
+	} else if (irqn == VIC_I2C_SINGLE_REQ_IRQ) {
+		printf("-> VIC_I2C_SINGLE_REQ_IRQ\n");
 		if ((I2C_RIS & I2C_RIS_LSREQ_INT)) {
 			printf("--> I2C_RIS_LSREQ_INT\n");
 			if ((i2c_state.addr & 1)) {
@@ -202,8 +202,8 @@ __IRQ void irq_handler(void) {
 			printf("Unknown I2C_RIS: %08X\n", I2C_RIS);
 			while (true);
 		}
-	} else if (irqn == NVIC_I2C_PROTOCOL_IRQ) {
-		printf("-> NVIC_I2C_PROTOCOL_IRQ\n");
+	} else if (irqn == VIC_I2C_PROTOCOL_IRQ) {
+		printf("-> VIC_I2C_PROTOCOL_IRQ\n");
 		if ((I2C_PIRQSS & I2C_PIRQSS_TX_END)) {
 			printf("-> I2C_PIRQSS_TX_END\n");
 			i2c_state.code = ERR_SUCCESS;
@@ -225,7 +225,7 @@ __IRQ void irq_handler(void) {
 		while (true);
 	}
 	
-	NVIC_IRQ_ACK = 1;
+	VIC_IRQ_ACK = 1;
 }
 
 static int hw_i2c_transfer(uint8_t addr, uint8_t *buffer, int size, bool is_write) {
@@ -316,7 +316,7 @@ int main(void) {
 	
 	cpu_enable_irq(true);
 	for (int i = 0; i < 0x200; i++)
-		NVIC_CON(i) = 1;
+		VIC_CON(i) = 1;
 	
 	i2c_hw_init();
 	

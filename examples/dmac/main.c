@@ -48,19 +48,19 @@ int main(void) {
 	
 	DMAC_CH_CONFIG(ch) |= DMAC_CH_CONFIG_ENABLE;
 	
-	NVIC_CON(NVIC_DMAC_ERR_IRQ) = 1;
-	NVIC_CON(NVIC_DMAC_CH0_IRQ) = 1;
+	VIC_CON(VIC_DMAC_ERR_IRQ) = 1;
+	VIC_CON(VIC_DMAC_CH0_IRQ) = 1;
 	
 	while (!(DMAC_RAW_TC_STATUS & (1 << ch))) {
 		if (DMAC_ERR_STATUS) {
 			printf("ERR=%08X\n", DMAC_ERR_STATUS);
 			// DMAC_ERR_CLEAR = DMAC_ERR_STATUS;
-			printf("irqn: %d\n", NVIC_CURRENT_IRQ);
+			printf("irqn: %d\n", VIC_CURRENT_IRQ);
 			break;
 		}
 	}
 	
-	printf("irqn: %d\n", NVIC_CURRENT_IRQ);
+	printf("irqn: %d\n", VIC_CURRENT_IRQ);
 	
 	DMAC_TC_CLEAR = (1 << ch);
 	

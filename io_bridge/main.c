@@ -1,6 +1,7 @@
 #include <pmb887x.h>
 
 volatile uint32_t current_irq = 0;
+volatile uint32_t i = 0;
 
 static int command_handler(int irq);
 
@@ -61,9 +62,13 @@ static int command_handler(int irq) {
 			
 			wdt_serve();
 			
-			if (addr == (uint32_t) &NVIC_CURRENT_IRQ) {
+			bool skip = false;
+			if (addr == 0xFFFFFFFF)
+				skip = true;
+
+			if (addr == (uint32_t) &VIC_CURRENT_IRQ) {
 				value = current_irq;
-			} else {
+			} else if (!skip) {
 				if (c == 'R') { // 4
 					value = REG(addr);
 				} else if (c == 'r') { // 2
@@ -113,6 +118,9 @@ static int command_handler(int irq) {
 			wdt_serve();
 			
 			bool skip = false;
+
+			if (addr == 0xFFFFFFFF)
+				skip = true;
 			
 #ifdef PMB8876
 			// Low freq i2c clock
@@ -139,6 +147,21 @@ static int command_handler(int irq) {
 		}
 	}
 
+
+
+	if (addr == (uint32_t) &DIF_TB) {
+		if (value == 0x1FF0) {
+			value = i++ % 2 ? 0x1FF0 : 0x1000;
+		}
+	}
+
+	if (addr == (uint32_t) &DIF_CLC) {
+		if ((value & MOD_CLC_RMC)) {
+			//value &= ~MOD_CLC_RMC;
+			//value |= 0xFF << MOD_CLC_RMC_SHIFT;
+		}
+	}
+
 	if (addr == (uint32_t) &I2C_BUSCON) {
 	//	value &= ~I2C_BUSCON_BRPMOD;
 	//	value |= I2C_BUSCON_BRPMOD_MODE0;
@@ -162,7 +185,7 @@ static int command_handler(int irq) {
 			}
 			
 			if (irq == 1) {
-				if (addr == (uint32_t) &NVIC_IRQ_ACK)
+				if (addr == (uint32_t) &VIC_IRQ_ACK)
 					current_irq = 0;
 			}
 			
@@ -211,6 +234,6 @@ __IRQ void swi_handler(void) {
 }
 
 __IRQ void irq_handler(void) {
-	current_irq = NVIC_CURRENT_IRQ;
+	current_irq = VIC_CURRENT_IRQ;
 	while (command_handler(1) != 2); // Ждём IRQ_ACK
 }

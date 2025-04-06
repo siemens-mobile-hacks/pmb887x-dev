@@ -5,23 +5,73 @@
 		"args":		["uint32", "exit", "uint32"]
 	},
 	{
+		"name":		"debug_pickoff2",
+		"addr":		0xA07CD324,
+		"args":		["uint32", "exit", "uint32"]
+	},
+	{
 		"name":		"err",
-		"addr":		0xA07CCF58,
+		"addr":		0xA0AC4B00,
 		"args":		["cstr"]
 	},
 	{
-		"name":		"pasic_i2c_message_callback",
-		"addr":		0xA0AC7510,
-		"args":		["uint32", "uint32"]
+		"name":		"dif_error",
+		"addr":		0xa0ac4b00,
+		"args":		["cstr", "uint32", "uint32"]
 	},
 	{
-		"name":		"i2c_work",
-		"addr":		0xA0A960B0,
+		"name":		"debug_pickoff_str",
+		"addr":		0xa07ccf58,
+		"args":		["cstr", "uint32", "uint32"]
+	},
+	{
+		"name":		"SACC_SendMessage",
+		"addr":		0xa0aba7e0,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"SACC_RecvMessage",
+		"addr":		0xa0a8a6f0,
 		"args":		["uint32", "uint32", "uint32"]
 	},
 	{
-		"name":		"errrrr",
-		"addr":		0xA0A961DC,
-		"args":		["uint32", "uint32", "uint32", "uint32", "uint32", "uint32", "uint32"]
+		"name":		"SACC_LoadGenericBoot",
+		"addr":		0xa0a8a080,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"SACC_ExpectMessage",
+		"addr":		0xa08dd498,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"SACC_Work",
+		"addr":		0xa08dd658,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"dif_read",
+		"addr":		0xa0aca7d8,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"SACC_Transfer",
+		"addr":		0xa0abac54,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"GPIO_PIN_WRITE",
+		"addr":		0xa0a93b78,
+		"args":		["r1", "r2", "r0"]
+	},
+	{
+		"name":		"gpio_change_mode",
+		"addr":		0xa0a93af4,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"WRITE_DIF_CON",
+		"addr":		0xa0acb150,
+		"args":		["r1"]
 	}
 ]

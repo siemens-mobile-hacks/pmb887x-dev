@@ -22,14 +22,14 @@
 #define	GPIO_USART1_TXD	17
 #define	GPIO_USART1_RTS	18
 #define	GPIO_USART1_CTS	19
-#define	GPIO_USB_DPLUS	20
-#define	GPIO_USB_DMINUS	21
-#define	GPIO_PIN22		22
-#define	GPIO_PIN23		23
-#define	GPIO_PIN24		24
-#define	GPIO_PIN25		25
-#define	GPIO_PIN26		26
-#define	GPIO_PIN27		27
+#define	GPIO_SSC2_SCLK	20
+#define	GPIO_SSC2_MTSR	21
+#define	GPIO_SSC2_MRST	22
+#define	GPIO_DIF_CLK	23
+#define	GPIO_DIF_DAT	24
+#define	GPIO_DIF_RS		25
+#define	GPIO_DIF_CS		26
+#define	GPIO_DIF_RESET	27
 #define	GPIO_I2C_SCL	28
 #define	GPIO_I2C_SDA	29
 #define	GPIO_PIN30		30
@@ -41,7 +41,7 @@
 #define	GPIO_PIN36		36
 #define	GPIO_PIN37		37
 #define	GPIO_PIN38		38
-#define	GPIO_DIF_HD		39
+#define	GPIO_PIN39		39
 #define	GPIO_PIN40		40
 #define	GPIO_PIN41		41
 #define	GPIO_PIN42		42
@@ -79,151 +79,118 @@
 #define	GPIO_PIN74		74
 #define	GPIO_PIN75		75
 #define	GPIO_PIN76		76
-#define	GPIO_FCDP_RB	77
-#define	GPIO_CIF_D0		78
-#define	GPIO_CIF_D1		79
-#define	GPIO_CIF_D2		80
-#define	GPIO_CIF_D3		81
-#define	GPIO_CIF_D4		82
-#define	GPIO_CIF_D5		83
-#define	GPIO_CIF_D6		84
-#define	GPIO_CIF_D7		85
-#define	GPIO_CIF_PCLK	86
-#define	GPIO_CIF_HSYNC	87
-#define	GPIO_CIF_VSYNC	88
-#define	GPIO_CLKOUT2	89
-#define	GPIO_PIN90		90
-#define	GPIO_PIN91		91
-#define	GPIO_PIN92		92
-#define	GPIO_PIN93		93
-#define	GPIO_PIN94		94
-#define	GPIO_PIN95		95
-#define	GPIO_PIN96		96
-#define	GPIO_PIN97		97
-#define	GPIO_PIN98		98
-#define	GPIO_MMCI_DAT1	99
-#define	GPIO_PIN100		100
-#define	GPIO_PIN101		101
-#define	GPIO_PIN102		102
-#define	GPIO_PIN103		103
-#define	GPIO_MMCI_CMD	104
-#define	GPIO_MMCI_DAT0	105
-#define	GPIO_MMCI_CLK	106
-#define	GPIO_PIN107		107
-#define	GPIO_PIN108		108
-#define	GPIO_PIN109		109
-#define	GPIO_PIN110		110
-#define	GPIO_PIN111		111
-#define	GPIO_I2S1_CLK1	112
-#define	GPIO_CIF_PD		113
 
 
 // IRQ numbers
-#define	NVIC_USART0_TX_IRQ		4
-#define	NVIC_USART0_TBUF_IRQ	5
-#define	NVIC_USART0_RX_IRQ		6
-#define	NVIC_USART0_ERR_IRQ		7
-#define	NVIC_USART0_CTS_IRQ		8
-#define	NVIC_USART0_ABDET_IRQ	9
-#define	NVIC_USART0_ABSTART_IRQ	10
-#define	NVIC_USART0_TMO_IRQ		11
-#define	NVIC_USB_IRQ			25
-#define	NVIC_USART1_TX_IRQ		26
-#define	NVIC_USART1_TBUF_IRQ	27
-#define	NVIC_USART1_RX_IRQ		28
-#define	NVIC_USART1_ERR_IRQ		29
-#define	NVIC_USART1_CTS_IRQ		30
-#define	NVIC_USART1_ABDET_IRQ	31
-#define	NVIC_USART1_ABSTART_IRQ	32
-#define	NVIC_USART1_TMO_IRQ		33
-#define	NVIC_DMAC_ERR_IRQ		35
-#define	NVIC_DMAC_CH0_IRQ		36
-#define	NVIC_DMAC_CH1_IRQ		37
-#define	NVIC_DMAC_CH2_IRQ		38
-#define	NVIC_DMAC_CH3_IRQ		39
-#define	NVIC_DMAC_CH4_IRQ		40
-#define	NVIC_DMAC_CH5_IRQ		41
-#define	NVIC_DMAC_CH6_IRQ		42
-#define	NVIC_DMAC_CH7_IRQ		43
-#define	NVIC_RTC_IRQ			46
-#define	NVIC_SCU_EXTI0_IRQ		48
-#define	NVIC_SCU_EXTI1_IRQ		49
-#define	NVIC_SCU_EXTI2_IRQ		50
-#define	NVIC_SCU_EXTI3_IRQ		51
-#define	NVIC_SCU_EXTI4_IRQ		52
-#define	NVIC_SCU_DSP0_IRQ		53
-#define	NVIC_SCU_DSP1_IRQ		54
-#define	NVIC_SCU_DSP2_IRQ		55
-#define	NVIC_SCU_DSP3_IRQ		56
-#define	NVIC_SCU_DSP4_IRQ		57
-#define	NVIC_SCU_UNK0_IRQ		58
-#define	NVIC_SCU_UNK1_IRQ		59
-#define	NVIC_SCU_UNK2_IRQ		60
-#define	NVIC_SCU_EXTI5_IRQ		61
-#define	NVIC_SCU_EXTI6_IRQ		62
-#define	NVIC_SCU_EXTI7_IRQ		63
-#define	NVIC_SCCU_UNK_IRQ		63
-#define	NVIC_SCCU_WAKE_IRQ		64
-#define	NVIC_PLL_IRQ			65
-#define	NVIC_I2C_DATA_IRQ		66
-#define	NVIC_I2C_PROTO_IRQ		67
-#define	NVIC_I2C_END_IRQ		68
-#define	NVIC_ADC_INT0_IRQ		70
-#define	NVIC_ADC_INT1_IRQ		71
-#define	NVIC_CAPCOM0_T0_IRQ		72
-#define	NVIC_CAPCOM0_T1_IRQ		73
-#define	NVIC_CAPCOM0_CC0_IRQ	74
-#define	NVIC_CAPCOM0_CC1_IRQ	75
-#define	NVIC_CAPCOM0_CC2_IRQ	76
-#define	NVIC_CAPCOM0_CC3_IRQ	77
-#define	NVIC_CAPCOM0_CC4_IRQ	78
-#define	NVIC_CAPCOM0_CC5_IRQ	79
-#define	NVIC_CAPCOM0_CC6_IRQ	80
-#define	NVIC_CAPCOM0_CC7_IRQ	81
-#define	NVIC_CAPCOM1_T0_IRQ		82
-#define	NVIC_CAPCOM1_T1_IRQ		83
-#define	NVIC_CAPCOM1_CC0_IRQ	84
-#define	NVIC_CAPCOM1_CC1_IRQ	85
-#define	NVIC_CAPCOM1_CC2_IRQ	86
-#define	NVIC_CAPCOM1_CC3_IRQ	87
-#define	NVIC_CAPCOM1_CC4_IRQ	88
-#define	NVIC_CAPCOM1_CC5_IRQ	89
-#define	NVIC_CAPCOM1_CC6_IRQ	90
-#define	NVIC_CAPCOM1_CC7_IRQ	91
-#define	NVIC_GPTU0_SRC7_IRQ		92
-#define	NVIC_GPTU0_SRC6_IRQ		93
-#define	NVIC_GPTU0_SRC5_IRQ		94
-#define	NVIC_GPTU0_SRC4_IRQ		95
-#define	NVIC_GPTU0_SRC3_IRQ		96
-#define	NVIC_GPTU0_SRC2_IRQ		97
-#define	NVIC_GPTU0_SRC1_IRQ		98
-#define	NVIC_GPTU0_SRC0_IRQ		99
-#define	NVIC_GPTU1_SRC7_IRQ		100
-#define	NVIC_GPTU1_SRC6_IRQ		101
-#define	NVIC_GPTU1_SRC5_IRQ		102
-#define	NVIC_GPTU1_SRC4_IRQ		103
-#define	NVIC_GPTU1_SRC3_IRQ		104
-#define	NVIC_GPTU1_SRC2_IRQ		105
-#define	NVIC_GPTU1_SRC1_IRQ		106
-#define	NVIC_GPTU1_SRC0_IRQ		107
-#define	NVIC_KEYPAD_PRESS_IRQ	108
-#define	NVIC_KEYPAD_UNK0_IRQ	109
-#define	NVIC_KEYPAD_UNK1_IRQ	110
-#define	NVIC_KEYPAD_RELEASE_IRQ	111
-#define	NVIC_TPU_INT_UNK0_IRQ	113
-#define	NVIC_TPU_INT_UNK1_IRQ	114
-#define	NVIC_TPU_INT_UNK2_IRQ	115
-#define	NVIC_TPU_INT_UNK3_IRQ	116
-#define	NVIC_TPU_INT_UNK4_IRQ	117
-#define	NVIC_TPU_INT_UNK5_IRQ	118
-#define	NVIC_TPU_INT0_IRQ		119
-#define	NVIC_TPU_INT1_IRQ		120
-#define	NVIC_GPRSCU_INT0_IRQ	121
-#define	NVIC_GPRSCU_INT1_IRQ	122
-#define	NVIC_DIF_INT0_IRQ		134
-#define	NVIC_DIF_INT1_IRQ		135
-#define	NVIC_DIF_INT2_IRQ		136
-#define	NVIC_DIF_INT3_IRQ		137
+#define	VIC_USART0_TX_IRQ		4
+#define	VIC_USART0_TBUF_IRQ	5
+#define	VIC_USART0_RX_IRQ		6
+#define	VIC_USART0_ERR_IRQ		7
+#define	VIC_USART0_CTS_IRQ		8
+#define	VIC_USART0_ABDET_IRQ	9
+#define	VIC_USART0_ABSTART_IRQ	10
+#define	VIC_USART0_TMO_IRQ		11
+#define	VIC_SSC_TX_IRQ			12
+#define	VIC_SSC_RX_IRQ			13
+#define	VIC_SSC_ERR_IRQ		14
+#define	VIC_SSC_UNK_IRQ		15
+#define	VIC_DIF_TX_IRQ			18
+#define	VIC_DIF_RX_IRQ			19
+#define	VIC_DIF_ERR_IRQ		20
+#define	VIC_DIF_UNK_IRQ		21
+#define	VIC_USB_IRQ			25
+#define	VIC_USART1_TX_IRQ		26
+#define	VIC_USART1_TBUF_IRQ	27
+#define	VIC_USART1_RX_IRQ		28
+#define	VIC_USART1_ERR_IRQ		29
+#define	VIC_USART1_CTS_IRQ		30
+#define	VIC_USART1_ABDET_IRQ	31
+#define	VIC_USART1_ABSTART_IRQ	32
+#define	VIC_USART1_TMO_IRQ		33
+#define	VIC_DMAC_ERR_IRQ		35
+#define	VIC_DMAC_CH0_IRQ		36
+#define	VIC_DMAC_CH1_IRQ		37
+#define	VIC_DMAC_CH2_IRQ		38
+#define	VIC_DMAC_CH3_IRQ		39
+#define	VIC_DMAC_CH4_IRQ		40
+#define	VIC_DMAC_CH5_IRQ		41
+#define	VIC_DMAC_CH6_IRQ		42
+#define	VIC_DMAC_CH7_IRQ		43
+#define	VIC_RTC_IRQ			46
+#define	VIC_SCU_EXTI0_IRQ		48
+#define	VIC_SCU_EXTI1_IRQ		49
+#define	VIC_SCU_EXTI2_IRQ		50
+#define	VIC_SCU_EXTI3_IRQ		51
+#define	VIC_SCU_EXTI4_IRQ		52
+#define	VIC_SCU_DSP0_IRQ		53
+#define	VIC_SCU_DSP1_IRQ		54
+#define	VIC_SCU_DSP2_IRQ		55
+#define	VIC_SCU_DSP3_IRQ		56
+#define	VIC_SCU_DSP4_IRQ		57
+#define	VIC_SCU_UNK0_IRQ		58
+#define	VIC_SCU_UNK1_IRQ		59
+#define	VIC_SCU_UNK2_IRQ		60
+#define	VIC_SCU_EXTI5_IRQ		61
+#define	VIC_SCU_EXTI6_IRQ		62
+#define	VIC_SCCU_UNK_IRQ		63
+#define	VIC_SCU_EXTI7_IRQ		63
+#define	VIC_SCCU_WAKE_IRQ		64
+#define	VIC_PLL_IRQ			65
+#define	VIC_I2C_DATA_IRQ		66
+#define	VIC_I2C_PROTO_IRQ		67
+#define	VIC_I2C_END_IRQ		68
+#define	VIC_ADC_INT0_IRQ		70
+#define	VIC_ADC_INT1_IRQ		71
+#define	VIC_CAPCOM0_T0_IRQ		72
+#define	VIC_CAPCOM0_T1_IRQ		73
+#define	VIC_CAPCOM0_CC0_IRQ	74
+#define	VIC_CAPCOM0_CC1_IRQ	75
+#define	VIC_CAPCOM0_CC2_IRQ	76
+#define	VIC_CAPCOM0_CC3_IRQ	77
+#define	VIC_CAPCOM0_CC4_IRQ	78
+#define	VIC_CAPCOM0_CC5_IRQ	79
+#define	VIC_CAPCOM0_CC6_IRQ	80
+#define	VIC_CAPCOM0_CC7_IRQ	81
+#define	VIC_CAPCOM1_T0_IRQ		82
+#define	VIC_CAPCOM1_T1_IRQ		83
+#define	VIC_CAPCOM1_CC0_IRQ	84
+#define	VIC_CAPCOM1_CC1_IRQ	85
+#define	VIC_CAPCOM1_CC2_IRQ	86
+#define	VIC_CAPCOM1_CC3_IRQ	87
+#define	VIC_CAPCOM1_CC4_IRQ	88
+#define	VIC_CAPCOM1_CC5_IRQ	89
+#define	VIC_CAPCOM1_CC6_IRQ	90
+#define	VIC_CAPCOM1_CC7_IRQ	91
+#define	VIC_GPTU0_SRC7_IRQ		92
+#define	VIC_GPTU0_SRC6_IRQ		93
+#define	VIC_GPTU0_SRC5_IRQ		94
+#define	VIC_GPTU0_SRC4_IRQ		95
+#define	VIC_GPTU0_SRC3_IRQ		96
+#define	VIC_GPTU0_SRC2_IRQ		97
+#define	VIC_GPTU0_SRC1_IRQ		98
+#define	VIC_GPTU0_SRC0_IRQ		99
+#define	VIC_GPTU1_SRC7_IRQ		100
+#define	VIC_GPTU1_SRC6_IRQ		101
+#define	VIC_GPTU1_SRC5_IRQ		102
+#define	VIC_GPTU1_SRC4_IRQ		103
+#define	VIC_GPTU1_SRC3_IRQ		104
+#define	VIC_GPTU1_SRC2_IRQ		105
+#define	VIC_GPTU1_SRC1_IRQ		106
+#define	VIC_GPTU1_SRC0_IRQ		107
+#define	VIC_KEYPAD_PRESS_IRQ	108
+#define	VIC_KEYPAD_UNK0_IRQ	109
+#define	VIC_KEYPAD_UNK1_IRQ	110
+#define	VIC_KEYPAD_RELEASE_IRQ	111
+#define	VIC_TPU_INT_UNK0_IRQ	113
+#define	VIC_TPU_INT_UNK1_IRQ	114
+#define	VIC_TPU_INT_UNK2_IRQ	115
+#define	VIC_TPU_INT_UNK3_IRQ	116
+#define	VIC_TPU_INT_UNK4_IRQ	117
+#define	VIC_TPU_INT_UNK5_IRQ	118
+#define	VIC_TPU_INT0_IRQ		119
+#define	VIC_TPU_INT1_IRQ		120
+#define	VIC_GPRSCU_INT0_IRQ	121
+#define	VIC_GPRSCU_INT1_IRQ	122
 
 
 // Common regs for all modules
@@ -665,52 +632,302 @@
 
 // SSC [MOD_NUM=0045, MOD_REV=25, MOD_32BIT=00]
 // SSC (SPI)
-#define	SSC_BASE	0xF1100000
+#define	SSC_BASE				0xF1100000
 /* Clock Control Register */
-#define	SSC_CLC		MMIO32(SSC_BASE + 0x00)
+#define	SSC_CLC					MMIO32(SSC_BASE + 0x00)
+
+/* Port Input Select Register */
+#define	SSC_PISEL				MMIO32(SSC_BASE + 0x04)
+#define	SSC_PISEL_MRIS			BIT(0)					 // Master Mode Receive Input Select
+#define	SSC_PISEL_SRIS			BIT(1)					 // Slave Mode Receive Input Select
+#define	SSC_PISEL_SCIS			BIT(2)					 // Slave Mode Clock Input Select
+#define	SSC_PISEL_SLSIS			GENMASK(5, 3)			 // Slave Mode Slave Select Input Selection
+#define	SSC_PISEL_SLSIS_SHIFT	3
+#define	SSC_PISEL_STIP			BIT(8)					 // Slave Transmit Idle State Polarity
 
 /* Module Identifier Register */
-#define	SSC_ID		MMIO32(SSC_BASE + 0x08)
+#define	SSC_ID					MMIO32(SSC_BASE + 0x08)
 
-#define	SSC_STAT	MMIO32(SSC_BASE + 0x10)
+/* Control Register */
+#define	SSC_CON					MMIO32(SSC_BASE + 0x10)
+#define	SSC_CON_HB				BIT(4)					 // Heading Bit Control
+#define	SSC_CON_HB_LSB			0x0
+#define	SSC_CON_HB_MSB			0x10
+#define	SSC_CON_PH				BIT(5)					 // Clock Phase Control (CPHA)
+#define	SSC_CON_PH_0			0x0
+#define	SSC_CON_PH_1			0x20
+#define	SSC_CON_PO				BIT(6)					 // Clock Polarity Control (CPOL)
+#define	SSC_CON_PO_0			0x0
+#define	SSC_CON_PO_1			0x40
+#define	SSC_CON_LB				BIT(7)					 // Loop-Back Control
+#define	SSC_CON_TE				BIT(8)					 // Transmit Error Flag
+#define	SSC_CON_TEN				BIT(8)					 // Transmit Error Enable
+#define	SSC_CON_RE				BIT(9)					 // Receive Error Flag
+#define	SSC_CON_REN				BIT(9)					 // Receive Error Enable
+#define	SSC_CON_PEN				BIT(10)					 // Phase Error Enable
+#define	SSC_CON_PE				BIT(10)					 // Phase Error Flag
+#define	SSC_CON_BE				BIT(11)					 // Baud Rate Error Flag
+#define	SSC_CON_BEN				BIT(11)					 // Baud Rate Error Enable
+#define	SSC_CON_AREN			BIT(12)					 // Automatic Reset Enable
+#define	SSC_CON_BSY				BIT(12)					 // Busy Flag
+#define	SSC_CON_LOCK			BIT(13)					 // Lock bit for the 8 MSB bits of the Transmist data register
+#define	SSC_CON_MS				BIT(14)					 // Master Select
+#define	SSC_CON_MS_SLAVE		0x0
+#define	SSC_CON_MS_MASTER		0x4000
+#define	SSC_CON_EN				BIT(15)					 // Enable Bit
+#define	SSC_CON_BC				GENMASK(19, 16)			 // Bit Count Status
+#define	SSC_CON_BC_SHIFT		16
+#define	SSC_CON_BM				GENMASK(19, 16)			 // Data Width Selection
+#define	SSC_CON_BM_SHIFT		16
+#define	SSC_CON_BM_1			0x0
+#define	SSC_CON_BM_2			0x10000
+#define	SSC_CON_BM_3			0x20000
+#define	SSC_CON_BM_4			0x30000
+#define	SSC_CON_BM_5			0x40000
+#define	SSC_CON_BM_6			0x50000
+#define	SSC_CON_BM_7			0x60000
+#define	SSC_CON_BM_8			0x70000
+#define	SSC_CON_BM_9			0x80000
+#define	SSC_CON_BM_10			0x90000
+#define	SSC_CON_BM_11			0xA0000
+#define	SSC_CON_BM_12			0xB0000
+#define	SSC_CON_BM_13			0xC0000
+#define	SSC_CON_BM_14			0xD0000
+#define	SSC_CON_BM_15			0xE0000
+#define	SSC_CON_BM_16			0xF0000
 
-#define	SSC_TB		MMIO32(SSC_BASE + 0x20)
+/* Baud Rate Timer Reload Register */
+#define	SSC_BR					MMIO32(SSC_BASE + 0x14)
+#define	SSC_BR_BR_VALUE			GENMASK(15, 0)			 // Baud Rate Timer/Reload Register Value
+#define	SSC_BR_BR_VALUE_SHIFT	0
 
-#define	SSC_RB		MMIO32(SSC_BASE + 0x24)
+/* Transmit Buffer Register */
+#define	SSC_TB					MMIO32(SSC_BASE + 0x20)
+#define	SSC_TB_TB_VALUE			GENMASK(15, 0)			 // Transmit Data Register Value
+#define	SSC_TB_TB_VALUE_SHIFT	0
 
-#define	SSC_RXFCON	MMIO32(SSC_BASE + 0x30)
+/* Receive Buffer Register */
+#define	SSC_RB					MMIO32(SSC_BASE + 0x24)
+#define	SSC_RB_RB_VALUE			GENMASK(15, 0)			 // Receive Data Register Value
+#define	SSC_RB_RB_VALUE_SHIFT	0
 
-#define	SSC_TXFCON	MMIO32(SSC_BASE + 0x34)
+/* Receive FIFO Control Register */
+#define	SSC_RXFCON				MMIO32(SSC_BASE + 0x30)
+#define	SSC_RXFCON_RXFEN		BIT(0)					 // Receive FIFO Enable
+#define	SSC_RXFCON_RXFLU		BIT(1)					 // Receive FIFO Flush
+#define	SSC_RXFCON_RXTMEN		BIT(2)					 // Receive FIFO Transparent Mode Enable
+#define	SSC_RXFCON_RXFITL		GENMASK(13, 8)			 // Receive FIFO Interrupt Trigger Level
+#define	SSC_RXFCON_RXFITL_SHIFT	8
 
-#define	SSC_FSTAT	MMIO32(SSC_BASE + 0x38)
+#define	SSC_TXFCON				MMIO32(SSC_BASE + 0x34)
+#define	SSC_TXFCON_TXFEN		BIT(0)					 // Receive FIFO Enable
+#define	SSC_TXFCON_TXFLU		BIT(1)					 // Receive FIFO Flush
+#define	SSC_TXFCON_TXTMEN		BIT(2)					 // Receive FIFO Transparent Mode Enable
+#define	SSC_TXFCON_TXFITL		GENMASK(13, 8)			 // Receive FIFO Interrupt Trigger Level
+#define	SSC_TXFCON_TXFITL_SHIFT	8
+
+#define	SSC_FSTAT				MMIO32(SSC_BASE + 0x38)
+#define	SSC_FSTAT_RXFFL			GENMASK(5, 0)			 // Receive FIFO Filling Level
+#define	SSC_FSTAT_RXFFL_SHIFT	0
+#define	SSC_FSTAT_TXFFL			GENMASK(13, 8)			 // Transmit FIFO Filling Level
+#define	SSC_FSTAT_TXFFL_SHIFT	8
+
+#define	SSC_UNK0				MMIO32(SSC_BASE + 0x40)
+
+#define	SSC_UNK1				MMIO32(SSC_BASE + 0x44)
+
+#define	SSC_IMSC				MMIO32(SSC_BASE + 0x48)
+#define	SSC_IMSC_TX				BIT(0)					 // Transmit interrupt mask
+#define	SSC_IMSC_RX				BIT(1)					 // Receive interrupt mask
+#define	SSC_IMSC_ERR			BIT(3)					 // Error interrupt mask
+#define	SSC_IMSC_TB				BIT(4)					 // Transmit buffer interrupt mask
+
+#define	SSC_RIS					MMIO32(SSC_BASE + 0x4C)
+#define	SSC_RIS_TX				BIT(0)					 // Transmit interrupt raw status
+#define	SSC_RIS_RX				BIT(1)					 // Receive interrupt raw status
+#define	SSC_RIS_ERR				BIT(2)					 // Error interrupt raw status
+#define	SSC_RIS_TB				BIT(3)					 // Transmit buffer raw interrupt status
+
+#define	SSC_MIS					MMIO32(SSC_BASE + 0x50)
+#define	SSC_MIS_TX				BIT(0)					 // Transmit interrupt status
+#define	SSC_MIS_RX				BIT(1)					 // Receive interrupt status
+#define	SSC_MIS_ERR				BIT(2)					 // Error interrupt status
+#define	SSC_MIS_TB				BIT(3)					 // Transmit buffer interrupt status
+
+#define	SSC_ICR					MMIO32(SSC_BASE + 0x54)
+#define	SSC_ICR_TX				BIT(0)					 // Transmit interrupt mask
+#define	SSC_ICR_RX				BIT(1)					 // Receive interrupt mask
+#define	SSC_ICR_ERR				BIT(2)					 // Error interrupt mask
+#define	SSC_ICR_TB				BIT(3)					 // Transmit buffer interrupt mask
+
+#define	SSC_ISR					MMIO32(SSC_BASE + 0x58)
+#define	SSC_ISR_TX				BIT(0)					 // Transmit interrupt set
+#define	SSC_ISR_RX				BIT(1)					 // Receive interrupt set
+#define	SSC_ISR_ERR				BIT(2)					 // Error interrupt set
+#define	SSC_ISR_TB				BIT(3)					 // Transmit buffer interrupt set
+
+#define	SSC_DMACON				MMIO32(SSC_BASE + 0x5C)
+#define	SSC_DMACON_TX			BIT(0)					 // Transmit DMA Enable. If this bit is set to 1, DMA for the transmit FIFO is enabled
+#define	SSC_DMACON_RX			BIT(1)					 // Receive DMA Enable. If this bit is set to 1, DMA for the receive FIFO is enabled.
+
+#define	SSC_UNK2				MMIO32(SSC_BASE + 0x60)
 
 
 // DIF [MOD_NUM=F043, MOD_REV=00, MOD_32BIT=C0]
 // DIF (Display Interface)
-#define	DIF_BASE		0xF1B00000
+#define	DIF_BASE				0xF1B00000
 /* Clock Control Register */
-#define	DIF_CLC			MMIO32(DIF_BASE + 0x00)
+#define	DIF_CLC					MMIO32(DIF_BASE + 0x00)
+
+/* Port Input Select Register */
+#define	DIF_PISEL				MMIO32(DIF_BASE + 0x04)
+#define	DIF_PISEL_MRIS			BIT(0)									 // Master Mode Receive Input Select
+#define	DIF_PISEL_SRIS			BIT(1)									 // Slave Mode Receive Input Select
+#define	DIF_PISEL_SCIS			BIT(2)									 // Slave Mode Clock Input Select
+#define	DIF_PISEL_SLSIS			GENMASK(5, 3)							 // Slave Mode Slave Select Input Selection
+#define	DIF_PISEL_SLSIS_SHIFT	3
+#define	DIF_PISEL_STIP			BIT(8)									 // Slave Transmit Idle State Polarity
 
 /* Module Identifier Register */
-#define	DIF_ID			MMIO32(DIF_BASE + 0x08)
+#define	DIF_ID					MMIO32(DIF_BASE + 0x08)
 
-#define	DIF_STAT		MMIO32(DIF_BASE + 0x10)
+/* Control Register */
+#define	DIF_CON					MMIO32(DIF_BASE + 0x10)
+#define	DIF_CON_HB				BIT(4)									 // Heading Bit Control
+#define	DIF_CON_HB_LSB			0x0
+#define	DIF_CON_HB_MSB			0x10
+#define	DIF_CON_PH				BIT(5)									 // Clock Phase Control (CPHA)
+#define	DIF_CON_PH_0			0x0
+#define	DIF_CON_PH_1			0x20
+#define	DIF_CON_PO				BIT(6)									 // Clock Polarity Control (CPOL)
+#define	DIF_CON_PO_0			0x0
+#define	DIF_CON_PO_1			0x40
+#define	DIF_CON_LB				BIT(7)									 // Loop-Back Control
+#define	DIF_CON_TEN				BIT(8)									 // Transmit Error Enable
+#define	DIF_CON_TE				BIT(8)									 // Transmit Error Flag
+#define	DIF_CON_REN				BIT(9)									 // Receive Error Enable
+#define	DIF_CON_RE				BIT(9)									 // Receive Error Flag
+#define	DIF_CON_PE				BIT(10)									 // Phase Error Flag
+#define	DIF_CON_PEN				BIT(10)									 // Phase Error Enable
+#define	DIF_CON_BEN				BIT(11)									 // Baud Rate Error Enable
+#define	DIF_CON_BE				BIT(11)									 // Baud Rate Error Flag
+#define	DIF_CON_BSY				BIT(12)									 // Busy Flag
+#define	DIF_CON_AREN			BIT(12)									 // Automatic Reset Enable
+#define	DIF_CON_LOCK			BIT(13)									 // Lock bit for the 8 MSB bits of the Transmist data register
+#define	DIF_CON_MS				BIT(14)									 // Master Select
+#define	DIF_CON_MS_SLAVE		0x0
+#define	DIF_CON_MS_MASTER		0x4000
+#define	DIF_CON_EN				BIT(15)									 // Enable Bit
+#define	DIF_CON_BM				GENMASK(19, 16)							 // Data Width Selection
+#define	DIF_CON_BM_SHIFT		16
+#define	DIF_CON_BM_1			0x0
+#define	DIF_CON_BM_2			0x10000
+#define	DIF_CON_BM_3			0x20000
+#define	DIF_CON_BM_4			0x30000
+#define	DIF_CON_BM_5			0x40000
+#define	DIF_CON_BM_6			0x50000
+#define	DIF_CON_BM_7			0x60000
+#define	DIF_CON_BM_8			0x70000
+#define	DIF_CON_BM_9			0x80000
+#define	DIF_CON_BM_10			0x90000
+#define	DIF_CON_BM_11			0xA0000
+#define	DIF_CON_BM_12			0xB0000
+#define	DIF_CON_BM_13			0xC0000
+#define	DIF_CON_BM_14			0xD0000
+#define	DIF_CON_BM_15			0xE0000
+#define	DIF_CON_BM_16			0xF0000
+#define	DIF_CON_BC				GENMASK(19, 16)							 // Bit Count Status
+#define	DIF_CON_BC_SHIFT		16
 
-#define	DIF_TB			MMIO32(DIF_BASE + 0x20)
+/* Baud Rate Timer Reload Register */
+#define	DIF_BR					MMIO32(DIF_BASE + 0x14)
+#define	DIF_BR_BR_VALUE			GENMASK(15, 0)							 // Baud Rate Timer/Reload Register Value
+#define	DIF_BR_BR_VALUE_SHIFT	0
 
-#define	DIF_RB			MMIO32(DIF_BASE + 0x24)
+/* Transmit Buffer Register */
+#define	DIF_TB					MMIO32(DIF_BASE + 0x20)
+#define	DIF_TB_TB_VALUE			GENMASK(15, 0)							 // Transmit Data Register Value
+#define	DIF_TB_TB_VALUE_SHIFT	0
 
-#define	DIF_RXFCON		MMIO32(DIF_BASE + 0x30)
+/* Receive Buffer Register */
+#define	DIF_RB					MMIO32(DIF_BASE + 0x24)
+#define	DIF_RB_RB_VALUE			GENMASK(15, 0)							 // Receive Data Register Value
+#define	DIF_RB_RB_VALUE_SHIFT	0
 
-#define	DIF_TXFCON		MMIO32(DIF_BASE + 0x34)
+/* Receive FIFO Control Register */
+#define	DIF_RXFCON				MMIO32(DIF_BASE + 0x30)
+#define	DIF_RXFCON_RXFEN		BIT(0)									 // Receive FIFO Enable
+#define	DIF_RXFCON_RXFLU		BIT(1)									 // Receive FIFO Flush
+#define	DIF_RXFCON_RXTMEN		BIT(2)									 // Receive FIFO Transparent Mode Enable
+#define	DIF_RXFCON_RXFITL		GENMASK(13, 8)							 // Receive FIFO Interrupt Trigger Level
+#define	DIF_RXFCON_RXFITL_SHIFT	8
 
-#define	DIF_FSTAT		MMIO32(DIF_BASE + 0x38)
+#define	DIF_TXFCON				MMIO32(DIF_BASE + 0x34)
+#define	DIF_TXFCON_TXFEN		BIT(0)									 // Receive FIFO Enable
+#define	DIF_TXFCON_TXFLU		BIT(1)									 // Receive FIFO Flush
+#define	DIF_TXFCON_TXTMEN		BIT(2)									 // Receive FIFO Transparent Mode Enable
+#define	DIF_TXFCON_TXFITL		GENMASK(13, 8)							 // Receive FIFO Interrupt Trigger Level
+#define	DIF_TXFCON_TXFITL_SHIFT	8
 
-#define	DIF_TXDMACON	MMIO32(DIF_BASE + 0x58)
+#define	DIF_FSTAT				MMIO32(DIF_BASE + 0x38)
+#define	DIF_FSTAT_RXFFL			GENMASK(5, 0)							 // Receive FIFO Filling Level
+#define	DIF_FSTAT_RXFFL_SHIFT	0
+#define	DIF_FSTAT_TXFFL			GENMASK(13, 8)							 // Transmit FIFO Filling Level
+#define	DIF_FSTAT_TXFFL_SHIFT	8
 
-#define	DIF_RXDMACON	MMIO32(DIF_BASE + 0x5C)
+#define	DIF_UNK0				MMIO32(DIF_BASE + 0x40)
 
-#define	DIF_PROG(n)		MMIO32(DIF_BASE + 0x74 + ((n) * 0x4))
+#define	DIF_UNK1				MMIO32(DIF_BASE + 0x44)
+
+#define	DIF_IMSC				MMIO32(DIF_BASE + 0x48)
+#define	DIF_IMSC_TX				BIT(0)									 // Transmit interrupt mask
+#define	DIF_IMSC_RX				BIT(1)									 // Receive interrupt mask
+#define	DIF_IMSC_ERR			BIT(3)									 // Error interrupt mask
+#define	DIF_IMSC_TB				BIT(4)									 // Transmit buffer interrupt mask
+
+#define	DIF_RIS					MMIO32(DIF_BASE + 0x4C)
+#define	DIF_RIS_TX				BIT(0)									 // Transmit interrupt raw status
+#define	DIF_RIS_RX				BIT(1)									 // Receive interrupt raw status
+#define	DIF_RIS_ERR				BIT(2)									 // Error interrupt raw status
+#define	DIF_RIS_TB				BIT(3)									 // Transmit buffer raw interrupt status
+
+#define	DIF_MIS					MMIO32(DIF_BASE + 0x50)
+#define	DIF_MIS_TX				BIT(0)									 // Transmit interrupt status
+#define	DIF_MIS_RX				BIT(1)									 // Receive interrupt status
+#define	DIF_MIS_ERR				BIT(2)									 // Error interrupt status
+#define	DIF_MIS_TB				BIT(3)									 // Transmit buffer interrupt status
+
+#define	DIF_ICR					MMIO32(DIF_BASE + 0x54)
+#define	DIF_ICR_TX				BIT(0)									 // Transmit interrupt mask
+#define	DIF_ICR_RX				BIT(1)									 // Receive interrupt mask
+#define	DIF_ICR_ERR				BIT(2)									 // Error interrupt mask
+#define	DIF_ICR_TB				BIT(3)									 // Transmit buffer interrupt mask
+
+#define	DIF_ISR					MMIO32(DIF_BASE + 0x58)
+#define	DIF_ISR_TX				BIT(0)									 // Transmit interrupt set
+#define	DIF_ISR_RX				BIT(1)									 // Receive interrupt set
+#define	DIF_ISR_ERR				BIT(2)									 // Error interrupt set
+#define	DIF_ISR_TB				BIT(3)									 // Transmit buffer interrupt set
+
+#define	DIF_DMACON				MMIO32(DIF_BASE + 0x5C)
+#define	DIF_DMACON_TX			BIT(0)									 // Transmit DMA Enable. If this bit is set to 1, DMA for the transmit FIFO is enabled
+#define	DIF_DMACON_RX			BIT(1)									 // Receive DMA Enable. If this bit is set to 1, DMA for the receive FIFO is enabled.
+
+#define	DIF_UNK2				MMIO32(DIF_BASE + 0x60)
+
+#define	DIF_UNK3				MMIO32(DIF_BASE + 0x70)
+
+#define	DIF_PROG(n)				MMIO32(DIF_BASE + 0x74 + ((n) * 0x4))
+
+#define	DIF_UNK4				MMIO32(DIF_BASE + 0x8C)
+
+#define	DIF_UNK5				MMIO32(DIF_BASE + 0x90)
+
+#define	DIF_UNK6				MMIO32(DIF_BASE + 0x94)
+
+#define	DIF_UNK7				MMIO32(DIF_BASE + 0x98)
+
+#define	DIF_UNK8				MMIO32(DIF_BASE + 0x9C)
 
 
 // USB [MOD_NUM=F047, MOD_REV=00, MOD_32BIT=C0]
@@ -723,36 +940,36 @@
 #define	USB_ID		MMIO32(USB_BASE + 0x08)
 
 
-// NVIC [MOD_NUM=0031, MOD_REV=01, MOD_32BIT=C0]
-// NVIC module, registers collected using tests on real hardware (using "black box" method).
-#define	NVIC_BASE				0xF2800000
+// VIC [MOD_NUM=0031, MOD_REV=01, MOD_32BIT=C0]
+// Vectored Interrupt Controller, registers collected using tests on real hardware (using "black box" method).
+#define	VIC_BASE				0xF2800000
 /* Module Identifier Register */
-#define	NVIC_ID					MMIO32(NVIC_BASE + 0x00)
+#define	VIC_ID					MMIO32(VIC_BASE + 0x00)
 
-#define	NVIC_FIQ_STAT			MMIO32(NVIC_BASE + 0x08)
-#define	NVIC_FIQ_STAT_NUM		GENMASK(7, 0)							 // Current fiq num
-#define	NVIC_FIQ_STAT_NUM_SHIFT	0
-#define	NVIC_FIQ_STAT_UNREAD	BIT(16)
-#define	NVIC_FIQ_STAT_NOT_ACK	BIT(24)
+#define	VIC_FIQ_STAT			MMIO32(VIC_BASE + 0x08)
+#define	VIC_FIQ_STAT_NUM		GENMASK(7, 0)							 // Current fiq num
+#define	VIC_FIQ_STAT_NUM_SHIFT	0
+#define	VIC_FIQ_STAT_UNREAD		BIT(16)
+#define	VIC_FIQ_STAT_NOT_ACK	BIT(24)
 
-#define	NVIC_IRQ_STAT			MMIO32(NVIC_BASE + 0x0C)
-#define	NVIC_IRQ_STAT_NUM		GENMASK(7, 0)							 // Current irq num
-#define	NVIC_IRQ_STAT_NUM_SHIFT	0
-#define	NVIC_IRQ_STAT_UNREAD	BIT(16)
-#define	NVIC_IRQ_STAT_NOT_ACK	BIT(24)
+#define	VIC_IRQ_STAT			MMIO32(VIC_BASE + 0x0C)
+#define	VIC_IRQ_STAT_NUM		GENMASK(7, 0)							 // Current irq num
+#define	VIC_IRQ_STAT_NUM_SHIFT	0
+#define	VIC_IRQ_STAT_UNREAD		BIT(16)
+#define	VIC_IRQ_STAT_NOT_ACK	BIT(24)
 
-#define	NVIC_FIQ_ACK			MMIO32(NVIC_BASE + 0x10)
+#define	VIC_FIQ_ACK				MMIO32(VIC_BASE + 0x10)
 
-#define	NVIC_IRQ_ACK			MMIO32(NVIC_BASE + 0x14)
+#define	VIC_IRQ_ACK				MMIO32(VIC_BASE + 0x14)
 
-#define	NVIC_CURRENT_FIQ		MMIO32(NVIC_BASE + 0x18)
+#define	VIC_CURRENT_FIQ			MMIO32(VIC_BASE + 0x18)
 
-#define	NVIC_CURRENT_IRQ		MMIO32(NVIC_BASE + 0x1C)
+#define	VIC_CURRENT_IRQ			MMIO32(VIC_BASE + 0x1C)
 
-#define	NVIC_CON(n)				MMIO32(NVIC_BASE + 0x30 + ((n) * 0x4))
-#define	NVIC_CON_PRIORITY		GENMASK(7, 0)
-#define	NVIC_CON_PRIORITY_SHIFT	0
-#define	NVIC_CON_FIQ			BIT(8)
+#define	VIC_CON(n)				MMIO32(VIC_BASE + 0x30 + ((n) * 0x4))
+#define	VIC_CON_PRIORITY		GENMASK(7, 0)
+#define	VIC_CON_PRIORITY_SHIFT	0
+#define	VIC_CON_FIQ				BIT(8)
 
 
 // DMAC [AMBA PL080]
@@ -1319,7 +1536,7 @@
 
 
 // GPIO [MOD_NUM=F023, MOD_REV=00, MOD_32BIT=C0]
-// GPIO module, registers found on some "siemens club" forum, dont known source.
+// PCL (Port Control Logic), registers from drivers/pinctrl/pinctrl-thunderbay.c
 #define	GPIO_BASE			0xF4300000
 /* Clock Control Register */
 #define	GPIO_CLC			MMIO32(GPIO_BASE + 0x00)
@@ -1601,6 +1818,7 @@
 #define	PLL_CON2_CPU_DIV				GENMASK(9, 8)
 #define	PLL_CON2_CPU_DIV_SHIFT			8
 #define	PLL_CON2_CPU_DIV_EN				BIT(12)
+#define	PLL_CON2_CLK32_EN				BIT(24)
 
 #define	PLL_STAT						MMIO32(PLL_BASE + 0xB0)
 #define	PLL_STAT_LOCK					BIT(13)
@@ -1766,10 +1984,10 @@
 #define	I2C_SYSCON_IRQD				BIT(5)					 // IIC Interrupt Request Bit for Data Transfer Events
 #define	I2C_SYSCON_IRQP				BIT(6)					 // IIC Interrupt Request Bit for Protocol Events
 #define	I2C_SYSCON_IRQE				BIT(7)					 // IIC Interrupt Request Bit for Data Transmission End
-#define	I2C_SYSCON_CO				GENMASK(10, 8)			 // Counter of Transmitted Bytes Since Last Data Interrupt.
-#define	I2C_SYSCON_CO_SHIFT			8
 #define	I2C_SYSCON_WM				GENMASK(15, 8)			 // Write Mirror (WMEN=1)
 #define	I2C_SYSCON_WM_SHIFT			8
+#define	I2C_SYSCON_CO				GENMASK(10, 8)			 // Counter of Transmitted Bytes Since Last Data Interrupt.
+#define	I2C_SYSCON_CO_SHIFT			8
 #define	I2C_SYSCON_RMEN				BIT(15)					 // Read Mirror Enable
 #define	I2C_SYSCON_M10				BIT(16)					 // 10-bit address mode
 #define	I2C_SYSCON_RSC				BIT(17)					 // Repeated Start Condition
@@ -2547,7 +2765,7 @@
 
 
 // ADC [MOD_NUM=F024, MOD_REV=10, MOD_32BIT=C0]
-// ADC. Datasheet not found.
+// Measurement Interface
 #define	ADC_BASE				0xF4C00000
 /* Clock Control Register */
 #define	ADC_CLC					MMIO32(ADC_BASE + 0x00)

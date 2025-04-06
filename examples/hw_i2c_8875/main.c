@@ -140,12 +140,12 @@ static void i2c_hw_stop() {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = NVIC_CURRENT_IRQ;
+	int irqn = VIC_CURRENT_IRQ;
 
-	if (irqn == NVIC_I2C_DATA_IRQ) {
+	if (irqn == VIC_I2C_DATA_IRQ) {
 		I2C_DATA_SRC |= MOD_SRC_CLRR;
 
-		printf("NVIC_I2C_DATA_IRQ\n");
+		printf("VIC_I2C_DATA_IRQ\n");
 
 		printf("! BUSY %d\n", I2C_SYSCON & I2C_SYSCON_BB ? 1 : 0);
 		printf("! BUM %d\n", I2C_SYSCON & I2C_SYSCON_BUM ? 1 : 0);
@@ -193,15 +193,15 @@ __IRQ void irq_handler(void) {
 			(void) I2C_RTB; // clear IRQD?
 		}
 		printf("! IRQD %d\n", I2C_SYSCON & I2C_SYSCON_IRQD ? 1 : 0);
-	} else if (irqn == NVIC_I2C_PROTO_IRQ) {
+	} else if (irqn == VIC_I2C_PROTO_IRQ) {
 		I2C_WHBSYSCON |= I2C_WHBSYSCON_CLRIRQP;
 		I2C_PROTO_SRC |= MOD_SRC_CLRR;
 		// TODO: ????
-		printf("UNHANDLED NVIC_I2C_PROTO_IRQ\n");
+		printf("UNHANDLED VIC_I2C_PROTO_IRQ\n");
 		while (true);
-	} else if (irqn == NVIC_I2C_END_IRQ) {
+	} else if (irqn == VIC_I2C_END_IRQ) {
 		I2C_END_SRC |= MOD_SRC_CLRR;
-		printf("NVIC_I2C_END_IRQ\n");
+		printf("VIC_I2C_END_IRQ\n");
 
 		printf("! BUSY %d\n", I2C_SYSCON & I2C_SYSCON_BB ? 1 : 0);
 		printf("! BUM %d\n", I2C_SYSCON & I2C_SYSCON_BUM ? 1 : 0);
@@ -221,7 +221,7 @@ __IRQ void irq_handler(void) {
 		while (true);
 	}
 
-	NVIC_IRQ_ACK = 1;
+	VIC_IRQ_ACK = 1;
 }
 
 static int hw_i2c_transfer(uint8_t addr, uint8_t *buffer, int size, bool is_write, bool restart) {
@@ -311,9 +311,9 @@ int main(void) {
 	wdt_set_max_execution_time(2000);
 	
 	cpu_enable_irq(true);
-	NVIC_CON(NVIC_I2C_DATA_IRQ) = 3;
-	NVIC_CON(NVIC_I2C_PROTO_IRQ) = 2;
-	NVIC_CON(NVIC_I2C_END_IRQ) = 1;
+	VIC_CON(VIC_I2C_DATA_IRQ) = 3;
+	VIC_CON(VIC_I2C_PROTO_IRQ) = 2;
+	VIC_CON(VIC_I2C_END_IRQ) = 1;
 
 	i2c_hw_init();
 

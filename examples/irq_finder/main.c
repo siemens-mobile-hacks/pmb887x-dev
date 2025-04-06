@@ -31,7 +31,7 @@ static const uint32_t regs[] = {
 	MCI_BASE,
 	MMCI_BASE,
 	MMICIF_BASE,
-	NVIC_BASE,
+	VIC_BASE,
 	PLL_BASE,
 	RTC_BASE,
 	SCCU_BASE,
@@ -63,7 +63,7 @@ static const uint32_t regs[] = {
 	GPTU1_BASE,
 	I2C_BASE,
 	KEYPAD_BASE,
-	NVIC_BASE,
+	VIC_BASE,
 	PLL_BASE,
 	RTC_BASE,
 	SCCU_BASE,
@@ -73,7 +73,7 @@ static const uint32_t regs[] = {
 	USART0_BASE,
 	USART1_BASE,
 	USB_BASE,
-	0xF1100000,
+	SSC_BASE,
 	0xF4600000,
 	#endif
 };
@@ -101,12 +101,12 @@ void data_abort_handler2(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = NVIC_CURRENT_IRQ;
+	int irqn = VIC_CURRENT_IRQ;
 	
 	curr_irq = irqn;
 	REG(curr_src_reg) = MOD_SRC_CLRR;
 	
-	NVIC_IRQ_ACK = 1;
+	VIC_IRQ_ACK = 1;
 }
 
 int main(void) {
@@ -120,7 +120,7 @@ int main(void) {
 	SCU_EXTI = 0xFFFFFFFF;
 	
 	for (int i = 0; i < 0x200; i++)
-		NVIC_CON(i) = 1;
+		VIC_CON(i) = 1;
 	
 	for (uint32_t i = 0; i < ARRAY_SIZE(regs); i++) {
 		uint32_t addr = regs[i];

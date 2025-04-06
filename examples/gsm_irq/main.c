@@ -16,8 +16,8 @@ int main(void) {
 	wdt_init();
 	
 	cpu_enable_irq(true);
-	NVIC_CON(NVIC_TPU_INT0_IRQ) = 1;
-	NVIC_CON(NVIC_TPU_INT1_IRQ) = 1;
+	VIC_CON(VIC_TPU_INT0_IRQ) = 1;
+	VIC_CON(VIC_TPU_INT1_IRQ) = 1;
 	
 	printf("usart clc: %d\n", (USART_CLC(USART0) & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT);
 	
@@ -123,9 +123,9 @@ __IRQ void prefetch_abort_handler(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = NVIC_CURRENT_IRQ;
+	int irqn = VIC_CURRENT_IRQ;
 	
-	if (irqn == NVIC_TPU_INT0_IRQ) {
+	if (irqn == VIC_TPU_INT0_IRQ) {
 		period = stopwatch_elapsed_us(last);
 		last = stopwatch_get();
 		val = TPU_COUNTER;
@@ -133,7 +133,7 @@ __IRQ void irq_handler(void) {
 		cnt++;
 		
 		TPU_SRC(0) |= MOD_SRC_CLRR;
-	} else if (irqn == NVIC_TPU_INT1_IRQ) {
+	} else if (irqn == VIC_TPU_INT1_IRQ) {
 		period2 = stopwatch_elapsed_us(last2);
 		last2 = stopwatch_get();
 		val2 = TPU_COUNTER;
@@ -143,5 +143,5 @@ __IRQ void irq_handler(void) {
 		TPU_SRC(1) |= MOD_SRC_CLRR;
 	}
 	
-	NVIC_IRQ_ACK = 1;
+	VIC_IRQ_ACK = 1;
 }

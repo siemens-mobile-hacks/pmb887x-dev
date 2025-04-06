@@ -9,7 +9,7 @@ use Sie::CpuMetadata;
 use Sie::BoardMetadata;
 use Sie::Utils;
 
-my $str = "#include \"hw/arm/pmb887x/regs_dump.h\"\n\n";
+my $str = "#include \"hw/arm/pmb887x/regs_info.h\"\n#include \"hw/arm/pmb887x/regs_dump.h\"\n#include \"hw/arm/pmb887x/regs.h\"\n\n";
 
 my $cpu_meta = Sie::CpuMetadata->new("generic");
 for my $module (@{$cpu_meta->getAllModules()}) {
@@ -37,7 +37,7 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	
 	my @irqs;
 	for my $irq_name (getSortedKeys($irqs)) {
-		push @irqs, ['"'.$irq_name.'",', uc($cpu_meta->{name})."_".$irq_name."_IRQ,", 'NVIC_CON'.$irqs->{$irq_name}];
+		push @irqs, ['"'.$irq_name.'",', uc($cpu_meta->{name})."_".$irq_name."_IRQ,", 'VIC_CON'.$irqs->{$irq_name}];
 	}
 	
 	$str .= "static const pmb887x_cpu_meta_irq_t ".$irqs_var."[] = {\n";
@@ -175,7 +175,7 @@ sub genModuleHeader {
 		
 		my $special = "0";
 		
-		if ($module->{name} eq "NVIC") {
+		if ($module->{name} eq "VIC") {
 			if ($reg->{name} eq "CURRENT_IRQ" || $reg->{name} eq "CURRENT_FIQ") {
 				$special = "PMB887X_REG_IS_IRQ_NUM";
 			} elsif ($reg->{name} eq "CON") {

@@ -26,7 +26,7 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 		my $module = $cpu_meta->{modules}->{$id};
 		
 		for my $irq_name (keys %{$module->{irqs}}) {
-			$irqs->{"NVIC_".$module->{name}.($irq_name ? "_".$irq_name : "")."_IRQ"} = $module->{irqs}->{$irq_name};
+			$irqs->{"VIC_".$module->{name}.($irq_name ? "_".$irq_name : "")."_IRQ"} = $module->{irqs}->{$irq_name};
 		}
 	}
 	

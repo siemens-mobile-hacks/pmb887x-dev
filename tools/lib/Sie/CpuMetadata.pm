@@ -76,7 +76,7 @@ sub buildRegIndex {
 			}
 		}
 		
-		if ($module->{name} eq "NVIC") {
+		if ($module->{name} eq "VIC") {
 			for my $id (@{$self->getModuleNames()}) {
 				my $other_module = $self->{modules}->{$id};
 				for my $irq_name (keys %{$other_module->{irqs}}) {
@@ -151,7 +151,7 @@ sub dumpReg {
 					}
 				}
 			}
-		} elsif ($reg->{name} eq "NVIC_CURRENT_IRQ" || $reg->{name} eq "NVIC_CURRENT_FIQ") {
+		} elsif ($reg->{name} eq "VIC_CURRENT_IRQ" || $reg->{name} eq "VIC_CURRENT_FIQ") {
 			if (exists $self->{id2irq}->{$value}) {
 				push @bitmap, "NUM(".sprintf("0x%02X", $value).")=".$self->{id2irq}->{$value};
 			} else {
@@ -325,7 +325,7 @@ sub loadModules {
 						$irq_num++;
 					}
 				}
-				
+
 				$self->{modules}->{$def->{name}} = $new_module;
 			}
 		}
@@ -347,7 +347,8 @@ sub parseModule {
 		regs		=> {},
 		size		=> 0,
 		irqs		=> {},
-		irqs_needed	=> []
+		irqs_needed	=> [],
+		gpio_lines	=> [],
 	};
 	
 	my $current_field;
@@ -390,6 +391,8 @@ sub parseModule {
 					$current_enum_format = $value;
 				} elsif ($key eq 'irq') {
 					push @{$module->{irqs_needed}}, $value || "";
+				} elsif ($key eq 'gpio') {
+					push @{$module->{gpio_lines}}, $value || "";
 				} else {
 					if ($key eq "type" || $key eq "name" || $key eq "descr") {
 						$module->{$key} = $value;

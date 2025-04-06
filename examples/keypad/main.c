@@ -46,8 +46,8 @@ int main(void) {
 	KEYPAD_RELEASE_SRC |= MOD_SRC_CLRR;
 	KEYPAD_RELEASE_SRC |= MOD_SRC_SRE;
 	
-	NVIC_CON(NVIC_KEYPAD_PRESS_IRQ) = 1;
-	NVIC_CON(NVIC_KEYPAD_RELEASE_IRQ) = 1;
+	VIC_CON(VIC_KEYPAD_PRESS_IRQ) = 1;
+	VIC_CON(VIC_KEYPAD_RELEASE_IRQ) = 1;
 	
 	printf("Hello?\n");
 	
@@ -120,20 +120,20 @@ static void read_keycodes(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = NVIC_CURRENT_IRQ;
+	int irqn = VIC_CURRENT_IRQ;
 	
 	printf("irqn=%d\n", irqn);
 	
-	if (irqn == NVIC_KEYPAD_PRESS_IRQ) {
+	if (irqn == VIC_KEYPAD_PRESS_IRQ) {
 		KEYPAD_PRESS_SRC |= MOD_SRC_CLRR;
 		printf("key press\n");
 		read_keycodes();
 	}
 	
-	if (irqn == NVIC_KEYPAD_RELEASE_IRQ) {
+	if (irqn == VIC_KEYPAD_RELEASE_IRQ) {
 		KEYPAD_RELEASE_SRC |= MOD_SRC_CLRR;
 		printf("key release\n");
 	}
 	
-	NVIC_IRQ_ACK = 1;
+	VIC_IRQ_ACK = 1;
 }

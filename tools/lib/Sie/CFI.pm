@@ -50,7 +50,7 @@ sub parseCFI {
 	$cfi->{max_buffer_size} = 1 << $r->readUInt16();
 	
 	my $erase_regions = $r->readUInt8();
-	
+
 	$cfi->{erase_regions} = [];
 	
 	my $check_size = 0;
