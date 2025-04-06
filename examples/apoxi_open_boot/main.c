@@ -2,10 +2,12 @@
 #include <printf.h>
 #include <stdint.h>
 
-#ifdef BOOT_CUSTOM
+#ifndef BOOT_EXTRAM
 #undef printf
 #define printf(...)
 #endif
+
+extern void _start();
 
 enum {
 	RESP_SUCCESS					= 0,
@@ -54,16 +56,15 @@ static int read_flash_regions(uint32_t addr);
 #define CFI_ADDR					0x10
 
 #define FLASH_BASE					0xA0000000
-#define PATCHER_ADDR				(0xB0FC0000)
+#define PATCHER_ADDR				((uint32_t) &_start)
 #define TCM_START					(0xFFFF0000)
 #define TCM_END						(0xFFFF0000 + 16 * 1024)
 #define PRAM_IRQ_HANDLER			(TCM_START + 0x38)
 #define BOOT_CONFIG_ADDR 			(0xA000000C)
 
-#define PATCHER_END					(PATCHER_ADDR + 1024 * 2)
-#define PARAM_OLD_IRQ_HANDLER		(PATCHER_END - 4)
-#define PARAM_RESPONSE_CODE			(PATCHER_END - 8)
-#define PARAM_RESPONSE_FLASH_ID		(PATCHER_END - 12)
+#define PARAM_OLD_IRQ_HANDLER		(PATCHER_ADDR + 4)
+#define PARAM_RESPONSE_CODE			(PATCHER_ADDR + 8)
+#define PARAM_RESPONSE_FLASH_ID		(PATCHER_ADDR + 12)
 
 #define CFI_FLASH_SIZE				(CFI_ADDR + 23)
 #define CFI_ERASE_REGIONS_CNT		(CFI_ADDR + 28)
@@ -99,7 +100,7 @@ static uint32_t erase_regions_cnt;
 static uint32_t max_erase_size;
 static uint8_t write_buffer[128 * 1024];
 
-#ifndef BOOT_CUSTOM
+#ifdef BOOT_EXTRAM
 // FOR TEST ON EMULATOR
 int main() {
 	wdt_init();
@@ -132,20 +133,21 @@ int main() {
 }
 #endif
 
-#ifdef BOOT_CUSTOM
+#ifndef BOOT_EXTRAM
+// FOR REAL DEVICE
+
 typedef void (*funcp_t) (void);
 
-// FOR REAL DEVICE
+extern uint32_t _data_loadaddr, _data, _edata, _ebss, _stack;
+extern uint32_t _vectors_table_start, _vectors_table_end, _vectors_table_handlers;
+extern funcp_t __preinit_array_start, __preinit_array_end;
+extern funcp_t __init_array_start, __init_array_end;
+extern funcp_t __fini_array_start, __fini_array_end;
+
 __attribute__((interrupt("irq"), used))
-void _start(void) {
+void main(void) {
 	volatile uint32_t *src, *dest;
 	volatile funcp_t *fp;
-
-	extern uint32_t _data_loadaddr, _data, _edata, _ebss, _stack;
-	extern uint32_t _vectors_table_start, _vectors_table_end, _vectors_table_handlers;
-	extern funcp_t __preinit_array_start, __preinit_array_end;
-	extern funcp_t __init_array_start, __init_array_end;
-	extern funcp_t __fini_array_start, __fini_array_end;
 
 	for (src = &_data_loadaddr, dest = &_data; dest < &_edata; src++, dest++)
 		*dest = *src;
@@ -153,7 +155,6 @@ void _start(void) {
 	while (dest < &_ebss)
 		*dest++ = 0;
 
-	// Constructors
 	for (fp = &__preinit_array_start; fp < &__preinit_array_end; fp++)
 		(*fp)();
 	for (fp = &__init_array_start; fp < &__init_array_end; fp++)
@@ -186,6 +187,7 @@ void _start(void) {
 		return;
 	}
 
+	/*
 	ret = flash_erase(0xA0000000);
 	if (ret < 0) {
 		MMIO32(PARAM_RESPONSE_CODE) = ret;
@@ -205,6 +207,7 @@ void _start(void) {
 		lock_flash_access();
 		return;
 	}
+	*/
 
 	MMIO32(PARAM_RESPONSE_CODE) = RESP_SUCCESS;
 
