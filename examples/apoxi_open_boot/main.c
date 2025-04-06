@@ -49,7 +49,7 @@ static int flash_erase(uint32_t addr);
 static FlashEraseRegion *find_flash_region(uint32_t addr);
 static int read_flash_regions(uint32_t addr);
 
-#define CHECK_CRC					1
+#define CHECK_CRC					0
 
 #define CFI_ADDR					0x10
 
@@ -116,10 +116,10 @@ int main() {
 		return 0;
 	}
 
-	//write_buffer[0x3C] = 0xFF;
-	//write_buffer[0x3C + 1] = 0xFF;
-	//write_buffer[0x3C + 2] = 0xFF;
-	//write_buffer[0x3C + 3] = 0xFF;
+	write_buffer[0x3C] = 0xFF;
+	write_buffer[0x3C + 1] = 0xFF;
+	write_buffer[0x3C + 2] = 0xFF;
+	write_buffer[0x3C + 3] = 0xFF;
 
 	if (flash_program(0xA0000000) < 0) {
 		printf("ERROR: Can't write flash block!\n");
