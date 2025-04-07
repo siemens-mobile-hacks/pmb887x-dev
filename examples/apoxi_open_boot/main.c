@@ -8,6 +8,7 @@
 #endif
 
 extern void _start();
+extern void clean_all_caches();
 
 enum {
 	RESP_SUCCESS					= 0,
@@ -23,6 +24,7 @@ enum {
 	RESP_INVALID_FLASH_REGION_COUNT	= -10,
 	RESP_UNSUPPORTED_FLASH			= -11,
 	RESP_FLASH_NOT_FOUND			= -12,
+	RESP_UNKNOWN					= -13,
 };
 
 typedef struct FlashEraseRegion FlashEraseRegion;
@@ -95,6 +97,7 @@ static uint32_t flash_unlock_addr1;
 static uint32_t flash_unlock_addr2;
 static uint32_t old_domain_access;
 static uint32_t old_flash_mmu;
+static uint32_t old_buscon;
 static FlashEraseRegion erase_regions[8];
 static uint32_t erase_regions_cnt;
 static uint32_t max_erase_size;
@@ -138,32 +141,14 @@ int main() {
 
 typedef void (*funcp_t) (void);
 
-extern uint32_t _data_loadaddr, _data, _edata, _ebss, _stack;
-extern uint32_t _vectors_table_start, _vectors_table_end, _vectors_table_handlers;
-extern funcp_t __preinit_array_start, __preinit_array_end;
-extern funcp_t __init_array_start, __init_array_end;
-extern funcp_t __fini_array_start, __fini_array_end;
-
 __attribute__((interrupt("irq"), used))
 void main(void) {
-	volatile uint32_t *src, *dest;
-	volatile funcp_t *fp;
-
-	for (src = &_data_loadaddr, dest = &_data; dest < &_edata; src++, dest++)
-		*dest = *src;
-
-	while (dest < &_ebss)
-		*dest++ = 0;
-
-	for (fp = &__preinit_array_start; fp < &__preinit_array_end; fp++)
-		(*fp)();
-	for (fp = &__init_array_start; fp < &__init_array_end; fp++)
-		(*fp)();
-
 	int ret;
 
+	clean_all_caches();
+
 	MMIO32(PRAM_IRQ_HANDLER) = MMIO32(PARAM_OLD_IRQ_HANDLER);
-	MMIO32(PARAM_RESPONSE_CODE) = 0xFFFFFFFF;
+	MMIO32(PARAM_RESPONSE_CODE) = RESP_UNKNOWN;
 	MMIO32(PARAM_RESPONSE_FLASH_ID) = 0xFFFFFFFF;
 
 	if (MMIO32(BOOT_CONFIG_ADDR) == 0xFFFFFFFF) {
@@ -187,7 +172,6 @@ void main(void) {
 		return;
 	}
 
-	/*
 	ret = flash_erase(0xA0000000);
 	if (ret < 0) {
 		MMIO32(PARAM_RESPONSE_CODE) = ret;
@@ -207,11 +191,11 @@ void main(void) {
 		lock_flash_access();
 		return;
 	}
-	*/
 
 	MMIO32(PARAM_RESPONSE_CODE) = RESP_SUCCESS;
 
 	lock_flash_access();
+	clean_all_caches();
 }
 
 #endif
@@ -427,13 +411,14 @@ static void unlock_flash_access(void) {
 	old_flash_mmu = mmu_table[0xA0000000 >> 20];
 	set_domain_access(0xFFFFFFFF);
 	mmu_table[0xA0000000 >> 20] = 0xA0000C12;
+	old_buscon = EBU_BUSCON(0);
 	EBU_BUSCON(0) &= ~EBU_BUSCON_WRITE;
 }
 
 static void lock_flash_access(void) {
 	volatile uint32_t *mmu_table = get_mmu_table();
-	EBU_BUSCON(0) |= EBU_BUSCON_WRITE;
 	mmu_table[0xA0000000 >> 20] = old_flash_mmu;
+	EBU_BUSCON(0) = old_buscon;
 	set_domain_access(old_domain_access);
 }
 

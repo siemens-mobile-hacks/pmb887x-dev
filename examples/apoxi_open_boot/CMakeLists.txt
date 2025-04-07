@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(BOOT custom)
+set(BOOT none)
 set(LDSCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/tcm.ld")
 set(CMAKE_TOOLCHAIN_FILE ../../lib/toolchain.cmake)
 
@@ -10,11 +10,10 @@ if (BOOT STREQUAL "extram")
 endif()
 
 add_executable(app main.c init.S)
-target_compile_options(app PUBLIC -Os -fno-toplevel-reorder)
+target_compile_options(app PUBLIC -Os)
 if (BOOT STREQUAL "extram")
 	target_link_libraries(app PUBLIC pmb887x)
 else()
-	target_compile_options(app PUBLIC -fPIE -pie)
-	target_link_options(app PUBLIC -Wl,-Ttext=0x00000000)
+	target_link_options(app PUBLIC -pie -fPIE)
 endif()
 target_output_bin(app)
