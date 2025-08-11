@@ -10,7 +10,7 @@ if (BOOT STREQUAL "extram")
 endif()
 
 add_executable(app main.c init.S)
-target_compile_options(app PUBLIC -Os)
+target_compile_options(app PUBLIC -Os -Werror -Wall -Wno-unused-variable -Wno-unused-function)
 if (BOOT STREQUAL "extram")
 	target_link_libraries(app PUBLIC pmb887x)
 else()

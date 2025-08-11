@@ -98,9 +98,9 @@ static uint32_t flash_unlock_addr2;
 static uint32_t old_domain_access;
 static uint32_t old_flash_mmu;
 static uint32_t old_buscon;
-static FlashEraseRegion erase_regions[8];
-static uint32_t erase_regions_cnt;
 static uint32_t max_erase_size;
+static uint32_t erase_regions_cnt;
+static FlashEraseRegion erase_regions[8];
 static uint8_t write_buffer[128 * 1024];
 
 #ifdef BOOT_EXTRAM
@@ -167,7 +167,7 @@ void main(void) {
 		return;
 	}
 
-	if (MMIO32(BOOT_CONFIG_ADDR) == 0xFFFFFFFF) {
+	if (MMIO32(BOOT_CONFIG_ADDR) != 0xFFFF0002) {
 		MMIO32(PARAM_RESPONSE_CODE) = RESP_BOOT_ALREADY_OPEN;
 		lock_flash_access();
 		return;
