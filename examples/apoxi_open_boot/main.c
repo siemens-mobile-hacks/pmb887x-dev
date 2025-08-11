@@ -91,8 +91,8 @@ static int read_flash_regions(uint32_t addr);
 
 #define FLASH_STATUS_DONE			0x80
 
-static uint16_t flash_vid;
-static uint16_t flash_pid;
+static uint32_t flash_vid;
+static uint32_t flash_pid;
 static uint32_t flash_unlock_addr1;
 static uint32_t flash_unlock_addr2;
 static uint32_t old_domain_access;
@@ -151,11 +151,6 @@ void main(void) {
 	MMIO32(PARAM_RESPONSE_CODE) = RESP_UNKNOWN;
 	MMIO32(PARAM_RESPONSE_FLASH_ID) = 0xFFFFFFFF;
 
-	if (MMIO32(BOOT_CONFIG_ADDR) == 0xFFFFFFFF) {
-		MMIO32(PARAM_RESPONSE_CODE) = RESP_BOOT_ALREADY_OPEN;
-		return;
-	}
-
 	if ((EBU_BUSCON(0) & EBU_BUSCON_WRITE) == 0 || (EBU_ADDRSEL(0) & EBU_ADDRSEL_REGENAB) == 0) {
 		MMIO32(PARAM_RESPONSE_CODE) = RESP_FLASH_BUSY;
 		return;
@@ -168,6 +163,12 @@ void main(void) {
 
 	if (ret < 0) {
 		MMIO32(PARAM_RESPONSE_CODE) = ret;
+		lock_flash_access();
+		return;
+	}
+
+	if (MMIO32(BOOT_CONFIG_ADDR) == 0xFFFFFFFF) {
+		MMIO32(PARAM_RESPONSE_CODE) = RESP_BOOT_ALREADY_OPEN;
 		lock_flash_access();
 		return;
 	}
