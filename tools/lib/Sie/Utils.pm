@@ -44,9 +44,9 @@ sub parseAnyInt {
 sub getSortedKeys {
 	my ($hash, $key) = @_;
 	if (defined $key) {
-		return sort { $hash->{$a}->{$key} <=> $hash->{$b}->{$key} } keys %$hash;
+		return sort { $hash->{$a}->{$key} <=> $hash->{$b}->{$key} || $a cmp $b } keys %$hash;
 	} else {
-		return sort { $hash->{$a} <=> $hash->{$b} } keys %$hash;
+		return sort { $hash->{$a} <=> $hash->{$b} || $a cmp $b } keys %$hash;
 	}
 }
 

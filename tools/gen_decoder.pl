@@ -9,7 +9,7 @@ use Sie::CpuMetadata;
 use Sie::BoardMetadata;
 use Sie::Utils;
 
-my $str = "#include \"hw/arm/pmb887x/regs_info.h\"\n#include \"hw/arm/pmb887x/regs_dump.h\"\n#include \"hw/arm/pmb887x/regs.h\"\n\n";
+my $str = "#include \"hw/arm/pmb887x/gen/cpu_meta.h\"\n#include \"hw/arm/pmb887x/regs_dump.h\"\n#include \"hw/arm/pmb887x/gen/cpu_regs.h\"\n\n";
 
 my $cpu_meta = Sie::CpuMetadata->new("generic");
 for my $module (@{$cpu_meta->getAllModules()}) {
