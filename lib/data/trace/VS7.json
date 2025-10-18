@@ -8,5 +8,15 @@
 		"name":		"assert",
 		"addr":		0xA04242E8,
 		"args":		["cstr", "uint32"]
+	},
+	{
+		"name":		"irq_handler",
+		"addr":		0xffff0a78,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"shit",
+		"addr":		0xFFFF07BC,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
 	}
 ]

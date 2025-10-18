@@ -101,7 +101,7 @@ void data_abort_handler2(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = VIC_CURRENT_IRQ;
+	int irqn = VIC_IRQ_CURRENT;
 	
 	curr_irq = irqn;
 	REG(curr_src_reg) = MOD_SRC_CLRR;

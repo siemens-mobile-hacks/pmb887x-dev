@@ -50,7 +50,7 @@ void data_abort_handler2(void) {
 }
 
 static int check_irq() {
-	int irqn = VIC_CURRENT_IRQ;
+	int irqn = VIC_IRQ_CURRENT;
 	VIC_IRQ_ACK = 1;
 	return irqn;
 }
@@ -151,7 +151,7 @@ int main(void) {
 		printf("%08X: ", addr + i);
 		write_addr(addr + i, 0xFFFFFFFF);
 		stopwatch_msleep_wd(10);
-		printf("%d\n", VIC_CURRENT_IRQ);
+		printf("%d\n", VIC_IRQ_CURRENT);
 	}
 	
 	for (int i = 0; i < 32; i++) {

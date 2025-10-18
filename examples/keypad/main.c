@@ -120,7 +120,7 @@ static void read_keycodes(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = VIC_CURRENT_IRQ;
+	int irqn = VIC_IRQ_CURRENT;
 	
 	printf("irqn=%d\n", irqn);
 	

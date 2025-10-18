@@ -54,7 +54,7 @@ void test_dif() {
 
 #ifdef PMB8875
 static int irq() {
-	int irq = VIC_CURRENT_IRQ;
+	int irq = VIC_IRQ_CURRENT;
 	if (irq != 0) {
 		VIC_IRQ_ACK = 1;
 	}
@@ -137,7 +137,7 @@ void test_dif() {
 			printf(" TX: %d\n", mis & DIF_MIS_TX ? 1 : 0);
 			printf(" TB: %d\n", mis & DIF_MIS_TB ? 1 : 0);
 			printf(" ERR: %d\n", mis & DIF_MIS_ERR ? 1 : 0);
-			printf(" IRQ: %d\n", VIC_CURRENT_IRQ);
+			printf(" IRQ: %d\n", VIC_IRQ_CURRENT);
 			printf("DIF_CON: %08X\n", con);
 			printf(" BSY: %d\n", con & DIF_CON_BSY ? 1 : 0);
 			printf(" TE: %d\n", con & DIF_CON_PE ? 1 : 0);
@@ -146,7 +146,7 @@ void test_dif() {
 			printf(" BE: %d\n", con & DIF_CON_BE ? 1 : 0);
 			printf(" BC: %d\n", ((con & DIF_CON_BC) >> DIF_CON_BC_SHIFT) + 1);
 			printf(" FFL: RX=%d, TX=%d\n", (DIF_FSTAT & DIF_FSTAT_RXFFL) >> DIF_FSTAT_RXFFL_SHIFT, (DIF_FSTAT & DIF_FSTAT_TXFFL) >> DIF_FSTAT_TXFFL_SHIFT);
-			printf(" IRQ: %d\n", VIC_CURRENT_IRQ);
+			printf(" IRQ: %d\n", VIC_IRQ_CURRENT);
 			printf("\n");
 		}
 
@@ -177,7 +177,7 @@ __IRQ void prefetch_abort_handler(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = VIC_CURRENT_IRQ;
+	int irqn = VIC_IRQ_CURRENT;
 	
 	printf("irqn=%d\n", irqn);
 	

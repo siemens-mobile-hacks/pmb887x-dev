@@ -57,7 +57,7 @@ __IRQ void prefetch_abort_handler(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = VIC_CURRENT_IRQ;
+	int irqn = VIC_IRQ_CURRENT;
 	
 	printf("irq: %d\n", irqn);
 	

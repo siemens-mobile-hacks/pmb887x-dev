@@ -66,7 +66,7 @@ static int command_handler(int irq) {
 			if (addr == 0xFFFFFFFF)
 				skip = true;
 
-			if (addr == (uint32_t) &VIC_CURRENT_IRQ) {
+			if (addr == (uint32_t) &VIC_IRQ_CURRENT) {
 				value = current_irq;
 			} else if (!skip) {
 				if (c == 'R') { // 4
@@ -234,6 +234,6 @@ __IRQ void swi_handler(void) {
 }
 
 __IRQ void irq_handler(void) {
-	current_irq = VIC_CURRENT_IRQ;
+	current_irq = VIC_IRQ_CURRENT;
 	while (command_handler(1) != 2); // Ждём IRQ_ACK
 }

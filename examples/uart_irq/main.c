@@ -36,7 +36,7 @@ int main(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = VIC_CURRENT_IRQ;
+	int irqn = VIC_IRQ_CURRENT;
 	
 	// RX
 	if (irqn == 0x6) {

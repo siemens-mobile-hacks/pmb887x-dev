@@ -140,7 +140,7 @@ static void i2c_hw_stop() {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = VIC_CURRENT_IRQ;
+	int irqn = VIC_IRQ_CURRENT;
 
 	if (irqn == VIC_I2C_DATA_IRQ) {
 		I2C_DATA_SRC |= MOD_SRC_CLRR;

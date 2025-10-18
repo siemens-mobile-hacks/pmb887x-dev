@@ -45,33 +45,28 @@
 		"args":		["uint32", "uint32"]
 	},
 	{
-		"name":		"SACC_Work",
-		"addr":		0xa08dd658,
-		"args":		["uint32", "uint32", "uint32", "uint32", "uint32", "uint32"]
-	},
-	{
-		"name":		"dif_read",
-		"addr":		0xa0aca7d8,
-		"args":		["uint32"]
-	},
-	{
 		"name":		"SACC_Transfer",
 		"addr":		0xa0abac54,
 		"args":		["uint32"]
 	},
 	{
-		"name":		"GPIO_PIN_WRITE",
-		"addr":		0xa0a93b78,
-		"args":		["r1", "r2", "r0"]
+		"name":		"SACC_RecvMessage_RET",
+		"addr":		0xa08dd4c4,
+		"args":		["uint32"]
 	},
 	{
-		"name":		"gpio_change_mode",
-		"addr":		0xa0a93af4,
-		"args":		["uint32", "uint32", "uint32", "uint32"]
+		"name":		"SACC_RecvMessage_CMD",
+		"addr":		0xa0a8a72c,
+		"args":		["uint32"]
 	},
 	{
-		"name":		"WRITE_DIF_CON",
-		"addr":		0xa0acb150,
-		"args":		["r1"]
-	}
+		"name":		"SACC_RecvMessage_SHIT",
+		"addr":		0xa0a8aba0,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"SACC_RecvMessage_SHIT2",
+		"addr":		0xa0a8abac,
+		"args":		["uint32", "uint32"]
+	},
 ]

@@ -55,12 +55,12 @@ int main(void) {
 		if (DMAC_ERR_STATUS) {
 			printf("ERR=%08X\n", DMAC_ERR_STATUS);
 			// DMAC_ERR_CLEAR = DMAC_ERR_STATUS;
-			printf("irqn: %d\n", VIC_CURRENT_IRQ);
+			printf("irqn: %d\n", VIC_IRQ_CURRENT);
 			break;
 		}
 	}
 	
-	printf("irqn: %d\n", VIC_CURRENT_IRQ);
+	printf("irqn: %d\n", VIC_IRQ_CURRENT);
 	
 	DMAC_TC_CLEAR = (1 << ch);
 	

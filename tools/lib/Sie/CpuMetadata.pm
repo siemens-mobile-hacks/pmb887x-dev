@@ -151,7 +151,7 @@ sub dumpReg {
 					}
 				}
 			}
-		} elsif ($reg->{name} eq "VIC_CURRENT_IRQ" || $reg->{name} eq "VIC_CURRENT_FIQ") {
+		} elsif ($reg->{name} eq "VIC_IRQ_CURRENT" || $reg->{name} eq "VIC_FIQ_CURRENT") {
 			if (exists $self->{id2irq}->{$value}) {
 				push @bitmap, "NUM(".sprintf("0x%02X", $value).")=".$self->{id2irq}->{$value};
 			} else {
@@ -344,6 +344,7 @@ sub parseModule {
 	my $module = {
 		ids			=> [],
 		type		=> 'MODULE',
+		qemu		=> undef,
 		regs		=> {},
 		size		=> 0,
 		irqs		=> {},
@@ -394,7 +395,7 @@ sub parseModule {
 				} elsif ($key eq 'gpio') {
 					push @{$module->{gpio_lines}}, $value || "";
 				} else {
-					if ($key eq "type" || $key eq "name" || $key eq "descr") {
+					if ($key eq "type" || $key eq "name" || $key eq "descr" || $key eq "qemu") {
 						$module->{$key} = $value;
 					} elsif ($key eq "id") {
 						$module->{ids} = [map { parseAnyInt($_) } split(/\s*,\s*/, $value)];

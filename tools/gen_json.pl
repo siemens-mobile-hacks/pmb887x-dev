@@ -59,7 +59,7 @@ if ($raw) {
 		
 		for my $reg_addr (keys %$regs) {
 			my $reg = $regs->{$reg_addr};
-			if ($reg->{name} eq "VIC_CURRENT_IRQ" || $reg->{name} eq "VIC_CURRENT_FIQ") {
+			if ($reg->{name} eq "VIC_IRQ_CURRENT" || $reg->{name} eq "VIC_FIQ_CURRENT") {
 				$reg->{fields}->{NUM} = {
 					start => 0,
 					mask => 0xFF,

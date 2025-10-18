@@ -123,7 +123,7 @@ __IRQ void prefetch_abort_handler(void) {
 }
 
 __IRQ void irq_handler(void) {
-	int irqn = VIC_CURRENT_IRQ;
+	int irqn = VIC_IRQ_CURRENT;
 	
 	if (irqn == VIC_TPU_INT0_IRQ) {
 		period = stopwatch_elapsed_us(last);
