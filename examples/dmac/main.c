@@ -17,7 +17,7 @@ int main(void) {
 	
 	DMAC_CONFIG = 0;
 	
-	SCU_DMARS = 1 << ch;
+	SCU_DMAE = 1 << ch;
 	
 	DMAC_CH_SRC_ADDR(ch) = (uint32_t) &src;
 	DMAC_CH_DST_ADDR(ch) = (uint32_t) &dst;
@@ -34,7 +34,7 @@ int main(void) {
 		DMAC_CH_CONTROL_I;
 	DMAC_CH_CONFIG(ch) =
 		(8 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
-		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER |
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM |
 		DMAC_CH_CONFIG_INT_MASK_ERR |
 		DMAC_CH_CONFIG_INT_MASK_TC;
 	

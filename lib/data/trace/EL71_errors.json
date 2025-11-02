@@ -10,10 +10,24 @@
 		"addr":		0xA08D5C56,
 		"args":		["cstr", "uint32", "uint32", "uint32", "fmt"],
 		"skip":		true
-	}, {
+	},
+	{
+		"name":		"debug_flash_exit2",
+		"addr":		0xa8fadbc8,
+		"args":		["uint32", "uint32", "uint32", "uint32"],
+		"skip":		true
+	},
+	{
+		"name":		"debug_flash_exit23",
+		"addr":		0xa8f689dc,
+		"watch":	"w",
+		"skip":		true
+	},
+	{
 		"name":		"debug_pickoff",
 		"addr":		0xA04D319C,
-		"args":		["uint32", "exit", "uint32"]
+		"args":		["uint32", "exit", "uint32"],
+		"stop":		1
 	}, {
 		"name":		"debug_pickoff_not_fatal",
 		"addr":		0xa04d3278,
@@ -27,7 +41,8 @@
 		"name":		"debug_flash_exit",
 		"addr":		0xa05702a8,
 		"args":		["uint32", "uint32", "uint32", "uint32"],
-		"skip":		false
+		"skip":		false,
+		"stop":		1
 	}, {
 		"name":		"acc",
 		"addr":		0xa8e26fcc,

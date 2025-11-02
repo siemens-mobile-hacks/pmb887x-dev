@@ -141,7 +141,7 @@ int main(void) {
 			
 			if (MOD_32B && MOD_NUM == 0x0031)
 				addr = (addr + 0x800000) - chunk;
-			
+
 			if (MOD_32B && MOD_NUM == 0xF021)
 				addr = (addr + 0x10000) - chunk;
 			
@@ -168,29 +168,34 @@ const char *get_mod_name(uint32_t id, bool is32) {
 	if (is32) {
 		switch (id) {
 			case 0x0000:	return "STM";
-			case 0x0014:	return "EBU";
-			case 0x0031:	return "IRQ";
-			case 0xF023:	return "PCL";
-			case 0xF040:	return "SCU";
 			case 0x0001:	return "GPTU";
-			case 0xF046:	return "KEYPAD";
-			case 0xF022:	return "GSM_DSP";
-			case 0xF024:	return "AMC";
-			case 0xF003:	return "GSM_GPRS";
-			case 0xF004:	return "GSM_AFC";
-			case 0xF021:	return "GSM_TPU";
-			case 0xF052:	return "CIF";
-			case 0xF043:	return "DIF";
-			case 0xF00F:	return "MCI";
-			case 0xF057:	return "I2C";
-			case 0xF047:	return "USB";
-			case 0xF049:	return "RTC";
-			case 0xF053:	return "MMICIF";
+			case 0x0014:	return "EBU";
+			case 0x0031:	return "VIC";
+
 			case 0xF000:	return "SIM";
+			case 0xF003:	return "GPRSCU";
+			case 0xF004:	return "AFC";
+			case 0xF00F:	return "MCI";
+			case 0xF021:	return "TPU";
+			case 0xF022:	return "DSP";
+			case 0xF023:	return "PCL";
+			case 0xF024:	return "ADC";
+			case 0xF040:	return "SCU";
+			case 0xF041:	return "MMCI";
+			case 0xF043:	return "DIF";
+			case 0xF046:	return "KEYPAD";
+			case 0xF047:	return "USB";
+			case 0xF048:	return "IRDA";
+			case 0xF049:	return "RTC";
+			case 0xF051:	return "USIF";
+			case 0xF052:	return "CIF";
+			case 0xF053:	return "MMICIF";
+			case 0xF057:	return "I2C";
 		}
 	} else {
 		switch (id) {
 			case 0x0044:	return "USART";
+			case 0x0045:	return "SSC";
 			case 0x0050:	return "CAPCOM";
 			case 0x0046:	return "I2C";
 		}

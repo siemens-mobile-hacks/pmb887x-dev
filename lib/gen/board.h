@@ -16,6 +16,10 @@
 #include "board_siemens_m72.h"
 #endif
 
+#ifdef BOARD_PANASONIC_705P
+#include "board_panasonic_705p.h"
+#endif
+
 #ifdef BOARD_SIEMENS_SL75
 #include "board_siemens_sl75.h"
 #endif

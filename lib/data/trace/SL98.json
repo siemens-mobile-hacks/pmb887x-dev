@@ -1,8 +1,7 @@
 [
 	{
-		"name":		"debug2",
-		"addr":		0xa0519760,
-		"args":		[],
-		"regs":		true
+		"name":		"__assert",
+		"addr":		0xa0522780,
+		"args":		["uint32", "uint32", "cstr"]
 	}
 ]

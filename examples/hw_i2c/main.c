@@ -74,10 +74,13 @@ static void i2c_hw_init(void) {
 	I2C_CLC = 0xFF << MOD_CLC_RMC_SHIFT;
 	I2C_RUNCTRL = 0;
 	I2C_ADDRCFG = I2C_ADDRCFG_MnS;
-	I2C_FIFOCFG = I2C_FIFOCFG_RXBS_4_WORD | I2C_FIFOCFG_TXBS_4_WORD | I2C_FIFOCFG_RXFA_BYTE | I2C_FIFOCFG_TXFA_BYTE | I2C_FIFOCFG_RXFC | I2C_FIFOCFG_TXFC;
+	I2C_FIFOCFG = I2C_FIFOCFG_RXBS_4_WORD | I2C_FIFOCFG_TXBS_4_WORD | I2C_FIFOCFG_RXFA_1 | I2C_FIFOCFG_TXFA_1 | I2C_FIFOCFG_RXFC | I2C_FIFOCFG_TXFC;
 	I2C_FDIVCFG = (0x3D << I2C_FDIVCFG_DEC_SHIFT) | (0x04 << I2C_FDIVCFG_INC_SHIFT);
 	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
-}	
+
+	printf("I2C_ERRIRQSM=%08X\n", I2C_ERRIRQSM);
+	printf("I2C_PIRQSM=%08X\n", I2C_PIRQSM);
+}
 
 static void i2c_hw_write_fifo(uint32_t value, int offset) {
 	if (!i2c_state.size) {
@@ -90,7 +93,9 @@ static void i2c_hw_write_fifo(uint32_t value, int offset) {
 		value |= *i2c_state.buffer++ << (8 * (offset + i));
 		i2c_state.size--;
 	}
-	
+
+	printf("[*] I2C_TXD %08X\n", value);
+
 	I2C_TXD = value;
 }
 
@@ -100,11 +105,17 @@ static void i2c_hw_read_fifo(void) {
 			printf("WTF, internal buffer underflow\n");
 			while (true);
 		}
-		
-		printf("I2C_FFSSTAT=%d\n", I2C_FFSSTAT);
-		
+
 		uint32_t value = I2C_RXD;
 		int size = MIN(4, i2c_state.size);
+
+		printf("[*] I2C_RXD %08X\n", value);
+
+		if (size == 0) {
+			printf("WTF, internal buffer overflow\n");
+			while (true);
+		}
+
 		for (int i = 0; i < size; i++) {
 			*i2c_state.buffer++ = (value >> (8 * i));
 			i2c_state.size--;
@@ -255,7 +266,7 @@ static int hw_i2c_transfer(uint8_t addr, uint8_t *buffer, int size, bool is_writ
 	} else {
 		I2C_TPSCTRL = i2c_state.size + 1;
 	}
-	
+
 	while (i2c_state.code == -1)
 		wdt_serve();
 	
@@ -313,6 +324,7 @@ static int hw_i2c_read_smbus(uint8_t addr, uint8_t reg, uint8_t *buffer, int siz
 int main(void) {
 	uint8_t data[0x100] = { };
 	wdt_init();
+	wdt_set_max_execution_time(5000);
 	
 	cpu_enable_irq(true);
 	for (int i = 0; i < 0x200; i++)
@@ -320,16 +332,24 @@ int main(void) {
 	
 	i2c_hw_init();
 	
+	for (int i = 0; i < sizeof(data); i++)
+		data[i] = 0xFF;
 	hw_i2c_read_smbus(D1601AA_I2C_ADDR, 0, data, 1);
 	printf("--------------------------------------------\n");
 
+	for (int i = 0; i < sizeof(data); i++)
+		data[i] = 0xFF;
 	hw_i2c_read_smbus(D1601AA_I2C_ADDR, 0, data, 1);
 	printf("--------------------------------------------\n");
 
+	for (int i = 0; i < sizeof(data); i++)
+		data[i] = 0xFF;
 	hw_i2c_read_smbus(D1601AA_I2C_ADDR, 0, data, 2);
 	printf("--------------------------------------------\n");
 
-	hw_i2c_read_smbus(D1601AA_I2C_ADDR, 0, data, 6);
+	for (int i = 0; i < sizeof(data); i++)
+		data[i] = 0xFF;
+	hw_i2c_read_smbus(D1601AA_I2C_ADDR, 0, data, 16);
 	printf("--------------------------------------------\n");
 
 	// pickoff();

@@ -10,13 +10,8 @@
 		"args":		["cstr", "uint32"]
 	},
 	{
-		"name":		"irq_handler",
-		"addr":		0xffff0a78,
-		"args":		["uint32", "uint32", "uint32", "uint32"]
-	},
-	{
-		"name":		"shit",
-		"addr":		0xFFFF07BC,
-		"args":		["uint32", "uint32", "uint32", "uint32"]
+		"name":		"__system_error",
+		"addr":		0xa04029b0,
+		"args":		["uint32"]
 	}
 ]

@@ -50,6 +50,7 @@ sub genCpuModulesList {
 
 		my $irqs_var = lc($cpu_meta->{name}."_".$module->{name}."_irqs");
 		my $gpios_var = lc($cpu_meta->{name}."_".$module->{name}."_gpios");
+		my $dma_var = lc($cpu_meta->{name}."_".$module->{name}."_dma");
 
 		my @module_irqs;
 		for my $irq_name (@{$module->{irqs_needed}}) {
@@ -98,8 +99,24 @@ sub genCpuModulesList {
 
 		if (@module_gpios) {
 			$str .= "static const pmb887x_cpu_module_gpio_t $gpios_var\[] = {\n";
-			#$str .= "\t".join("\n\t", @module_gpios)."\n";
 			$str .= printTable(\@module_gpios, "\t{", "},");
+			$str .= "};\n\n";
+		}
+
+		my @module_dma;
+		if (exists $cpu_meta->{dma}->{$module_id}) {
+			for my $dma (@{$cpu_meta->{dma}->{$module_id}}) {
+				push @module_dma, [
+					'"'.$dma->{channel}.'",',
+					"PMB887X_DMAC_BUS_".$dma->{bus}.",",
+					$dma->{request},
+				];
+			}
+		}
+
+		if (@module_dma) {
+			$str .= "static const pmb887x_cpu_module_dma_t $dma_var\[] = {\n";
+			$str .= printTable(\@module_dma, "\t{", "},");
 			$str .= "};\n\n";
 		}
 
@@ -111,7 +128,9 @@ sub genCpuModulesList {
 			@module_irqs ? "$irqs_var," : "NULL,",
 			@module_irqs ? "ARRAY_SIZE($irqs_var)," : "0,",
 			@module_gpios ? "$gpios_var," : "NULL,",
-			@module_gpios ? "ARRAY_SIZE($gpios_var)" : "0",
+			@module_gpios ? "ARRAY_SIZE($gpios_var)," : "0,",
+			@module_dma ? "$dma_var," : "NULL,",
+			@module_dma ? "ARRAY_SIZE($dma_var)" : "0",
 		];
 	}
 

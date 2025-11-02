@@ -13,7 +13,8 @@ sub new {
 	
 	my $self = bless {
 		modules => {},
-		gpios => {}
+		gpios => {},
+		dma => {},
 	} => $class;
 	
 	$self->{common} = $self->loadCommonRegs();
@@ -199,7 +200,14 @@ sub loadCPU {
 		
 		next if !length($line);
 		
-		if ($line =~ /^\.gpio/) {
+		if ($line =~ /^\.dma/) {
+			my ($key, $module, $channel, $bus, $request) = split("\t", $line);
+			push @{$self->{dma}->{$module}}, {
+				channel	=> $channel,
+				bus		=> $bus,
+				request	=> parseAnyInt($request)
+			};
+		} elsif ($line =~ /^\.gpio/) {
 			my ($key, $name, $id, $alt_list) = split("\t", $line);
 			$self->{gpios}->{$name} = {
 				id		=> parseAnyInt($id),
