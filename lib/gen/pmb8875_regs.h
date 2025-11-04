@@ -93,11 +93,14 @@
 #define	VIC_SSC_TX_IRQ			12
 #define	VIC_SSC_RX_IRQ			13
 #define	VIC_SSC_ERR_IRQ			14
-#define	VIC_SSC_UNK_IRQ			15
+#define	VIC_SSC_TMO_IRQ			15
 #define	VIC_DIF_TX_IRQ			18
 #define	VIC_DIF_RX_IRQ			19
 #define	VIC_DIF_ERR_IRQ			20
 #define	VIC_DIF_TMO_IRQ			21
+#define	VIC_SIM_UNK0_IRQ		22
+#define	VIC_SIM_UNK1_IRQ		23
+#define	VIC_SIM_UNK2_IRQ		24
 #define	VIC_USB_IRQ				25
 #define	VIC_USART1_TX_IRQ		26
 #define	VIC_USART1_TBUF_IRQ		27
@@ -742,37 +745,42 @@
 #define	SSC_IMSC_TX				BIT(0)					 // Transmit interrupt mask
 #define	SSC_IMSC_RX				BIT(1)					 // Receive interrupt mask
 #define	SSC_IMSC_ERR			BIT(3)					 // Error interrupt mask
-#define	SSC_IMSC_TB				BIT(4)					 // Transmit buffer interrupt mask
 
 #define	SSC_RIS					MMIO32(SSC_BASE + 0x4C)
 #define	SSC_RIS_TX				BIT(0)					 // Transmit interrupt raw status
 #define	SSC_RIS_RX				BIT(1)					 // Receive interrupt raw status
 #define	SSC_RIS_ERR				BIT(2)					 // Error interrupt raw status
-#define	SSC_RIS_TB				BIT(3)					 // Transmit buffer raw interrupt status
 
 #define	SSC_MIS					MMIO32(SSC_BASE + 0x50)
 #define	SSC_MIS_TX				BIT(0)					 // Transmit interrupt status
 #define	SSC_MIS_RX				BIT(1)					 // Receive interrupt status
 #define	SSC_MIS_ERR				BIT(2)					 // Error interrupt status
-#define	SSC_MIS_TB				BIT(3)					 // Transmit buffer interrupt status
 
 #define	SSC_ICR					MMIO32(SSC_BASE + 0x54)
 #define	SSC_ICR_TX				BIT(0)					 // Transmit interrupt mask
 #define	SSC_ICR_RX				BIT(1)					 // Receive interrupt mask
 #define	SSC_ICR_ERR				BIT(2)					 // Error interrupt mask
-#define	SSC_ICR_TB				BIT(3)					 // Transmit buffer interrupt mask
 
 #define	SSC_ISR					MMIO32(SSC_BASE + 0x58)
 #define	SSC_ISR_TX				BIT(0)					 // Transmit interrupt set
 #define	SSC_ISR_RX				BIT(1)					 // Receive interrupt set
 #define	SSC_ISR_ERR				BIT(2)					 // Error interrupt set
-#define	SSC_ISR_TB				BIT(3)					 // Transmit buffer interrupt set
 
-#define	SSC_DMACON				MMIO32(SSC_BASE + 0x5C)
-#define	SSC_DMACON_TX			BIT(0)					 // Transmit DMA Enable. If this bit is set to 1, DMA for the transmit FIFO is enabled
-#define	SSC_DMACON_RX			BIT(1)					 // Receive DMA Enable. If this bit is set to 1, DMA for the receive FIFO is enabled.
+#define	SSC_DMAE				MMIO32(SSC_BASE + 0x5C)
+#define	SSC_DMAE_TX				BIT(0)					 // Transmit interrupt mask
+#define	SSC_DMAE_RX				BIT(1)					 // Receive interrupt mask
 
 #define	SSC_UNK2				MMIO32(SSC_BASE + 0x60)
+
+
+// SIM [MOD_NUM=F000, MOD_REV=32, MOD_32BIT=C0]
+// Looks like SIM IO module, but not sure.
+#define	SIM_BASE	0xF1300000
+/* Clock Control Register */
+#define	SIM_CLC		MMIO32(SIM_BASE + 0x00)
+
+/* Module Identifier Register */
+#define	SIM_ID		MMIO32(SIM_BASE + 0x08)
 
 
 // DIF [MOD_NUM=F043, MOD_REV=00, MOD_32BIT=C0]
@@ -885,35 +893,30 @@
 #define	DIF_IMSC_TX				BIT(0)					 // Transmit interrupt mask
 #define	DIF_IMSC_RX				BIT(1)					 // Receive interrupt mask
 #define	DIF_IMSC_ERR			BIT(3)					 // Error interrupt mask
-#define	DIF_IMSC_TB				BIT(4)					 // Transmit buffer interrupt mask
 
 #define	DIF_RIS					MMIO32(DIF_BASE + 0x4C)
 #define	DIF_RIS_TX				BIT(0)					 // Transmit interrupt raw status
 #define	DIF_RIS_RX				BIT(1)					 // Receive interrupt raw status
 #define	DIF_RIS_ERR				BIT(2)					 // Error interrupt raw status
-#define	DIF_RIS_TB				BIT(3)					 // Transmit buffer raw interrupt status
 
 #define	DIF_MIS					MMIO32(DIF_BASE + 0x50)
 #define	DIF_MIS_TX				BIT(0)					 // Transmit interrupt status
 #define	DIF_MIS_RX				BIT(1)					 // Receive interrupt status
 #define	DIF_MIS_ERR				BIT(2)					 // Error interrupt status
-#define	DIF_MIS_TB				BIT(3)					 // Transmit buffer interrupt status
 
 #define	DIF_ICR					MMIO32(DIF_BASE + 0x54)
 #define	DIF_ICR_TX				BIT(0)					 // Transmit interrupt mask
 #define	DIF_ICR_RX				BIT(1)					 // Receive interrupt mask
 #define	DIF_ICR_ERR				BIT(2)					 // Error interrupt mask
-#define	DIF_ICR_TB				BIT(3)					 // Transmit buffer interrupt mask
 
 #define	DIF_ISR					MMIO32(DIF_BASE + 0x58)
 #define	DIF_ISR_TX				BIT(0)					 // Transmit interrupt set
 #define	DIF_ISR_RX				BIT(1)					 // Receive interrupt set
 #define	DIF_ISR_ERR				BIT(2)					 // Error interrupt set
-#define	DIF_ISR_TB				BIT(3)					 // Transmit buffer interrupt set
 
-#define	DIF_DMACON				MMIO32(DIF_BASE + 0x5C)
-#define	DIF_DMACON_TX			BIT(0)					 // Transmit DMA Enable. If this bit is set to 1, DMA for the transmit FIFO is enabled
-#define	DIF_DMACON_RX			BIT(1)					 // Receive DMA Enable. If this bit is set to 1, DMA for the receive FIFO is enabled.
+#define	DIF_DMAE				MMIO32(DIF_BASE + 0x5C)
+#define	DIF_DMAE_TX				BIT(0)					 // Transmit interrupt mask
+#define	DIF_DMAE_RX				BIT(1)					 // Receive interrupt mask
 
 #define	DIF_UNK2				MMIO32(DIF_BASE + 0x60)
 
@@ -2029,24 +2032,24 @@
 
 #define	SCU_RTID					MMIO32(SCU_BASE + 0x80)
 
-/* DMA Enable Channel */
-#define	SCU_DMAE					MMIO32(SCU_BASE + 0x84)
-#define	SCU_DMAE_CH0				BIT(0)									 // Enable DMA CH0
-#define	SCU_DMAE_CH1				BIT(1)									 // Enable DMA CH1
-#define	SCU_DMAE_CH2				BIT(2)									 // Enable DMA CH2
-#define	SCU_DMAE_CH3				BIT(3)									 // Enable DMA CH3
-#define	SCU_DMAE_CH4				BIT(4)									 // Enable DMA CH4
-#define	SCU_DMAE_CH5				BIT(5)									 // Enable DMA CH5
-#define	SCU_DMAE_CH6				BIT(6)									 // Enable DMA CH6
-#define	SCU_DMAE_CH7				BIT(7)									 // Enable DMA CH7
-#define	SCU_DMAE_CH8				BIT(8)									 // Enable DMA CH8
-#define	SCU_DMAE_CH9				BIT(9)									 // Enable DMA CH9
-#define	SCU_DMAE_CH10				BIT(10)									 // Enable DMA CH10
-#define	SCU_DMAE_CH11				BIT(11)									 // Enable DMA CH11
-#define	SCU_DMAE_CH12				BIT(12)									 // Enable DMA CH12
-#define	SCU_DMAE_CH13				BIT(13)									 // Enable DMA CH13
-#define	SCU_DMAE_CH14				BIT(14)									 // Enable DMA CH14
-#define	SCU_DMAE_CH15				BIT(15)									 // Enable DMA CH15
+/* DMA Request Select */
+#define	SCU_DMARS					MMIO32(SCU_BASE + 0x84)
+#define	SCU_DMARS_SEL0				BIT(0)
+#define	SCU_DMARS_SEL1				BIT(1)
+#define	SCU_DMARS_SEL2				BIT(2)
+#define	SCU_DMARS_SEL3				BIT(3)
+#define	SCU_DMARS_SEL4				BIT(4)
+#define	SCU_DMARS_SEL5				BIT(5)
+#define	SCU_DMARS_SEL6				BIT(6)
+#define	SCU_DMARS_SEL7				BIT(7)
+#define	SCU_DMARS_SEL8				BIT(8)
+#define	SCU_DMARS_SEL9				BIT(9)
+#define	SCU_DMARS_SEL10				BIT(10)
+#define	SCU_DMARS_SEL11				BIT(11)
+#define	SCU_DMARS_SEL12				BIT(12)
+#define	SCU_DMARS_SEL13				BIT(13)
+#define	SCU_DMARS_SEL14				BIT(14)
+#define	SCU_DMARS_SEL15				BIT(15)
 
 /* Service Routing Control Register */
 #define	SCU_EXTI0_SRC				MMIO32(SCU_BASE + 0xB8)

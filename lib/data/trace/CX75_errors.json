@@ -69,4 +69,19 @@
 		"addr":		0xa0a8abac,
 		"args":		["uint32", "uint32"]
 	},
+	{
+		"name":		"gimmick_write_reg",
+		"addr":		0xa0abe9fc,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"gimmick_read_reg",
+		"addr":		0xa0abeb20,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"gimmick_read_status",
+		"addr":		0xa0abee38,
+		"args":		["uint32"]
+	},
 ]

@@ -201,11 +201,12 @@ sub loadCPU {
 		next if !length($line);
 		
 		if ($line =~ /^\.dma/) {
-			my ($key, $module, $channel, $bus, $request) = split("\t", $line);
+			my ($key, $module, $channel, $bus, $request, $sel) = split("\t", $line);
 			push @{$self->{dma}->{$module}}, {
 				channel	=> $channel,
 				bus		=> $bus,
-				request	=> parseAnyInt($request)
+				request	=> parseAnyInt($request),
+				sel	=> parseAnyInt($sel)
 			};
 		} elsif ($line =~ /^\.gpio/) {
 			my ($key, $name, $id, $alt_list) = split("\t", $line);

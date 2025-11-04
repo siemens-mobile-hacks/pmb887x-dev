@@ -109,7 +109,8 @@ sub genCpuModulesList {
 				push @module_dma, [
 					'"'.$dma->{channel}.'",',
 					"PMB887X_DMAC_BUS_".$dma->{bus}.",",
-					$dma->{request},
+					$dma->{request}.",",
+					$dma->{sel},
 				];
 			}
 		}
