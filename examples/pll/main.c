@@ -44,16 +44,12 @@ static void rtc_init(void) {
 
 static void tpu_init(void) {
 	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
-	TPU_PLLCON0 = 1 << TPU_PLLCON0_K_DIV_SHIFT;
-	TPU_PLLCON1 = 1 << TPU_PLLCON1_L_DIV_SHIFT;
-	TPU_PLLCON2 = TPU_PLLCON2_INIT;
+	TPU_GSMCLK1 = 1 << TPU_GSMCLK1_K_SHIFT;
+	TPU_GSMCLK2 = 1 << TPU_GSMCLK2_L_SHIFT;
+	TPU_GSMCLK3 = TPU_GSMCLK3_INIT;
 	
 	for (int i = 0; i < 512; i++)
 		TPU_RAM(i) = 0;
-	
-	TPU_UNK5 = 0;
-	TPU_UNK4 = 6;
-	TPU_UNK6 = 0x80000000;
 	
 	TPU_OVERFLOW = 999;
 	TPU_OFFSET = 0;

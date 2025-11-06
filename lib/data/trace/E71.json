@@ -1,7 +1,40 @@
 [
 	{
-		"name":		"RegExplorerExt",
-		"addr":		0xA0502AE0,
-		"args":		[]
+		"name":		"pasic_i2c_transfer",
+		"addr":		0xA057C9B0,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"pasic_write_reg",
+		"addr":		0xA057BC74,
+		"args":		["uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"i2c_transfer",
+		"addr":		0xA04F445C,
+		"args":		["uint32"],
+		"skip":		true,
+	},
+	{
+		"name":		"i2c_receive",
+		"addr":		0xA04F44B0,
+		"args":		["uint32"],
+		"skip":		true,
+	},
+	{
+		"name":		"i2c_send",
+		"addr":		0xA04F4504,
+		"args":		["uint32"],
+		"skip":		true,
+	},
+	{
+		"name":		"pickoff_message",
+		"addr":		0xA04CCC50,
+		"args":		["cstr"],
+	},
+	{
+		"name":		"za4em_lovit_govno",
+		"addr":		0xA04F5FF4,
+		"args":		["uint32", "uint32"],
 	}
 ]

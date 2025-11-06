@@ -214,12 +214,12 @@
 #define	VIC_KEYPAD_UNK0_IRQ		109
 #define	VIC_KEYPAD_UNK1_IRQ		110
 #define	VIC_KEYPAD_RELEASE_IRQ	111
-#define	VIC_TPU_INT_UNK0_IRQ	113
-#define	VIC_TPU_INT_UNK1_IRQ	114
-#define	VIC_TPU_INT_UNK2_IRQ	115
-#define	VIC_TPU_INT_UNK3_IRQ	116
-#define	VIC_TPU_INT_UNK4_IRQ	117
-#define	VIC_TPU_INT_UNK5_IRQ	118
+#define	VIC_TPU_INT_GP0_IRQ		113
+#define	VIC_TPU_INT_GP1_IRQ		114
+#define	VIC_TPU_INT_GP2_IRQ		115
+#define	VIC_TPU_INT_GP3_IRQ		116
+#define	VIC_TPU_INT_GP4_IRQ		117
+#define	VIC_TPU_INT_GP5_IRQ		118
 #define	VIC_TPU_INT0_IRQ		119
 #define	VIC_TPU_INT1_IRQ		120
 #define	VIC_GPRSCU_INT0_IRQ		121
@@ -2818,79 +2818,149 @@
 
 
 // TPU [MOD_NUM=F021, MOD_REV=12, MOD_32BIT=C0]
-// Looks like TPU (time processing module) module, registers collected using tests on real hardware (using "black box" method).
-#define	TPU_BASE					0xF6400000
+// Time Processing Unit
+#define	TPU_BASE									0xF6400000
 /* Clock Control Register */
-#define	TPU_CLC						MMIO32(TPU_BASE + 0x00)
+#define	TPU_CLC										MMIO32(TPU_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	TPU_ID						MMIO32(TPU_BASE + 0x08)
+#define	TPU_ID										MMIO32(TPU_BASE + 0x08)
 
-#define	TPU_UNK0					MMIO32(TPU_BASE + 0x10)
+/* RF Control Register 1 */
+#define	TPU_RFCON1									MMIO32(TPU_BASE + 0x10)
+#define	TPU_RFCON1_STBSEL							GENMASK(3, 0)							 // Strobe Select. For each bit STBSEL[i]
+#define	TPU_RFCON1_STBSEL_SHIFT						0
+#define	TPU_RFCON1_STBSEL_ACTIVE_LOW				0x0
+#define	TPU_RFCON1_STBSEL_ACTIVE_HIGH				0x1
+#define	TPU_RFCON1_RFISSCP							BIT(8)									 // SSC Clock Polarity of RF Interface
+#define	TPU_RFCON1_RFISSCP_IDLE_LOW_LEADING_RISE	0x0
+#define	TPU_RFCON1_RFISSCP_IDLE_HIGH_LEADING_FALL	0x100
+#define	TPU_RFCON1_RAMTYPE							BIT(9)									 // RF Control Unit RAM Partitioning Type
+#define	TPU_RFCON1_RAMTYPE_1						0x0
+#define	TPU_RFCON1_RAMTYPE_2						0x200
 
-#define	TPU_UNK1					MMIO32(TPU_BASE + 0x14)
+/* RF Control Register 2 */
+#define	TPU_RFCON2									MMIO32(TPU_BASE + 0x14)
+#define	TPU_RFCON2_SSCBM							GENMASK(3, 0)							 // RF SSC Unit Telegram Length Control (telegram length = SSCBM + 1 bits)
+#define	TPU_RFCON2_SSCBM_SHIFT						0
+#define	TPU_RFCON2_SSCBM_1							0x0
+#define	TPU_RFCON2_SSCBM_2							0x1
+#define	TPU_RFCON2_SSCBM_3							0x2
+#define	TPU_RFCON2_SSCBM_4							0x3
+#define	TPU_RFCON2_SSCBM_5							0x4
+#define	TPU_RFCON2_SSCBM_6							0x5
+#define	TPU_RFCON2_SSCBM_7							0x6
+#define	TPU_RFCON2_SSCBM_8							0x7
+#define	TPU_RFCON2_SSCBM_9							0x8
+#define	TPU_RFCON2_SSCBM_10							0x9
+#define	TPU_RFCON2_SSCBM_11							0xA
+#define	TPU_RFCON2_SSCBM_12							0xB
+#define	TPU_RFCON2_SSCBM_13							0xC
+#define	TPU_RFCON2_SSCBM_14							0xD
+#define	TPU_RFCON2_SSCBM_15							0xE
+#define	TPU_RFCON2_SSCBM_16							0xF
+#define	TPU_RFCON2_SSCHB							BIT(4)									 // RF SSC Unit Heading Control
+#define	TPU_RFCON2_SSCHB_LSB						0x0
+#define	TPU_RFCON2_SSCHB_MSB						0x10
+#define	TPU_RFCON2_SSCPB							BIT(5)									 // RF SSC Unit Clock Phase Control
+#define	TPU_RFCON2_SSCPB_LEADING_EDGE				0x0
+#define	TPU_RFCON2_SSCPB_TRAILING_EDGE				0x20
+#define	TPU_RFCON2_SSCSB							GENMASK(10, 8)							 // RF SSC Unit Strobe Select (select active RFSTR[i] during transmission)
+#define	TPU_RFCON2_SSCSB_SHIFT						8
+#define	TPU_RFCON2_SSCSB_RFSTR0						0x0
+#define	TPU_RFCON2_SSCSB_RFSTR1						0x100
+#define	TPU_RFCON2_SSCSB_RFSTR2						0x200
+#define	TPU_RFCON2_SSCSB_RFSTR3						0x300
+#define	TPU_RFCON2_SSCFB							BIT(13)									 // RF SSC Unit Clock Frequency
+#define	TPU_RFCON2_SSCFB_6_50MHZ					0x0
+#define	TPU_RFCON2_SSCFB_3_25MHZ					0x2000
+#define	TPU_RFCON2_SSCEN							BIT(15)									 // RF SSC Unit Enable
 
-#define	TPU_UNK2					MMIO32(TPU_BASE + 0x18)
+/* RF SSC Trasmit Buffer */
+#define	TPU_RFSSCTB									MMIO32(TPU_BASE + 0x18)
+#define	TPU_RFSSCTB_VALUE							GENMASK(15, 0)
+#define	TPU_RFSSCTB_VALUE_SHIFT						0
 
-#define	TPU_CORRECTION				MMIO32(TPU_BASE + 0x1C)
-#define	TPU_CORRECTION_VALUE		GENMASK(14, 0)
-#define	TPU_CORRECTION_VALUE_SHIFT	0
-#define	TPU_CORRECTION_CTRL			BIT(16)
+/* RTDMA Counter Correction Register */
+#define	TPU_CORRECTION								MMIO32(TPU_BASE + 0x1C)
+#define	TPU_CORRECTION_VALUE						GENMASK(14, 0)
+#define	TPU_CORRECTION_VALUE_SHIFT					0
+#define	TPU_CORRECTION_CTRL							BIT(16)
 
-#define	TPU_OVERFLOW				MMIO32(TPU_BASE + 0x20)
-#define	TPU_OVERFLOW_VALUE			GENMASK(14, 0)
-#define	TPU_OVERFLOW_VALUE_SHIFT	0
+/* RTDMA Counter Overflow Register */
+#define	TPU_OVERFLOW								MMIO32(TPU_BASE + 0x20)
+#define	TPU_OVERFLOW_VALUE							GENMASK(14, 0)
+#define	TPU_OVERFLOW_VALUE_SHIFT					0
 
-#define	TPU_INT(n)					MMIO32(TPU_BASE + 0x24 + ((n) * 0x4))
-#define	TPU_INT_VALUE				GENMASK(14, 0)
-#define	TPU_INT_VALUE_SHIFT			0
+/* RTDMA Timer Interrupt Register */
+#define	TPU_INT(n)									MMIO32(TPU_BASE + 0x24 + ((n) * 0x4))
+#define	TPU_INT_VALUE								GENMASK(14, 0)
+#define	TPU_INT_VALUE_SHIFT							0
 
-#define	TPU_OFFSET					MMIO32(TPU_BASE + 0x2C)
-#define	TPU_OFFSET_VALUE			GENMASK(14, 0)
-#define	TPU_OFFSET_VALUE_SHIFT		0
-#define	TPU_OFFSET_CTRL				BIT(16)
+/* RTDMA Counter Offset Register */
+#define	TPU_OFFSET									MMIO32(TPU_BASE + 0x2C)
+#define	TPU_OFFSET_VALUE							GENMASK(14, 0)
+#define	TPU_OFFSET_VALUE_SHIFT						0
+#define	TPU_OFFSET_CTRL								BIT(16)
 
-#define	TPU_SKIP					MMIO32(TPU_BASE + 0x30)
-#define	TPU_SKIP_SKIPN				BIT(0)
-#define	TPU_SKIP_SKIPC				BIT(1)
+/* RTDMA Frame Skip Register */
+#define	TPU_SKIP									MMIO32(TPU_BASE + 0x30)
+#define	TPU_SKIP_SKIPN								BIT(0)									 // Skip next CTDMA counter reset
+#define	TPU_SKIP_SKIPC								BIT(1)									 // Skip current CTDMA counter reset
 
-#define	TPU_COUNTER					MMIO32(TPU_BASE + 0x34)
-#define	TPU_COUNTER_VALUE			GENMASK(14, 0)
-#define	TPU_COUNTER_VALUE_SHIFT		0
+/* Counter Latch Register */
+#define	TPU_COUNTER									MMIO32(TPU_BASE + 0x34)
+#define	TPU_COUNTER_VALUE							GENMASK(14, 0)
+#define	TPU_COUNTER_VALUE_SHIFT						0
 
-#define	TPU_UNK3					MMIO32(TPU_BASE + 0x38)
+/* Current Timer Event Address Pointer */
+#define	TPU_CEAP									MMIO32(TPU_BASE + 0x38)
+#define	TPU_CEAP_VALUE								GENMASK(7, 0)
+#define	TPU_CEAP_VALUE_SHIFT						0
 
-#define	TPU_UNK4					MMIO32(TPU_BASE + 0x3C)
+/* Timer Event Top Address Pointer */
+#define	TPU_EAPT									MMIO32(TPU_BASE + 0x3C)
+#define	TPU_EAPT_VALUE								GENMASK(7, 0)
+#define	TPU_EAPT_VALUE_SHIFT						0
 
-#define	TPU_UNK5					MMIO32(TPU_BASE + 0x40)
+/* Timer Event Bottom Address Pointer */
+#define	TPU_EAPB									MMIO32(TPU_BASE + 0x40)
+#define	TPU_EAPB_VALUE								GENMASK(7, 0)
+#define	TPU_EAPB_VALUE_SHIFT						0
 
-#define	TPU_UNK6					MMIO32(TPU_BASE + 0x44)
+/* Time Group Enable Register */
+#define	TPU_TGER									MMIO32(TPU_BASE + 0x44)
 
-#define	TPU_PARAM					MMIO32(TPU_BASE + 0x5C)
-#define	TPU_PARAM_TINI				BIT(0)
-#define	TPU_PARAM_FDIS				BIT(1)
+/* Timer Parameter Register */
+#define	TPU_PARAM									MMIO32(TPU_BASE + 0x5C)
+#define	TPU_PARAM_TINI								BIT(0)									 // Timer Init
+#define	TPU_PARAM_FDIS								BIT(1)									 // Fade Out Unit Disable
 
-#define	TPU_UNK7					MMIO32(TPU_BASE + 0x60)
+/* Timer Fade Out Regiser */
+#define	TPU_FADE									MMIO32(TPU_BASE + 0x60)
 
-#define	TPU_PLLCON0					MMIO32(TPU_BASE + 0x68)
-#define	TPU_PLLCON0_K_DIV			GENMASK(29, 0)
-#define	TPU_PLLCON0_K_DIV_SHIFT		0
+/* GSM System Interface Clock Control Register 1 */
+#define	TPU_GSMCLK1									MMIO32(TPU_BASE + 0x68)
+#define	TPU_GSMCLK1_K								GENMASK(29, 0)							 // Numerator of the fractional divider
+#define	TPU_GSMCLK1_K_SHIFT							0
 
-#define	TPU_PLLCON1					MMIO32(TPU_BASE + 0x6C)
-#define	TPU_PLLCON1_L_DIV			GENMASK(29, 0)
-#define	TPU_PLLCON1_L_DIV_SHIFT		0
+/* GSM System Interface Clock Control Register 1 */
+#define	TPU_GSMCLK2									MMIO32(TPU_BASE + 0x6C)
+#define	TPU_GSMCLK2_L								GENMASK(29, 0)							 // Denominator of the fractional divider
+#define	TPU_GSMCLK2_L_SHIFT							0
 
-#define	TPU_PLLCON2					MMIO32(TPU_BASE + 0x70)
-#define	TPU_PLLCON2_LOAD			BIT(0)
-#define	TPU_PLLCON2_INIT			BIT(1)
+/* GSM System Interface Clock Control Register 1 */
+#define	TPU_GSMCLK3									MMIO32(TPU_BASE + 0x70)
+#define	TPU_GSMCLK3_LOAD							BIT(0)									 // Load K and L value
+#define	TPU_GSMCLK3_INIT							BIT(1)									 // Init K and L value
 
 /* Service Routing Control Register */
-#define	TPU_UNK_SRC(n)				MMIO32(TPU_BASE + 0xE0 + ((n) * 0x4))
+#define	TPU_GP_SRC(n)								MMIO32(TPU_BASE + 0xE0 + ((n) * 0x4))
 
 /* Service Routing Control Register */
-#define	TPU_SRC(n)					MMIO32(TPU_BASE + 0xF8 + ((n) * 0x4))
+#define	TPU_SRC(n)									MMIO32(TPU_BASE + 0xF8 + ((n) * 0x4))
 
-#define	TPU_RAM(n)					MMIO32(TPU_BASE + 0x1000 + ((n) * 0x4))
+#define	TPU_RAM(n)									MMIO32(TPU_BASE + 0x1000 + ((n) * 0x4))
 
 
 // CIF [MOD_NUM=F052, MOD_REV=12, MOD_32BIT=C0]
