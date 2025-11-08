@@ -872,11 +872,12 @@
 #define	DIF_RXFCON_RXFITL		GENMASK(13, 8)			 // Receive FIFO Interrupt Trigger Level
 #define	DIF_RXFCON_RXFITL_SHIFT	8
 
+/* Transmit FIFO Control Register */
 #define	DIF_TXFCON				MMIO32(DIF_BASE + 0x34)
-#define	DIF_TXFCON_TXFEN		BIT(0)					 // Receive FIFO Enable
-#define	DIF_TXFCON_TXFLU		BIT(1)					 // Receive FIFO Flush
-#define	DIF_TXFCON_TXTMEN		BIT(2)					 // Receive FIFO Transparent Mode Enable
-#define	DIF_TXFCON_TXFITL		GENMASK(13, 8)			 // Receive FIFO Interrupt Trigger Level
+#define	DIF_TXFCON_TXFEN		BIT(0)					 // Transmit FIFO Enable
+#define	DIF_TXFCON_TXFLU		BIT(1)					 // Transmit FIFO Flush
+#define	DIF_TXFCON_TXTMEN		BIT(2)					 // Transmit FIFO Transparent Mode Enable
+#define	DIF_TXFCON_TXFITL		GENMASK(13, 8)			 // Transmit FIFO Interrupt Trigger Level
 #define	DIF_TXFCON_TXFITL_SHIFT	8
 
 #define	DIF_FSTAT				MMIO32(DIF_BASE + 0x38)
@@ -3088,78 +3089,121 @@
 
 // ADC [MOD_NUM=F024, MOD_REV=10, MOD_32BIT=C0]
 // Measurement Interface
-#define	ADC_BASE				0xF4C00000
+#define	ADC_BASE						0xF4C00000
 /* Clock Control Register */
-#define	ADC_CLC					MMIO32(ADC_BASE + 0x00)
+#define	ADC_CLC							MMIO32(ADC_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	ADC_ID					MMIO32(ADC_BASE + 0x08)
+#define	ADC_ID							MMIO32(ADC_BASE + 0x08)
 
-#define	ADC_CON0				MMIO32(ADC_BASE + 0x14)
-#define	ADC_CON0_EN_VREF		BIT(1)
+/* Analog Control Register */
+#define	ADC_ANA_CTRL					MMIO32(ADC_BASE + 0x14)
+#define	ADC_ANA_CTRL_RXREF_PU			BIT(0)									 // RX Local Reference Buffer Switch
+#define	ADC_ANA_CTRL_BG_PWUP			BIT(1)									 // Band-Gap Power Control
+#define	ADC_ANA_CTRL_PA_OFF1			BIT(2)									 // PAOUT1 Analog Offset Correction
+#define	ADC_ANA_CTRL_PA_OFF1_NONE		0x0
+#define	ADC_ANA_CTRL_PA_OFF1_MINUS_50MV	0x4
+#define	ADC_ANA_CTRL_TX_DIS				BIT(4)									 // Disable Analog Part of Modulator Unit
+#define	ADC_ANA_CTRL_TXREF_PU			BIT(8)									 // TX Local Reference Buffer Switch
+#define	ADC_ANA_CTRL_PAOPM1				BIT(14)									 // PAOUT1 Output Buffer Operation Mode
+#define	ADC_ANA_CTRL_PAOPM1_STANDARD	0x0
+#define	ADC_ANA_CTRL_PAOPM1_ENHANCED	0x4000
+#define	ADC_ANA_CTRL_PA_CAL1			GENMASK(21, 16)							 // PAOUT1 Digital Offset Correction
+#define	ADC_ANA_CTRL_PA_CAL1_SHIFT		16
+#define	ADC_ANA_CTRL_TREF				GENMASK(31, 28)							 // Common Mode Voltage for Baseband TX Path
+#define	ADC_ANA_CTRL_TREF_SHIFT			28
+#define	ADC_ANA_CTRL_TREF_0_955V		0x0
+#define	ADC_ANA_CTRL_TREF_1_010V		0x10000000
+#define	ADC_ANA_CTRL_TREF_1_065V		0x20000000
+#define	ADC_ANA_CTRL_TREF_1_120V		0x30000000
+#define	ADC_ANA_CTRL_TREF_1_175V		0x40000000
+#define	ADC_ANA_CTRL_TREF_1_230V		0x50000000
+#define	ADC_ANA_CTRL_TREF_1_285V		0x60000000
+#define	ADC_ANA_CTRL_TREF_1_340V		0x70000000
+#define	ADC_ANA_CTRL_TREF_0_900V		0xF0000000
 
-#define	ADC_CON1				MMIO32(ADC_BASE + 0x18)
-#define	ADC_CON1_CH				GENMASK(5, 0)
-#define	ADC_CON1_CH_SHIFT		0
-#define	ADC_CON1_CH_OFF			0x0
-#define	ADC_CON1_CH_M0			0x1
-#define	ADC_CON1_CH_M1			0x2
-#define	ADC_CON1_CH_M2			0x3
-#define	ADC_CON1_CH_M7			0x8
-#define	ADC_CON1_CH_M8			0x9
-#define	ADC_CON1_CH_M9			0xA
-#define	ADC_CON1_CH_M10			0xB
-#define	ADC_CON1_CH_M0_M9_A		0xC
-#define	ADC_CON1_CH_M0_M9_B		0x12
-#define	ADC_CON1_PREAMP_INV		BIT(6)
-#define	ADC_CON1_PREAMP_FAST	BIT(11)
-#define	ADC_CON1_MODE			GENMASK(14, 12)
-#define	ADC_CON1_MODE_SHIFT		12
-#define	ADC_CON1_MODE_V			0x0
-#define	ADC_CON1_MODE_I_30		0x1000
-#define	ADC_CON1_MODE_I_60		0x2000
-#define	ADC_CON1_MODE_I_90		0x3000
-#define	ADC_CON1_MODE_I_120		0x4000
-#define	ADC_CON1_MODE_I_150		0x5000
-#define	ADC_CON1_MODE_I_180		0x6000
-#define	ADC_CON1_MODE_I_210		0x7000
-#define	ADC_CON1_FREQ			GENMASK(18, 16)
-#define	ADC_CON1_FREQ_SHIFT		16
-#define	ADC_CON1_COUNT			GENMASK(21, 19)
-#define	ADC_CON1_COUNT_SHIFT	19
-#define	ADC_CON1_REF_CH			GENMASK(24, 22)
-#define	ADC_CON1_REF_CH_SHIFT	22
-#define	ADC_CON1_REF_CH_OFF		0x0
-#define	ADC_CON1_REF_CH_M0		0x400000
-#define	ADC_CON1_REF_CH_M1		0x800000
-#define	ADC_CON1_REF_CH_M2		0xC00000
-#define	ADC_CON1_REF_CH_M7		0x2000000
-#define	ADC_CON1_REF_CH_M8		0x2400000
-#define	ADC_CON1_REF_CH_M9		0x2800000
-#define	ADC_CON1_REF_CH_M10		0x2C00000
-#define	ADC_CON1_REF_CH_M0_M9_A	0x3000000
-#define	ADC_CON1_REF_CH_M0_M9_B	0x4800000
-#define	ADC_CON1_SINGLE			BIT(27)
-#define	ADC_CON1_TRIG			BIT(28)
-#define	ADC_CON1_ON				BIT(29)
-#define	ADC_CON1_START			BIT(31)
+/* Measurement Control Register */
+#define	ADC_CTRL						MMIO32(ADC_BASE + 0x18)
+#define	ADC_CTRL_MX						GENMASK(5, 0)							 // Measurement mode
+#define	ADC_CTRL_MX_SHIFT				0
+#define	ADC_CTRL_MX_OFF					0x0
+#define	ADC_CTRL_MX_M0					0x1
+#define	ADC_CTRL_MX_M1					0x2
+#define	ADC_CTRL_MX_M2					0x3
+#define	ADC_CTRL_MX_M7					0x8
+#define	ADC_CTRL_MX_M8					0x9
+#define	ADC_CTRL_MX_M9					0xA
+#define	ADC_CTRL_MX_M10					0xB
+#define	ADC_CTRL_MX_M0_M9_A				0xC
+#define	ADC_CTRL_MX_M0_M9_B				0x12
+#define	ADC_CTRL_INV					BIT(6)									 // Inversion of Pre-Amplifier Input
+#define	ADC_CTRL_CSEL					BIT(11)									 // Fast Settling of Pre-Amplifier
+#define	ADC_CTRL_TC						GENMASK(14, 12)							 // Current Source for Current Measurement Mode
+#define	ADC_CTRL_TC_SHIFT				12
+#define	ADC_CTRL_TC_OFF					0x0
+#define	ADC_CTRL_TC_I_30				0x1000
+#define	ADC_CTRL_TC_I_60				0x2000
+#define	ADC_CTRL_TC_I_90				0x3000
+#define	ADC_CTRL_TC_I_120				0x4000
+#define	ADC_CTRL_TC_I_150				0x5000
+#define	ADC_CTRL_TC_I_180				0x6000
+#define	ADC_CTRL_TC_I_210				0x7000
+#define	ADC_CTRL_FREQ					GENMASK(18, 16)							 // ADC Sampling Rate Control
+#define	ADC_CTRL_FREQ_SHIFT				16
+#define	ADC_CTRL_FREQ_SINGLE_SHOT		0x0
+#define	ADC_CTRL_FREQ_DIV_640			0x10000
+#define	ADC_CTRL_FREQ_DIV_320			0x20000
+#define	ADC_CTRL_FREQ_DIV_160			0x30000
+#define	ADC_CTRL_FREQ_DIV_80			0x40000
+#define	ADC_CTRL_FREQ_DIV_40			0x50000
+#define	ADC_CTRL_FREQ_DIV_20			0x60000
+#define	ADC_CTRL_FREQ_DIV_15			0x70000
+#define	ADC_CTRL_BUFSIZE				GENMASK(21, 19)							 // Size of Output Buffer
+#define	ADC_CTRL_BUFSIZE_SHIFT			19
+#define	ADC_CTRL_BUFSIZE_1				0x0
+#define	ADC_CTRL_BUFSIZE_2				0x80000
+#define	ADC_CTRL_BUFSIZE_3				0x100000
+#define	ADC_CTRL_BUFSIZE_4				0x180000
+#define	ADC_CTRL_BUFSIZE_5				0x200000
+#define	ADC_CTRL_BUFSIZE_6				0x280000
+#define	ADC_CTRL_BUFSIZE_7				0x300000
+#define	ADC_CTRL_BUFSIZE_8				0x380000
+#define	ADC_CTRL_MXREF					GENMASK(25, 22)							 // Reference Measurement Mode
+#define	ADC_CTRL_MXREF_SHIFT			22
+#define	ADC_CTRL_MXREF_OFF				0x0
+#define	ADC_CTRL_MXREF_M0				0x400000
+#define	ADC_CTRL_MXREF_M1				0x800000
+#define	ADC_CTRL_MXREF_M2				0xC00000
+#define	ADC_CTRL_MXREF_M7				0x2000000
+#define	ADC_CTRL_MXREF_M8				0x2400000
+#define	ADC_CTRL_MXREF_M9				0x2800000
+#define	ADC_CTRL_MXREF_M10				0x2C00000
+#define	ADC_CTRL_MXREF_M0_M9_A			0x3000000
+#define	ADC_CTRL_MXREF_M0_M9_B			0x4800000
+#define	ADC_CTRL_ENSTOP					BIT(27)									 // Circular Output Buffer Disable
+#define	ADC_CTRL_ENTRIG					BIT(28)									 // Triggered Mode Enable
+#define	ADC_CTRL_ADCON					BIT(29)									 // ADC Power Save Control
+#define	ADC_CTRL_START					BIT(31)									 // Start Conversion
 
-#define	ADC_STAT				MMIO32(ADC_BASE + 0x1C)
-#define	ADC_STAT_INDEX			GENMASK(2, 0)
-#define	ADC_STAT_INDEX_SHIFT	0
-#define	ADC_STAT_BUSY			BIT(30)
-#define	ADC_STAT_READY			BIT(31)
+/* Measurement Status Register */
+#define	ADC_STAT						MMIO32(ADC_BASE + 0x1C)
+#define	ADC_STAT_WPTR					GENMASK(2, 0)							 // Write Pointer – Index of latest valid MEAS_DATAx written
+#define	ADC_STAT_WPTR_SHIFT				0
+#define	ADC_STAT_BUSY					BIT(30)									 // ADC Busy Flag
+#define	ADC_STAT_READY					BIT(31)									 // Data Ready Flag
 
-#define	ADC_FIFO(n)				MMIO32(ADC_BASE + 0x20 + ((n) * 0x4))
+/* Measurement Data Register */
+#define	ADC_DATA(n)						MMIO32(ADC_BASE + 0x20 + ((n) * 0x4))
 
-#define	ADC_PLLCON				MMIO32(ADC_BASE + 0x40)
-#define	ADC_PLLCON_K			GENMASK(7, 0)
-#define	ADC_PLLCON_K_SHIFT		0
-#define	ADC_PLLCON_L			GENMASK(15, 8)
-#define	ADC_PLLCON_L_SHIFT		8
+/* Measurement Peripheral Clock Control Register */
+#define	ADC_CLK							MMIO32(ADC_BASE + 0x40)
+#define	ADC_CLK_K						GENMASK(7, 0)							 // Numerator of Fractional Divider
+#define	ADC_CLK_K_SHIFT					0
+#define	ADC_CLK_L						GENMASK(15, 8)							 // Denominator of Fractional Divider
+#define	ADC_CLK_L_SHIFT					8
 
 /* Service Routing Control Register */
-#define	ADC_SRC(n)				MMIO32(ADC_BASE + 0xF0 + ((n) * 0x4))
+#define	ADC_SRC(n)						MMIO32(ADC_BASE + 0xF0 + ((n) * 0x4))
 
 
 // KEYPAD [MOD_NUM=F046, MOD_REV=00, MOD_32BIT=C0]

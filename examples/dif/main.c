@@ -2,7 +2,192 @@
 #include <printf.h>
 #include <stdint.h>
 
+void dmac_requests(const char *name, uint32_t requests) {
+	if (!requests)
+		return;
+	printf("%s:", name);
+	for (int i = 0; i < 16; i++) {
+		if ((requests & (1 << i))) {
+			printf(" +%d", i);
+		}
+	}
+	printf("\n");
+}
+
 #ifdef PMB8876
+void test_dif_dma() {
+	printf("DIF_PERREG=%08X\n", DIF_PERREG);
+	printf("DIF_CSREG=%08X\n", DIF_CSREG);
+
+	GPIO_PIN(GPIO_PM_CHARGE_UC) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
+
+	GPIO_PIN(GPIO_DIF_VD) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_LOW;
+	GPIO_PIN(GPIO_DIF_RESET1) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
+
+	GPIO_PIN(GPIO_DIF_CD) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+	GPIO_PIN(GPIO_DIF_CS1) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+
+	GPIO_PIN(GPIO_DIF_RD) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+	GPIO_PIN(GPIO_DIF_WR) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+
+	GPIO_PIN(GPIO_DIF_D0) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+	GPIO_PIN(GPIO_DIF_D1) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+	GPIO_PIN(GPIO_DIF_D2) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+	GPIO_PIN(GPIO_DIF_D3) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+	GPIO_PIN(GPIO_DIF_D4) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+	GPIO_PIN(GPIO_DIF_D5) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+	GPIO_PIN(GPIO_DIF_D6) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+	GPIO_PIN(GPIO_DIF_D7) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
+
+	DIF_CLC = 0xFF << MOD_CLC_RMC_SHIFT;
+
+	DIF_RUNCTRL = 0;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_TXFIFO_CFG = DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFC;
+	DIF_RXFIFO_CFG = DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXBS_8_WORD | DIF_RXFIFO_CFG_RXFC;
+
+	// SCU_DMAE = 0xFFFFFFFF;
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+
+	uint8_t src[0x100] = {};
+	uint8_t dst[0x100] = {};
+	for (int i = 0; i < 0x100; i++) {
+		src[i] = i;
+		dst[i] = 0xFF;
+	}
+
+	DMAC_CH_SRC_ADDR(0) = (uint32_t) &src;
+	DMAC_CH_DST_ADDR(0) = (uint32_t) &DIF_TXD;
+	DMAC_CH_CONTROL(0) = (0 << DMAC_CH_CONTROL_TRANSFER_SIZE_SHIFT) |
+	DMAC_CH_CONTROL_SB_SIZE_SZ_4 |
+	DMAC_CH_CONTROL_DB_SIZE_SZ_8 |
+	DMAC_CH_CONTROL_S_WIDTH_DWORD |
+	DMAC_CH_CONTROL_D_WIDTH_DWORD |
+	DMAC_CH_CONTROL_S_AHB2 |
+	DMAC_CH_CONTROL_D_AHB2 |
+	DMAC_CH_CONTROL_SI |
+	DMAC_CH_CONTROL_DI |
+	DMAC_CH_CONTROL_I;
+	DMAC_CH_CONFIG(0) =
+		(4 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER |
+		DMAC_CH_CONFIG_INT_MASK_ERR |
+		DMAC_CH_CONFIG_INT_MASK_TC;
+
+	DMAC_CH_CONFIG(0) |= DMAC_CH_CONFIG_ENABLE;
+
+	// DIF_TXFIFO_CFG = 0;
+	DIF_FDIV = 0xFFFF;
+	DIF_BR = 0;
+	DIF_IMSC = 0xFFFFFFFF;
+	DIF_CSREG = DIF_CSREG_CS1 | DIF_CSREG_BSCONF_4x8BIT;
+	// DIF_DMAE = 0xFF;
+	DIF_IMSC = 0xFFFFFFFF;
+
+	// READ[4] F7100028: 00000012 (DIF_CSREG): CS1 | BSCONF(0x01) (PC: A060AE24, LR: A077E6D4)
+	// WRITE[4] F7100028: 00000072 (DIF_CSREG): CS1 | BSCONF(0x07) (PC: A060AE30, LR: A077E6D4)
+
+	// 00 0 - off
+	// 01 0 - 1 bytes 9bit
+	// 10 0 - 2 bytes 9bit
+	// 11 0 - 3 bytes 9bit
+
+	// 8=0
+	// 16=1
+	// 24=2
+	// 32=3
+
+	// 00 1 - 1 bytes 8bit
+	// 01 1 - 2 bytes 8bit
+	// 10 1 - 3 bytes 8bit
+	// 11 1 - 4 bytes 8bit
+
+	DIF_BMREG0 = 0x358B2928;
+	DIF_BMREG1 = 0x0C4101EE;
+	DIF_BMREG2 = 0x670718A4;
+	DIF_BMREG3 = 0x7FDD737A;
+	DIF_BMREG4 = 0x56934A30;
+	DIF_BMREG5 = 0x000002F6;
+
+	DIF_ERRIRQSM = 0;
+	DIF_ERRIRQSM = 0xFFFFFFFF;
+
+	printf("SRC: %08X\n", DMAC_CH_SRC_ADDR(0));
+	printf("DST: %08X\n", DMAC_CH_DST_ADDR(0));
+	printf("TS: %08X\n", (DMAC_CH_CONTROL(0) & DMAC_CH_CONTROL_TRANSFER_SIZE) >> DMAC_CH_CONTROL_TRANSFER_SIZE_SHIFT);
+
+	DIF_RUNCTRL = 1;
+	DIF_TPS_CTRL = 8;
+
+	DMAC_SOFT_LBREQ = 1 << 4;
+
+	uint32_t max = 0;
+	while (1) {
+		uint32_t v = DIF_TXFFS_STAT;
+		if (max < v)
+			max = v;
+		if (v == 0 && max != 0)
+			break;
+	}
+
+	printf("DIF_TXFFS_STAT=%d\n", max);
+
+	while (!(DMAC_RAW_TC_STATUS & (1 << 0))) {
+		if (DMAC_ERR_STATUS) {
+			printf("ERR=%08X\n", DMAC_ERR_STATUS);
+			break;
+		}
+	}
+
+	printf("transfer done\n");
+
+	for (int i = 0; i < 64; i++) {
+		printf(" %02X", dst[i]);
+	}
+	printf("\n");
+
+	DIF_ICR = 0xFF;
+
+	uint32_t last_ris = 0;
+	uint32_t last_stat = 0;
+	while (true) {
+		uint32_t ris = DIF_RIS;
+		uint32_t stat = DIF_STAT;
+
+		if (last_stat != stat) {
+			last_stat = stat;
+			printf("  DIF_STAT=%08X\n", last_stat);
+		}
+
+		if (last_ris != ris) {
+			last_ris = ris;
+
+			printf("EV [%08X]:", last_ris);
+			if (last_ris) {
+				if ((last_ris & DIF_RIS_RXLSREQ))
+					printf(" +DIF_RIS_RXLSREQ");
+				if ((last_ris & DIF_RIS_RXSREQ))
+					printf(" +DIF_RIS_RXSREQ");
+				if ((last_ris & DIF_RIS_RXLBREQ))
+					printf(" +DIF_RIS_RXLBREQ");
+				if ((last_ris & DIF_RIS_RXBREQ))
+					printf(" +DIF_RIS_RXBREQ");
+				if ((last_ris & DIF_RIS_TXLSREQ))
+					printf(" +DIF_RIS_TXLSREQ");
+				if ((last_ris & DIF_RIS_TXSREQ))
+					printf(" +DIF_RIS_TXSREQ");
+				if ((last_ris & DIF_RIS_TXLBREQ))
+					printf(" +DIF_RIS_TXLBREQ");
+				if ((last_ris & DIF_RIS_TXBREQ))
+					printf(" +DIF_RIS_TXBREQ");
+				if ((last_ris & DIF_RIS_ERR))
+					printf(" +DIF_RIS_ERR");
+			}
+			printf("\n");
+		}
+	}
+}
+
 void test_dif() {
 	GPIO_PIN(GPIO_DIF_VD) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_LOW;
 	GPIO_PIN(GPIO_DIF_RESET1) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
@@ -23,21 +208,15 @@ void test_dif() {
 	GPIO_PIN(GPIO_DIF_D7) = GPIO_PS_ALT | GPIO_IS_ALT0 | GPIO_IS_ALT0;
 
 	stopwatch_init();
-//	cpu_enable_irq(1);
-
-//	VIC_CON(VIC_DIF_RX_SINGLE_IRQ) = 1;
-//	VIC_CON(VIC_DIF_RX_BURST_IRQ) = 1;
-//	VIC_CON(VIC_DIF_TX_IRQ) = 1;
-//	VIC_CON(VIC_DIF_ERR_IRQ) = 1; // error
 
 	DIF_CLC = 0xFF << MOD_CLC_RMC_SHIFT;
 
 	DIF_RUNCTRL = 0;
 	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
 	DIF_TXFIFO_CFG =
-	DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFC |
-	DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFC;
-	// DIF_TXFIFO_CFG = 0;
+		DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFC |
+		DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXBS_8_WORD | DIF_RXFIFO_CFG_RXFC;
+
 	DIF_FDIV = 0xFFFF;
 	DIF_BR = 0;
 	DIF_IMSC = 0xFFFFFFFF;
@@ -45,24 +224,10 @@ void test_dif() {
 	DIF_RUNCTRL = 1;
 
 	DIF_IMSC = 0xFFFFFFFF;
-
 	DIF_ERRIRQSM = 0;
-	for (int i = 0; i < 100; i++)
-		DIF_TXD = 0;
 	DIF_ERRIRQSM = 0xFFFFFFFF;
 
-	//            10000001000000010111
-	// 1000000000000000000000000000000 - usb
-	//   10000000000000000000000000000 - usart1
-	//  100000000000000000000000000000 - bypass
-
-	SCU_BOOT_CFG = 0xFFFFFFFF;
-	printf("SCU_BOOT_CFG=%08X\n", SCU_BOOT_CFG);
-
-	while (1);
-
-	DIF_TPS_CTRL = 16;
-//	printf("DIF_TPS_CTRL=%d\n", DIF_TPS_CTRL);
+	DIF_TPS_CTRL = 8;
 
 	uint32_t last_ris = 0;
 	uint32_t last_stat = 0;
@@ -79,8 +244,8 @@ void test_dif() {
 		if ((ris & DIF_RIS_TXLBREQ)) {
 			DIF_TXD = 0;
 			uint32_t st = DIF_STAT;
-			DIF_ICR = DIF_ICR_TXLBREQ;
-			printf("  [TXLBREQ] DIF_TPS_CTRL=%d // %08X\n", DIF_TPS_CTRL, st);
+			DIF_ICR |= DIF_ICR_TXLBREQ;
+			printf("  [TXLBREQ] DIF_TPS_CTRL=%d\n", DIF_TPS_CTRL);
 		}
 
 		if ((ris & DIF_RIS_TXSREQ)) {
@@ -201,18 +366,6 @@ static int irq() {
 		VIC_IRQ_ACK = 1;
 	}
 	return irq;
-}
-
-void dmac_requests(const char *name, uint32_t requests) {
-	if (!requests)
-		return;
-	printf("%s:", name);
-	for (int i = 0; i < 16; i++) {
-		if ((requests & (1 << i))) {
-			printf(" +%d", i);
-		}
-	}
-	printf("\n");
 }
 
 void test_dif() {
@@ -380,7 +533,8 @@ void test_dif() {
 int main(void) {
 	wdt_init();
 	wdt_set_max_execution_time(1000);
-	test_dif();
+	// test_dif();
+	test_dif_dma();
 	return 0;
 }
 

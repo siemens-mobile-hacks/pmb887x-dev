@@ -478,19 +478,22 @@ sub parseModule {
 				size		=> parseAnyInt($size),
 				descr		=> $descr || "",
 				values		=> {},
-				value2name	=> {}
+				value2name	=> {},
+				value2descr	=> {},
 			};
 			
 			$current_field->{mask} = ((1 << $current_field->{size}) - 1) << $current_field->{start};
 			
 			$current_reg->{fields}->{$name} = $current_field;
 		} elsif ($level == 2) {
-			my ($name, $value) = split("=", $line);
+			my ($enum, $descr) = split("\t", $line);
+			my ($name, $value) = split("=", $enum);
 			
 			die("Invalid: '$line'") if !$current_field;
 			
 			$current_field->{values}->{$name} = parseAnyInt($value);
 			$current_field->{value2name}->{parseAnyInt($value)} = $name;
+			$current_field->{value2descr}->{parseAnyInt($value)} = $descr;
 		} else {
 			die("Invalid: '$line' [level=$level]");
 		}
