@@ -1,0 +1,54 @@
+[
+	{
+		"name":		"__system_error",
+		"addr":		0xa05c6540,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"tea_crypt",
+		"addr":		0xa0044204,
+		"args":		["uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"BROM",
+		"addr":		0x00000000,
+		"args":		[]
+	},
+	{
+		"name":		"REBOOT",
+		"addr":		0xa00044bc,
+		"args":		[]
+	},
+	{
+		"name":		"i2c_transfer_bcore",
+		"addr":		0x0000ca4c,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"brom_set_code_location",
+		"addr":		0x00401b10,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"brom_check_boot_magic",
+		"addr":		0x00401d2c,
+		"args":		[]
+	},
+	{
+		"name":		"brom_jump",
+		"addr":		0x00400ef0,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"brom_check_keys",
+		"addr":		0x00401ba8,
+		"args":		[]
+	},
+	{
+		"name":		"brom_run_code_from_nand_or_nor_flash",
+		"addr":		0x0040188c,
+		"args":		[]
+	}
+]
+
+
