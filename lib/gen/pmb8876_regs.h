@@ -286,7 +286,7 @@
 
 
 // EBU [MOD_NUM=0014, MOD_REV=05, MOD_32BIT=C0]
-// EBU from XMC4500 official public datasheet
+// External Bus Unit (see EBU in XMC4500)
 #define	EBU_BASE					0xF0000000
 /* Clock Control Register */
 #define	EBU_CLC						MMIO32(EBU_BASE + 0x00)
@@ -503,7 +503,7 @@
 
 
 // USART0 [MOD_NUM=0044, MOD_REV=F1, MOD_32BIT=00]
-// ASC0 from Tricore TC1766 official public datasheet
+// USART interface (see ASCx in TC1766 datasheet)
 #define	USART0_BASE						0xF1000000
 #define	USART0							0xF1000000
 
@@ -678,7 +678,7 @@
 
 
 // SSC [MOD_NUM=0045, MOD_REV=31, MOD_32BIT=00]
-// SSC (SPI)
+// SSC (see SSC0 in lantiq)
 #define	SSC_BASE				0xF1100000
 /* Clock Control Register */
 #define	SSC_CLC					MMIO32(SSC_BASE + 0x00)
@@ -816,7 +816,7 @@
 
 
 // SIM [MOD_NUM=F000, MOD_REV=32, MOD_32BIT=C0]
-// Looks like SIM IO module, but not sure.
+// SIM Card Interface
 #define	SIM_BASE	0xF1300000
 /* Clock Control Register */
 #define	SIM_CLC		MMIO32(SIM_BASE + 0x00)
@@ -826,7 +826,7 @@
 
 
 // USB [MOD_NUM=F047, MOD_REV=12, MOD_32BIT=C0]
-// Looks like USB module, but not sure.
+// USB (sci-workx IP)
 #define	USB_BASE	0xF2200800
 /* Clock Control Register */
 #define	USB_CLC		MMIO32(USB_BASE + 0x00)
@@ -836,7 +836,7 @@
 
 
 // VIC [MOD_NUM=0031, MOD_REV=11, MOD_32BIT=C0]
-// Vectored Interrupt Controller, registers collected using tests on real hardware (using "black box" method).
+// Vectored Interrupt Controller
 #define	VIC_BASE						0xF2800000
 /* Module Identifier Register */
 #define	VIC_ID							MMIO32(VIC_BASE + 0x00)
@@ -1171,7 +1171,7 @@
 
 
 // CAPCOM0 [MOD_NUM=0050, MOD_REV=11, MOD_32BIT=00]
-// CAPCOM from drivers/clocksource/xgold_capcom_timer.c (GPL2)
+// CAPture/COMpare (see drivers/clocksource/xgold_capcom_timer.c)
 #define	CAPCOM0_BASE							0xF4000000
 #define	CAPCOM0									0xF4000000
 
@@ -1525,7 +1525,7 @@
 
 
 // GPIO [MOD_NUM=F023, MOD_REV=32, MOD_32BIT=C0]
-// PCL (Port Control Logic), registers from drivers/pinctrl/pinctrl-thunderbay.c
+// Port Control Logic (see drivers/pinctrl/pinctrl-thunderbay.c)
 #define	GPIO_BASE			0xF4300000
 /* Clock Control Register */
 #define	GPIO_CLC			MMIO32(GPIO_BASE + 0x00)
@@ -1585,7 +1585,7 @@
 
 
 // SCU [MOD_NUM=F040, MOD_REV=12, MOD_32BIT=C0]
-// Looks like SCU module, registers collected using TC1766 official public datasheet and tests on real hardware (using "black box" method).
+// System Control Unit (see SCU in TC1766 datasheet)
 #define	SCU_BASE					0xF4400000
 /* Clock Control Register */
 #define	SCU_CLC						MMIO32(SCU_BASE + 0x00)
@@ -1719,19 +1719,26 @@
 #define	SCU_CHIPID					MMIO32(SCU_BASE + 0x60)
 #define	SCU_CHIPID_CHREV			GENMASK(7, 0)
 #define	SCU_CHIPID_CHREV_SHIFT		0
-#define	SCU_CHIPID_MANUF			GENMASK(15, 8)
-#define	SCU_CHIPID_MANUF_SHIFT		8
+#define	SCU_CHIPID_CHIPD			GENMASK(15, 8)
+#define	SCU_CHIPID_CHIPD_SHIFT		8
 
 #define	SCU_RTCIF					MMIO32(SCU_BASE + 0x64)
 
-#define	SCU_ID0						MMIO32(SCU_BASE + 0x6C)
+#define	SCU_UID0					MMIO32(SCU_BASE + 0x6C)
 
-#define	SCU_ID1						MMIO32(SCU_BASE + 0x70)
+#define	SCU_UID1					MMIO32(SCU_BASE + 0x70)
+#define	SCU_UID1_SECBOOT			BIT(24)									 // Secure boot
+#define	SCU_UID1_PLATFORM			GENMASK(26, 25)
+#define	SCU_UID1_PLATFORM_SHIFT		25
+#define	SCU_UID1_PLATFORM_800		0x0
+#define	SCU_UID1_PLATFORM_801		0x2000000
+#define	SCU_UID1_PLATFORM_802		0x4000000
+#define	SCU_UID1_PLATFORM_803		0x6000000
 
-#define	SCU_BOOT_CFG				MMIO32(SCU_BASE + 0x74)
-#define	SCU_BOOT_CFG_USART1			BIT(28)									 // Allow boot from USART1
-#define	SCU_BOOT_CFG_BYPASS_FW		BIT(29)									 // Force boot from 0x82000, bypass firmware
-#define	SCU_BOOT_CFG_USB			BIT(30)									 // Allow boot from USB
+#define	SCU_UID2					MMIO32(SCU_BASE + 0x74)
+#define	SCU_UID2_BOOT_USART1		BIT(28)									 // Allow boot from USART1
+#define	SCU_UID2_BOOT_BSL			BIT(29)									 // Force boot from BSL, bypass firmware
+#define	SCU_UID2_BOOT_USB			BIT(30)									 // Allow boot from USB
 
 #define	SCU_BOOT_FLAG				MMIO32(SCU_BASE + 0x78)
 #define	SCU_BOOT_FLAG_BOOT_OK		BIT(0)
@@ -1798,7 +1805,7 @@
 
 
 // PLL
-// Looks like a CGU module, registers collected using tests on real hardware (using "black box" method).
+// Clock Control Unit
 #define	PLL_BASE						0xF4500000
 #define	PLL_OSC							MMIO32(PLL_BASE + 0xA0)
 #define	PLL_OSC_LOCK					BIT(0)
@@ -1861,7 +1868,7 @@
 
 
 // SCCU
-// Controlling MCU sleep. Very similar to "SCCU" description in the Teltonika TM1Q user manual.
+// Standby Clock Control Unit
 #define	SCCU_BASE					0xF4600000
 #define	SCCU_CON0					MMIO32(SCCU_BASE + 0x10)
 
@@ -1918,7 +1925,7 @@
 
 
 // RTC [MOD_NUM=F049, MOD_REV=11, MOD_32BIT=C0]
-// RTC from XC27x5X official public datasheet
+// Realtime Clock (see RTC in XC27x5X datasheet)
 #define	RTC_BASE				0xF4700000
 /* Clock Control Register */
 #define	RTC_CLC					MMIO32(RTC_BASE + 0x00)
@@ -1990,7 +1997,7 @@
 
 
 // GPTU0 [MOD_NUM=0001, MOD_REV=11, MOD_32BIT=C0]
-// GPTU from Tricore TC1765 official public datasheet
+// General Purpose Timer Unit (see GPTUx in TC1765 datasheet)
 #define	GPTU0_BASE							0xF4900000
 #define	GPTU0								0xF4900000
 
@@ -2650,7 +2657,7 @@
 
 
 // STM [MOD_NUM=0000, MOD_REV=11, MOD_32BIT=C0]
-// STM from Tricore TC1766 official public datasheet
+// System Timer (see STM in TC1766 datasheet)
 #define	STM_BASE	0xF4B00000
 /* Clock Control Register */
 #define	STM_CLC		MMIO32(STM_BASE + 0x00)
@@ -2676,7 +2683,7 @@
 
 
 // ADC [MOD_NUM=F024, MOD_REV=21, MOD_32BIT=C0]
-// Measurement Interface
+// Measurement Interface and Analog Control
 #define	ADC_BASE						0xF4C00000
 /* Clock Control Register */
 #define	ADC_CLC							MMIO32(ADC_BASE + 0x00)
@@ -2795,7 +2802,7 @@
 
 
 // KEYPAD [MOD_NUM=F046, MOD_REV=21, MOD_32BIT=C0]
-// Keypad scaner module, registers collected using tests on real hardware (using "black box" method).
+// Keypad scaner module
 #define	KEYPAD_BASE			0xF4D00000
 /* Module Identifier Register */
 #define	KEYPAD_ID			MMIO32(KEYPAD_BASE + 0x08)
@@ -2822,7 +2829,7 @@
 
 
 // DSP [MOD_NUM=F022, MOD_REV=31, MOD_32BIT=C0]
-// Looks like DSP module, but not sure.
+// Digital Signal Processor
 #define	DSP_BASE	0xF6000000
 /* Clock Control Register */
 #define	DSP_CLC		MMIO32(DSP_BASE + 0x00)
@@ -2838,7 +2845,7 @@
 
 
 // GPRSCU [MOD_NUM=F003, MOD_REV=22, MOD_32BIT=C0]
-// Looks like GPRS Cypher Uinit module, but not sure.
+// GPRS Cipher Uinit
 #define	GPRSCU_BASE		0xF6200000
 /* Clock Control Register */
 #define	GPRSCU_CLC		MMIO32(GPRSCU_BASE + 0x00)
@@ -2851,7 +2858,7 @@
 
 
 // AFC [MOD_NUM=F004, MOD_REV=11, MOD_32BIT=C0]
-// Looks like AFC (Automatic Frequency Correction???) module, but not sure.
+// Automatic Frequency Correction
 #define	AFC_BASE	0xF6300000
 /* Clock Control Register */
 #define	AFC_CLC		MMIO32(AFC_BASE + 0x00)
@@ -2997,8 +3004,13 @@
 #define	TPU_GSMCLK3_LOAD							BIT(0)									 // Load K and L value
 #define	TPU_GSMCLK3_INIT							BIT(1)									 // Init K and L value
 
+#define	TPU_UNK										MMIO32(TPU_BASE + 0xD8)
+
 /* Service Routing Control Register */
-#define	TPU_GP_SRC(n)								MMIO32(TPU_BASE + 0xE0 + ((n) * 0x4))
+#define	TPU_RFSSC_SRC								MMIO32(TPU_BASE + 0xE0)
+
+/* Service Routing Control Register */
+#define	TPU_GP_SRC(n)								MMIO32(TPU_BASE + 0xE4 + ((n) * 0x4))
 
 /* Service Routing Control Register */
 #define	TPU_SRC(n)									MMIO32(TPU_BASE + 0xF8 + ((n) * 0x4))
@@ -3007,7 +3019,7 @@
 
 
 // CIF [MOD_NUM=F052, MOD_REV=12, MOD_32BIT=C0]
-// Looks like DIF (Camera Interface) module, but not sure.
+// Camera Interface
 #define	CIF_BASE	0xF7000000
 /* Clock Control Register */
 #define	CIF_CLC		MMIO32(CIF_BASE + 0x00)
@@ -3033,7 +3045,7 @@
 
 
 // DIF [MOD_NUM=F043, MOD_REV=12, MOD_32BIT=C0]
-// DIF (Display Interface), from linux-sofia-3gr/drivers/video/xgold/dcc/dcc-hwregs.h
+// Display Interface (see linux-sofia-3gr/drivers/video/xgold/dcc/dcc-hwregs.h)
 #define	DIF_BASE						0xF7100000
 /* Clock Control Register */
 #define	DIF_CLC							MMIO32(DIF_BASE + 0x00)
@@ -3829,7 +3841,7 @@
 
 
 // I2C [MOD_NUM=F057, MOD_REV=12, MOD_32BIT=C0]
-// I2C from Tricore TC27x official public datasheet
+// New I2C interface (see I2C in TC27x datasheet)
 #define	I2C_BASE							0xF7600000
 /* Clock Control Register */
 #define	I2C_CLC								MMIO32(I2C_BASE + 0x00)
@@ -4068,7 +4080,7 @@
 
 
 // MMICIF [MOD_NUM=F053, MOD_REV=12, MOD_32BIT=C0]
-// Looks like "Multi Media Controller Interface" module, but not sure.
+// Multi Media Controller Interface
 #define	MMICIF_BASE	0xF8000000
 /* Clock Control Register */
 #define	MMICIF_CLC	MMIO32(MMICIF_BASE + 0x00)

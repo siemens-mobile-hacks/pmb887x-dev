@@ -1,0 +1,132 @@
+[
+	{
+		"name":		"debug_pickoff_not_fatal",
+		"addr":		0xA09A81BC,
+		"args":		["uint32", "exit", "uint32"]
+	},
+	{
+		"name":		"debug_pickoff2",
+		"addr":		0xA09A8118,
+		"args":		["uint32", "exit", "uint32"]
+	},
+	{
+		"name":		"debug_pickoff_not_fatal_descr",
+		"addr":		0xA09A7FB0,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"debug_pickoff2_descr",
+		"addr":		0xa09a7f60,
+		"args":		["cstr", "uint32"]
+	},
+	{
+		"name":		"debug",
+		"addr":		0xA0111314,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"sprintf",
+		"addr":		0xA0DB9348,
+		"args":		["cstr","cstr","ptr"]
+	},
+	{
+		"name":		"HisrCreate",
+		"addr":		0xa0a85750,
+		"args":		["ptr","ptr","ptr"]
+	},
+	{
+		"name":		"I2C_PASIC_INIT",
+		"addr":		0xa03a04c0,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"pasic_i2c_transfer",
+		"addr":		0xa045dde8,
+		"args":		["uint8", "uint8", "uint8*", "uint8", "uint8"],
+	},
+	{
+		"name":		"queue_debug",
+		"addr":		0xa0110b68,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"media_debug",
+		"addr":		0xa0ce1e20,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"os_debug",
+		"addr":		0xa06a5f56,
+		"args":		["uint32", "uint32", "cstr"]
+	},
+	{
+		"name":		"os_debug_source_file",
+		"addr":		0xa06a5ee2,
+		"args":		["cstr", "uint32"]
+	},
+	{
+		"name":		"os_debug2",
+		"addr":		0xa0190348,
+		"args":		["cstr", "uint32", "cstr"]
+	},
+	{
+		"name":		"os_debug3",
+		"addr":		0xa0190348,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"os_debug4",
+		"addr":		0xa04be3da,
+		"args":		["uint32", "cstr", "uint32", "cstr"]
+	},
+	{
+		"name":		"os_debug5",
+		"addr":		0xa012ec0c,
+		"args":		["uint32", "cstr", "uint32", "cstr"]
+	},
+	{
+		"name":		"fs_debug",
+		"addr":		0xa06f1e6c,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"CreateProc",
+		"addr":		0xa09a96e0,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MutexLock",
+		"addr":		0xa0ccd244,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"MutexUnlock",
+		"addr":		0xa0ccd2f8,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"fopen",
+		"addr":		0xa039fc30,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"___________________________MODEMAN",
+		"addr":		0xa04b7478,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"NU_Send_To_Queue",
+		"addr":		0xa014c708,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"modeman_mode0",
+		"addr":		0xa84e3970,
+		"watch":	"w"
+	},
+	{
+		"name":		"modeman_enqueue",
+		"addr":		0xa0a04ff8,
+		"args":		["uint32"]
+	},
+]
