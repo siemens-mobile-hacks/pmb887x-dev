@@ -1,7 +1,7 @@
 [board]
-vendor = "BenQ-Siemens"
+vendor = "Siemens"
 model = "M81"
-extends = "siemens-s75.toml"
+extends = "include/siemens-sg2-x75.toml"
 
 [gpio.inputs]
 # HWID 412
