@@ -1,21 +1,20 @@
 [board]
 vendor = "BenQ-Siemens"
-model = "E71"
+model = "S68"
 extends = "include/siemens-sg2-elka.toml"
 
 [peripheral.LCD0]
-type = "jbt6k71"
+type = "jbt6k71" # FIXME: L2F50333T
 bus = "DIF"
-width = 240
-height = 320
-rotation = 180
+width = 132
+height = 176
 in = { CS = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF_RESET1" }
 
 [peripheral.PMIC]
 type = "d1094xx"
 bus = "I2C"
 addr = 0x31
-revision = 0xAA
+revision = 0xED
 
 [peripheral.FM]
 type = "tea5761uk"
@@ -26,11 +25,11 @@ addr = 0x10
 DIF_HD = "HW_DET_FM_RADIO"
 
 [gpio.inputs]
-# HWID 413
-HW_DET_MOB_TYPE1=1
+# HWID 404
+HW_DET_MOB_TYPE1=0
 HW_DET_MOB_TYPE2=0
 HW_DET_MOB_TYPE3=1
-HW_DET_MOB_TYPE4=1
+HW_DET_MOB_TYPE4=0
 HW_DET_BLUETOOTH=0
 HW_DET_BAND_SEL=0
 HW_DET_FM_RADIO=1
