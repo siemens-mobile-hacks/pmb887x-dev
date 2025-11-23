@@ -1,0 +1,66 @@
+[board]
+vendor = "Panasonic"
+model = "VS7"
+cpu.type = "pmb8875"
+cpu.rev = 0x05
+
+[peripheral.FLASH0]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 0
+flash = { vid = 0x0089, pid = 0x880D }
+
+[peripheral.FLASH1]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 2
+flash = { vid = 0x0089, pid = 0x881C }
+
+[peripheral.SDRAM]
+type = "sdram"
+bus = "EBU"
+ebu.cs = 1
+ram.size = 0x1000000 # 16 Mb
+
+[peripheral.PMIC]
+type = "pmb6812"
+bus = "I2C"
+addr = 0x08
+
+[peripheral.GIMMICK]
+type = "s1d13705"
+bus = "DIF"
+in.CS = "DIF_CS"
+in.SA0 = "DIF_RS"
+in.RESET = "AP_RST"
+
+[analog]
+M_0 = { type = "resistor", value = 9300 }
+M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
+M_7 = { type = "resistor", value = 14800 }
+M_9 = { type = "resistor", value = 15000 }
+
+[dsp]
+ram0_value = 0x0603
+
+[gpio.aliases]
+DSPIN1 = "DIF_MRST"
+DIF_DAT = "DIF_MTSR"
+DIF_RESET = "AP_RST"
+T_OUT1 = "DISP_IRQ"
+T_OUT8 = "LCD_SCS"
+RSTOUT_N = "DISP_IRQ"
+
+[keyboard]
+# [KP_IN, KP_OUT, ..., KP_OUT]
+NUM1		= [1, 0]
+NUM2		= [1, 1]
+NUM3		= [1, 2]
+
+NUM4		= [2, 0]
+NUM5		= [2, 1]
+NUM6		= [2, 2]
+
+NUM7		= [3, 0]
+NUM8		= [3, 1]
+NUM9		= [3, 2]

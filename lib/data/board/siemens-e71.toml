@@ -1,0 +1,28 @@
+[board]
+vendor = "BenQ-Siemens"
+model = "E71"
+extends = "siemens-el71.toml"
+
+[peripheral.PMIC]
+type = "d1094xx"
+bus = "I2C"
+addr = 0x31
+revision = 0xAA
+
+[peripheral.FM]
+type = "tea5761uk"
+bus = "I2C"
+addr = 0x10
+
+[gpio.aliases]
+DIF_HD = "HW_DET_FM_RADIO"
+
+[gpio.inputs]
+# HWID 413
+HW_DET_MOB_TYPE1=1
+HW_DET_MOB_TYPE2=0
+HW_DET_MOB_TYPE3=1
+HW_DET_MOB_TYPE4=1
+HW_DET_BLUETOOTH=0
+HW_DET_BAND_SEL=0
+HW_DET_FM_RADIO=1

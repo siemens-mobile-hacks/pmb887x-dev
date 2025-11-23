@@ -1,0 +1,138 @@
+[board]
+vendor = "Siemens"
+model = "CX75"
+cpu.type = "pmb8875"
+cpu.rev = 0x05
+
+[peripheral.FLASH0]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 0
+flash = { vid = 0x0089, pid = 0x880D }
+
+[peripheral.SDRAM]
+type = "sdram"
+bus = "EBU"
+ebu.cs = 1
+ram.size = 0x1000000 # 16 Mb
+
+[peripheral.GIMMICK]
+type = "s1d13705"
+bus = "DIF"
+in = { CS = "CIF_CS", SA0 = "CIF_RS", RESET = "CIF_RESET" }
+
+[peripheral.LCD0]
+type = "ssd1286"
+bus = "GIMMICK"
+width = 132
+height = 176
+in = { CS = "DISP_CS1", CD = "GIMMICK:FPLINE" }
+
+[peripheral.SACC]
+type = "b00b10b"
+bus = "DIF"
+in = { CS = "AAC_CS", RESET = "AAC_RESET" }
+out = { INT = "AAC_INT" }
+
+[peripheral.PMIC]
+type = "d1094xx"
+bus = "I2C"
+addr = 0x31
+revision = 0xEC
+
+[analog]
+M_0 = { type = "resistor", value = 9300 }
+M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
+M_7 = { type = "resistor", value = 14800 }
+M_9 = { type = "resistor", value = 15000 }
+
+[dsp]
+ram0_value = 0x0602
+
+[gpio.aliases]
+DSPOUT0 = "AC_DCD"
+DSPOUT1 = "PM_WADOG"
+T_OUT1 = "PM_CHARGE_UC"
+T_OUT6 = "AAC_RESET"
+T_OUT9 = "DISPLAY_RESET"
+T_OUT10 = "USB_SWITCH_EN"
+T_OUT11 = "CIF_CS"
+T_OUT12 = "CIF_CS_DISPLAY"
+KP_IN5 = "CIF_INT"
+DSPIN1 = "CIF_MRST"
+DIF_DAT = "CIF_MTSR"
+DIF_CLK = "CIF_CLK"
+DIF_CS = "DISP_CS1"
+DIF_RS = "CIF_RS"
+DIF_RESET = "CIF_RESET"
+SSC2_SCLK = "AAC_CS"
+SSC2_MRST = "AAC_INT"
+SSC2_MTSR = "AAC_CLK32"
+
+USART0_TXD = "AC_TX"
+USART0_RXD = "AC_RX"
+USART0_CTS = "AC_RTS"
+USART0_RTS = "AC_CTS"
+
+PIPESTAT0 = "HW_DET_MOB_TYPE1"
+PIPESTAT1 = "HW_DET_MOB_TYPE2"
+PIPESTAT2 = "HW_DET_MOB_TYPE3"
+TRACEPKT0 = "HW_DET_MOB_TYPE4"
+TRACEPKT1 = "HW_DET_MOB_TYPE5"
+TRACEPKT2 = "HW_DET_RF_TYPE"
+TRACEPKT3 = "HW_DET_BAND_SEL"
+
+[gpio.inputs]
+# HWID 5000
+HW_DET_MOB_TYPE1 = 1
+HW_DET_MOB_TYPE2 = 0
+HW_DET_MOB_TYPE3 = 0
+HW_DET_MOB_TYPE4 = 0
+HW_DET_MOB_TYPE5 = 0
+HW_DET_RF_TYPE = 0
+HW_DET_BAND_SEL = 0
+
+# Default state
+AAC_CS = 1
+AAC_INT = 0
+CIF_CS = 1
+CIF_RESET = 1
+AAC_RESET = 1
+
+# Cable detect
+AC_RTS = 1
+AC_RX = 1
+
+[keyboard]
+# [KP_IN, KP_OUT, ..., KP_OUT]
+NAV_UP		= [0, 3]
+NAV_RIGHT	= [1, 3]
+NAV_CENTER	= [2, 3]
+NAV_LEFT	= [3, 3]
+NAV_DOWN	= [4, 3]
+
+SEND		= [0, 6]
+BROWSER		= [1, 6]
+MUSIC		= [2, 6]
+SOFT_LEFT	= [3, 6]
+SOFT_RIGHT	= [4, 6]
+
+NUM1		= [1, 0]
+NUM2		= [1, 1]
+NUM3		= [1, 2]
+
+NUM4		= [2, 0]
+NUM5		= [2, 1]
+NUM6		= [2, 2]
+
+NUM7		= [3, 0]
+NUM8		= [3, 1]
+NUM9		= [3, 2]
+
+STAR		= [4, 0]
+NUM0		= [4, 1]
+HASH		= [4, 2]
+
+END_CALL	= [0, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+VOLUME_UP	= [2, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+VOLUME_DOWN	= [1, 0, 1, 2, 3, 4, 5, 6, 7, 8]

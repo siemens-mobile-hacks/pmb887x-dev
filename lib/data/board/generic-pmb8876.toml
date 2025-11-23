@@ -1,5 +1,4 @@
-[device]
+[board]
 cpu=pmb8876
-cpu_rev=0x10
 vendor=Generic
 model=PMB8876

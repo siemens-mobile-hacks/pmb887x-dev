@@ -1,0 +1,31 @@
+[board]
+vendor = "BenQ-Siemens"
+model = "SL75"
+extends = "siemens-s75.toml"
+
+[peripheral.FLASH0]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 0
+flash = { vid = 0x0089, pid = 0x880D }
+
+[peripheral.FLASH1]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 2
+flash = { vid = 0x0089, pid = 0x8819 }
+
+[peripheral.FLASH2]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 3
+flash = { vid = 0x0089, pid = 0x881C }
+
+[gpio.inputs]
+# HWID 411
+HW_DET_MOB_TYPE1=0
+HW_DET_MOB_TYPE2=1
+HW_DET_MOB_TYPE3=1
+HW_DET_MOB_TYPE4=1
+HW_DET_BLUETOOTH=0
+HW_DET_BAND_SEL=0

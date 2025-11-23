@@ -1,5 +1,4 @@
-[device]
+[board]
 cpu=pmb8875
-cpu_rev=0x05
 vendor=Generic
 model=PMB8875

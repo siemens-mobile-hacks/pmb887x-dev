@@ -1,0 +1,76 @@
+[board]
+vendor = "Panasonic"
+model = "705p"
+cpu.type = "pmb8876"
+cpu.rev = 0x11
+cpu.uid0 = 0x030488E3
+cpu.uid1 = 0x1B040288
+cpu.uid2 = 0x000E0A0B
+
+[peripheral.FLASH0]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 0
+flash = { vid = 0x0020, pid = 0x8819 }
+
+[peripheral.SDRAM]
+type = "sdram"
+bus = "EBU"
+ebu.cs = 1
+ram.size = 0x2000000 # 32 Mb
+
+[peripheral.PMIC]
+type = "pmb6812"
+bus = "I2C"
+addr = 0x08
+
+[dsp]
+ram0_value = 0x0801
+
+[analog]
+M_0 = { type = "resistor", value = 9300 }
+M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
+M_7 = { type = "resistor", value = 14800 }
+M_9 = { type = "resistor", value = 15000 }
+
+[gpio.inputs]
+# BROM APP PLATFORM (A01)
+PIN102 = 1
+PIN32 = 0
+PIN33 = 0
+
+[keyboard]
+# [KP_IN, KP_OUT, ..., KP_OUT]
+NAV_UP		= [0, 3]
+NAV_RIGHT	= [1, 3]
+NAV_CENTER	= [2, 3]
+NAV_LEFT	= [3, 3]
+NAV_DOWN	= [4, 3]
+
+SEND		= [0, 6]
+MUSIC		= [1, 6]
+PLAY_PAUSE	= [2, 6]
+SOFT_LEFT	= [3, 6]
+SOFT_RIGHT	= [4, 6]
+
+NUM1		= [1, 0]
+NUM2		= [1, 1]
+NUM3		= [1, 2]
+
+NUM4		= [2, 0]
+NUM5		= [2, 1]
+NUM6		= [2, 2]
+
+NUM7		= [3, 0]
+NUM8		= [3, 1]
+NUM9		= [3, 2]
+
+STAR		= [4, 0]
+NUM0		= [4, 1]
+HASH		= [4, 2]
+
+END_CALL	= [0, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+CAMERA		= [1, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+PTT			= [2, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+VOLUME_UP	= [3, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+VOLUME_DOWN	= [4, 0, 1, 2, 3, 4, 5, 6, 7, 8]
