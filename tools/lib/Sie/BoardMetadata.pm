@@ -8,6 +8,9 @@ use Storable qw(dclone);
 use List::Util qw(min max);
 use Sie::CpuMetadata;
 use Sie::Utils;
+use TOML::Tiny;
+use File::Slurp;
+use Cwd qw(realpath);
 
 sub new {
 	my ($class, $board) = @_;
@@ -36,10 +39,10 @@ sub getBoards {
 	closedir $fp;
 	
 	my $boards = [];
-	for my $file (@files) {
+	for my $file (sort @files) {
 		next if !-f $path."/".$file;
-		next if $file !~ /\.cfg$/i;
-		$file =~ s/\.cfg$//gi;
+		next if $file !~ /\.toml$/i;
+		$file =~ s/\.toml$//gi;
 		push @$boards, $file;
 	}
 	return $boards;
@@ -48,22 +51,71 @@ sub getBoards {
 sub loadBoard {
 	my ($self, $board) = @_;
 	
-	my $file = getDataDir().'/board/'.$board.'.cfg';
+	my $file = getDataDir().'/board/'.$board.'.toml';
 	
 	$self->{name} = $board;
 	$self->{keys} = {};
-	$self->{memory} = {};
 	
-	my $cfg = parseIniFile($file);
+	my $toml_type = sub {
+		my ($r) = @_;
+		my $type = ref($r);
+		if ($type eq "ARRAY") {
+			for my $item (@$r) {
+				return "ARRAY" if ref($item) ne "HASH";
+			}
+			return "ARRAY_OF_HASH";
+		}
+		return $type;
+	};
+
+	my $toml_merge;
+	$toml_merge = sub {
+		my ($r1, $r2) = @_;
+
+		for my $k (keys %$r2) {
+			my $r1t = $toml_type->($r1->{$k});
+			my $r2t = $toml_type->($r2->{$k});
+
+			if (exists $r1->{$k}) {
+				my $r1t = $toml_type->($r1->{$k});
+				my $r2t = $toml_type->($r2->{$k});
+
+				if ($r1t && $r1t eq $r2t) {
+					if ($r1t eq "HASH") {
+						$toml_merge->($r1->{$k}, $r2->{$k});
+					} elsif ($r1t eq "ARRAY_OF_HASH") {
+						$r1->{$k} = [
+							@{$r1->{$k}},
+							@{$r2->{$k}}
+						];
+					} else {
+						$r1->{$k} = $r2->{$k};
+					}
+				} else {
+					$r1->{$k} = $r2->{$k};
+				}
+			} else {
+				$r1->{$k} = $r2->{$k};
+			}
+		}
+
+		return $r1;
+	};
+
+	my $cfg = TOML::Tiny::from_toml(scalar(read_file($file)));
+	if (exists $cfg->{board}->{extends}) {
+		my $base_config_file = dirname(realpath($file))."/".$cfg->{board}->{extends};
+		my $base_cfg = TOML::Tiny::from_toml(scalar(read_file($base_config_file)));
+		$cfg = $toml_merge->($base_cfg, $cfg);
+	}
+
+	$self->{model} = $cfg->{board}->{model};
+	$self->{vendor} = $cfg->{board}->{vendor};
+	$self->{cpu} = Sie::CpuMetadata->new($cfg->{board}->{cpu}->{type});
 	
-	$self->{display} = $cfg->{display};
-	$self->{model} = $cfg->{device}->{model};
-	$self->{vendor} = $cfg->{device}->{vendor};
-	$self->{cpu} = Sie::CpuMetadata->new($cfg->{device}->{cpu});
-	
-	if (exists $cfg->{'gpio-aliases'}) {
-		for my $gpio_cpu_name (keys %{$cfg->{'gpio-aliases'}}) {
-			my $gpio_name = $cfg->{'gpio-aliases'}->{$gpio_cpu_name};
+	if (exists $cfg->{gpio}->{aliases}) {
+		for my $gpio_cpu_name (keys %{$cfg->{gpio}->{aliases}}) {
+			my $gpio_name = $cfg->{gpio}->{aliases}->{$gpio_cpu_name};
 			$self->{gpios}->{$gpio_cpu_name} = {
 				name	=> $gpio_name,
 				mode	=> "none",
@@ -72,39 +124,20 @@ sub loadBoard {
 		}
 	}
 	
-	if (exists $cfg->{'gpio-inputs'}) {
-		for my $gpio_cpu_name (keys %{$cfg->{'gpio-inputs'}}) {
-			my $gpio_value = $cfg->{'gpio-inputs'}->{$gpio_cpu_name};
+	if (exists $cfg->{gpio}->{inputs}) {
+		for my $gpio_cpu_name (keys %{$cfg->{gpio}->{inputs}}) {
+			my $gpio_value = $cfg->{gpio}->{inputs}->{$gpio_cpu_name};
 			$self->{gpios}->{$gpio_cpu_name}->{mode} = 'input';
 			$self->{gpios}->{$gpio_cpu_name}->{value} = $gpio_value;
 		}
 	}
 	
-	for my $cs (keys %{$cfg->{'memory'}}) {
-		my $m = $cfg->{'memory'}->{$cs};
-		if ($m =~ /^flash:([a-f0-9]+):([a-f0-9]+)$/i) {
-			$self->{memory}->{$cs} = {
-				type	=> "flash",
-				vid		=> hex $1,
-				pid		=> hex $2
-			};
-		} elsif ($m =~ /^ram:(\d+)m$/i) {
-			$self->{memory}->{$cs} = {
-				type	=> "ram",
-				size	=> $1 * 1024 * 1024
-			};
-		} else {
-			die "Invalid memory: $m";
-		}
-	}
-	
-	if (exists $cfg->{'keyboard'}) {
-		for my $kp_name (keys %{$cfg->{'keyboard'}}) {
-			my ($kp_in_str, $kp_out_str) = split(":", $cfg->{'keyboard'}->{$kp_name});
-			
-			my @kp_in_arr = map { int($_) } split(/\s*,\s*/, $kp_in_str);
-			my @kp_out_arr = map { int($_) } split(/\s*,\s*/, $kp_out_str);
-			
+	if (exists $cfg->{keyboard}) {
+		for my $kp_name (keys %{$cfg->{keyboard}}) {
+			my @arr = @{$cfg->{keyboard}->{$kp_name}};
+			my @kp_in_arr = shift @arr;
+			my @kp_out_arr = @arr;
+
 			my $keycode = 0;
 			
 			for my $kp_in (@kp_in_arr) {

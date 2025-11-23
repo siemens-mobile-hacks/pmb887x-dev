@@ -1,4 +1,4 @@
 [board]
-cpu=pmb8876
-vendor=Generic
-model=PMB8876
+cpu.type = "pmb8876"
+vendor = "Generic"
+model = "PMB8876"

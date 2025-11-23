@@ -15,14 +15,13 @@ if ($ARGV[0] && $ARGV[0] eq "gen_all") {
 	my $out_dir = $ARGV[1];
 	my $index_data = [];
 
-	my @boards = glob(dirname(__FILE__).'/../lib/data/board/*.cfg');
-
+	my @boards = glob(dirname(__FILE__).'/../lib/data/board/*.toml');
 	for my $file (@boards) {
 		my $name = basename($file);
-		$name =~ s/^(siemens|generic)-|\.cfg$//g;
+		$name =~ s/^(siemens|generic)-|\.toml$//g;
 		$name = uc($name);
 		my $board = basename($file);
-		$board =~ s/\.cfg$//g;
+		$board =~ s/\.toml$//g;
 
 		my $idc_data = "#include <idc.idc>\nstatic main() {\n";
 		my $txt_data = "";
