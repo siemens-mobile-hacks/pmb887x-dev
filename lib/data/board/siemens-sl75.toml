@@ -1,5 +1,5 @@
 [board]
-vendor = "BenQ-Siemens"
+vendor = "Siemens"
 model = "SL75"
 extends = "include/siemens-sg2-x75.toml"
 
