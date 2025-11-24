@@ -3,6 +3,15 @@ vendor = "BenQ-Siemens"
 model = "SL75"
 extends = "include/siemens-sg2-x75.toml"
 
+[peripheral.LCD0]
+type = "l2f50333t"
+bus = "DIF"
+width = 132
+height = 176
+bgr_filter = true
+rotation = 180
+in = { CS = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF_RESET1" }
+
 [peripheral.FLASH0]
 type = "cfi-flash"
 bus = "EBU"

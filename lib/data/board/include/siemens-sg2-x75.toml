@@ -25,11 +25,7 @@ type = "ssd1286"
 bus = "DIF"
 width = 132
 height = 176
-in.CS = "DIF_CS1"
-in.CD = "DIF_CD"
-in.WR = "DIF_WR"
-in.RD = "DIF_RD"
-in.RESET = "DIF_RESET1"
+in = { CS = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF_RESET1" }
 
 [peripheral.PMIC]
 type = "d1094xx"
