@@ -1,6 +1,6 @@
 [board]
 vendor = "Siemens"
-model = "CX75"
+model = "C72"
 cpu.type = "pmb8875"
 cpu.rev = 0x05
 
@@ -87,8 +87,6 @@ HW_DET_RF_TYPE = 1
 HW_DET_BAND_SEL = 0
 
 # Default state
-AAC_CS = 1
-AAC_INT = 0
 CIF_CS = 1
 CIF_RESET = 1
 AAC_RESET = 1
