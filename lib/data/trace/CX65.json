@@ -1,0 +1,7 @@
+[
+	{
+		"name":		"dif_write",
+		"addr":		0xa129840c,
+		"args":		["uint32"]
+	}
+]
