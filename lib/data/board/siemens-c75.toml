@@ -3,6 +3,10 @@ vendor = "Siemens"
 model = "C75"
 extends = "include/siemens-sgl-r65.toml"
 
+[peripheral.PMIC]
+type = "d1094xx"
+revision = 0xED
+
 [gpio.inputs]
 # HWID 341
 HW_DET_MOB_TYPE1 = 1
