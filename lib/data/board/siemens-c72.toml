@@ -17,16 +17,16 @@ ebu.cs = 1
 ram.size = 0x800000 # 8 Mb
 
 [peripheral.GIMMICK]
-type = "s1d13705"
+type = "s1d13716"
 bus = "DIF"
-in = { CS = "CIF_CS", SA0 = "CIF_RS", RESET = "CIF_RESET" }
+in = { RS = "CIF_RS", NRESET = "CIF_RESET", NCS_APP = "CIF_CS", NCS_LCD = "CIF_CS_DISPLAY" }
 
 [peripheral.LCD0]
-type = "ssd1286"
+type = "l2f50250"
 bus = "GIMMICK"
-width = 132
-height = 176
-in = { CS = "DISP_CS1", CD = "GIMMICK:FPLINE" }
+width = 128
+height = 128
+in = { CS = "DISPLAY_CS1", CD = "GIMMICK:SRS", RESET = "DISPLAY_RESET" }
 
 [peripheral.PMIC]
 type = "d1094xx"
@@ -47,7 +47,7 @@ ram0_value = 0x0602
 DSPOUT0 = "AC_DCD"
 DSPOUT1 = "PM_WADOG"
 T_OUT1 = "PM_CHARGE_UC"
-T_OUT6 = "AAC_RESET"
+T_OUT6 = "PM_SSC_CS"
 T_OUT9 = "DISPLAY_RESET"
 T_OUT10 = "USB_SWITCH_EN"
 T_OUT11 = "CIF_CS"
@@ -56,7 +56,7 @@ KP_IN5 = "CIF_INT"
 DSPIN1 = "CIF_MRST"
 DIF_DAT = "CIF_MTSR"
 DIF_CLK = "CIF_CLK"
-DIF_CS = "DISP_CS1"
+DIF_CS = "DISPLAY_CS1"
 DIF_RS = "CIF_RS"
 DIF_RESET = "CIF_RESET"
 SSC2_SCLK = "PM_SSC_SCLK"
@@ -88,8 +88,8 @@ HW_DET_BAND_SEL = 0
 
 # Default state
 CIF_CS = 1
+CIF_CS_DISPLAY = 1
 CIF_RESET = 1
-AAC_RESET = 1
 
 # Cable detect
 AC_RTS = 1
@@ -97,11 +97,11 @@ AC_RX = 1
 
 [keyboard]
 # [KP_IN, KP_OUT, ..., KP_OUT]
-NAV_UP		= [0, 3]
-NAV_RIGHT	= [1, 3]
+NAV_DOWN	= [0, 3]
+NAV_LEFT	= [1, 3]
 NAV_CENTER	= [2, 3]
-NAV_LEFT	= [3, 3]
-NAV_DOWN	= [4, 3]
+NAV_RIGHT	= [3, 3]
+NAV_UP		= [4, 3]
 
 SEND		= [4, 0]
 SOFT_LEFT	= [4, 1]

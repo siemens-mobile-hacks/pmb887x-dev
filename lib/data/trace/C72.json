@@ -1,0 +1,17 @@
+[
+	{
+		"name":		"DIF_UNK",
+		"addr":		0xa11c59f0,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"err",
+		"addr":		0xa11a1408,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"pcb_type",
+		"addr":		0xa85063c0,
+		"watch":	"w"
+	}
+]
