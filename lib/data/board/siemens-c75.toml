@@ -1,81 +1,7 @@
 [board]
 vendor = "Siemens"
 model = "C75"
-cpu.type = "pmb8875"
-cpu.rev = 0x05
-
-[peripheral.FLASH0]
-type = "cfi-flash"
-bus = "EBU"
-ebu.cs = 0
-flash = { vid = 0x0089, pid = 0x880D }
-
-[peripheral.SDRAM]
-type = "sdram"
-bus = "EBU"
-ebu.cs = 1
-ram.size = 0x800000 # 8 Mb
-
-[peripheral.GIMMICK]
-type = "s1d13716"
-bus = "DIF"
-in = { RS = "CIF_RS", NRESET = "CIF_RESET", NCS_APP = "CIF_CS", NCS_LCD = "CIF_CS_DISPLAY" }
-
-[peripheral.LCD0]
-type = "ssd1286"
-bus = "GIMMICK"
-width = 132
-height = 176
-in = { CS = "DISPLAY_CS1", CD = "GIMMICK:SRS", RESET = "DISPLAY_RESET" }
-
-[peripheral.PMIC]
-type = "d1094xx"
-bus = "I2C"
-addr = 0x31
-revision = 0xDB
-
-[analog]
-M_0 = { type = "resistor", value = 9300 }
-M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
-M_7 = { type = "resistor", value = 14800 }
-M_9 = { type = "resistor", value = 15000 }
-
-[dsp]
-ram0_value = 0x0602
-
-[gpio.aliases]
-DSPOUT0 = "AC_DCD"
-DSPOUT1 = "PM_WADOG"
-T_OUT1 = "PM_CHARGE_UC"
-T_OUT6 = "PM_SSC_CS"
-T_OUT9 = "DISPLAY_RESET"
-T_OUT10 = "USB_SWITCH_EN"
-T_OUT11 = "CIF_CS"
-T_OUT12 = "CIF_CS_DISPLAY"
-KP_IN5 = "CIF_INT"
-DSPIN1 = "CIF_MRST"
-DIF_DAT = "CIF_MTSR"
-DIF_CLK = "CIF_CLK"
-DIF_CS = "DISPLAY_CS1"
-DIF_RS = "CIF_RS"
-DIF_RESET = "CIF_RESET"
-SSC2_SCLK = "PM_SSC_SCLK"
-SSC2_MRST = "PM_SSC_MRST"
-SSC2_MTSR = "PM_SSC_MTSR"
-
-USART0_TXD = "AC_TX"
-USART0_RXD = "AC_RX"
-USART0_CTS = "AC_RTS"
-USART0_RTS = "AC_CTS"
-
-PIPESTAT0 = "HW_DET_MOB_TYPE1"
-PIPESTAT1 = "HW_DET_MOB_TYPE2"
-PIPESTAT2 = "HW_DET_MOB_TYPE3"
-TRACEPKT0 = "HW_DET_MOB_TYPE4"
-TRACEPKT1 = "HW_DET_MOB_TYPE5"
-TRACEPKT2 = "HW_DET_RF_TYPE"
-TRACEPKT3 = "HW_DET_BAND_SEL"
-TRACEPKT4 = "HW_DET_EXT_STEPUP"
+extends = "include/siemens-sgl-r65.toml"
 
 [gpio.inputs]
 # HWID 341
@@ -88,43 +14,5 @@ HW_DET_RF_TYPE = 0
 HW_DET_BAND_SEL = 0
 HW_DET_EXT_STEPUP = 0
 
-# Default state
-CIF_CS = 1
-CIF_RESET = 1
+# LCD detect
 DISPLAY_CS1 = 1
-
-# Cable detect
-AC_RTS = 1
-AC_RX = 1
-
-[keyboard]
-# [KP_IN, KP_OUT, ..., KP_OUT]
-NAV_DOWN	= [0, 3]
-NAV_LEFT	= [1, 3]
-NAV_CENTER	= [2, 3]
-NAV_RIGHT	= [3, 3]
-NAV_UP		= [4, 3]
-
-SEND		= [4, 0]
-SOFT_LEFT	= [4, 1]
-SOFT_RIGHT	= [4, 2]
-
-NUM1		= [3, 0]
-NUM2		= [3, 1]
-NUM3		= [3, 2]
-
-NUM4		= [2, 0]
-NUM5		= [2, 1]
-NUM6		= [2, 2]
-
-NUM7		= [1, 0]
-NUM8		= [1, 1]
-NUM9		= [1, 2]
-
-STAR		= [0, 0]
-NUM0		= [0, 1]
-HASH		= [0, 2]
-
-BROWSER		= [0, 0, 1, 2, 3, 4, 5, 6, 7, 8]
-VOLUME_UP	= [2, 0, 1, 2, 3, 4, 5, 6, 7, 8]
-VOLUME_DOWN	= [1, 0, 1, 2, 3, 4, 5, 6, 7, 8]
