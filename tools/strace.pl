@@ -74,6 +74,7 @@ while (1) {
 			if ($func->{type}) {
 				print "VALUE=".readFuncArgWithType($gdb, {r0 => $func->{addr}}, 0, $func->{type}, 1)."\n";
 			}
+			last if !applyWrites($gdb, $func);
 			
 			# add watchpoint again
 			last if !addBreakpoint($gdb, $func);
@@ -90,6 +91,7 @@ while (1) {
 				my $val = unpack("L", $gdb->readMem($dump_addr, 4));
 				printf("  %08X: %08X\n", $dump_addr, $val);
 			}
+			last if !applyWrites($gdb, $func);
 			
 			exit if $func->{stop};
 			
@@ -99,6 +101,49 @@ while (1) {
 	}
 	print STDERR "GDB is lost!\n";
 	sleep(1);
+}
+
+sub applyWrites {
+	my ($gdb, $func) = @_;
+	return 1 if !$func->{write};
+
+	my $writes = ref($func->{write}) eq "ARRAY" ? $func->{write} : [$func->{write}];
+	for my $write (@$writes) {
+		return 0 if !writeMemory($gdb, $write);
+	}
+
+	return 1;
+}
+
+sub writeMemory {
+	my ($gdb, $write) = @_;
+	die("Invalid write: expected object") if ref($write) ne "HASH";
+	die("Invalid write: addr is required") if !defined $write->{addr};
+	die("Invalid write: value is required") if !defined $write->{value};
+
+	my $addr = $write->{addr};
+	my $size = $write->{size} || 4;
+	my $data = packWriteValue($write->{value}, $size);
+
+	my ($ret) = $gdb->exec('M', [sprintf("%x", $addr), sprintf("%x", $size).":".bin2hex($data)], "OK");
+	return 0 if $ret != 0;
+
+	printf("  WRITE %08X[%d] = 0x%08X\n", $addr, $size, $write->{value});
+	return 1;
+}
+
+sub packWriteValue {
+	my ($value, $size) = @_;
+
+	if ($size == 1) {
+		return pack("C", $value);
+	} elsif ($size == 2) {
+		return pack("v", $value);
+	} elsif ($size == 4) {
+		return pack("V", $value);
+	}
+
+	die("Invalid write size: $size");
 }
 
 sub resolveRef {
@@ -299,7 +344,19 @@ sub decodeArgs {
 		} elsif ($func->{name} =~ /^GBS_(.*?)$/) {
 			$decoded[0] = $variables->{$decoded[0]} if exists $variables->{$decoded[0]};
 		}
-		
+
+		if ($func->{name} =~ /^apoxi_sem_init/) {
+			my $name = $decoded[1];
+			$name =~ s/.*?"(.*?)".*?/$1/g;
+			$name =~ s/\s/_/g;
+
+			$variables->{$decoded[0]} = $decoded[0]."_".$name;
+
+			$decoded[0] = $variables->{$decoded[0]};
+		} elsif ($func->{name} =~ /^apoxi_sem(.*?)$/) {
+			$decoded[0] = $variables->{$decoded[0]} if exists $variables->{$decoded[0]};
+		}
+
 		if ($func->{name} =~ /^NU_Create_(.*?)$/) {
 			my $name = $decoded[1];
 			$name =~ s/.*?"(.*?)".*?/$1/g;
