@@ -23,11 +23,16 @@ struct adc_channel_t {
 
 // ADC channels used in all Siemens SGOLD & SGOLD2
 static struct adc_channel_t adc_channels[] = {
-	{"M1_VBAT",		0x02,	44,		1,		330000,	220000,		ADC_READ_VOLTS,				0},
-	{"M7_AKKU_TYP",	0x08,	100,	-1,		0,		0,			ADC_READ_RESISTANCE,		60},
-	{"M0_TVCO",		0x01,	50,		1,		0,		0,			ADC_READ_RESISTANCE,		60},
-	{"M9_BREF",		0x10,	50,		-1,		0,		0,			ADC_READ_RESISTANCE,		60},
-	{"M0+M9_TVCO",	0x18,	100,	-1,		0,		0,			ADC_READ_VOLTS,				60},
+#ifdef BOARD_PANASONIC_VS7
+	{"M0_BAT_ID",	ADC_CTRL_MX_M0,			100,		1,		0,		0,		ADC_READ_VOLTS,				0},
+	{"M10_PCB_ID",	ADC_CTRL_MX_M10,		100,		1,		0,		0,		ADC_READ_RESISTANCE,		60},
+#else
+	{"M1_VBAT",		ADC_CTRL_MX_M1,			44,		1,		330000,	220000,		ADC_READ_VOLTS,				0},
+	{"M7_AKKU_TYP",	ADC_CTRL_MX_M7,			100,	-1,		0,		0,			ADC_READ_RESISTANCE,		60},
+	{"M0_TVCO",		ADC_CTRL_MX_M0,			100,	1,		0,		0,			ADC_READ_RESISTANCE,		60},
+	{"M9_BREF",		ADC_CTRL_MX_M9,			50,		-1,		0,		0,			ADC_READ_RESISTANCE,		60},
+	{"M0+M9_TVCO",	ADC_CTRL_MX_M0_M9_B,	100,	-1,		0,		0,			ADC_READ_VOLTS,				60},
+#endif
 };
 
 static int32_t resistor_div_vin(int32_t v, int32_t r1, int32_t r2) {
@@ -39,17 +44,21 @@ static int32_t adc_to_volts(int32_t v) {
 }
 
 static int32_t volts_to_resistance(int32_t v, int32_t current) {
+	if (current == 0)
+		return 0;
+	if (v < 0)
+		v = -v;
 	return v * 1000 / current;
 }
 
 static int32_t adc_read(uint32_t config) {
-	ADC_CON1 = (ADC_CON1 & ~(ADC_CON1_CH | ADC_CON1_PREAMP_FAST | ADC_CON1_PREAMP_INV | ADC_CON1_MODE | ADC_CON1_START | ADC_CON1_COUNT)) |
-		ADC_CON1_SINGLE | config;
-	ADC_CON1 |= ADC_CON1_START;
+	ADC_CTRL = (ADC_CTRL & ~(ADC_CTRL_MX | ADC_CTRL_CSEL | ADC_CTRL_INV | ADC_CTRL_TC | ADC_CTRL_START | ADC_CTRL_BUFSIZE)) |
+		ADC_CTRL_ENSTOP | config;
+	ADC_CTRL |= ADC_CTRL_START;
 	
 	while ((ADC_STAT & ADC_STAT_READY) == 0);
 	
-	return ADC_FIFO(0);
+	return ADC_DATA(0);
 }
 
 static int32_t adc_read_with_correction(uint32_t config) {
@@ -60,14 +69,14 @@ static int32_t adc_read_with_correction(uint32_t config) {
 	
 	int32_t b = 0;
 	for (int i = 0; i < 10; i++)
-		b += adc_read(config | ADC_CON1_PREAMP_INV) - 0x800;
+		b += adc_read(config | ADC_CTRL_INV) - 0x800;
 	b = b / 10;
 	
 	return (a - b) / 2;
 }
 
 static void dump_adc_chan(struct adc_channel_t *channel) {
-	int32_t adc_value = adc_read_with_correction((channel->ch << ADC_CON1_CH_SHIFT) | ((channel->current / 30) << ADC_CON1_MODE_SHIFT));
+	int32_t adc_value = adc_read_with_correction((channel->ch << ADC_CTRL_MX_SHIFT) | ((channel->current / 30) << ADC_CTRL_TC_SHIFT));
 	
 	int32_t adc_volts = adc_to_volts(adc_value);
 	int32_t real_volts = adc_volts * 100 / channel->gain;
@@ -90,8 +99,8 @@ static void dump_adc_chan(struct adc_channel_t *channel) {
 }
 
 static void dump_adc_chan_debug(uint32_t ch) {
-	int32_t adc_value_v = adc_read_with_correction((ch << ADC_CON1_CH_SHIFT));
-	int32_t adc_value_i = adc_read_with_correction((ch << ADC_CON1_CH_SHIFT) | ADC_CON1_MODE_I_30);
+	int32_t adc_value_v = adc_read_with_correction((ch << ADC_CTRL_MX_SHIFT));
+	int32_t adc_value_i = adc_read_with_correction((ch << ADC_CTRL_MX_SHIFT) | ADC_CTRL_TC_I_30);
 	
 	if (adc_value_v && adc_value_i) {
 		printf("%02X: %5d mV | %5d mV\n", ch, adc_to_volts(adc_value_v), adc_to_volts(adc_value_i));
@@ -103,10 +112,10 @@ int main(void) {
 	
 	ADC_CLC = (1 << MOD_CLC_RMC_SHIFT);
 	
-	ADC_PLLCON = (0x04 << ADC_PLLCON_K_SHIFT) | (0x0D << ADC_PLLCON_L_SHIFT);
-	ADC_CON0 = 0x00000002;
+	ADC_CLK = (0x04 << ADC_CLK_K_SHIFT) | (0x0D << ADC_CLK_L_SHIFT);
+	ADC_ANA_CTRL = 0x00000002;
 	
-	ADC_CON1 = ADC_CON1_ON;
+	ADC_CTRL = ADC_CTRL_ADCON;
 	while ((ADC_STAT & ADC_STAT_BUSY) != 0);
 	
 	printf("Known channels:\n");

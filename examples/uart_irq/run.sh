@@ -3,4 +3,4 @@ set -e
 set -x
 cmake -B build -DBOARD=$BOARD
 cmake --build build
-perl ../../boot.pl --boot=build/app.bin --picocom $@
+sie-tool boot -i build/app.bin -f $@

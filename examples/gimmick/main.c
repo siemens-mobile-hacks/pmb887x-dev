@@ -3,6 +3,27 @@
 #include <printf.h>
 #include <stdint.h>
 
+
+#if BOARD_SIEMENS_CX75
+#define DIF_CS_PIN		GPIO_CIF_CS
+#define DIF_RS_PIN		GPIO_CIF_RS
+#define DIF_RESET_PIN	GPIO_CIF_RESET
+
+#define DIF_MRST_PIN	GPIO_CIF_MRST
+#define DIF_MTSR_PIN	GPIO_CIF_MTSR
+#define DIF_CLK_PIN		GPIO_CIF_CLK
+#endif
+
+#if BOARD_PANASONIC_VS7
+#define DIF_CS_PIN		GPIO_DIF_CS
+#define DIF_RS_PIN		GPIO_DIF_RS
+#define DIF_RESET_PIN	GPIO_AP_RST
+
+#define DIF_MRST_PIN	GPIO_DIF_MRST
+#define DIF_MTSR_PIN	GPIO_DIF_MTSR
+#define DIF_CLK_PIN		GPIO_DIF_CLK
+#endif
+
 static void dif_write(uint16_t data) {
 	DIF_TB = data;
 	while ((DIF_CON & DIF_CON_BSY) != 0)
@@ -32,43 +53,43 @@ WRITE	0x1xx0							xx - LCD data (bypass)
 */
 
 static uint16_t gimmick_write_reg(uint16_t reg, uint16_t value) {
-	gpio_set(GPIO_CIF_CS, false);
-	gpio_set(GPIO_CIF_RS, false);
+	gpio_set(DIF_CS_PIN, false);
+	gpio_set(DIF_RS_PIN, false);
 	dif_write(0x0000);
 
-	gpio_set(GPIO_CIF_CS, false);
-	gpio_set(GPIO_CIF_RS, true);
+	gpio_set(DIF_CS_PIN, false);
+	gpio_set(DIF_RS_PIN, true);
 	dif_write(reg);
 
-	gpio_set(GPIO_CIF_CS, false);
-	gpio_set(GPIO_CIF_RS, true);
+	gpio_set(DIF_CS_PIN, false);
+	gpio_set(DIF_RS_PIN, true);
 	dif_write(value);
 
-	gpio_set(GPIO_CIF_CS, true);
-	gpio_set(GPIO_CIF_RS, true);
+	gpio_set(DIF_CS_PIN, true);
+	gpio_set(DIF_RS_PIN, true);
 
 	return value;
 }
 
 static uint16_t gimmick_read_reg(uint16_t reg) {
-	gpio_set(GPIO_CIF_CS, false);
-	gpio_set(GPIO_CIF_RS, false);
+	gpio_set(DIF_CS_PIN, false);
+	gpio_set(DIF_RS_PIN, false);
 	dif_write(0x4000);
 
-	gpio_set(GPIO_CIF_CS, false);
-	gpio_set(GPIO_CIF_RS, true);
+	gpio_set(DIF_CS_PIN, false);
+	gpio_set(DIF_RS_PIN, true);
 	dif_write(reg);
 
-	gpio_set(GPIO_CIF_CS, false);
-	gpio_set(GPIO_CIF_RS, true);
+	gpio_set(DIF_CS_PIN, false);
+	gpio_set(DIF_RS_PIN, true);
 	dif_write(0);
 
-	gpio_set(GPIO_CIF_CS, false);
-	gpio_set(GPIO_CIF_RS, false);
+	gpio_set(DIF_CS_PIN, false);
+	gpio_set(DIF_RS_PIN, false);
 	uint16_t value = dif_read(0x8000);
 
-	gpio_set(GPIO_CIF_CS, true);
-	gpio_set(GPIO_CIF_RS, true);
+	gpio_set(DIF_CS_PIN, true);
+	gpio_set(DIF_RS_PIN, true);
 
 	return value;
 }
@@ -104,30 +125,28 @@ int main(void) {
 	PLL_CON2 &= ~PLL_CON2_CLK32_EN;
 
 	// ACC codec
+	/*
 	GPIO_PIN(GPIO_AAC_INT) = GPIO_PS_MANUAL | GPIO_DIR_IN;
 	GPIO_PIN(GPIO_AAC_CS) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
 	GPIO_PIN(GPIO_AAC_RESET) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_LOW;
 	GPIO_PIN(GPIO_AAC_CLK32) = GPIO_PS_ALT | GPIO_OS_ALT3 | GPIO_DATA_HIGH;
+	*/
 
 	// gimmick
-	GPIO_PIN(GPIO_DISPLAY_RESET) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_LOW;
-	GPIO_PIN(GPIO_CIF_CS_DISPLAY) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_LOW;
-	GPIO_PIN(GPIO_CIF_RESET) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_LOW;
-	GPIO_PIN(GPIO_CIF_RS) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_LOW;
-	GPIO_PIN(GPIO_DISP_CS1) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
-	GPIO_PIN(GPIO_CIF_CS) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
+	GPIO_PIN(DIF_RESET_PIN) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_LOW;
+	GPIO_PIN(DIF_RS_PIN) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_LOW;
+	GPIO_PIN(DIF_CS_PIN) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
 
-	GPIO_PIN(GPIO_CIF_MRST) = GPIO_PS_ALT | GPIO_IS_ALT3;
-	GPIO_PIN(GPIO_CIF_CLK) = GPIO_PS_ALT | GPIO_OS_ALT0;
-	GPIO_PIN(GPIO_CIF_MTSR) = GPIO_PS_ALT | GPIO_OS_ALT0;
+	GPIO_PIN(DIF_MRST_PIN) = GPIO_PS_ALT | GPIO_IS_ALT3;
+	GPIO_PIN(DIF_CLK_PIN) = GPIO_PS_ALT | GPIO_OS_ALT0;
+	GPIO_PIN(DIF_MTSR_PIN) = GPIO_PS_ALT | GPIO_OS_ALT0;
 
 	DIF_CLC = 0x100;
 	DIF_BR = 0;
 	DIF_CON = DIF_CON_MS_MASTER | DIF_CON_HB_MSB | DIF_CON_PH_1 | DIF_CON_BM_16 | DIF_CON_EN;
 
 	stopwatch_msleep(1);
-	gpio_set(GPIO_CIF_RESET, true);
-	gpio_set(GPIO_AAC_RESET, true);
+	gpio_set(DIF_RESET_PIN, true);
 	stopwatch_msleep(1);
 
 	PLL_CON2 |= PLL_CON2_CLK32_EN;
@@ -136,6 +155,7 @@ int main(void) {
 	printf("REG: %04X = %04X\n", 0x0014, gimmick_read_reg(0x0014));
 	printf("REG: %04X = %04X\n", 0x0202, gimmick_read_reg(0x0202));
 
+	/*
 	DIF_CON &= ~DIF_CON_EN;
 	while ((DIF_CON & DIF_CON_EN) != 0);
 
@@ -149,6 +169,7 @@ int main(void) {
 			printf("AAC_INT: %d\n", gpio_get(GPIO_AAC_INT));
 		}
 	}
+	*/
 
 	return 0;
 }
