@@ -1,7 +1,152 @@
 [
+	/* Debug */
 	{
 		"name":		"__assert",
 		"addr":		0xa0522780,
 		"args":		["uint32", "uint32", "cstr"]
-	}
+	},
+	{
+		"name":		"__assert2",
+		"addr":		0xa01c87da,
+		"args":		["uint32", "cstr", "uint32", "cstr"]
+	},
+	{
+		"name":		"d",
+		"addr":		0xa01cd8e8,
+		"args":		["cstr"]
+	},
+
+	/* Memory */
+	{
+		"name":		"apoxi_mem_alloc",
+		"addr":		0xa01ceeb0,
+		"args":		["uint32", "cstr"]
+	},
+	{
+		"name":		"apoxi_mem_free",
+		"addr":		0xa01ceec0,
+		"args":		["uint32", "cstr"]
+	},
+	{
+		"name":		"govno_zalupa",
+		"addr":		0xa01ea3c6,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"govno_zalupa",
+		"addr":		0xa01e9fba,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+
+	/* Semaphore */
+	{
+		"name":		"apoxi_sem_init",
+		"addr":		0xa0208032,
+		"args":		["uint32", "cstr", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"apoxi_sem_lock",
+		"addr":		0xa0208122,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"apoxi_sem_unlock",
+		"addr":		0xa020800c,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"apoxi_sem_destroy",
+		"addr":		0xa020828c,
+		"args":		["uint32"]
+	},
+
+	/* TIC */
+	{
+		"name":		"apoxi_tic_create",
+		"addr":		0xa0275176,
+		"args":		["uint32", "uint32"],
+		"write":	[
+			{ "addr": 0xb01490f4, "value": 1, "size": 1 },
+			{ "addr": 0xb001d9fc, "value": 1, "size": 1 },
+		]
+	},
+	{
+		"name":		"apoxi_tic_start",
+		"addr":		0xa0275354,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"apoxi_tic_soft_start",
+		"addr":		0xa0275504,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"apoxi_tic_start_ex",
+		"addr":		0xa02753da,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"apoxi_tic_free",
+		"addr":		0xa027526a,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"apoxi_tic_stop",
+		"addr":		0xa0275504,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"apoxi_tic_handler",
+		"addr":		0xa027561e,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+
+	/* NU */
+	{
+		"name":		"NU_Create_Task",
+		"addr":		0xa05b93b4,
+		"args":		["ptr","cstr","ptr","ptr","int32","ptr","ptr","int32","uint8","int32","uint8","uint8"]
+	},
+	{
+		"name":		"NU_Create_HISR",
+		"addr":		0xa05b93fc,
+		"args":		["ptr","cstr","ptr","uint8","ptr","int32"]
+	},
+	{
+		"name":		"NU_Activate_HISR",
+		"addr":		0xffff1258,
+		"args":		["ptr"]
+	},
+	{
+		"name":		"NU_Create_Event_Group",
+		"addr":		0xa059a768,
+		"args":		["ptr","cstr"]
+	},
+	{
+		"name":		"NU_Set_Events",
+		"addr":		0xffff12f4,
+		"args":		["ptr","int32","uint8"]
+	},
+	{
+		"name":		"NU_Retrieve_Events",
+		"addr":		0xffff1330,
+		"args":		["ptr","int32","uint8","ptr","int32"]
+	},
+	{
+		"name":		"NU_Create_Partition_Pool",
+		"addr":		0xa0592484,
+		"args":		["ptr","cstr","ptr","int32","int32","uint8"]
+	},
+
+	/* OS */
+	{
+		"name":		"apoxi_os_sleep",
+		"addr":		0xa02082b8,
+		"args":		["uint32"]
+	},
+	{
+		"name":		"apoxi_send_message",
+		"addr":		0xa01cf034,
+		"args":		["uint32", "uint32"]
+	},
 ]

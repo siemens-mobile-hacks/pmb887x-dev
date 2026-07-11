@@ -1,0 +1,12 @@
+[
+	{
+		"name":		"pasic_i2c_transfer",
+		"addr":		0xA11A95F0,
+		"args":		["uint8", "uint8", "uint8*", "uint8", "uint8"]
+	},
+	{
+		"name":		"zalupa",
+		"addr":		0xA1163ED8,
+		"args":		["uint32", "uint32", "uint32"]
+	}
+]

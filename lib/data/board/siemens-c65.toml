@@ -1,11 +1,7 @@
 [board]
 vendor = "Siemens"
-model = "C75"
+model = "C65"
 extends = "include/siemens-sgl-r65.toml"
-
-[peripheral.PMIC]
-type = "d1094xx"
-revision = 0xDB
 
 [gpio.inputs]
 # HWID 341

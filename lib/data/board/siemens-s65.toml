@@ -1,18 +1,19 @@
 [board]
 vendor = "Siemens"
-model = "C75"
+model = "S65"
 extends = "include/siemens-sgl-r65.toml"
 
-[peripheral.PMIC]
-type = "d1094xx"
-revision = 0xDB
+[peripheral.LCD0]
+type = "l2f50126t"
+width = 132
+height = 176
 
 [gpio.inputs]
-# HWID 341
-HW_DET_MOB_TYPE1 = 1
-HW_DET_MOB_TYPE2 = 0
-HW_DET_MOB_TYPE3 = 0
-HW_DET_MOB_TYPE4 = 1
+# HWID 323
+HW_DET_MOB_TYPE1 = 0
+HW_DET_MOB_TYPE2 = 1
+HW_DET_MOB_TYPE3 = 1
+HW_DET_MOB_TYPE4 = 0
 HW_DET_MOB_TYPE5 = 0
 HW_DET_RF_TYPE = 0
 HW_DET_BAND_SEL = 0

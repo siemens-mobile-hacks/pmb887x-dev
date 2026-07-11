@@ -1,0 +1,27 @@
+[
+	{
+		"name":		"pasic_i2c_transfer",
+		"addr":		0xA088B760,
+		"args":		["uint8", "uint8", "uint8*", "uint8", "uint8"]
+	},
+	{
+		"name":		"pasic_SetAmplifierGain",
+		"addr":		0xA07E00BC,
+		"args":		["uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"pasic_MonoControl",
+		"addr":		0xa07e0b9c,
+		"args":		["uint32", "uint32"]
+	},
+	{
+		"name":		"zalupa",
+		"addr":		0xA07DF004,
+		"args":		["uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"unk_snd_ctl",
+		"addr":		0xa07d6bcc,
+		"args":		["uint32", "uint32"]
+	}
+]

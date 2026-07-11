@@ -16,8 +16,32 @@
 #include "board_panasonic_vs7.h"
 #endif
 
+#ifdef BOARD_SIEMENS_C65
+#include "board_siemens_c65.h"
+#endif
+
+#ifdef BOARD_SIEMENS_C72
+#include "board_siemens_c72.h"
+#endif
+
+#ifdef BOARD_SIEMENS_C75
+#include "board_siemens_c75.h"
+#endif
+
 #ifdef BOARD_SIEMENS_C81
 #include "board_siemens_c81.h"
+#endif
+
+#ifdef BOARD_SIEMENS_CL61
+#include "board_siemens_cl61.h"
+#endif
+
+#ifdef BOARD_SIEMENS_CX65
+#include "board_siemens_cx65.h"
+#endif
+
+#ifdef BOARD_SIEMENS_CX70
+#include "board_siemens_cx70.h"
 #endif
 
 #ifdef BOARD_SIEMENS_CX75
@@ -38,6 +62,14 @@
 
 #ifdef BOARD_SIEMENS_M81
 #include "board_siemens_m81.h"
+#endif
+
+#ifdef BOARD_SIEMENS_S65
+#include "board_siemens_s65.h"
+#endif
+
+#ifdef BOARD_SIEMENS_S68
+#include "board_siemens_s68.h"
 #endif
 
 #ifdef BOARD_SIEMENS_S75

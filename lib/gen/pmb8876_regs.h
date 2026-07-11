@@ -75,7 +75,7 @@
 #define	GPIO_TRACEPKT1	70
 #define	GPIO_TRACEPKT2	71
 #define	GPIO_TRACEPKT3	72
-#define	GPIO_PIN73		73
+#define	GPIO_TRACEPKT4	73
 #define	GPIO_PIN74		74
 #define	GPIO_PIN75		75
 #define	GPIO_PIN76		76
@@ -670,9 +670,9 @@
 #define	USART_ISR_ABSTART				BIT(6)					 // Autobaud start interrupt mask
 #define	USART_ISR_TMO					BIT(7)					 // RX timeout interrupt mask
 
-#define	USART_DMACON(base)				MMIO32((base) + 0x78)
-#define	USART_DMACON_TX					BIT(0)					 // Transmit DMA Enable. If this bit is set to 1, DMA for the transmit FIFO is enabled
-#define	USART_DMACON_RX					BIT(1)					 // Receive DMA Enable. If this bit is set to 1, DMA for the receive FIFO is enabled.
+#define	USART_DMAE(base)				MMIO32((base) + 0x78)
+#define	USART_DMAE_TX					BIT(0)					 // Transmit DMA Enable. If this bit is set to 1, DMA for the transmit FIFO is enabled
+#define	USART_DMAE_RX					BIT(1)					 // Receive DMA Enable. If this bit is set to 1, DMA for the receive FIFO is enabled.
 
 #define	USART_TMO(base)					MMIO32((base) + 0x7C)
 
@@ -1616,6 +1616,8 @@
 #define	SCU_RST_REQ_SWBRKIN			BIT(21)									 // Software Break Signal Boot Value
 #define	SCU_RST_REQ_SWBOOT			BIT(24)									 // Software Boot Configuration Selection
 
+#define	SCU_UNK0					MMIO32(SCU_BASE + 0x20)
+
 #define	SCU_WDTCON0					MMIO32(SCU_BASE + 0x24)
 #define	SCU_WDTCON0_ENDINIT			BIT(0)									 // End-of-Initialization Control Bit.
 #define	SCU_WDTCON0_WDTLCK			BIT(1)									 // Lock bit to Control Access to WDT_CON0.
@@ -1643,6 +1645,8 @@
 #define	SCU_WDT_SR_WDTTIM_SHIFT		16
 
 #define	SCU_DSP_UNK0				MMIO32(SCU_BASE + 0x30)
+
+#define	SCU_EXTI_UNK				MMIO32(SCU_BASE + 0x38)
 
 #define	SCU_EXTI					MMIO32(SCU_BASE + 0x3C)
 #define	SCU_EXTI_EXT0				GENMASK(1, 0)

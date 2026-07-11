@@ -22,6 +22,7 @@ void wdt_set_max_execution_time(uint32_t ms) {
 	wdt_timeout = ms;
 }
 
+#ifdef GPIO_PM_WADOG
 void wdt_init_custom(uint32_t interval) {
 	wdt_interval = interval;
 	
@@ -53,3 +54,13 @@ void wdt_serve(void) {
 	gpio_toggle(GPIO_PM_WADOG);
 	last_wdt_serve = stopwatch_get();
 }
+
+#else
+void wdt_init_custom(uint32_t _interval) {
+
+}
+
+void wdt_serve(void) {
+
+}
+#endif

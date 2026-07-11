@@ -10,8 +10,58 @@
 		"args":		["cstr", "uint32"]
 	},
 	{
-		"name":		"__system_error",
-		"addr":		0xa04029b0,
-		"args":		["uint32"]
+		"name":		"assert",
+		"addr":		0xA04242E8,
+		"args":		["cstr", "uint32"]
+	},
+	{
+		"name":		"err",
+		"addr":		0xa0406a04,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"err2",
+		"addr":		0xa0171898,
+		"args":		["uint32", "cstr"]
+	},
+	{
+		"name":		"err3",
+		"addr":		0xa009855c,
+		"args":		["uint32", "cstr"]
+	},
+	{
+		"name":		"err4",
+		"addr":		0xa04b9838,
+		"args":		["uint32", "cstr"]
+	},
+	{
+		"name":		"ttt",
+		"addr":		0xa0202a80,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"ttt2",
+		"addr":		0xa04240ac,
+		"args":		["uint32", "cstr"]
+	},
+	{
+		"name":		"ttt3",
+		"addr":		0xa080b92e,
+		"args":		["uint32", "cstr"]
+	},
+	{
+		"name":		"ttt443",
+		"addr":		0xa0296574,
+		"args":		["cstr"]
+	},
+	{
+		"name":		"gimmick_proc",
+		"addr":		0xa04afdd4,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	},
+	{
+		"name":		"gimmick_sel_reg",
+		"addr":		0xa04afca4,
+		"args":		["uint32", "uint32"]
 	}
 ]
