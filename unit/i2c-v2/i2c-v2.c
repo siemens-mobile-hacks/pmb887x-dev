@@ -4,9 +4,11 @@
 
 #ifdef PMB8876
 
-#include <d1601aa.h>
 #include <string.h>
 
+#define PMIC_I2C_ADDR 0x31
+#define PMIC_LIGHT_PWM1_REG 0x12
+#define PMIC_LED_CONTROL_REG 0x14
 #define I2C_STATUS_CLEAR 0x3F
 #define I2C_PROTOCOL_CLEAR 0x7F
 #define I2C_ERROR_CLEAR 0x0F
@@ -270,16 +272,16 @@ static enum transfer_result transfer_bytes(uint8_t address, const uint8_t *tx, u
 }
 
 static enum transfer_result smbus_read(uint8_t reg, uint8_t *data, uint32_t size) {
-	if (transfer_bytes(D1601AA_I2C_ADDR, &reg, NULL, 1) != TRANSFER_DONE)
+	if (transfer_bytes(PMIC_I2C_ADDR, &reg, NULL, 1) != TRANSFER_DONE)
 		return transfer.result;
 
-	return transfer_bytes(D1601AA_I2C_ADDR, NULL, data, size);
+	return transfer_bytes(PMIC_I2C_ADDR, NULL, data, size);
 }
 
 static enum transfer_result smbus_write(uint8_t reg, uint8_t value) {
 	uint8_t data[] = {reg, value};
 
-	return transfer_bytes(D1601AA_I2C_ADDR, data, NULL, sizeof(data));
+	return transfer_bytes(PMIC_I2C_ADDR, data, NULL, sizeof(data));
 }
 
 static enum transfer_result smbus_read_repeated_start(uint8_t reg, uint8_t *data, uint32_t size,
@@ -288,13 +290,13 @@ static enum transfer_result smbus_read_repeated_start(uint8_t reg, uint8_t *data
 	I2C_ADDRCFG &= ~I2C_ADDRCFG_SOPE;
 	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
 
-	enum transfer_result result = transfer_bytes_running(D1601AA_I2C_ADDR, &reg, NULL, 1);
+	enum transfer_result result = transfer_bytes_running(PMIC_I2C_ADDR, &reg, NULL, 1);
 	*bus_was_held = (
 		result == TRANSFER_DONE &&
 		(I2C_BUSSTAT & I2C_BUSSTAT_BS) == I2C_BUSSTAT_BS_BUSY_MASTER
 	);
 	if (result == TRANSFER_DONE)
-		result = transfer_bytes_running(D1601AA_I2C_ADDR, NULL, data, size);
+		result = transfer_bytes_running(PMIC_I2C_ADDR, NULL, data, size);
 
 	I2C_ENDDCTRL = I2C_ENDDCTRL_SETEND;
 	stopwatch_t start = stopwatch_get();
@@ -310,18 +312,18 @@ static enum transfer_result smbus_read_repeated_start(uint8_t reg, uint8_t *data
 }
 
 static enum transfer_result dma_smbus_read(uint8_t reg, uint8_t *data, uint32_t size) {
-	enum transfer_result result = dma_write_bytes(D1601AA_I2C_ADDR, &reg, 1);
+	enum transfer_result result = dma_write_bytes(PMIC_I2C_ADDR, &reg, 1);
 
 	if (result != TRANSFER_DONE)
 		return result;
 
-	return dma_read_bytes(D1601AA_I2C_ADDR, data, size);
+	return dma_read_bytes(PMIC_I2C_ADDR, data, size);
 }
 
 static enum transfer_result dma_smbus_write(uint8_t reg, uint8_t value) {
 	uint8_t data[] = {reg, value};
 
-	return dma_write_bytes(D1601AA_I2C_ADDR, data, sizeof(data));
+	return dma_write_bytes(PMIC_I2C_ADDR, data, sizeof(data));
 }
 
 static void test_registers(void) {
@@ -370,7 +372,7 @@ static void test_pmic(void) {
 	test_eq_u32(
 		"PMIC SMBus read completes",
 		TRANSFER_DONE,
-		smbus_read(D1601AA_LIGHT_PWM1, &before, sizeof(before))
+		smbus_read(PMIC_LIGHT_PWM1_REG, &before, sizeof(before))
 	);
 	test_check("PMIC read uses request IRQ", transfer.request_irqs != 0);
 	test_check("PMIC read uses protocol IRQ", transfer.protocol_irqs != 0);
@@ -380,16 +382,16 @@ static void test_pmic(void) {
 	test_eq_u32(
 		"PMIC LED control read completes",
 		TRANSFER_DONE,
-		smbus_read(D1601AA_LED_CONTROL, &before, sizeof(before))
+		smbus_read(PMIC_LED_CONTROL_REG, &before, sizeof(before))
 	);
-	test_eq_u32("PMIC SMBus write completes", TRANSFER_DONE, smbus_write(D1601AA_LED_CONTROL, before));
+	test_eq_u32("PMIC SMBus write completes", TRANSFER_DONE, smbus_write(PMIC_LED_CONTROL_REG, before));
 	test_eq_u32("PMIC write has no controller error IRQ", 0, transfer.error_irqs);
 	test_check("PMIC write has no NACK", (transfer.protocol_status & I2C_PIRQSS_NACK) == 0);
 
 	test_eq_u32(
 		"PMIC SMBus readback completes",
 		TRANSFER_DONE,
-		smbus_read(D1601AA_LED_CONTROL, &after, sizeof(after))
+		smbus_read(PMIC_LED_CONTROL_REG, &after, sizeof(after))
 	);
 	test_eq_u32("PMIC write preserves register value", before, after);
 	printf("# PMIC LED_CONTROL: %02X\n", before);
@@ -403,12 +405,12 @@ static void test_repeated_start(void) {
 	test_eq_u32(
 		"repeated START reference read completes",
 		TRANSFER_DONE,
-		smbus_read(D1601AA_LED_CONTROL, &expected, sizeof(expected))
+		smbus_read(PMIC_LED_CONTROL_REG, &expected, sizeof(expected))
 	);
 	test_eq_u32(
 		"combined SMBus read completes",
 		TRANSFER_DONE,
-		smbus_read_repeated_start(D1601AA_LED_CONTROL, &actual, sizeof(actual), &bus_was_held)
+		smbus_read_repeated_start(PMIC_LED_CONTROL_REG, &actual, sizeof(actual), &bus_was_held)
 	);
 	test_check("bus is held before repeated START", bus_was_held);
 	test_eq_u32("repeated START read data", expected, actual);
@@ -433,19 +435,19 @@ static void test_dma(void) {
 	test_eq_u32(
 		"LED control reference read completes",
 		TRANSFER_DONE,
-		smbus_read(D1601AA_LED_CONTROL, &led_control, 1)
+		smbus_read(PMIC_LED_CONTROL_REG, &led_control, 1)
 	);
 	test_eq_u32(
 		"MEM2PER_PER SMBus write completes",
 		TRANSFER_DONE,
-		dma_smbus_write(D1601AA_LED_CONTROL, led_control)
+		dma_smbus_write(PMIC_LED_CONTROL_REG, led_control)
 	);
 	test_check("DMA write reaches terminal count", (DMAC_RAW_TC_STATUS & BIT(I2C_DMA_TX_CHANNEL)) != 0);
 	test_eq_u32("DMA write has no bus error", 0, DMAC_RAW_ERR_STATUS & BIT(I2C_DMA_TX_CHANNEL));
 	test_eq_u32(
 		"DMA write IRQ readback completes",
 		TRANSFER_DONE,
-		smbus_read(D1601AA_LED_CONTROL, &actual, 1)
+		smbus_read(PMIC_LED_CONTROL_REG, &actual, 1)
 	);
 	test_eq_u32("DMA write preserves register value", led_control, actual);
 
@@ -475,7 +477,7 @@ static void test_dma(void) {
 	test_eq_u32(
 		"DMA read recovers after NACK",
 		TRANSFER_DONE,
-		dma_smbus_read(D1601AA_LED_CONTROL, &actual, 1)
+		dma_smbus_read(PMIC_LED_CONTROL_REG, &actual, 1)
 	);
 	test_eq_u32("DMA recovery returns PMIC data", led_control, actual);
 }
@@ -489,7 +491,7 @@ static void test_packet_sizes(void) {
 		test_eq_u32(
 			"multi-byte SMBus read completes",
 			TRANSFER_DONE,
-			smbus_read(D1601AA_LIGHT_PWM1, data, sizes[i])
+			smbus_read(PMIC_LIGHT_PWM1_REG, data, sizes[i])
 		);
 		test_eq_u32("received packet size", sizes[i], I2C_RPSSTAT & I2C_RPSSTAT_RPS);
 		test_eq_u32("multi-byte read has no controller error IRQ", 0, transfer.error_irqs);
@@ -604,7 +606,7 @@ static void test_scan(void) {
 		if (result == TRANSFER_DONE) {
 			printf("# found I2C device at 0x%02X\n", address);
 			devices++;
-			pmic_found |= address == D1601AA_I2C_ADDR;
+			pmic_found |= address == PMIC_I2C_ADDR;
 		} else if (result != TRANSFER_NACK) {
 			printf(
 				"# I2C scan failed at 0x%02X: result=%u error=%08X\n",
@@ -640,7 +642,7 @@ static void test_fifo_alignment(void) {
 	test_eq_u32(
 		"alignment reference read completes",
 		TRANSFER_DONE,
-		smbus_read(D1601AA_LIGHT_PWM1, &expected, sizeof(expected))
+		smbus_read(PMIC_LIGHT_PWM1_REG, &expected, sizeof(expected))
 	);
 
 	bool completed = true;
@@ -654,7 +656,7 @@ static void test_fifo_alignment(void) {
 			configs[i],
 			I2C_FIFOCFG & (I2C_FIFOCFG_RXBS | I2C_FIFOCFG_TXBS | I2C_FIFOCFG_RXFA | I2C_FIFOCFG_TXFA)
 		);
-		completed &= smbus_read(D1601AA_LIGHT_PWM1, &actual, sizeof(actual)) == TRANSFER_DONE;
+		completed &= smbus_read(PMIC_LIGHT_PWM1_REG, &actual, sizeof(actual)) == TRANSFER_DONE;
 		no_errors &= transfer.error_irqs == 0;
 		test_eq_u32(names[i], expected, actual);
 	}
@@ -685,7 +687,7 @@ static void test_nack_recovery(void) {
 	test_eq_u32(
 		"PMIC read recovers after NACK",
 		TRANSFER_DONE,
-		smbus_read(D1601AA_LIGHT_PWM1, &value, sizeof(value))
+		smbus_read(PMIC_LIGHT_PWM1_REG, &value, sizeof(value))
 	);
 	test_check("recovered PMIC read has no NACK", (transfer.protocol_status & I2C_PIRQSS_NACK) == 0);
 }

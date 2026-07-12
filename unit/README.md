@@ -17,6 +17,7 @@ Run a test on real hardware:
 | `rtc` | RTC registers, synchronous/asynchronous operation, timer chain, and interrupt sub-node |
 | `vic` | VIC pending state, arbitration, priority masking, acknowledge, IRQ, and FIQ routing |
 | `tcm` | ITCM and DTCM region registers, memory access, remap, and overlay behavior |
+| `i2c-v1` | I2Cv1 registers, hardware bits, IRQ transfers, and PMIC SMBus reads |
 | `i2c-v2` | I2Cv2 registers, IRQ transfers, SMBus, FIFO modes, and bus scan |
 | `i2c-v2-dma` | I2Cv2 SMBus transfers through DMA |
 | `usart` | USART loopback, frame modes, FIFO, interrupts, and timeout |
