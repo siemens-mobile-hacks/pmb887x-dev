@@ -4,6 +4,20 @@
 
 #define TEST_TIMEOUT_MS 3000
 
+#if TEST_COLOR
+#define COLOR_RESET "\x1B[0m"
+#define COLOR_RED "\x1B[31m"
+#define COLOR_GREEN "\x1B[32m"
+#define COLOR_YELLOW "\x1B[33m"
+#define COLOR_CYAN "\x1B[36m"
+#else
+#define COLOR_RESET ""
+#define COLOR_RED ""
+#define COLOR_GREEN ""
+#define COLOR_YELLOW ""
+#define COLOR_CYAN ""
+#endif
+
 static struct test_state {
 	unsigned int assertions;
 	unsigned int failures;
@@ -16,7 +30,14 @@ static void reset_timeout(void) {
 
 static bool report(const char *name, bool passed) {
 	state.assertions++;
-	printf("%s %u - %s\n", passed ? "ok" : "not ok", state.assertions, name);
+	printf(
+		"%s %u - %s%s%s\n",
+		passed ? "ok" : "not ok",
+		state.assertions,
+		passed ? COLOR_GREEN : COLOR_RED,
+		name,
+		COLOR_RESET
+	);
 
 	if (!passed)
 		state.failures++;
@@ -30,17 +51,23 @@ void test_start(const char *name) {
 	reset_timeout();
 
 	printf("TAP version 13\n");
-	printf("# %s\n", name);
+	printf("# %s%s%s\n", COLOR_CYAN, name, COLOR_RESET);
 }
 
 void test_category(const char *name) {
-	printf("# --- %s ---\n", name);
+	printf("# %s--- %s ---%s\n", COLOR_CYAN, name, COLOR_RESET);
 	reset_timeout();
 }
 
 int test_finish(void) {
 	printf("1..%u\n", state.assertions);
-	printf("# result: %s (%u failed)\n", state.failures ? "FAIL" : "PASS", state.failures);
+	printf(
+		"# result: %s%s%s (%u failed)\n",
+		state.failures ? COLOR_RED : COLOR_GREEN,
+		state.failures ? "FAIL" : "PASS",
+		COLOR_RESET,
+		state.failures
+	);
 
 	usart_putc(USART0, 0);
 
@@ -49,7 +76,7 @@ int test_finish(void) {
 
 void test_skip(const char *name, const char *reason) {
 	state.assertions++;
-	printf("ok %u - %s # SKIP %s\n", state.assertions, name, reason);
+	printf("ok %u - %s%s # SKIP %s%s\n", state.assertions, COLOR_YELLOW, name, reason, COLOR_RESET);
 	reset_timeout();
 }
 
@@ -64,8 +91,8 @@ bool test_eq_u32(const char *name, uint32_t expected, uint32_t actual) {
 	bool passed = report(name, actual == expected);
 
 	if (!passed) {
-		printf("# expected: %08X\n", expected);
-		printf("# actual:   %08X\n", actual);
+		printf("# %sexpected: %08X%s\n", COLOR_YELLOW, expected, COLOR_RESET);
+		printf("# %sactual:   %08X%s\n", COLOR_RED, actual, COLOR_RESET);
 	}
 
 	reset_timeout();
@@ -82,7 +109,7 @@ bool test_module_clock(const char *name, uint32_t clc) {
 
 	report(name, enabled);
 	if (!enabled)
-		printf("# CLC=%08X\n", clc);
+		printf("# %sCLC=%08X%s\n", COLOR_RED, clc, COLOR_RESET);
 
 	reset_timeout();
 
@@ -105,9 +132,9 @@ bool test_eq_memory(const char *name, const void *expected, const volatile void 
 
 	bool passed = report(name, offset == size);
 	if (!passed) {
-		printf("# offset:   %u\n", (unsigned int) offset);
-		printf("# expected: %02X\n", expected_bytes[offset]);
-		printf("# actual:   %02X\n", actual_bytes[offset]);
+		printf("# %soffset:   %u%s\n", COLOR_YELLOW, (unsigned int) offset, COLOR_RESET);
+		printf("# %sexpected: %02X%s\n", COLOR_YELLOW, expected_bytes[offset], COLOR_RESET);
+		printf("# %sactual:   %02X%s\n", COLOR_RED, actual_bytes[offset], COLOR_RESET);
 	}
 
 	reset_timeout();

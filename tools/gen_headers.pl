@@ -29,6 +29,7 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 			$irqs->{"VIC_".$module->{name}.($irq_name ? "_".$irq_name : "")."_IRQ"} = $module->{irqs}->{$irq_name};
 		}
 	}
+	$irqs->{VIC_IRQ_COUNT} = $cpu_meta->{irq_count};
 	
 	$str .= "// GPIO numbers\n";
 	$str .= getGpioHeader($cpu_meta->gpios(), 1);
@@ -46,7 +47,8 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 		my $module = $cpu_meta->{modules}->{$id};
 		$str .= genModuleHeader($cpu_meta, $module);
 	}
-	
+	$str =~ s/\s+\z/\n/;
+
 	open(F, ">$file") or die "open($file): $!";
 	print F $str;
 	close F;

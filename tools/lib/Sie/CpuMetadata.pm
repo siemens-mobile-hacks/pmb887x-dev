@@ -200,7 +200,10 @@ sub loadCPU {
 		
 		next if !length($line);
 		
-		if ($line =~ /^\.dma/) {
+		if ($line =~ /^\.irq_count/) {
+			my ($key, $count) = split("\t", $line);
+			$self->{irq_count} = parseAnyInt($count);
+		} elsif ($line =~ /^\.dma/) {
 			my ($key, $module, $channel, $bus, $request, $sel) = split("\t", $line);
 			push @{$self->{dma}->{$module}}, {
 				channel	=> $channel,
