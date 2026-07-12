@@ -8,3 +8,5 @@ boot/*.hex
 *.d
 build
 gbs.txt
+AGENTS.md
+.codex

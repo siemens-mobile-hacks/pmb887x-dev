@@ -15,3 +15,5 @@ add_library(pmb887x OBJECT
 	stopwatch.c
 	cpu.c
 )
+
+set_source_files_properties(libc.c PROPERTIES COMPILE_OPTIONS -fno-builtin)
