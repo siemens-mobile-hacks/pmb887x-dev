@@ -690,9 +690,7 @@ static void test_nack_recovery(void) {
 	test_check("recovered PMIC read has no NACK", (transfer.protocol_status & I2C_PIRQSS_NACK) == 0);
 }
 
-int main(void) {
-	test_start("I2Cv2 peripheral test");
-
+static void configure_i2c(void) {
 	GPIO_PIN(GPIO_I2C_SCL) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
 	GPIO_PIN(GPIO_I2C_SDA) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
 	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
@@ -704,14 +702,17 @@ int main(void) {
 	);
 	I2C_FDIVCFG = (0x3D << I2C_FDIVCFG_DEC_SHIFT) | (4 << I2C_FDIVCFG_INC_SHIFT);
 	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
-	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
-	SCU_DMARS |= BIT(8) | BIT(9);
 
 	VIC_CON(VIC_I2C_SINGLE_REQ_IRQ) = 1;
 	VIC_CON(VIC_I2C_BURST_REQ_IRQ) = 1;
 	VIC_CON(VIC_I2C_ERROR_IRQ) = 1;
 	VIC_CON(VIC_I2C_PROTOCOL_IRQ) = 1;
 	cpu_enable_irq(true);
+}
+
+int i2c_v2_test(void) {
+	test_start("I2Cv2 peripheral test");
+	configure_i2c();
 
 	test_category("Registers");
 	test_registers();
@@ -725,8 +726,6 @@ int main(void) {
 	test_packet_sizes();
 	test_category("PMIC register dump");
 	test_pmic_registers();
-	test_category("DMA SMBus");
-	test_dma();
 	test_category("FIFO burst sizes");
 	test_burst_sizes();
 	test_category("FIFO ON / FIFO OFF");
@@ -737,6 +736,18 @@ int main(void) {
 	test_fifo_alignment();
 	test_category("Recovery");
 	test_nack_recovery();
+
+	return test_finish();
+}
+
+int i2c_v2_dma_test(void) {
+	test_start("I2Cv2 DMA test");
+	configure_i2c();
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	SCU_DMARS |= BIT(8) | BIT(9);
+
+	test_category("DMA SMBus");
+	test_dma();
 
 	return test_finish();
 }
@@ -816,8 +827,15 @@ __IRQ void irq_handler(void) {
 
 #else
 
-int main(void) {
+int i2c_v2_test(void) {
 	test_start("I2Cv2 peripheral test");
+	test_skip("I2Cv2 is available", "PMB8875 has the previous I2C controller");
+
+	return test_finish();
+}
+
+int i2c_v2_dma_test(void) {
+	test_start("I2Cv2 DMA test");
 	test_skip("I2Cv2 is available", "PMB8875 has the previous I2C controller");
 
 	return test_finish();

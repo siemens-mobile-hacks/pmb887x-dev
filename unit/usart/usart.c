@@ -521,7 +521,7 @@ static void test_timeout(void) {
 	VIC_CON(VIC_USART1_TMO_IRQ) = 0;
 }
 
-int main(void) {
+int usart_test(void) {
 	test_start("USART1 peripheral test");
 
 	USART_CLC(USART1) = 1 << MOD_CLC_RMC_SHIFT;
@@ -545,12 +545,21 @@ int main(void) {
 	test_tx_event_ordering();
 	test_category("FIFO OFF TXB then TBUF polling");
 	test_txb_then_tbuf();
-	test_category("DMA");
-	test_dma();
 	test_category("Interrupts");
 	test_interrupts();
 	test_category("Receive timeout");
 	test_timeout();
+
+	return test_finish();
+}
+
+int usart_dma_test(void) {
+	test_start("USART1 DMA test");
+
+	USART_CLC(USART1) = 1 << MOD_CLC_RMC_SHIFT;
+	configure_usart(USART_CON_M_ASYNC_8BIT);
+	test_category("DMA");
+	test_dma();
 
 	return test_finish();
 }

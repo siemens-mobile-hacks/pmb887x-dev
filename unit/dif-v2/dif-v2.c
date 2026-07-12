@@ -552,7 +552,7 @@ static void test_dma(void) {
 	test_eq_u32("DMA channels stop after last requests", 0, DMAC_EN_CHAN & channels);
 }
 
-int main(void) {
+int dif_v2_test(void) {
 	test_start("DIFv2 peripheral test");
 
 	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
@@ -592,6 +592,13 @@ int main(void) {
 		DIF_CON_BM_8,
 		DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC
 	);
+	return test_finish();
+}
+
+int dif_v2_dma_test(void) {
+	test_start("DIFv2 DMA test");
+
+	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_dma();
 
 	return test_finish();
@@ -625,8 +632,15 @@ __IRQ void irq_handler(void) {
 
 #else
 
-int main(void) {
+int dif_v2_test(void) {
 	test_start("DIFv2 peripheral test");
+	test_skip("DIFv2 is available", "PMB8875 has the previous DIF controller");
+
+	return test_finish();
+}
+
+int dif_v2_dma_test(void) {
+	test_start("DIFv2 DMA test");
 	test_skip("DIFv2 is available", "PMB8875 has the previous DIF controller");
 
 	return test_finish();

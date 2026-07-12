@@ -56,6 +56,71 @@ static void program_buffer(const struct flash_device *flash, uint32_t address, c
 	test_operation("buffer program completes", status);
 }
 
+static uint16_t program_buffer_with_suspend(const struct flash_device *flash, uint32_t address, const uint16_t *data,
+	uint32_t words, const uint16_t *read_sample, uint32_t read_address) {
+	MMIO16(address) = 0x50;
+	MMIO16(address) = flash->manufacturer == 0x0020 ? 0xE9 : 0xE8;
+	uint16_t buffer_status = cfi_wait_ready(address);
+	test_check("suspended write buffer is ready", (buffer_status & STATUS_READY) != 0);
+	MMIO16(address) = words - 1;
+	for (uint32_t word = 0; word < words; word++) {
+		MMIO16(address + word * 2) = data[word];
+	}
+	MMIO16(address) = 0xD0;
+	MMIO16(address) = 0xB0;
+	MMIO16(address) = 0x70;
+	uint16_t status = cfi_wait_ready(address);
+	if (!(status & STATUS_PROGRAM_SUSPEND)) {
+		test_skip("buffer program enters suspend", "program completed before suspend");
+		cfi_enter_read_array(address);
+		return status;
+	}
+
+	test_check("buffer program enters suspend", (status & STATUS_ERRORS) == 0);
+	cfi_enter_read_array(address);
+	test_eq_memory(
+		"program suspend allows reading another block",
+		read_sample,
+		(const void *) read_address,
+		MAP_SAMPLE_WORDS * sizeof(uint16_t)
+	);
+	MMIO16(address) = 0xD0;
+	MMIO16(address) = 0x70;
+	status = cfi_wait_ready(address);
+	test_eq_u32("program suspend clears after resume", 0, status & STATUS_PROGRAM_SUSPEND);
+	cfi_enter_read_array(address);
+	return status;
+}
+
+static uint16_t erase_with_suspend(uint32_t address, const uint16_t *read_sample, uint32_t read_address) {
+	MMIO16(address) = 0x50;
+	MMIO16(address) = 0x20;
+	MMIO16(address) = 0xD0;
+	MMIO16(address) = 0xB0;
+	MMIO16(address) = 0x70;
+	uint16_t status = cfi_wait_ready(address);
+	if (!(status & STATUS_ERASE_SUSPEND)) {
+		test_skip("erase enters suspend", "erase completed before suspend");
+		cfi_enter_read_array(address);
+		return status;
+	}
+
+	test_check("erase enters suspend", (status & STATUS_ERRORS) == 0);
+	cfi_enter_read_array(address);
+	test_eq_memory(
+		"erase suspend allows reading another block",
+		read_sample,
+		(const void *) read_address,
+		MAP_SAMPLE_WORDS * sizeof(uint16_t)
+	);
+	MMIO16(address) = 0xD0;
+	MMIO16(address) = 0x70;
+	status = cfi_wait_ready(address);
+	test_eq_u32("erase suspend clears after resume", 0, status & STATUS_ERASE_SUSPEND);
+	cfi_enter_read_array(address);
+	return status;
+}
+
 static void test_program_and_cleanup(struct flash_device *flash) {
 	uint16_t buffer[512];
 	uint32_t words = flash->write_buffer_size / 2;
@@ -87,7 +152,21 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 	program_buffer(flash, odd_buffer, buffer, 7);
 	test_eq_memory("seven-word buffer reads back", buffer, (const void *) odd_buffer, sizeof(buffer[0]) * 7);
 	uint32_t full_buffer = flash->test_block + flash->test_block_size - flash->write_buffer_size;
-	program_buffer(flash, full_buffer, buffer, words);
+	uint16_t full_status;
+	if (flash->features & BIT(2)) {
+		full_status = program_buffer_with_suspend(
+			flash,
+			full_buffer,
+			buffer,
+			words,
+			previous_block,
+			flash->test_block - sizeof(previous_block)
+		);
+		test_operation("resumed buffer program completes", full_status);
+	} else {
+		test_skip("buffer program suspend", "not supported");
+		program_buffer(flash, full_buffer, buffer, words);
+	}
 	test_eq_memory("full buffer reads back", buffer, (const void *) full_buffer, flash->write_buffer_size);
 	if (flash->manufacturer == 0x0020) {
 		test_check("blank check reports programmed block", (cfi_blank_check(flash->test_block) & BIT(5)) != 0);
@@ -96,7 +175,18 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 	test_operation("block lock completes", cfi_lock_block(flash->test_block, false));
 	test_eq_u32("test block is locked again", 1, cfi_read_lock_status(flash->test_block) & 0x3);
 	test_operation("block unlock completes", cfi_unlock_block(flash->test_block, false));
-	test_operation("cleanup erase completes", cfi_erase_block(flash->test_block, false));
+	uint16_t erase_status;
+	if (flash->features & BIT(1)) {
+		erase_status = erase_with_suspend(
+			flash->test_block,
+			previous_block,
+			flash->test_block - sizeof(previous_block)
+		);
+	} else {
+		test_skip("erase suspend", "not supported");
+		erase_status = cfi_erase_block(flash->test_block, false);
+	}
+	test_operation("cleanup erase completes", erase_status);
 	test_watchdog_reset();
 	test_check("cleanup erased the complete block", cfi_range_is_blank(flash->test_block, flash->test_block_size));
 	if (flash->manufacturer == 0x0020) {

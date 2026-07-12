@@ -9,6 +9,8 @@
 #define MAP_SAMPLE_WORDS 4
 #define FLASH_CHIP_SELECT_COUNT 3
 #define STATUS_READY BIT(7)
+#define STATUS_ERASE_SUSPEND BIT(6)
+#define STATUS_PROGRAM_SUSPEND BIT(2)
 #define STATUS_ERRORS (BIT(1) | BIT(3) | BIT(4) | BIT(5) | BIT(8) | BIT(9))
 
 struct erase_region {

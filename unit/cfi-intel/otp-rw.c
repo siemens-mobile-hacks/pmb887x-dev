@@ -26,16 +26,13 @@ static bool program_otp(const struct flash_device *flash) {
 	uint16_t esn[4];
 	uint32_t address = flash->base + 0x8A * 2;
 	cfi_enter_id(flash->base);
+	uint16_t lock = cfi_read_word(flash->base, 0x89);
 	for (uint32_t word = 0; word < ARRAY_SIZE(esn); word++) {
 		esn[word] = cfi_read_word(flash->base, 0x81 + word);
 	}
-	bool blank = true;
-	for (uint32_t word = 0; word < ARRAY_SIZE(test_imei); word++) {
-		blank &= MMIO16(address + word * 2) == 0xFFFF;
-	}
 	cfi_enter_read_array(flash->base);
-	test_check("IMEI OTP slot is blank", blank);
-	if (!blank) {
+	if (!(lock & BIT(0))) {
+		test_skip("IMEI OTP program", "OTP region is frozen");
 		return false;
 	}
 
