@@ -8,6 +8,7 @@
 #define MATRIX_BUFFER_SIZE 16384
 #define MATRIX_SOURCE_ADDR 0x00084000
 #define MATRIX_DESTINATION_ADDR 0x00088000
+#define ENDIAN_BUFFER_SIZE 64
 
 struct dmac_lli {
 	uint32_t src;
@@ -28,6 +29,16 @@ struct dmac_case {
 	uint32_t dst_width;
 };
 
+struct dmac_endian_case {
+	const char *name;
+	uint8_t count;
+	uint8_t src_width_bytes;
+	uint8_t dst_width_bytes;
+	uint32_t src_burst;
+	uint32_t src_width;
+	uint32_t dst_width;
+};
+
 static const uint32_t source[] = {
 	0x10203040, 0x11213141, 0x12223242, 0x13233343,
 	0x50607080, 0x51617181, 0x52627282, 0x53637383,
@@ -36,6 +47,11 @@ static const uint32_t source[] = {
 };
 
 static volatile uint32_t destination[ARRAY_SIZE(source)] __attribute__((aligned(16)));
+static uint32_t endian_source __attribute__((aligned(4)));
+static volatile uint32_t endian_destination __attribute__((aligned(4)));
+static uint8_t endian_matrix_source[ENDIAN_BUFFER_SIZE] __attribute__((aligned(16)));
+static volatile uint8_t endian_matrix_destination[ENDIAN_BUFFER_SIZE] __attribute__((aligned(16)));
+static uint8_t endian_matrix_expected[ENDIAN_BUFFER_SIZE];
 static struct dmac_lli lli __attribute__((aligned(16)));
 static struct dmac_lli lli_chain[3] __attribute__((aligned(16)));
 static uint8_t *const matrix_source = (uint8_t *) MATRIX_SOURCE_ADDR;
@@ -154,6 +170,135 @@ static void test_mem2mem(void) {
 
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 	test_check("raw terminal count clears", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+}
+
+static void test_endian_transfer(
+	const char *name,
+	uint32_t config,
+	uint32_t width,
+	uint32_t count,
+	uint32_t expected
+) {
+	reset_channel();
+	endian_source = 0x87654321;
+	endian_destination = 0;
+	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) &endian_source;
+	DMAC_CH_DST_ADDR(DMA_CHANNEL) = (uint32_t) &endian_destination;
+	DMAC_CH_LLI(DMA_CHANNEL) = 0;
+	DMAC_CH_CONTROL(DMA_CHANNEL) = (
+		count |
+		DMAC_CH_CONTROL_SB_SIZE_SZ_1 |
+		DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+		width |
+		DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB2 |
+		DMAC_CH_CONTROL_SI |
+		DMAC_CH_CONTROL_DI |
+		DMAC_CH_CONTROL_I
+	);
+	DMAC_CONFIG = config | DMAC_CONFIG_ENABLE;
+	DMAC_CH_CONFIG(DMA_CHANNEL) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_ENABLE;
+	test_check("endian transfer completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_u32(name, expected, endian_destination);
+}
+
+static void test_endianness(void) {
+	test_endian_transfer(
+		"32-bit LE to LE keeps byte order",
+		0,
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD,
+		1,
+		0x87654321
+	);
+	test_endian_transfer(
+		"32-bit LE to BE swaps bytes",
+		DMAC_CONFIG_M2_BE,
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD,
+		1,
+		0x21436587
+	);
+	test_endian_transfer(
+		"32-bit BE to LE swaps bytes",
+		DMAC_CONFIG_M1_BE,
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD,
+		1,
+		0x21436587
+	);
+	test_endian_transfer(
+		"32-bit BE to BE keeps byte order",
+		DMAC_CONFIG_M1_BE | DMAC_CONFIG_M2_BE,
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD,
+		1,
+		0x87654321
+	);
+	test_endian_transfer(
+		"16-bit LE to BE swaps bytes",
+		DMAC_CONFIG_M2_BE,
+		DMAC_CH_CONTROL_S_WIDTH_WORD | DMAC_CH_CONTROL_D_WIDTH_WORD,
+		1,
+		0x00002143
+	);
+	test_endian_transfer(
+		"16-bit BE to LE reads the high source lane",
+		DMAC_CONFIG_M1_BE,
+		DMAC_CH_CONTROL_S_WIDTH_WORD | DMAC_CH_CONTROL_D_WIDTH_WORD,
+		1,
+		0x00006587
+	);
+}
+
+static void test_endian_matrix_transfer(const struct dmac_endian_case *item) {
+	reset_channel();
+	uint32_t size = item->count * item->src_width_bytes;
+	for (uint32_t i = 0; i < size; i++) {
+		endian_matrix_source[i] = (uint8_t) (i * 29 + 0x13);
+		endian_matrix_destination[i] = 0xA5;
+	}
+	for (uint32_t unit = 0; unit < size; unit += item->dst_width_bytes)
+		for (uint32_t byte = 0; byte < item->dst_width_bytes; byte++)
+			endian_matrix_expected[unit + byte] = endian_matrix_source[unit + item->dst_width_bytes - 1 - byte];
+
+	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_source;
+	DMAC_CH_DST_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_destination;
+	DMAC_CH_LLI(DMA_CHANNEL) = 0;
+	DMAC_CH_CONTROL(DMA_CHANNEL) = (
+		item->count |
+		item->src_burst |
+		DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+		item->src_width |
+		item->dst_width |
+		DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB2 |
+		DMAC_CH_CONTROL_SI |
+		DMAC_CH_CONTROL_DI |
+		DMAC_CH_CONTROL_I
+	);
+	DMAC_CONFIG = DMAC_CONFIG_M2_BE | DMAC_CONFIG_ENABLE;
+	DMAC_CH_CONFIG(DMA_CHANNEL) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_ENABLE;
+	test_check("big-endian matrix transfer completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory(item->name, endian_matrix_expected, endian_matrix_destination, size);
+}
+
+static void test_endian_matrix(void) {
+	static const struct dmac_endian_case cases[] = {
+		{"SB1, three dwords", 3, 4, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_1,
+			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
+		{"SB4, five dwords with partial burst", 5, 4, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
+		{"SB8, nine dwords with partial burst", 9, 4, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_8,
+			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
+		{"SB4, seven halfwords", 7, 2, 2, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+			DMAC_CH_CONTROL_S_WIDTH_WORD, DMAC_CH_CONTROL_D_WIDTH_WORD},
+		{"SB8, byte to dword packing", 16, 1, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_8,
+			DMAC_CH_CONTROL_S_WIDTH_BYTE, DMAC_CH_CONTROL_D_WIDTH_DWORD},
+		{"SB4, halfword to dword packing", 8, 2, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+			DMAC_CH_CONTROL_S_WIDTH_WORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
+		{"SB4, dword to halfword splitting", 4, 4, 2, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_WORD},
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(cases); i++)
+		test_endian_matrix_transfer(&cases[i]);
 }
 
 static void fill_matrix_buffers(void) {
@@ -1146,10 +1291,14 @@ int main(void) {
 
 	test_category("Memory transfers");
 	test_mem2mem();
+	test_endianness();
 	test_bursts_and_widths();
 	test_transfer_boundaries();
 	test_address_increment();
 	test_overlap();
+
+	test_category("Big-endian transfers");
+	test_endian_matrix();
 
 	test_category("Software requests and flow control");
 	test_software_requests();
