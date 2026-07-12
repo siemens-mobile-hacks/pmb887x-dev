@@ -20,6 +20,10 @@ Run a test on real hardware:
 | `i2c-v1` | I2Cv1 registers, hardware bits, IRQ transfers, and PMIC SMBus reads |
 | `i2c-v2` | I2Cv2 registers, IRQ transfers, SMBus, FIFO modes, and bus scan |
 | `i2c-v2-dma` | I2Cv2 SMBus transfers through DMA |
+| `ssc` | SSC loopback, serial formats, FIFO modes, interrupts, and errors |
+| `ssc-dma` | SSC full-duplex FIFO DMA, bursts, LLI, widths, statuses, and interrupts |
+| `dif-v1` | DIFv1 loopback, FIFO modes, interrupts, errors, and LCD bit conversion registers |
+| `dif-v1-dma` | DIFv1 full-duplex FIFO DMA, bursts, LLI, widths, statuses, and interrupts |
 | `usart` | USART loopback, frame modes, FIFO, interrupts, and timeout |
 | `usart-dma` | USART loopback transfers through DMA |
 | `dif-v2` | DIFv2 IRQ loopback, serial modes, FIFO, and data conversion |

@@ -698,6 +698,26 @@
 
 /* Control Register */
 #define	SSC_CON					MMIO32(SSC_BASE + 0x10)
+#define	SSC_CON_BC				GENMASK(3, 0)			 // Bit Count Status
+#define	SSC_CON_BC_SHIFT		0
+#define	SSC_CON_BM				GENMASK(3, 0)			 // Data Width Selection
+#define	SSC_CON_BM_SHIFT		0
+#define	SSC_CON_BM_1			0x0
+#define	SSC_CON_BM_2			0x1
+#define	SSC_CON_BM_3			0x2
+#define	SSC_CON_BM_4			0x3
+#define	SSC_CON_BM_5			0x4
+#define	SSC_CON_BM_6			0x5
+#define	SSC_CON_BM_7			0x6
+#define	SSC_CON_BM_8			0x7
+#define	SSC_CON_BM_9			0x8
+#define	SSC_CON_BM_10			0x9
+#define	SSC_CON_BM_11			0xA
+#define	SSC_CON_BM_12			0xB
+#define	SSC_CON_BM_13			0xC
+#define	SSC_CON_BM_14			0xD
+#define	SSC_CON_BM_15			0xE
+#define	SSC_CON_BM_16			0xF
 #define	SSC_CON_HB				BIT(4)					 // Heading Bit Control
 #define	SSC_CON_HB_LSB			0x0
 #define	SSC_CON_HB_MSB			0x10
@@ -723,26 +743,6 @@
 #define	SSC_CON_MS_SLAVE		0x0
 #define	SSC_CON_MS_MASTER		0x4000
 #define	SSC_CON_EN				BIT(15)					 // Enable Bit
-#define	SSC_CON_BC				GENMASK(19, 16)			 // Bit Count Status
-#define	SSC_CON_BC_SHIFT		16
-#define	SSC_CON_BM				GENMASK(19, 16)			 // Data Width Selection
-#define	SSC_CON_BM_SHIFT		16
-#define	SSC_CON_BM_1			0x0
-#define	SSC_CON_BM_2			0x10000
-#define	SSC_CON_BM_3			0x20000
-#define	SSC_CON_BM_4			0x30000
-#define	SSC_CON_BM_5			0x40000
-#define	SSC_CON_BM_6			0x50000
-#define	SSC_CON_BM_7			0x60000
-#define	SSC_CON_BM_8			0x70000
-#define	SSC_CON_BM_9			0x80000
-#define	SSC_CON_BM_10			0x90000
-#define	SSC_CON_BM_11			0xA0000
-#define	SSC_CON_BM_12			0xB0000
-#define	SSC_CON_BM_13			0xC0000
-#define	SSC_CON_BM_14			0xD0000
-#define	SSC_CON_BM_15			0xE0000
-#define	SSC_CON_BM_16			0xF0000
 
 /* Baud Rate Timer Reload Register */
 #define	SSC_BR					MMIO32(SSC_BASE + 0x14)
@@ -787,7 +787,7 @@
 #define	SSC_IMSC				MMIO32(SSC_BASE + 0x48)
 #define	SSC_IMSC_TX				BIT(0)					 // Transmit interrupt mask
 #define	SSC_IMSC_RX				BIT(1)					 // Receive interrupt mask
-#define	SSC_IMSC_ERR			BIT(3)					 // Error interrupt mask
+#define	SSC_IMSC_ERR			BIT(2)					 // Error interrupt mask
 
 #define	SSC_RIS					MMIO32(SSC_BASE + 0x4C)
 #define	SSC_RIS_TX				BIT(0)					 // Transmit interrupt raw status
