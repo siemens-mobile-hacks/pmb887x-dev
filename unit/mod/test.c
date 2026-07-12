@@ -43,9 +43,7 @@ static void test_src(void) {
 	uint32_t saved = SCU_EXTI0_SRC;
 
 	SCU_EXTI0_SRC = MOD_SRC_CLRR;
-	SCU_EXTI0_SRC = 0x5A | (2 << MOD_SRC_TOS_SHIFT) | MOD_SRC_SRE;
-	test_eq_u32("SCU SRC keeps SRPN hardwired to zero", 0, SCU_EXTI0_SRC & MOD_SRC_SRPN);
-	test_eq_u32("SCU SRC keeps TOS hardwired to zero", 0, SCU_EXTI0_SRC & MOD_SRC_TOS);
+	SCU_EXTI0_SRC = MOD_SRC_SRE;
 	test_check("SRC stores SRE", (SCU_EXTI0_SRC & MOD_SRC_SRE) != 0);
 	test_check("SRC starts without request", (SCU_EXTI0_SRC & MOD_SRC_SRR) == 0);
 

@@ -32,8 +32,8 @@ static bool wait_for_fiq(void) {
 static void clear_sources(void) {
 	SCU_EXTI0_SRC = MOD_SRC_CLRR;
 	USART_ICR(USART1) = USART_IRQ_MASK;
-	TPU_SRC(0) = MOD_SRC_CLRR;
-	TPU_SRC(1) = MOD_SRC_CLRR;
+	GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
+	GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR;
 }
 
 static void reset_irq_capture(void) {
@@ -368,40 +368,40 @@ static void test_priority_mask(void) {
 static void test_src_priority(void) {
 	clear_sources();
 	reset_irq_capture();
-	VIC_CON(VIC_TPU_INT0_IRQ) = 5;
-	VIC_CON(VIC_TPU_INT1_IRQ) = 5;
-	TPU_SRC(0) = 2 | MOD_SRC_SRE | MOD_SRC_SETR;
-	TPU_SRC(1) = 9 | MOD_SRC_SRE | MOD_SRC_SETR;
+	VIC_CON(VIC_GPTU0_SRC7_IRQ) = 5;
+	VIC_CON(VIC_GPTU0_SRC6_IRQ) = 5;
+	GPTU_SRC(GPTU0, 7) = 2 | MOD_SRC_SRE | MOD_SRC_SETR;
+	GPTU_SRC(GPTU0, 6) = 9 | MOD_SRC_SRE | MOD_SRC_SETR;
 	cpu_enable_irq(true);
 	test_check("both SRC-priority IRQs arrive", wait_for_irq_count(2));
 	cpu_enable_irq(false);
-	test_eq_u32("lower IRQ number wins despite SRC priority", VIC_TPU_INT0_IRQ, irq_order[0]);
-	test_eq_u32("higher IRQ number follows despite SRC priority", VIC_TPU_INT1_IRQ, irq_order[1]);
+	test_eq_u32("lower IRQ number wins despite SRC priority", VIC_GPTU0_SRC7_IRQ, irq_order[0]);
+	test_eq_u32("higher IRQ number follows despite SRC priority", VIC_GPTU0_SRC6_IRQ, irq_order[1]);
 
 	clear_sources();
 	reset_irq_capture();
-	TPU_SRC(0) = 9 | MOD_SRC_SRE | MOD_SRC_SETR;
-	TPU_SRC(1) = 2 | MOD_SRC_SRE | MOD_SRC_SETR;
+	GPTU_SRC(GPTU0, 7) = 9 | MOD_SRC_SRE | MOD_SRC_SETR;
+	GPTU_SRC(GPTU0, 6) = 2 | MOD_SRC_SRE | MOD_SRC_SETR;
 	cpu_enable_irq(true);
 	test_check("both reversed SRC-priority IRQs arrive", wait_for_irq_count(2));
 	cpu_enable_irq(false);
-	test_eq_u32("reversed SRC priority still keeps lower IRQ first", VIC_TPU_INT0_IRQ, irq_order[0]);
-	test_eq_u32("reversed SRC priority still keeps higher IRQ second", VIC_TPU_INT1_IRQ, irq_order[1]);
+	test_eq_u32("reversed SRC priority still keeps lower IRQ first", VIC_GPTU0_SRC7_IRQ, irq_order[0]);
+	test_eq_u32("reversed SRC priority still keeps higher IRQ second", VIC_GPTU0_SRC6_IRQ, irq_order[1]);
 
 	clear_sources();
 	reset_irq_capture();
-	VIC_CON(VIC_TPU_INT0_IRQ) = 8;
-	VIC_CON(VIC_TPU_INT1_IRQ) = 3;
-	TPU_SRC(0) = 1 | MOD_SRC_SRE | MOD_SRC_SETR;
-	TPU_SRC(1) = 15 | MOD_SRC_SRE | MOD_SRC_SETR;
+	VIC_CON(VIC_GPTU0_SRC7_IRQ) = 8;
+	VIC_CON(VIC_GPTU0_SRC6_IRQ) = 3;
+	GPTU_SRC(GPTU0, 7) = 1 | MOD_SRC_SRE | MOD_SRC_SETR;
+	GPTU_SRC(GPTU0, 6) = 15 | MOD_SRC_SRE | MOD_SRC_SETR;
 	cpu_enable_irq(true);
 	test_check("both mixed-priority IRQs arrive", wait_for_irq_count(2));
 	cpu_enable_irq(false);
-	test_eq_u32("VIC priority takes precedence over SRC priority", VIC_TPU_INT0_IRQ, irq_order[0]);
-	test_eq_u32("lower VIC priority follows despite higher SRC priority", VIC_TPU_INT1_IRQ, irq_order[1]);
+	test_eq_u32("VIC priority takes precedence over SRC priority", VIC_GPTU0_SRC7_IRQ, irq_order[0]);
+	test_eq_u32("lower VIC priority follows despite higher SRC priority", VIC_GPTU0_SRC6_IRQ, irq_order[1]);
 
-	VIC_CON(VIC_TPU_INT0_IRQ) = 0;
-	VIC_CON(VIC_TPU_INT1_IRQ) = 0;
+	VIC_CON(VIC_GPTU0_SRC7_IRQ) = 0;
+	VIC_CON(VIC_GPTU0_SRC6_IRQ) = 0;
 	clear_sources();
 }
 
@@ -410,28 +410,28 @@ static void test_nested_src_priority(void) {
 	clear_sources();
 	VIC_IRQ_ACK = 1;
 	VIC_IRQ_CON = 0;
-	VIC_CON(VIC_TPU_INT0_IRQ) = 5;
-	VIC_CON(VIC_TPU_INT1_IRQ) = 5;
+	VIC_CON(VIC_GPTU0_SRC7_IRQ) = 5;
+	VIC_CON(VIC_GPTU0_SRC6_IRQ) = 5;
 
-	TPU_SRC(0) = 2 | MOD_SRC_SRE | MOD_SRC_SETR;
-	test_eq_u32("nested test enters lower SRC priority", VIC_TPU_INT0_IRQ, VIC_IRQ_CURRENT);
-	TPU_SRC(0) = MOD_SRC_CLRR;
-	TPU_SRC(1) = 9 | MOD_SRC_SRE | MOD_SRC_SETR;
+	GPTU_SRC(GPTU0, 7) = 2 | MOD_SRC_SRE | MOD_SRC_SETR;
+	test_eq_u32("nested test enters lower SRC priority", VIC_GPTU0_SRC7_IRQ, VIC_IRQ_CURRENT);
+	GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
+	GPTU_SRC(GPTU0, 6) = 9 | MOD_SRC_SRE | MOD_SRC_SETR;
 	test_eq_u32("SRC priority cannot preempt equal VIC priority", 0, VIC_IRQ_CURRENT);
 	clear_sources();
 	VIC_IRQ_ACK = 1;
 	VIC_IRQ_ACK = 1;
 
-	TPU_SRC(0) = 9 | MOD_SRC_SRE | MOD_SRC_SETR;
-	test_eq_u32("nested test enters higher SRC priority", VIC_TPU_INT0_IRQ, VIC_IRQ_CURRENT);
-	TPU_SRC(0) = MOD_SRC_CLRR;
-	TPU_SRC(1) = 2 | MOD_SRC_SRE | MOD_SRC_SETR;
+	GPTU_SRC(GPTU0, 7) = 9 | MOD_SRC_SRE | MOD_SRC_SETR;
+	test_eq_u32("nested test enters higher SRC priority", VIC_GPTU0_SRC7_IRQ, VIC_IRQ_CURRENT);
+	GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
+	GPTU_SRC(GPTU0, 6) = 2 | MOD_SRC_SRE | MOD_SRC_SETR;
 	test_eq_u32("lower SRC priority cannot preempt equal VIC priority", 0, VIC_IRQ_CURRENT);
 	clear_sources();
 	VIC_IRQ_ACK = 1;
 
-	VIC_CON(VIC_TPU_INT0_IRQ) = 0;
-	VIC_CON(VIC_TPU_INT1_IRQ) = 0;
+	VIC_CON(VIC_GPTU0_SRC7_IRQ) = 0;
+	VIC_CON(VIC_GPTU0_SRC6_IRQ) = 0;
 }
 
 static void test_src_and_srb_priority(void) {
@@ -440,26 +440,26 @@ static void test_src_and_srb_priority(void) {
 	VIC_IRQ_ACK = 1;
 	VIC_IRQ_CON = 0;
 	VIC_CON(VIC_USART1_TX_IRQ) = 6;
-	VIC_CON(VIC_TPU_INT0_IRQ) = 6;
+	VIC_CON(VIC_GPTU0_SRC7_IRQ) = 6;
 	USART_ISR(USART1) = USART_ISR_TX;
-	TPU_SRC(0) = 15 | MOD_SRC_SRE | MOD_SRC_SETR;
+	GPTU_SRC(GPTU0, 7) = 15 | MOD_SRC_SRE | MOD_SRC_SETR;
 	test_eq_u32("SRB wins equal VIC priority despite SRC SRPN", VIC_USART1_TX_IRQ, VIC_IRQ_CURRENT);
 	USART_ICR(USART1) = USART_ICR_TX;
 	VIC_IRQ_ACK = 1;
-	test_eq_u32("SRC follows equal-priority SRB", VIC_TPU_INT0_IRQ, VIC_IRQ_CURRENT);
-	TPU_SRC(0) = MOD_SRC_CLRR;
+	test_eq_u32("SRC follows equal-priority SRB", VIC_GPTU0_SRC7_IRQ, VIC_IRQ_CURRENT);
+	GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
 	VIC_IRQ_ACK = 1;
 
-	TPU_SRC(0) = 1 | MOD_SRC_SRE | MOD_SRC_SETR;
-	test_eq_u32("nested SRC test enters SRC", VIC_TPU_INT0_IRQ, VIC_IRQ_CURRENT);
-	TPU_SRC(0) = MOD_SRC_CLRR;
+	GPTU_SRC(GPTU0, 7) = 1 | MOD_SRC_SRE | MOD_SRC_SETR;
+	test_eq_u32("nested SRC test enters SRC", VIC_GPTU0_SRC7_IRQ, VIC_IRQ_CURRENT);
+	GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
 	USART_ISR(USART1) = USART_ISR_TX;
 	test_eq_u32("equal-priority SRB cannot preempt SRC", 0, VIC_IRQ_CURRENT);
 	USART_ICR(USART1) = USART_ICR_TX;
 	VIC_IRQ_ACK = 1;
 
 	VIC_CON(VIC_USART1_TX_IRQ) = 0;
-	VIC_CON(VIC_TPU_INT0_IRQ) = 0;
+	VIC_CON(VIC_GPTU0_SRC7_IRQ) = 0;
 	clear_sources();
 }
 
@@ -631,7 +631,7 @@ static void test_pending_reroute(void) {
 int main(void) {
 	test_start("VIC peripheral test");
 	USART_CLC(USART1) = 1 << MOD_CLC_RMC_SHIFT;
-	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	GPTU_CLC(GPTU0) = 1 << MOD_CLC_RMC_SHIFT;
 	USART_IMSC(USART1) = USART_IMSC_TX;
 	clear_sources();
 
@@ -683,10 +683,10 @@ __IRQ void irq_handler(void) {
 		USART_ICR(USART1) = USART_ICR_TX;
 	else if (number == VIC_SCU_EXTI0_IRQ)
 		SCU_EXTI0_SRC = MOD_SRC_CLRR;
-	else if (number == VIC_TPU_INT0_IRQ)
-		TPU_SRC(0) = MOD_SRC_CLRR;
-	else if (number == VIC_TPU_INT1_IRQ)
-		TPU_SRC(1) = MOD_SRC_CLRR;
+	else if (number == VIC_GPTU0_SRC7_IRQ)
+		GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
+	else if (number == VIC_GPTU0_SRC6_IRQ)
+		GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR;
 
 	VIC_IRQ_ACK = 1;
 }
