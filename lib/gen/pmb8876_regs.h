@@ -2934,7 +2934,6 @@
 #define	TPU_RFCON2									MMIO32(TPU_BASE + 0x14)
 #define	TPU_RFCON2_SSCBM							GENMASK(3, 0)							 // RF SSC Unit Telegram Length Control (telegram length = SSCBM + 1 bits)
 #define	TPU_RFCON2_SSCBM_SHIFT						0
-#define	TPU_RFCON2_SSCBM_1							0x0
 #define	TPU_RFCON2_SSCBM_2							0x1
 #define	TPU_RFCON2_SSCBM_3							0x2
 #define	TPU_RFCON2_SSCBM_4							0x3
@@ -2976,7 +2975,7 @@
 #define	TPU_CORRECTION								MMIO32(TPU_BASE + 0x1C)
 #define	TPU_CORRECTION_VALUE						GENMASK(14, 0)
 #define	TPU_CORRECTION_VALUE_SHIFT					0
-#define	TPU_CORRECTION_CTRL							BIT(16)
+#define	TPU_CORRECTION_CTRL							BIT(15)
 
 /* RTDMA Counter Overflow Register */
 #define	TPU_OVERFLOW								MMIO32(TPU_BASE + 0x20)
@@ -2992,7 +2991,7 @@
 #define	TPU_OFFSET									MMIO32(TPU_BASE + 0x2C)
 #define	TPU_OFFSET_VALUE							GENMASK(14, 0)
 #define	TPU_OFFSET_VALUE_SHIFT						0
-#define	TPU_OFFSET_CTRL								BIT(16)
+#define	TPU_OFFSET_CTRL								BIT(15)
 
 /* RTDMA Frame Skip Register */
 #define	TPU_SKIP									MMIO32(TPU_BASE + 0x30)
@@ -3006,17 +3005,17 @@
 
 /* Current Timer Event Address Pointer */
 #define	TPU_CEAP									MMIO32(TPU_BASE + 0x38)
-#define	TPU_CEAP_VALUE								GENMASK(7, 0)
+#define	TPU_CEAP_VALUE								GENMASK(8, 0)
 #define	TPU_CEAP_VALUE_SHIFT						0
 
 /* Timer Event Top Address Pointer */
 #define	TPU_EAPT									MMIO32(TPU_BASE + 0x3C)
-#define	TPU_EAPT_VALUE								GENMASK(7, 0)
+#define	TPU_EAPT_VALUE								GENMASK(8, 0)
 #define	TPU_EAPT_VALUE_SHIFT						0
 
 /* Timer Event Bottom Address Pointer */
 #define	TPU_EAPB									MMIO32(TPU_BASE + 0x40)
-#define	TPU_EAPB_VALUE								GENMASK(7, 0)
+#define	TPU_EAPB_VALUE								GENMASK(8, 0)
 #define	TPU_EAPB_VALUE_SHIFT						0
 
 /* Time Group Enable Register */

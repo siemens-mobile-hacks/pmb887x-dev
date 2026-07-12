@@ -17,6 +17,9 @@ Run a test on real hardware:
 | `rtc` | RTC registers, synchronous/asynchronous operation, timer chain, and interrupt sub-node |
 | `vic` | VIC pending state, arbitration, priority masking, acknowledge, IRQ, and FIQ routing |
 | `gptu` | Both GPTU instances, T0/T1 concatenation, T2 split mode, reload, and service requests |
+| `tpu` | TDMA counter clock, modulo overflow, compare interrupts, correction, offset, and frame skip |
+| `tpu-ram` | TPU RF/Timer RAM partitioning, widths, timing events, and address pointers |
+| `tpu-rf-ssc` | TPU RF SSC direct transfers, formats, clocks, strobe selection, and completion interrupt |
 | `tcm` | ITCM and DTCM region registers, memory access, remap, and overlay behavior |
 | `i2c-v1` | I2Cv1 registers, hardware bits, IRQ transfers, and PMIC SMBus reads |
 | `i2c-v2` | I2Cv2 registers, IRQ transfers, SMBus, FIFO modes, and bus scan |
