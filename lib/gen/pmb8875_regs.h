@@ -2281,7 +2281,13 @@
 #define	RTC_ISNC_ALARMIE		BIT(10)					 // Alarm Interrupt Enable Control Bit
 #define	RTC_ISNC_ALARMIR		BIT(11)					 // Alarm Interrupt Request Flag
 
-#define	RTC_UNK0				MMIO32(RTC_BASE + 0x28)
+#define	RTC_ISNRC				MMIO32(RTC_BASE + 0x28)
+#define	RTC_ISNRC_T14			BIT(0)					 // Clear T14 Interrupt Request Flag
+#define	RTC_ISNRC_RTC0			BIT(2)					 // Clear RTC0 Interrupt Request Flag
+#define	RTC_ISNRC_RTC1			BIT(4)					 // Clear RTC1 Interrupt Request Flag
+#define	RTC_ISNRC_RTC2			BIT(6)					 // Clear RTC2 Interrupt Request Flag
+#define	RTC_ISNRC_RTC3			BIT(8)					 // Clear RTC3 Interrupt Request Flag
+#define	RTC_ISNRC_ALARM			BIT(10)					 // Clear Alarm Interrupt Request Flag
 
 /* RTC Alarm Register */
 #define	RTC_ALARM				MMIO32(RTC_BASE + 0x2C)
@@ -3432,5 +3438,3 @@
 #define	TPU_SRC(n)									MMIO32(TPU_BASE + 0xF8 + ((n) * 0x4))
 
 #define	TPU_RAM(n)									MMIO32(TPU_BASE + 0x1000 + ((n) * 0x4))
-
-

@@ -14,6 +14,7 @@ Run a test on real hardware:
 | `dmac` | DMA transfers, requests, linked lists, arbitration, and interrupts |
 | `mod` | Common CLC, SRC, and SRB register blocks |
 | `adc` | ADC registers, conversion, interrupts, and battery voltage measurement |
+| `rtc` | RTC registers, synchronous/asynchronous operation, timer chain, and interrupt sub-node |
 | `tcm` | ITCM and DTCM region registers, memory access, remap, and overlay behavior |
 | `i2c-v2` | I2Cv2 registers, IRQ transfers, SMBus, FIFO modes, and bus scan |
 | `i2c-v2-dma` | I2Cv2 SMBus transfers through DMA |

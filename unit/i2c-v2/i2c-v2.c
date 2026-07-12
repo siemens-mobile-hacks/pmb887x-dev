@@ -829,14 +829,14 @@ __IRQ void irq_handler(void) {
 
 int i2c_v2_test(void) {
 	test_start("I2Cv2 peripheral test");
-	test_skip("I2Cv2 is available", "PMB8875 has the previous I2C controller");
+	test_skip("I2Cv2 tests", "unsupported");
 
 	return test_finish();
 }
 
 int i2c_v2_dma_test(void) {
 	test_start("I2Cv2 DMA test");
-	test_skip("I2Cv2 is available", "PMB8875 has the previous I2C controller");
+	test_skip("I2Cv2 DMA tests", "unsupported");
 
 	return test_finish();
 }
