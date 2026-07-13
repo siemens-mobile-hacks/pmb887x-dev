@@ -137,6 +137,11 @@ static const struct fifo_config FIFO_DWORD = {
 	.tx = DIF_TXFIFO_CFG_TXBS_1_WORD | DIF_TXFIFO_CFG_TXFA_4,
 };
 
+static const struct fifo_config FIFO_POLLING = {
+	.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
+	.tx = DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_4,
+};
+
 static const uint32_t DIF_IRQ_REQUESTS = (
 	DIF_IMSC_RXLSREQ | DIF_IMSC_RXSREQ | DIF_IMSC_RXLBREQ | DIF_IMSC_RXBREQ |
 	DIF_IMSC_TXLSREQ | DIF_IMSC_TXSREQ | DIF_IMSC_TXLBREQ | DIF_IMSC_TXBREQ
@@ -455,18 +460,20 @@ static void set_bmreg_mapping(uint32_t output_bit, uint32_t input_bit) {
 	*reg = value;
 }
 
-static void configure_16bit_pair_conversion(
+static void configure_pair_conversion(
+	uint32_t con,
+	uint32_t output_bits,
 	int first_input_bit,
 	int input_bit_step,
 	uint32_t bcsel,
 	uint32_t bcreg,
 	uint32_t invert
 ) {
-	configure_dif(DIF_CON_BM_16, FIFO_DWORD);
+	configure_dif(con, FIFO_DWORD);
 	DIF_RUNCTRL = 0;
 	DIF_PBCCON = DIF_PBCCON_PBBCONV_MODE;
 	// Serial loopback exposes the lower 16 converted output bits.
-	for (uint32_t output_bit = 0; output_bit < 16; output_bit++)
+	for (uint32_t output_bit = 0; output_bit < output_bits; output_bit++)
 		set_bmreg_mapping(output_bit, first_input_bit + (int) output_bit * input_bit_step);
 	DIF_BCSEL0 = bcsel;
 	DIF_BCREG = bcreg;
@@ -485,7 +492,7 @@ static bool wait_for_tx_request(void) {
 	return stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS;
 }
 
-static uint16_t convert_16bit_pair(uint16_t first, uint16_t second) {
+static uint16_t convert_word_pair(uint16_t first, uint16_t second) {
 	uint32_t tx_status;
 	stopwatch_t start;
 
@@ -507,37 +514,55 @@ static uint16_t convert_16bit_pair(uint16_t first, uint16_t second) {
 
 static void test_16bit_pair_conversion(void) {
 	test_category("BMREG 32-to-16 mapping");
-	configure_16bit_pair_conversion(0, 1, 0, 0, 0);
-	test_eq_u32("identity selects first word", 0x1234, convert_16bit_pair(0x1234, 0xABCD));
-	configure_16bit_pair_conversion(16, 1, 0, 0, 0);
-	test_eq_u32("mapping selects second word", 0xABCD, convert_16bit_pair(0x1234, 0xABCD));
-	configure_16bit_pair_conversion(31, -1, 0, 0, 0);
-	test_eq_u32("mapping reverses second word", 0xB3D5, convert_16bit_pair(0x1234, 0xABCD));
-	configure_16bit_pair_conversion(20, 0, 0, 0, 0);
-	test_eq_u32("mapping fans out a set bit", 0xFFFF, convert_16bit_pair(0, BIT(4)));
-	configure_16bit_pair_conversion(20, 0, 0, 0, 0);
-	test_eq_u32("mapping fans out a clear bit", 0, convert_16bit_pair(0xFFFF, 0));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, 0, 0, 0);
+	test_eq_u32("identity selects first word", 0x1234, convert_word_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 16, 1, 0, 0, 0);
+	test_eq_u32("mapping selects second word", 0xABCD, convert_word_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 31, -1, 0, 0, 0);
+	test_eq_u32("mapping reverses second word", 0xB3D5, convert_word_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 20, 0, 0, 0, 0);
+	test_eq_u32("mapping fans out a set bit", 0xFFFF, convert_word_pair(0, BIT(4)));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 20, 0, 0, 0, 0);
+	test_eq_u32("mapping fans out a clear bit", 0, convert_word_pair(0xFFFF, 0));
 
 	test_category("BCSEL and BCREG modes");
-	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_FROM_BCREG, 0xA55A, 0);
-	test_eq_u32("BCSEL 1 selects BCREG", 0xA55A, convert_16bit_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, DIF_BCSEL_ALL_FROM_BCREG, 0xA55A, 0);
+	test_eq_u32("BCSEL 1 selects BCREG", 0xA55A, convert_word_pair(0x1234, 0xABCD));
 	test_check("BCSEL 1 raises phase event", (DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE) != 0);
-	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_MODE_2, 0xFFFF, 0);
-	test_eq_u32("BCSEL 2 selects zero", 0, convert_16bit_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, DIF_BCSEL_ALL_MODE_2, 0xFFFF, 0);
+	test_eq_u32("BCSEL 2 selects zero", 0, convert_word_pair(0x1234, 0xABCD));
 	test_eq_u32("BCSEL 2 suppresses phase event", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE);
-	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_MODE_3, 0xFFFF, 0);
-	test_eq_u32("BCSEL 3 selects zero", 0, convert_16bit_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, DIF_BCSEL_ALL_MODE_3, 0xFFFF, 0);
+	test_eq_u32("BCSEL 3 selects zero", 0, convert_word_pair(0x1234, 0xABCD));
 	test_eq_u32("BCSEL 3 suppresses phase event", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE);
-	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALTERNATING_BCREG, 0xA55A, 0);
-	test_eq_u32("BCSEL can clamp alternating bits", 0x0770, convert_16bit_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, DIF_BCSEL_ALTERNATING_BCREG, 0xA55A, 0);
+	test_eq_u32("BCSEL can clamp alternating bits", 0x0770, convert_word_pair(0x1234, 0xABCD));
 
 	test_category("INVERT_BIT order");
-	configure_16bit_pair_conversion(0, 1, 0, 0, 0xA55A);
-	test_eq_u32("inversion follows BMREG", 0xB76E, convert_16bit_pair(0x1234, 0xABCD));
-	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_FROM_BCREG, 0x0F0F, 0xF0F0);
-	test_eq_u32("inversion follows BCREG clamp", 0xFFFF, convert_16bit_pair(0x1234, 0xABCD));
-	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_MODE_2, 0xFFFF, 0xA55A);
-	test_eq_u32("inversion follows zero selection", 0xA55A, convert_16bit_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, 0, 0, 0xA55A);
+	test_eq_u32("inversion follows BMREG", 0xB76E, convert_word_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, DIF_BCSEL_ALL_FROM_BCREG, 0x0F0F, 0xF0F0);
+	test_eq_u32("inversion follows BCREG clamp", 0xFFFF, convert_word_pair(0x1234, 0xABCD));
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, DIF_BCSEL_ALL_MODE_2, 0xFFFF, 0xA55A);
+	test_eq_u32("inversion follows zero selection", 0xA55A, convert_word_pair(0x1234, 0xABCD));
+}
+
+static void test_pair_bit_widths(void) {
+	test_category("PBCCON bit widths");
+	configure_pair_conversion(DIF_CON_BM_1, 1, 0, 1, 0, 0, 0);
+	test_eq_u32("BM=1 selects first word", 1, convert_word_pair(1, 0) & 1);
+	configure_pair_conversion(DIF_CON_BM_1, 1, 16, 1, 0, 0, 0);
+	test_eq_u32("BM=1 selects second word", 1, convert_word_pair(0, 1) & 1);
+
+	configure_pair_conversion(DIF_CON_BM_9, 9, 0, 1, 0, 0, 0);
+	test_eq_u32("BM=9 selects first word", 0x123, convert_word_pair(0x123, 0x0AB) & GENMASK(8, 0));
+	configure_pair_conversion(DIF_CON_BM_9, 9, 16, 1, 0, 0, 0);
+	test_eq_u32("BM=9 selects second word", 0x0AB, convert_word_pair(0x123, 0x0AB) & GENMASK(8, 0));
+
+	configure_pair_conversion(DIF_CON_BM_15, 15, 0, 1, 0, 0, 0);
+	test_eq_u32("BM=15 selects first word", 0x1234, convert_word_pair(0x1234, 0x6BCD) & GENMASK(14, 0));
+	configure_pair_conversion(DIF_CON_BM_15, 15, 16, 1, 0, 0, 0);
+	test_eq_u32("BM=15 selects second word", 0x6BCD, convert_word_pair(0x1234, 0x6BCD) & GENMASK(14, 0));
 }
 
 static void send_16bit_word(uint16_t value) {
@@ -553,7 +578,7 @@ static void send_16bit_word(uint16_t value) {
 
 static void test_incomplete_pbccon_pair(void) {
 	test_category("PBCCON incomplete pair");
-	configure_16bit_pair_conversion(0, 1, 0, 0, 0);
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, 0, 0, 0);
 	send_16bit_word(0x1234);
 	test_eq_u32("incomplete pair produces no RX data", 0, DIF_RXFFS_STAT);
 	test_eq_u32("incomplete pair raises no phase event", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE);
@@ -562,7 +587,7 @@ static void test_incomplete_pbccon_pair(void) {
 	test_eq_u32("buffered pair preserves word order", 0x1234, DIF_RXD & 0xFFFF);
 	test_check("completed buffered pair raises phase event", (DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE) != 0);
 
-	configure_16bit_pair_conversion(0, 1, 0, 0, 0);
+	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, 0, 0, 0);
 	send_16bit_word(0x5678);
 	DIF_RUNCTRL = 0;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
@@ -629,6 +654,23 @@ static void test_pbccon_loopback(void) {
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 	test_category("PBCCON firmware BMREG type 0");
 	execute_irq_loopback(16, expected, sizeof(expected));
+}
+
+static void test_pbccon_bsconf(void) {
+	const struct fifo_config FIFO_CONFIG = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	};
+
+	test_category("PBCCON with BSCONF");
+	for (uint32_t bytes = 2; bytes <= 4; bytes++) {
+		configure_dif(DIF_CON_BM_8, FIFO_CONFIG);
+		configure_8bit_split(bytes, TX_DATA);
+		DIF_RUNCTRL = 0;
+		DIF_PBCCON = DIF_PBCCON_PBBCONV_MODE;
+		DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+		execute_irq_loopback_transfer(2, bytes * 2, bytes, TX_DATA, bytes);
+	}
 }
 
 static void test_irq_burst_boundaries(void) {
@@ -843,6 +885,109 @@ static void test_start_lcd_read(void) {
 	DIF_ICR = DIF_CLEAR_IRQS;
 }
 
+static bool polling_wait_until_idle(void) {
+	stopwatch_t start = stopwatch_get();
+	uint32_t status;
+
+	do {
+		status = DIF_STAT;
+		test_watchdog_serve();
+	} while ((status & DIF_STAT_BSY) != 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS);
+
+	return (status & DIF_STAT_BSY) == 0;
+}
+
+static bool polling_stays_idle(void) {
+	stopwatch_t start = stopwatch_get();
+
+	while (stopwatch_elapsed_ms(start) < 1) {
+		if ((DIF_STAT & DIF_STAT_BSY) != 0)
+			return false;
+		test_watchdog_serve();
+	}
+
+	return true;
+}
+
+static bool polling_write(uint32_t value) {
+	DIF_TXD = value;
+
+	return polling_wait_until_idle();
+}
+
+static bool polling_read(uint8_t *buffer, uint32_t size) {
+	DIF_RUNCTRL = 0;
+	DIF_RXFIFO_CFG = FIFO_POLLING.rx;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((size - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
+	for (uint32_t i = 0; i < size; i++)
+		buffer[i] = DIF_RXD;
+	DIF_STARTLCDRD &= ~DIF_STARTLCDRD_STARTREAD;
+	bool idle = polling_wait_until_idle();
+	DIF_RUNCTRL = 0;
+
+	return idle;
+}
+
+static void test_firmware_polling(void) {
+	uint8_t buffer[5];
+
+	configure_dif(DIF_CON_BM_8, FIFO_POLLING);
+	DIF_RUNCTRL = 0;
+	reset_data_conversion();
+	DIF_CON = DIF_CON_BM_8;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_PERREG &= ~DIF_PERREG_INBAND;
+	DIF_CSREG = DIF_CSREG_CS1;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_eq_u32("polling transfer does not use TPS_CTRL", 0, DIF_TPS_CTRL);
+
+	DIF_RUNCTRL = 0;
+	DIF_CSREG |= DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_check("polling command completes", polling_write(LCD_COMMAND_READ_DISPLAY_ID));
+	test_check("polling command has no late transfer", polling_stays_idle());
+	test_eq_u32("polling command drains TX FIFO", 0, DIF_TXFFS_STAT);
+
+	DIF_RUNCTRL = 0;
+	DIF_CSREG &= ~DIF_CSREG_CD;
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | (1 << DIF_STARTLCDRD_READBYTES_SHIFT);
+	test_eq_u32(
+		"stopped STARTREAD strobe is not queued",
+		1 << DIF_STARTLCDRD_READBYTES_SHIFT,
+		DIF_STARTLCDRD
+	);
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_check("stopped STARTREAD does not start after RUN", polling_stays_idle());
+	test_eq_u32("stopped STARTREAD receives no data", 0, DIF_RXFFS_STAT);
+	DIF_STARTLCDRD = 0;
+
+	memset(buffer, 0xA5, sizeof(buffer));
+	test_check("polling read 04 completes", polling_read(buffer, 4));
+	test_eq_u32("polling read 04 reports four bytes", 4, DIF_RPS_STAT & DIF_RPS_STAT_RPS);
+	test_eq_u32("polling read 04 drains RX FIFO", 0, DIF_RXFFS_STAT);
+	test_eq_u32("polling read 04 has no FIFO errors", 0, DIF_ERRIRQSS & (DIF_ERRIRQSS_RXFUFL | DIF_ERRIRQSS_RXFOFL));
+
+	DIF_CSREG |= DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_check("polling command D3 completes", polling_write(LCD_COMMAND_READ_ID4));
+	test_check("polling command D3 has no late transfer", polling_stays_idle());
+	DIF_CSREG &= ~DIF_CSREG_CD;
+	memset(buffer, 0xA5, sizeof(buffer));
+	test_check("polling read D3 completes", polling_read(buffer, 5));
+	test_eq_u32("polling read D3 reports five bytes", 5, DIF_RPS_STAT & DIF_RPS_STAT_RPS);
+	test_eq_u32("polling read D3 drains RX FIFO", 0, DIF_RXFFS_STAT);
+	test_check("fifth immediate read raises RX underflow", (DIF_ERRIRQSS & DIF_ERRIRQSS_RXFUFL) != 0);
+	test_eq_u32("polling reads do not overflow RX FIFO", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_RXFOFL);
+	DIF_ERRIRQSC = DIF_ERRIRQSC_RXFUFL;
+	test_eq_u32("polling RX underflow clears", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_RXFUFL);
+
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_check("polling data completes", polling_write(0x5A));
+	test_check("polling data has no late transfer", polling_stays_idle());
+	test_eq_u32("polling data drains TX FIFO", 0, DIF_TXFFS_STAT);
+}
+
 static void test_serial_modes(void) {
 	run_irq_loopback(17, DIF_CON_BM_8, FIFO_DEFAULT);
 	run_irq_loopback(17, DIF_CON_PH_1 | DIF_CON_BM_8, FIFO_DEFAULT);
@@ -869,6 +1014,32 @@ static void test_fifo_errors(void) {
 	DIF_ERRIRQSC = DIF_ERRIRQSC_TXFOFL;
 	DIF_ICR = DIF_ICR_ERR;
 	test_eq_u32("TX overflow clears", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_TXFOFL);
+}
+
+static void test_rx_backpressure(void) {
+	const struct fifo_config FIFO_CONFIG = {
+		.rx = DIF_RXFIFO_CFG_RXBS_1_WORD | DIF_RXFIFO_CFG_RXFA_4,
+		.tx = DIF_TXFIFO_CFG_TXBS_1_WORD | DIF_TXFIFO_CFG_TXFA_4,
+	};
+	stopwatch_t start;
+
+	configure_dif(DIF_CON_BM_8, FIFO_CONFIG);
+	DIF_RUNCTRL = 0;
+	DIF_CON = DIF_CON_BM_8;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_CSREG = DIF_CSREG_CS1;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((512 - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
+	start = stopwatch_get();
+	while (stopwatch_elapsed_ms(start) < 5)
+		test_watchdog_serve();
+
+	test_check("full RX FIFO stalls transfer", (DIF_STAT & DIF_STAT_BSY) != 0);
+	test_check("stalled transfer keeps RX data", DIF_RXFFS_STAT != 0);
+	test_eq_u32("full RX FIFO does not overflow", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_RXFOFL);
+	DIF_RUNCTRL = 0;
+	DIF_STARTLCDRD = 0;
+	test_eq_u32("RX backpressure abort clears FIFO", 0, DIF_RXFFS_STAT);
 }
 
 static void test_abort(void) {
@@ -1231,15 +1402,21 @@ int dif_v2_test(void) {
 	run_irq_loopback(16, DIF_CON_BM_16, FIFO_DEFAULT);
 	test_bit_conversion();
 	test_16bit_pair_conversion();
+	test_pair_bit_widths();
 	test_incomplete_pbccon_pair();
 	test_pbccon_loopback();
+	test_pbccon_bsconf();
 	test_category("FIFO errors");
 	test_fifo_errors();
+	test_category("RX backpressure");
+	test_rx_backpressure();
 	test_category("Abort and restart");
 	test_abort();
 	run_irq_loopback(17, DIF_CON_BM_8, FIFO_DEFAULT);
 	test_category("STARTLCDRD");
 	test_start_lcd_read();
+	test_category("Firmware polling");
+	test_firmware_polling();
 	return test_finish();
 }
 
