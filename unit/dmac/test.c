@@ -79,6 +79,8 @@ static volatile uint32_t irq_number;
 static volatile uint32_t irq_raw_tc_status;
 static volatile uint32_t irq_tc_status;
 static volatile uint32_t irq_int_status;
+static volatile uint32_t irq_err_status;
+static volatile uint32_t irq_raw_err_status;
 static volatile uint8_t irq_order[8];
 
 static void clear_destination(void) {
@@ -96,11 +98,14 @@ static void reset_dmac(void) {
 	}
 	DMAC_TC_CLEAR = 0xFF;
 	DMAC_ERR_CLEAR = 0xFF;
+	VIC_CON(VIC_DMAC_ERR_IRQ) = 0;
 	irq_count = 0;
 	irq_number = 0;
 	irq_raw_tc_status = 0;
 	irq_tc_status = 0;
 	irq_int_status = 0;
+	irq_err_status = 0;
+	irq_raw_err_status = 0;
 }
 
 static bool wait_for_status(volatile uint32_t *reg, uint32_t mask) {
@@ -160,6 +165,7 @@ static void test_mem2mem(void) {
 	test_check("raw terminal count is set", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
 	test_check("masked terminal count is clear", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
 	test_check("combined interrupt status is clear", (DMAC_INT_STATUS & BIT(DMA_CHANNEL)) == 0);
+	test_check("raw error status is clear", (DMAC_RAW_ERR_STATUS & BIT(DMA_CHANNEL)) == 0);
 	test_check("channel is disabled", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
 	test_eq_u32(
 		"source address is last item",
@@ -349,6 +355,7 @@ static void test_bursts_and_widths(void) {
 			DMAC_CH_CONTROL_DB_SIZE_SZ_256, DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
 	};
 	bool completed = true;
+	bool no_errors = true;
 
 	for (size_t i = 0; i < ARRAY_SIZE(cases); i++) {
 		const struct dmac_case *item = &cases[i];
@@ -370,6 +377,7 @@ static void test_bursts_and_widths(void) {
 		);
 
 		completed &= wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL));
+		no_errors &= (DMAC_RAW_ERR_STATUS & BIT(DMA_CHANNEL)) == 0;
 		test_eq_memory(
 			item->name,
 			matrix_source + item->src_offset,
@@ -380,6 +388,7 @@ static void test_bursts_and_widths(void) {
 	}
 
 	test_check("burst matrix completes", completed);
+	test_check("burst matrix has no errors", no_errors);
 }
 
 static void test_unaligned_addresses(void) {
@@ -441,6 +450,7 @@ static void test_overlap(void) {
 	);
 	test_check("backward-overlap transfer completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_eq_memory("backward-overlap data", expected, matrix_source + 32, sizeof(expected));
+	test_check("backward-overlap has no error", (DMAC_RAW_ERR_STATUS & BIT(DMA_CHANNEL)) == 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
@@ -515,6 +525,7 @@ static void test_transfer_boundaries(void) {
 		0xA5A5A5A5,
 		*(volatile uint32_t *) matrix_destination
 	);
+	test_check("zero transfer size has no error", (DMAC_RAW_ERR_STATUS & BIT(DMA_CHANNEL)) == 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
@@ -875,9 +886,14 @@ static void test_peripheral_controlled_per2per(void) {
 static void test_registers(void) {
 	reset_dmac();
 
+	DMAC_SYNC = 0xA55A;
+	test_eq_u32("SYNC register readback", 0xA55A, DMAC_SYNC & 0xFFFF);
+	DMAC_SYNC = 0;
+
 	uint32_t config = (
 		(3 << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) | (11 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
-		DMAC_CH_CONFIG_FLOW_CTRL_PER2PER | DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_HALT
+		DMAC_CH_CONFIG_FLOW_CTRL_PER2PER | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC |
+		DMAC_CH_CONFIG_LOCK | DMAC_CH_CONFIG_HALT
 	);
 	DMAC_CH_CONFIG(DMA_CHANNEL) = config;
 	test_eq_u32("channel config readback", config, DMAC_CH_CONFIG(DMA_CHANNEL) & ~DMAC_CH_CONFIG_ACTIVE);
@@ -891,7 +907,7 @@ static void test_registers(void) {
 	DMAC_CONFIG = 0;
 }
 
-static void test_channel_control(void) {
+static void test_halt_and_lock(void) {
 	reset_dmac();
 	fill_matrix_buffers();
 
@@ -904,10 +920,11 @@ static void test_channel_control(void) {
 			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
-		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_HALT
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_LOCK | DMAC_CH_CONFIG_HALT
 	);
 	test_check("halted channel is enabled", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) != 0);
 	test_check("halted channel is inactive", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0);
+	test_check("LOCK bit is retained", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_LOCK) != 0);
 
 	DMAC_SOFT_BREQ = BIT(0);
 	stopwatch_usleep_wd(1000);
@@ -927,6 +944,7 @@ static void test_channel_control(void) {
 	test_check("resumed channel completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_eq_memory("HALT resume preserves data", matrix_source, matrix_destination, 8 * sizeof(uint32_t));
 	test_check("channel is inactive after completion", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0);
+	test_check("LOCK bit survives completion", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_LOCK) != 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
 	reset_dmac();
@@ -1152,6 +1170,7 @@ static void test_lli(void) {
 	test_check("LLI raw terminal count is set", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
 	test_check("LLI masked terminal count is set", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
 	test_check("LLI combined interrupt status is set", (DMAC_INT_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_check("LLI error status is clear", (DMAC_ERR_STATUS & BIT(DMA_CHANNEL)) == 0);
 
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 	test_check("LLI interrupt status clears", (DMAC_INT_STATUS & BIT(DMA_CHANNEL)) == 0);
@@ -1272,6 +1291,7 @@ static void test_lli_interrupts(void) {
 	};
 
 	VIC_CON(VIC_DMAC_CH7_IRQ) = 1;
+	VIC_CON(VIC_DMAC_ERR_IRQ) = 1;
 	cpu_enable_irq(true);
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -1328,7 +1348,7 @@ static void test_interrupt(void) {
 			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
-		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_TC
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC
 	);
 
 	wait_for_irq_count(1);
@@ -1338,6 +1358,8 @@ static void test_interrupt(void) {
 	test_check("IRQ sees raw terminal count", (irq_raw_tc_status & BIT(DMA_CHANNEL)) != 0);
 	test_check("IRQ sees masked terminal count", (irq_tc_status & BIT(DMA_CHANNEL)) != 0);
 	test_check("IRQ sees combined status", (irq_int_status & BIT(DMA_CHANNEL)) != 0);
+	test_check("IRQ sees no masked DMA error", (irq_err_status & BIT(DMA_CHANNEL)) == 0);
+	test_check("IRQ has no DMA error", (irq_raw_err_status & BIT(DMA_CHANNEL)) == 0);
 	test_check("IRQ clear removes terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
 	test_eq_memory("IRQ transfer data", source, destination, 4 * sizeof(source[0]));
 }
@@ -1383,6 +1405,7 @@ static void test_sreq_behavior(void) {
 	test_eq_u32("PER2MEM SREQ completes one item", 0, DMAC_CH_CONTROL(0) & DMAC_CH_CONTROL_TRANSFER_SIZE);
 	test_eq_u32("MEM2PER SREQ leaves destination unchanged", 0xA5, matrix_destination[0]);
 	test_eq_u32("PER2MEM SREQ transfers data", matrix_source[16], matrix_destination[16]);
+	test_check("pending SREQ has no DMA error", (DMAC_RAW_ERR_STATUS & (BIT(0) | BIT(DMA_CHANNEL))) == 0);
 }
 
 int main(void) {
@@ -1411,7 +1434,7 @@ int main(void) {
 	test_peripheral_controlled_per2per();
 
 	test_category("Channel control and arbitration");
-	test_channel_control();
+	test_halt_and_lock();
 	test_halt_after_partial_transfer();
 	test_multiple_channels();
 	test_all_channels();
@@ -1442,7 +1465,17 @@ __IRQ void irq_handler(void) {
 		irq_raw_tc_status = DMAC_RAW_TC_STATUS;
 		irq_tc_status = DMAC_TC_STATUS;
 		irq_int_status = DMAC_INT_STATUS;
+		irq_err_status = DMAC_ERR_STATUS;
+		irq_raw_err_status = DMAC_RAW_ERR_STATUS;
 		DMAC_TC_CLEAR = BIT(channel);
+	} else if (irq_number == VIC_DMAC_ERR_IRQ) {
+		irq_count++;
+		irq_raw_tc_status = DMAC_RAW_TC_STATUS;
+		irq_tc_status = DMAC_TC_STATUS;
+		irq_int_status = DMAC_INT_STATUS;
+		irq_err_status = DMAC_ERR_STATUS;
+		irq_raw_err_status = DMAC_RAW_ERR_STATUS;
+		DMAC_ERR_CLEAR = irq_raw_err_status;
 	}
 
 	VIC_IRQ_ACK = 1;
