@@ -1928,12 +1928,11 @@
 #define	SCCU_WAIT					MMIO32(SCCU_BASE + 0x30)
 #define	SCCU_WAIT_PREWUP			GENMASK(1, 0)				 // Pre-Wakeup Time in TDMA Frames Minus 1
 #define	SCCU_WAIT_PREWUP_SHIFT		0
-#define	SCCU_WAIT_WAIT				GENMASK(21, 16)				 // VCXO Wait Loop Duration
+#define	SCCU_WAIT_WAIT				GENMASK(17, 16)				 // VCXO Wait Loop Duration
 #define	SCCU_WAIT_WAIT_SHIFT		16
 
 /* Hardware Wakeup Control Register */
 #define	SCCU_HWWAKEUP				MMIO32(SCCU_BASE + 0x34)
-#define	SCCU_HWWAKEUP_ICU_EN		BIT(0)						 // Enable SCCU Wakeup by ICU Interrupt
 #define	SCCU_HWWAKEUP_RTC_EN		BIT(8)						 // Enable Sleep Mode Termination by RTC Block
 #define	SCCU_HWWAKEUP_KPD_EN		BIT(9)						 // Enable Sleep Mode Termination by Keypad
 #define	SCCU_HWWAKEUP_SIM_EN		BIT(10)						 // Enable Sleep Mode Termination by SIM Card Insertion/Removal
