@@ -77,8 +77,9 @@ static void test_registers(void) {
 		SCCU_HWWAKEUP_RTC_EN | SCCU_HWWAKEUP_KPD_EN | SCCU_HWWAKEUP_SIM_EN |
 		SCCU_HWWAKEUP_EXT_EN
 	);
-	SCCU_HWWAKEUP = wakeup;
+	SCCU_HWWAKEUP = wakeup | BIT(0);
 	test_eq_u32("hardware wakeup fields readback", wakeup, SCCU_HWWAKEUP & wakeup);
+	test_eq_u32("HWWAKEUP bit 0 is reserved", 0, SCCU_HWWAKEUP & BIT(0));
 	SCCU_HWWAKEUP = 0;
 
 	SCCU_SLPCTRL = SCCU_SLPCTRL_HWACTDI;

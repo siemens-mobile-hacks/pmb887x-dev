@@ -1,7 +1,9 @@
 #include "test.h"
 
 #include <pmb887x.h>
+#include <string.h>
 
+#define PHONE_INFO_STRING_SIZE 16
 #define TEST_TIMEOUT_MS 3000
 
 #if TEST_COLOR
@@ -22,6 +24,59 @@ static struct test_state {
 	unsigned int assertions;
 	unsigned int failures;
 } state;
+
+static bool read_flash_string(char *destination, size_t size, uint32_t address) {
+	const volatile char *source = (const volatile char *) address;
+
+	destination[0] = 0;
+	for (size_t i = 0; i < size; i++) {
+		char value = source[i];
+
+		if (value == 0) {
+			destination[i] = 0;
+			return i != 0;
+		}
+		if (value < 0x20 || value > 0x7E) {
+			destination[0] = 0;
+			return false;
+		}
+		destination[i] = value;
+	}
+	destination[0] = 0;
+
+	return false;
+}
+
+static bool read_phone_info(char *vendor, char *model, uint32_t model_address, uint32_t vendor_address) {
+	char found_vendor[PHONE_INFO_STRING_SIZE];
+	char found_model[PHONE_INFO_STRING_SIZE];
+
+	if (!read_flash_string(found_vendor, sizeof(found_vendor), vendor_address))
+		return false;
+	if (!read_flash_string(found_model, sizeof(found_model), model_address))
+		return false;
+
+	memcpy(vendor, found_vendor, sizeof(found_vendor));
+	memcpy(model, found_model, sizeof(found_model));
+
+	return true;
+}
+
+static void print_hardware(void) {
+	char vendor[PHONE_INFO_STRING_SIZE] = "unknown";
+	char model[PHONE_INFO_STRING_SIZE] = "unknown";
+	uint32_t chip = (SCU_CHIPID & SCU_CHIPID_CHIPD) >> SCU_CHIPID_CHIPD_SHIFT;
+	uint32_t revision = (SCU_CHIPID & SCU_CHIPID_CHREV) >> SCU_CHIPID_CHREV_SHIFT;
+	const char *cpu = "unknown";
+
+	if (!read_phone_info(vendor, model, 0xA003E000, 0xA003E010))
+		read_phone_info(vendor, model, 0xA0000210, 0xA0000220);
+	if (chip == 0x1A)
+		cpu = "PMB8875";
+	else if (chip == 0x1B)
+		cpu = "PMB8876";
+	printf("# Hardware: vendor=%s, phone=%s, CPU=%s rev=%02X\n", vendor, model, cpu, (unsigned int) revision);
+}
 
 static void reset_timeout(void) {
 	wdt_set_max_execution_time(TEST_TIMEOUT_MS);
@@ -52,6 +107,7 @@ void test_start(const char *name) {
 
 	printf("TAP version 13\n");
 	printf("# %s%s%s\n", COLOR_CYAN, name, COLOR_RESET);
+	print_hardware();
 }
 
 void test_category(const char *name) {

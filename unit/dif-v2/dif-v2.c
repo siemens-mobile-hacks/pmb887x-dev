@@ -1259,11 +1259,11 @@ static void test_parallel_tx_dma_empty_fifo(void) {
 	DIF_TPS_CTRL = PACKET_SIZE;
 	uint32_t request_status = DIF_RIS;
 	test_check("empty parallel TX FIFO requests data", (
-		request_status & (DIF_RIS_TXLSREQ | DIF_RIS_TXSREQ | DIF_RIS_TXLBREQ | DIF_RIS_TXBREQ)
-	) != 0);
+		(request_status & (DIF_RIS_TXLSREQ | DIF_RIS_TXSREQ | DIF_RIS_TXLBREQ | DIF_RIS_TXBREQ)) != 0
+	));
 	test_check("empty parallel TX request is unmasked", (
-		DIF_MIS & (DIF_MIS_TXLSREQ | DIF_MIS_TXSREQ | DIF_MIS_TXLBREQ | DIF_MIS_TXBREQ)
-	) != 0);
+		(DIF_MIS & (DIF_MIS_TXLSREQ | DIF_MIS_TXSREQ | DIF_MIS_TXLBREQ | DIF_MIS_TXBREQ)) != 0
+	));
 	stopwatch_t idle_start = stopwatch_get();
 	while (stopwatch_elapsed_ms(idle_start) < 1)
 		test_watchdog_serve();
