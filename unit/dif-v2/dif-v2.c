@@ -12,7 +12,10 @@
 #define DMA_RX_REQUEST 5
 #define DMA_TX_REQUEST 4
 #define DIF_BCSEL0_LOW_BYTE_FROM_TX 0x55550000
-#define DIF_BCSEL1_ALL_FROM_BCREG 0x55555555
+#define DIF_BCSEL_ALL_FROM_BCREG 0x55555555
+#define DIF_BCSEL_ALL_MODE_2 0xAAAAAAAA
+#define DIF_BCSEL_ALL_MODE_3 0xFFFFFFFF
+#define DIF_BCSEL_ALTERNATING_BCREG 0x11111111
 #define DIF_9BIT_WORD_MASK GENMASK(8, 0)
 #define LCD_COMMAND_READ_DISPLAY_ID 0x04
 #define LCD_COMMAND_READ_ID4 0xD3
@@ -129,6 +132,11 @@ static const struct fifo_config FIFO_DEFAULT = {
 	.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
 };
 
+static const struct fifo_config FIFO_DWORD = {
+	.rx = DIF_RXFIFO_CFG_RXBS_1_WORD | DIF_RXFIFO_CFG_RXFA_4,
+	.tx = DIF_TXFIFO_CFG_TXBS_1_WORD | DIF_TXFIFO_CFG_TXFA_4,
+};
+
 static const uint32_t DIF_IRQ_REQUESTS = (
 	DIF_IMSC_RXLSREQ | DIF_IMSC_RXSREQ | DIF_IMSC_RXLBREQ | DIF_IMSC_RXBREQ |
 	DIF_IMSC_TXLSREQ | DIF_IMSC_TXSREQ | DIF_IMSC_TXLBREQ | DIF_IMSC_TXBREQ
@@ -213,7 +221,7 @@ static void configure_8bit_split(uint32_t bytes, const uint8_t *value) {
 
 	DIF_RUNCTRL = 0;
 	DIF_BCSEL0 = DIF_BCSEL0_LOW_BYTE_FROM_TX;
-	DIF_BCSEL1 = DIF_BCSEL1_ALL_FROM_BCREG;
+	DIF_BCSEL1 = DIF_BCSEL_ALL_FROM_BCREG;
 	DIF_BCREG = fixed_bytes;
 	DIF_CSREG = BSCONF_8BIT[bytes - 1];
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
@@ -432,25 +440,195 @@ static void test_bit_conversion(void) {
 	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
 }
 
-static void test_pixel_conversion(void) {
-	uint8_t expected[6];
+static void set_bmreg_mapping(uint32_t output_bit, uint32_t input_bit) {
+	static volatile uint32_t * const REGISTERS[] = {
+		&DIF_BMREG0, &DIF_BMREG1, &DIF_BMREG2, &DIF_BMREG3, &DIF_BMREG4, &DIF_BMREG5,
+	};
+	static const uint32_t SHIFTS[] = {0, 5, 10, 16, 21, 26};
+	uint32_t register_index = output_bit / ARRAY_SIZE(SHIFTS);
+	uint32_t shift = SHIFTS[output_bit % ARRAY_SIZE(SHIFTS)];
+	volatile uint32_t *reg = REGISTERS[register_index];
+	uint32_t value = *reg;
 
-	for (uint32_t byte = 0; byte < sizeof(expected); byte++)
+	value &= ~(GENMASK(4, 0) << shift);
+	value |= input_bit << shift;
+	*reg = value;
+}
+
+static void configure_16bit_pair_conversion(
+	int first_input_bit,
+	int input_bit_step,
+	uint32_t bcsel,
+	uint32_t bcreg,
+	uint32_t invert
+) {
+	configure_dif(DIF_CON_BM_16, FIFO_DWORD);
+	DIF_RUNCTRL = 0;
+	DIF_PBCCON = DIF_PBCCON_PBBCONV_MODE;
+	// Serial loopback exposes the lower 16 converted output bits.
+	for (uint32_t output_bit = 0; output_bit < 16; output_bit++)
+		set_bmreg_mapping(output_bit, first_input_bit + (int) output_bit * input_bit_step);
+	DIF_BCSEL0 = bcsel;
+	DIF_BCREG = bcreg;
+	DIF_INVERT_BIT = invert;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+}
+
+static bool wait_for_tx_request(void) {
+	stopwatch_t start;
+
+	start = stopwatch_get();
+	while ((DIF_RIS & (DIF_RIS_TXLSREQ | DIF_RIS_TXSREQ | DIF_RIS_TXLBREQ | DIF_RIS_TXBREQ)) == 0 &&
+		stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+
+	return stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS;
+}
+
+static uint16_t convert_16bit_pair(uint16_t first, uint16_t second) {
+	uint32_t tx_status;
+	stopwatch_t start;
+
+	DIF_TPS_CTRL = 2;
+	test_check("word pair requests first word", wait_for_tx_request());
+	tx_status = DIF_RIS;
+	DIF_TXD = first;
+	DIF_ICR = tx_status & (DIF_ICR_TXLSREQ | DIF_ICR_TXSREQ | DIF_ICR_TXLBREQ | DIF_ICR_TXBREQ);
+	test_check("word pair requests second word", wait_for_tx_request());
+	DIF_TXD = second;
+	test_check("word pair transfer completes", wait_until_idle());
+	start = stopwatch_get();
+	while (DIF_RXFFS_STAT == 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+	test_eq_u32("word pair produces one RX stage", 1, DIF_RXFFS_STAT);
+
+	return DIF_RXD;
+}
+
+static void test_16bit_pair_conversion(void) {
+	test_category("BMREG 32-to-16 mapping");
+	configure_16bit_pair_conversion(0, 1, 0, 0, 0);
+	test_eq_u32("identity selects first word", 0x1234, convert_16bit_pair(0x1234, 0xABCD));
+	configure_16bit_pair_conversion(16, 1, 0, 0, 0);
+	test_eq_u32("mapping selects second word", 0xABCD, convert_16bit_pair(0x1234, 0xABCD));
+	configure_16bit_pair_conversion(31, -1, 0, 0, 0);
+	test_eq_u32("mapping reverses second word", 0xB3D5, convert_16bit_pair(0x1234, 0xABCD));
+	configure_16bit_pair_conversion(20, 0, 0, 0, 0);
+	test_eq_u32("mapping fans out a set bit", 0xFFFF, convert_16bit_pair(0, BIT(4)));
+	configure_16bit_pair_conversion(20, 0, 0, 0, 0);
+	test_eq_u32("mapping fans out a clear bit", 0, convert_16bit_pair(0xFFFF, 0));
+
+	test_category("BCSEL and BCREG modes");
+	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_FROM_BCREG, 0xA55A, 0);
+	test_eq_u32("BCSEL 1 selects BCREG", 0xA55A, convert_16bit_pair(0x1234, 0xABCD));
+	test_check("BCSEL 1 raises phase event", (DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE) != 0);
+	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_MODE_2, 0xFFFF, 0);
+	test_eq_u32("BCSEL 2 selects zero", 0, convert_16bit_pair(0x1234, 0xABCD));
+	test_eq_u32("BCSEL 2 suppresses phase event", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE);
+	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_MODE_3, 0xFFFF, 0);
+	test_eq_u32("BCSEL 3 selects zero", 0, convert_16bit_pair(0x1234, 0xABCD));
+	test_eq_u32("BCSEL 3 suppresses phase event", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE);
+	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALTERNATING_BCREG, 0xA55A, 0);
+	test_eq_u32("BCSEL can clamp alternating bits", 0x0770, convert_16bit_pair(0x1234, 0xABCD));
+
+	test_category("INVERT_BIT order");
+	configure_16bit_pair_conversion(0, 1, 0, 0, 0xA55A);
+	test_eq_u32("inversion follows BMREG", 0xB76E, convert_16bit_pair(0x1234, 0xABCD));
+	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_FROM_BCREG, 0x0F0F, 0xF0F0);
+	test_eq_u32("inversion follows BCREG clamp", 0xFFFF, convert_16bit_pair(0x1234, 0xABCD));
+	configure_16bit_pair_conversion(0, 1, DIF_BCSEL_ALL_MODE_2, 0xFFFF, 0xA55A);
+	test_eq_u32("inversion follows zero selection", 0xA55A, convert_16bit_pair(0x1234, 0xABCD));
+}
+
+static void send_16bit_word(uint16_t value) {
+	uint32_t tx_status;
+
+	DIF_TPS_CTRL = 1;
+	test_check("single word requests TX data", wait_for_tx_request());
+	tx_status = DIF_RIS;
+	DIF_TXD = value;
+	DIF_ICR = tx_status & (DIF_ICR_TXLSREQ | DIF_ICR_TXSREQ | DIF_ICR_TXLBREQ | DIF_ICR_TXBREQ);
+	test_check("single word transfer completes", wait_until_idle());
+}
+
+static void test_incomplete_pbccon_pair(void) {
+	test_category("PBCCON incomplete pair");
+	configure_16bit_pair_conversion(0, 1, 0, 0, 0);
+	send_16bit_word(0x1234);
+	test_eq_u32("incomplete pair produces no RX data", 0, DIF_RXFFS_STAT);
+	test_eq_u32("incomplete pair raises no phase event", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE);
+	send_16bit_word(0xABCD);
+	test_eq_u32("next packet completes buffered pair", 1, DIF_RXFFS_STAT);
+	test_eq_u32("buffered pair preserves word order", 0x1234, DIF_RXD & 0xFFFF);
+	test_check("completed buffered pair raises phase event", (DIF_ERRIRQSS & DIF_ERRIRQSS_PHASE) != 0);
+
+	configure_16bit_pair_conversion(0, 1, 0, 0, 0);
+	send_16bit_word(0x5678);
+	DIF_RUNCTRL = 0;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	send_16bit_word(0x9ABC);
+	test_eq_u32("RUNCTRL reset clears buffered word", 0, DIF_RXFFS_STAT);
+}
+
+static void run_pbccon_loopback(uint32_t size, uint32_t con) {
+	uint8_t expected[sizeof(TX_DATA) / 2];
+	uint32_t output_size = size / 2;
+
+	for (uint32_t byte = 0; byte < output_size; byte++)
 		expected[byte] = TX_DATA[byte * 2];
-	configure_dif(DIF_CON_BM_8, FIFO_DEFAULT);
+	configure_dif(con, FIFO_DEFAULT);
 	DIF_RUNCTRL = 0;
 	DIF_PBCCON = DIF_PBCCON_PBBCONV_MODE;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
-	test_category("PBCCON pixel packing");
-	execute_irq_loopback(12, expected, sizeof(expected));
+	execute_irq_loopback(size, expected, output_size);
+}
+
+static void test_pbccon_loopback(void) {
+	static const uint32_t SIZES[] = {2, 4, 16};
+	uint8_t expected[8];
+
+	test_category("PBCCON 8-bit packet sizes");
+	for (uint32_t i = 0; i < ARRAY_SIZE(SIZES); i++)
+		run_pbccon_loopback(SIZES[i], DIF_CON_BM_8);
+
+	test_category("PBCCON 16-bit words");
+	run_pbccon_loopback(16, DIF_CON_BM_16);
+
+	test_category("PBCCON heading bit order");
+	run_pbccon_loopback(16, DIF_CON_HB_MSB | DIF_CON_BM_8);
+
+	for (uint32_t i = 0; i < sizeof(expected); i++)
+		expected[i] = TX_DATA[i * 2 + 1];
+	configure_dif(DIF_CON_BM_16, FIFO_DEFAULT);
 	DIF_RUNCTRL = 0;
-	DIF_COEFF_REG1 = 0x09540800;
-	DIF_COEFF_REG2 = 0x095F3B98;
-	DIF_COEFF_REG3 = 0x095000CC;
-	DIF_OFFSET = 0x01020080;
+	DIF_PBCCON = DIF_PBCCON_PBBCONV_MODE;
+	DIF_BMREG0 = 0x56934A30;
+	DIF_BMREG1 = 0x2D4922F6;
+	DIF_BMREG2 = 0x040F39AC;
+	DIF_BMREG3 = 0x1CC51062;
+	DIF_BMREG4 = 0x779B6B38;
+	DIF_BMREG5 = 0x000003FE;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
-	test_category("YUV coefficients loopback position");
-	execute_irq_loopback(12, expected, sizeof(expected));
+	test_category("PBCCON firmware BMREG type 1");
+	execute_irq_loopback(16, expected, sizeof(expected));
+
+	for (uint32_t i = 0; i < sizeof(expected); i++) {
+		uint8_t value = TX_DATA[i * 2 + 1];
+
+		expected[i] = (value >> 2) | (value << 6);
+	}
+	configure_dif(DIF_CON_BM_16, FIFO_DEFAULT);
+	DIF_RUNCTRL = 0;
+	DIF_PBCCON = DIF_PBCCON_PBBCONV_MODE;
+	DIF_BMREG0 = 0x5ED55272;
+	DIF_BMREG1 = 0x358B2A30;
+	DIF_BMREG2 = 0x0C4921EE;
+	DIF_BMREG3 = 0x040718A4;
+	DIF_BMREG4 = 0x56934A30;
+	DIF_BMREG5 = 0x000002F6;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_category("PBCCON firmware BMREG type 0");
+	execute_irq_loopback(16, expected, sizeof(expected));
 }
 
 static void test_irq_burst_boundaries(void) {
@@ -1052,7 +1230,9 @@ int dif_v2_test(void) {
 	test_category("16-bit words");
 	run_irq_loopback(16, DIF_CON_BM_16, FIFO_DEFAULT);
 	test_bit_conversion();
-	test_pixel_conversion();
+	test_16bit_pair_conversion();
+	test_incomplete_pbccon_pair();
+	test_pbccon_loopback();
 	test_category("FIFO errors");
 	test_fifo_errors();
 	test_category("Abort and restart");
@@ -1106,14 +1286,14 @@ __IRQ void irq_handler(void) {
 
 int dif_v2_test(void) {
 	test_start("DIFv2 peripheral test");
-	test_skip("DIFv2 is available", "PMB8875 has the previous DIF controller");
+	test_skip("DIFv2 is available", "unsupported");
 
 	return test_finish();
 }
 
 int dif_v2_dma_test(void) {
 	test_start("DIFv2 DMA test");
-	test_skip("DIFv2 is available", "PMB8875 has the previous DIF controller");
+	test_skip("DIFv2 is available", "unsupported");
 
 	return test_finish();
 }
