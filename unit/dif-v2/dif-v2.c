@@ -1212,6 +1212,85 @@ static void test_dma_lcd_read(void) {
 	test_check("LCD DMA read clears busy", wait_until_idle());
 }
 
+static void test_parallel_tx_dma_empty_fifo(void) {
+	const uint32_t PACKET_SIZE = 8;
+	const struct fifo_config FIFO_CONFIG = {
+		.rx = DIF_RXFIFO_CFG_RXBS_1_WORD | DIF_RXFIFO_CFG_RXFA_4,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	};
+	uint32_t channel_config = (
+		(DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC |
+		DMAC_CH_CONFIG_ENABLE
+	);
+
+	configure_dif(DIF_CON_BM_8, FIFO_CONFIG);
+	DIF_RUNCTRL = 0;
+	DIF_CON = DIF_CON_BM_8;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_CSREG = DIF_CSREG_CS1;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	for (uint32_t i = 0; i < PACKET_SIZE; i++)
+		dma_tx[i] = TX_DATA[i];
+
+	cpu_enable_irq(false);
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
+	DMAC_TC_CLEAR = BIT(DMA_TX_CHANNEL);
+	DMAC_ERR_CLEAR = BIT(DMA_TX_CHANNEL);
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	SCU_DMARS &= ~BIT(DMA_TX_REQUEST);
+	DMAC_CH_SRC_ADDR(DMA_TX_CHANNEL) = (uint32_t) dma_tx;
+	DMAC_CH_DST_ADDR(DMA_TX_CHANNEL) = (uint32_t) &DIF_TXD;
+	DMAC_CH_CONTROL(DMA_TX_CHANNEL) = (
+		DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
+		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+	);
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = channel_config | DMAC_CH_CONFIG_HALT;
+	DIF_IMSC = DIF_IMSC_TXLSREQ | DIF_IMSC_TXSREQ | DIF_IMSC_TXLBREQ | DIF_IMSC_TXBREQ;
+	DIF_DMAE = DIF_DMAE_TXLSREQ | DIF_DMAE_TXSREQ | DIF_DMAE_TXLBREQ | DIF_DMAE_TXBREQ;
+
+	test_eq_u32("parallel TX FIFO starts empty", 0, DIF_TXFFS_STAT);
+	test_eq_u32(
+		"parallel TX has no request before packet",
+		0,
+		DIF_RIS & (DIF_RIS_TXLSREQ | DIF_RIS_TXSREQ | DIF_RIS_TXLBREQ | DIF_RIS_TXBREQ)
+	);
+	DIF_TPS_CTRL = PACKET_SIZE;
+	uint32_t request_status = DIF_RIS;
+	test_check("empty parallel TX FIFO requests data", (
+		request_status & (DIF_RIS_TXLSREQ | DIF_RIS_TXSREQ | DIF_RIS_TXLBREQ | DIF_RIS_TXBREQ)
+	) != 0);
+	test_check("empty parallel TX request is unmasked", (
+		DIF_MIS & (DIF_MIS_TXLSREQ | DIF_MIS_TXSREQ | DIF_MIS_TXLBREQ | DIF_MIS_TXBREQ)
+	) != 0);
+	stopwatch_t idle_start = stopwatch_get();
+	while (stopwatch_elapsed_ms(idle_start) < 1)
+		test_watchdog_serve();
+	test_eq_u32("empty parallel TX waits without bus activity", 0, DIF_STAT & DIF_STAT_BSY);
+
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = channel_config;
+	stopwatch_t start = stopwatch_get();
+	while ((DMAC_RAW_TC_STATUS & BIT(DMA_TX_CHANNEL)) == 0 &&
+		(DMAC_RAW_ERR_STATUS & BIT(DMA_TX_CHANNEL)) == 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+	uint32_t tc_status = DMAC_RAW_TC_STATUS;
+	uint32_t error_status = DMAC_RAW_ERR_STATUS;
+
+	DIF_DMAE = 0;
+	DIF_IMSC = 0;
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
+	test_eq_u32("parallel TX DMA reaches terminal count", BIT(DMA_TX_CHANNEL), tc_status & BIT(DMA_TX_CHANNEL));
+	test_eq_u32("parallel TX DMA has no bus errors", 0, error_status & BIT(DMA_TX_CHANNEL));
+	test_check("parallel TX DMA packet completes", wait_until_idle());
+	test_eq_u32("parallel TX DMA drains FIFO", 0, DIF_TXFFS_STAT);
+	test_eq_u32(
+		"parallel TX DMA clears request",
+		0,
+		DIF_RIS & (DIF_RIS_TXLSREQ | DIF_RIS_TXSREQ | DIF_RIS_TXLBREQ | DIF_RIS_TXBREQ)
+	);
+}
+
 static void test_dma(void) {
 	uint32_t channels = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
 	struct dma_transfer dma = {
@@ -1226,6 +1305,9 @@ static void test_dma(void) {
 		},
 		.channels = channels,
 	};
+
+	test_category("Parallel TX DMA from empty FIFO");
+	test_parallel_tx_dma_empty_fifo();
 
 	test_category("DMA controlled flow");
 	test_check("MEM2PER/PER2MEM partial burst completes", run_dma_loopback(&dma));
