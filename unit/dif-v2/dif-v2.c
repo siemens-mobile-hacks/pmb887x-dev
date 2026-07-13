@@ -14,6 +14,8 @@
 #define DIF_BCSEL0_LOW_BYTE_FROM_TX 0x55550000
 #define DIF_BCSEL1_ALL_FROM_BCREG 0x55555555
 #define DIF_9BIT_WORD_MASK GENMASK(8, 0)
+#define LCD_COMMAND_READ_DISPLAY_ID 0x04
+#define LCD_COMMAND_READ_ID4 0xD3
 
 static const uint8_t TX_DATA[] = {
 	0x03, 0x14, 0x25, 0x36, 0x47, 0x58, 0x69, 0x7A, 0x8B, 0x9C,
@@ -106,16 +108,16 @@ static const struct fifo_burst FIFO_BURSTS[] = {
 static const struct dma_fifo_burst DMA_FIFO_BURSTS[] = {
 	{
 		.fifo = {
-			.rx = DIF_RXFIFO_CFG_RXBS_1_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
-			.tx = DIF_TXFIFO_CFG_TXBS_1_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
+			.rx = DIF_RXFIFO_CFG_RXBS_1_WORD | DIF_RXFIFO_CFG_RXFA_1,
+			.tx = DIF_TXFIFO_CFG_TXBS_1_WORD | DIF_TXFIFO_CFG_TXFA_1,
 		},
 		.source = DMAC_CH_CONTROL_SB_SIZE_SZ_1,
 		.destination = DMAC_CH_CONTROL_DB_SIZE_SZ_1,
 	},
 	{
 		.fifo = {
-			.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
-			.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
+			.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1,
+			.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1,
 		},
 		.source = DMAC_CH_CONTROL_SB_SIZE_SZ_4,
 		.destination = DMAC_CH_CONTROL_DB_SIZE_SZ_4,
@@ -276,6 +278,15 @@ static bool wait_until_idle(void) {
 		test_watchdog_serve();
 
 	return (DIF_STAT & DIF_STAT_BSY) == 0;
+}
+
+static bool wait_for_rx_data(void) {
+	stopwatch_t start = stopwatch_get();
+
+	while (DIF_RXFFS_STAT == 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+
+	return DIF_RXFFS_STAT != 0;
 }
 
 static void test_registers(void) {
@@ -501,13 +512,13 @@ static void test_irq_fifo_bursts(void) {
 }
 
 static void test_bsconf_loopback(void) {
-	struct fifo_config fifo = {
+	const struct fifo_config FIFO_CONFIG = {
 		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
 		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
 	};
 
 	for (uint32_t bytes = 1; bytes <= 4; bytes++) {
-		configure_dif(DIF_CON_BM_8, fifo);
+		configure_dif(DIF_CON_BM_8, FIFO_CONFIG);
 		configure_8bit_split(bytes, TX_DATA);
 		execute_irq_loopback_transfer(1, bytes, bytes, TX_DATA, bytes);
 	}
@@ -519,74 +530,139 @@ static void test_bsconf_9bit_loopback(void) {
 		DIF_CSREG_BSCONF_2x9BIT,
 		DIF_CSREG_BSCONF_3x9BIT,
 	};
-	struct fifo_config fifo = {
+	const struct fifo_config FIFO_CONFIG = {
 		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4,
 		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4,
 	};
-	uint32_t value = (
+	const uint32_t VALUE = (
 		0x103 |
 		0x114 << 9 |
 		0x125 << 18
 	);
 
 	for (uint32_t words = 1; words <= 3; words++) {
-		configure_dif(DIF_CON_BM_9, fifo);
+		configure_dif(DIF_CON_BM_9, FIFO_CONFIG);
 		DIF_RUNCTRL = 0;
 		DIF_CSREG = CONFIGURATIONS[words - 1];
 		DIF_RUNCTRL = DIF_RUNCTRL_RUN;
-		DIF_TXD = value;
+		DIF_TXD = VALUE;
 		DIF_TPS_CTRL = 1;
 
 		test_check("9-bit split transfer completes", wait_until_idle());
 		test_eq_u32("9-bit split produces one RX stage", 1, DIF_RXFFS_STAT);
 		test_eq_u32(
 			"9-bit split preserves first loopback word",
-			value & DIF_9BIT_WORD_MASK,
+			VALUE & DIF_9BIT_WORD_MASK,
 			DIF_RXD & DIF_9BIT_WORD_MASK
 		);
 	}
 }
 
-static void test_start_lcd_read(void) {
-	struct fifo_config fifo = {
-		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
-		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
-	};
-	uint32_t read_size = 5;
+static void test_lcd_read_transaction(uint8_t command, uint32_t read_size) {
+	DIF_CSREG = DIF_CSREG_CS1 | DIF_CSREG_CD;
+	DIF_TXD = command;
+	DIF_TPS_CTRL = 1;
+	test_check("LCD command transfer completes", wait_until_idle());
+	test_eq_u32("LCD command drains TX FIFO", 0, DIF_TXFFS_STAT);
 
-	configure_dif(DIF_CON_BM_8, fifo);
+	DIF_CSREG = DIF_CSREG_CS1;
+	test_eq_u32("LCD read starts with empty RX FIFO", 0, DIF_RXFFS_STAT);
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((read_size - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
+	uint32_t start_stat = DIF_STAT;
+	uint32_t start_fifo = DIF_RXFFS_STAT;
+	uint32_t start_rps = DIF_RPS_STAT & DIF_RPS_STAT_RPS;
+	uint32_t start_ris = DIF_RIS;
+	uint32_t start_errors = DIF_ERRIRQSS;
+	printf(
+		"# LCD %02X start: STAT=%08X RXFFS=%u RPS=%u RIS=%08X ERR=%08X\n",
+		(unsigned int) command,
+		(unsigned int) start_stat,
+		(unsigned int) start_fifo,
+		(unsigned int) start_rps,
+		(unsigned int) start_ris,
+		(unsigned int) start_errors
+	);
+
+	uint32_t received = 0;
+	while (received < read_size && wait_for_rx_data()) {
+		uint32_t value = DIF_RXD;
+		uint32_t stat = DIF_STAT;
+		uint32_t fifo = DIF_RXFFS_STAT;
+		uint32_t rps = DIF_RPS_STAT & DIF_RPS_STAT_RPS;
+		uint32_t ris = DIF_RIS;
+		uint32_t errors = DIF_ERRIRQSS;
+
+		received++;
+		printf(
+			"# LCD %02X byte %u=%02X: STAT=%08X RXFFS=%u RPS=%u RIS=%08X ERR=%08X\n",
+			(unsigned int) command,
+			(unsigned int) received,
+			(unsigned int) (value & 0xFF),
+			(unsigned int) stat,
+			(unsigned int) fifo,
+			(unsigned int) rps,
+			(unsigned int) ris,
+			(unsigned int) errors
+		);
+	}
+
+	uint32_t received_size = DIF_RPS_STAT & DIF_RPS_STAT_RPS;
+	uint32_t fifo_stages = DIF_RXFFS_STAT;
+	uint32_t errors = DIF_ERRIRQSS;
+	DIF_STARTLCDRD &= ~DIF_STARTLCDRD_STARTREAD;
+	uint32_t cleared_stat = DIF_STAT;
+	uint32_t cleared_fifo = DIF_RXFFS_STAT;
+	uint32_t cleared_rps = DIF_RPS_STAT & DIF_RPS_STAT_RPS;
+	uint32_t cleared_ris = DIF_RIS;
+	uint32_t cleared_errors = DIF_ERRIRQSS;
+	printf(
+		"# LCD %02X clear: STAT=%08X RXFFS=%u RPS=%u RIS=%08X ERR=%08X\n",
+		(unsigned int) command,
+		(unsigned int) cleared_stat,
+		(unsigned int) cleared_fifo,
+		(unsigned int) cleared_rps,
+		(unsigned int) cleared_ris,
+		(unsigned int) cleared_errors
+	);
+
+	test_eq_u32("LCD read receives every byte", read_size, received);
+	test_eq_u32("LCD read reports complete packet", read_size, received_size);
+	test_eq_u32("LCD read drains RX FIFO", 0, fifo_stages);
+	test_eq_u32("LCD read has no RX FIFO errors", 0, errors & (DIF_ERRIRQSS_RXFUFL | DIF_ERRIRQSS_RXFOFL));
+	test_check("LCD read clears busy", wait_until_idle());
+	DIF_ICR = DIF_CLEAR_IRQS;
+}
+
+static void test_start_lcd_read(void) {
+	const struct fifo_config FIFO_CONFIG = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4,
+	};
+
+	configure_dif(DIF_CON_BM_8, FIFO_CONFIG);
 	DIF_RUNCTRL = 0;
 	DIF_CON = DIF_CON_BM_8;
 	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
 	DIF_CSREG = DIF_CSREG_CS1;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_lcd_read_transaction(LCD_COMMAND_READ_DISPLAY_ID, 4);
+	test_lcd_read_transaction(LCD_COMMAND_READ_ID4, 5);
+
 	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD;
 	test_check("minimum LCD read starts one-byte transaction", (DIF_STAT & DIF_STAT_BSY) != 0);
+	test_check("minimum LCD read exposes data", wait_for_rx_data());
 	(void) DIF_RXD;
 	DIF_STARTLCDRD = 0;
 	test_check("minimum LCD read completes", wait_until_idle());
+	DIF_ICR = DIF_CLEAR_IRQS;
 
-	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((read_size - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
-	uint32_t start_status = DIF_STAT;
-	test_eq_u32(
-		"LCD read length field",
-		read_size - 1,
-		(DIF_STARTLCDRD & DIF_STARTLCDRD_READBYTES) >> DIF_STARTLCDRD_READBYTES_SHIFT
-	);
-	test_check("STARTLCDRD starts parallel receive transaction", (start_status & DIF_STAT_BSY) != 0);
-	for (uint32_t byte = 0; byte < read_size; byte++)
-		(void) DIF_RXD;
-	DIF_STARTLCDRD &= ~DIF_STARTLCDRD_STARTREAD;
-	test_check("firmware-style LCD read completes", wait_until_idle());
-	test_check("clearing STARTREAD keeps the interface running", (DIF_RUNCTRL & DIF_RUNCTRL_RUN) != 0);
-	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((read_size - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((5 - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
 	test_check("STARTLCDRD restarts parallel receive transaction", (DIF_STAT & DIF_STAT_BSY) != 0);
 	DIF_RUNCTRL = 0;
 	test_eq_u32("LCD read abort clears busy", 0, DIF_STAT & DIF_STAT_BSY);
 	test_eq_u32("LCD read abort clears RX FIFO", 0, DIF_RXFFS_STAT);
 	DIF_STARTLCDRD = 0;
-	configure_dif(DIF_CON_BM_8, fifo);
-	execute_irq_loopback(8, TX_DATA, 8);
+	DIF_ICR = DIF_CLEAR_IRQS;
 }
 
 static void test_serial_modes(void) {
@@ -820,24 +896,24 @@ static void test_dma(void) {
 
 	test_category("DMA FIFO configurations");
 	dma.size = 17;
-	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC;
-	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_2 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_2;
 	test_check("DMA alignment 2 completes", run_dma_loopback(&dma));
 	test_eq_memory("DMA alignment 2 data", TX_DATA, rx_data, 17);
 	dma.size = 9;
-	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC;
-	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4;
 	test_check("DMA alignment 4 completes", run_dma_loopback(&dma));
 	test_eq_memory("DMA alignment 4 data", TX_DATA, rx_data, 9);
 	dma.size = 16;
 	dma.con = DIF_CON_BM_16;
-	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
-	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1;
 	test_check("DMA 16-bit words complete", run_dma_loopback(&dma));
 	test_eq_memory("DMA 16-bit word data", TX_DATA, rx_data, 16);
 	dma.size = sizeof(TX_DATA);
 	dma.con = DIF_CON_BM_8;
-	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_1;
 	test_check("DMA asymmetric FIFO bursts complete", run_dma_loopback(&dma));
 	test_eq_memory("DMA asymmetric FIFO burst data", TX_DATA, rx_data, sizeof(TX_DATA));
 
@@ -856,12 +932,12 @@ static void test_dma(void) {
 	test_category("DMA asymmetric FIFO alignment");
 	dma.flow = PERIPHERAL_CONTROLLED;
 	dma.size = 17;
-	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC;
-	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1;
 	test_check("DMA TX alignment 1 to RX alignment 2 completes", run_dma_loopback(&dma));
 	test_eq_memory("DMA TX alignment 1 to RX alignment 2 data", TX_DATA, rx_data, dma.size);
-	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
-	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4;
 	test_check("DMA TX alignment 4 to RX alignment 1 completes", run_dma_loopback(&dma));
 	test_eq_memory("DMA TX alignment 4 to RX alignment 1 data", TX_DATA, rx_data, dma.size);
 
@@ -971,8 +1047,6 @@ int dif_v2_test(void) {
 	test_bsconf_loopback();
 	test_category("BSCONF 9-bit loopback");
 	test_bsconf_9bit_loopback();
-	test_category("STARTLCDRD");
-	test_start_lcd_read();
 	test_category("Serial modes");
 	test_serial_modes();
 	test_category("16-bit words");
@@ -984,6 +1058,8 @@ int dif_v2_test(void) {
 	test_category("Abort and restart");
 	test_abort();
 	run_irq_loopback(17, DIF_CON_BM_8, FIFO_DEFAULT);
+	test_category("STARTLCDRD");
+	test_start_lcd_read();
 	return test_finish();
 }
 
