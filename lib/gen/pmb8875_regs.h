@@ -1376,7 +1376,7 @@
 #define	DMAC_CH_LLI_LM							BIT(0)										 // AHB master select for loading the next LLI
 #define	DMAC_CH_LLI_LM_AHB1						0x0
 #define	DMAC_CH_LLI_LM_AHB2						0x1
-#define	DMAC_CH_LLI_ITEM						GENMASK(30, 2)								 // Linked list item
+#define	DMAC_CH_LLI_ITEM						GENMASK(31, 2)								 // Linked list item
 #define	DMAC_CH_LLI_ITEM_SHIFT					2
 
 #define	DMAC_CH_CONTROL(n)						MMIO32(DMAC_BASE + 0x10C + ((n) * 0x20))
