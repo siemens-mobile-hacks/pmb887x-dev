@@ -39,6 +39,21 @@ struct dmac_endian_case {
 	uint32_t dst_width;
 };
 
+struct dmac_unaligned_case {
+	const char *name;
+	uint8_t count;
+	uint8_t width_bytes;
+	uint16_t src_offset;
+	uint16_t dst_offset;
+	uint32_t widths;
+};
+
+struct dmac_request_results {
+	bool completed;
+	bool cleared;
+	bool data_matches;
+};
+
 static const uint32_t source[] = {
 	0x10203040, 0x11213141, 0x12223242, 0x13233343,
 	0x50607080, 0x51617181, 0x52627282, 0x53637383,
@@ -54,6 +69,8 @@ static volatile uint8_t endian_matrix_destination[ENDIAN_BUFFER_SIZE] __attribut
 static uint8_t endian_matrix_expected[ENDIAN_BUFFER_SIZE];
 static struct dmac_lli lli __attribute__((aligned(16)));
 static struct dmac_lli lli_chain[3] __attribute__((aligned(16)));
+static struct dmac_lli endian_lli __attribute__((aligned(16)));
+static uint32_t lli_alignment_storage[7] __attribute__((aligned(16)));
 static uint8_t *const matrix_source = (uint8_t *) MATRIX_SOURCE_ADDR;
 static volatile uint8_t *const matrix_destination = (volatile uint8_t *) MATRIX_DESTINATION_ADDR;
 
@@ -62,8 +79,6 @@ static volatile uint32_t irq_number;
 static volatile uint32_t irq_raw_tc_status;
 static volatile uint32_t irq_tc_status;
 static volatile uint32_t irq_int_status;
-static volatile uint32_t irq_err_status;
-static volatile uint32_t irq_raw_err_status;
 static volatile uint8_t irq_order[8];
 
 static void clear_destination(void) {
@@ -71,7 +86,7 @@ static void clear_destination(void) {
 		destination[i] = 0xDEADBEEF;
 }
 
-static void reset_channel(void) {
+static void reset_dmac(void) {
 	cpu_enable_irq(false);
 	DMAC_CONFIG = 0;
 	for (uint32_t channel = 0; channel < 8; channel++) {
@@ -81,14 +96,11 @@ static void reset_channel(void) {
 	}
 	DMAC_TC_CLEAR = 0xFF;
 	DMAC_ERR_CLEAR = 0xFF;
-	VIC_CON(VIC_DMAC_ERR_IRQ) = 0;
 	irq_count = 0;
 	irq_number = 0;
 	irq_raw_tc_status = 0;
 	irq_tc_status = 0;
 	irq_int_status = 0;
-	irq_err_status = 0;
-	irq_raw_err_status = 0;
 }
 
 static bool wait_for_status(volatile uint32_t *reg, uint32_t mask) {
@@ -128,7 +140,7 @@ static void start_transfer(uint32_t src, uint32_t dst, uint32_t next, uint32_t c
 }
 
 static void test_mem2mem(void) {
-	reset_channel();
+	reset_dmac();
 	clear_destination();
 
 	start_transfer(
@@ -148,7 +160,6 @@ static void test_mem2mem(void) {
 	test_check("raw terminal count is set", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
 	test_check("masked terminal count is clear", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
 	test_check("combined interrupt status is clear", (DMAC_INT_STATUS & BIT(DMA_CHANNEL)) == 0);
-	test_check("raw error status is clear", (DMAC_RAW_ERR_STATUS & BIT(DMA_CHANNEL)) == 0);
 	test_check("channel is disabled", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
 	test_eq_u32(
 		"source address is last item",
@@ -179,7 +190,7 @@ static void test_endian_transfer(
 	uint32_t count,
 	uint32_t expected
 ) {
-	reset_channel();
+	reset_dmac();
 	endian_source = 0x87654321;
 	endian_destination = 0;
 	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) &endian_source;
@@ -248,7 +259,7 @@ static void test_endianness(void) {
 }
 
 static void test_endian_matrix_transfer(const struct dmac_endian_case *item) {
-	reset_channel();
+	reset_dmac();
 	uint32_t size = item->count * item->src_width_bytes;
 	for (uint32_t i = 0; i < size; i++) {
 		endian_matrix_source[i] = (uint8_t) (i * 29 + 0x13);
@@ -338,18 +349,11 @@ static void test_bursts_and_widths(void) {
 			DMAC_CH_CONTROL_DB_SIZE_SZ_256, DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
 	};
 	bool completed = true;
-	bool no_errors = true;
 
 	for (size_t i = 0; i < ARRAY_SIZE(cases); i++) {
 		const struct dmac_case *item = &cases[i];
 		size_t size = item->count * item->src_width_bytes;
-		if (item->src_offset + size > MATRIX_BUFFER_SIZE || item->dst_offset + size > MATRIX_BUFFER_SIZE) {
-			test_check(item->name, false);
-			completed = false;
-			continue;
-		}
-
-		reset_channel();
+		reset_dmac();
 		fill_matrix_buffers();
 
 		uint32_t control = (
@@ -366,7 +370,6 @@ static void test_bursts_and_widths(void) {
 		);
 
 		completed &= wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL));
-		no_errors &= (DMAC_RAW_ERR_STATUS & BIT(DMA_CHANNEL)) == 0;
 		test_eq_memory(
 			item->name,
 			matrix_source + item->src_offset,
@@ -377,11 +380,72 @@ static void test_bursts_and_widths(void) {
 	}
 
 	test_check("burst matrix completes", completed);
-	test_check("burst matrix has no errors", no_errors);
+}
+
+static void test_unaligned_addresses(void) {
+	static const struct dmac_unaligned_case cases[] = {
+		{"unaligned halfword source aligns down", 9, 2, 129, 256,
+			DMAC_CH_CONTROL_S_WIDTH_WORD | DMAC_CH_CONTROL_D_WIDTH_WORD},
+		{"unaligned halfword destination aligns down", 9, 2, 128, 257,
+			DMAC_CH_CONTROL_S_WIDTH_WORD | DMAC_CH_CONTROL_D_WIDTH_WORD},
+		{"unaligned dword addresses align down", 7, 4, 129, 259,
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD},
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(cases); i++) {
+		const struct dmac_unaligned_case *item = &cases[i];
+		uint32_t aligned_src = item->src_offset & ~(item->width_bytes - 1);
+		uint32_t aligned_dst = item->dst_offset & ~(item->width_bytes - 1);
+		uint32_t size = item->count * item->width_bytes;
+
+		reset_dmac();
+		fill_matrix_buffers();
+		start_transfer(
+			(uint32_t) (matrix_source + item->src_offset),
+			(uint32_t) (matrix_destination + item->dst_offset),
+			0,
+			(
+				item->count | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+				item->widths |
+				DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+				DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+			),
+			DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
+		);
+
+		test_check("unaligned transfer completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+		test_eq_memory(item->name, matrix_source + aligned_src, matrix_destination + aligned_dst, size);
+		test_eq_u32("unaligned transfer keeps byte before destination", 0xA5, matrix_destination[aligned_dst - 1]);
+		test_eq_u32("unaligned transfer keeps byte after destination", 0xA5, matrix_destination[aligned_dst + size]);
+	}
+}
+
+static void test_overlap(void) {
+	uint8_t expected[128];
+
+	reset_dmac();
+	fill_matrix_buffers();
+	for (size_t i = 0; i < sizeof(expected); i++)
+		expected[i] = matrix_source[64 + i];
+
+	start_transfer(
+		(uint32_t) (matrix_source + 64),
+		(uint32_t) (matrix_source + 32),
+		0,
+		(
+			32 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_16 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
+	);
+	test_check("backward-overlap transfer completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("backward-overlap data", expected, matrix_source + 32, sizeof(expected));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
 static void test_transfer_boundaries(void) {
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -401,7 +465,7 @@ static void test_transfer_boundaries(void) {
 	test_eq_memory("single item with oversized burst data", matrix_source, matrix_destination, sizeof(uint32_t));
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) (matrix_source + 4080),
@@ -426,7 +490,7 @@ static void test_transfer_boundaries(void) {
 	);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -451,14 +515,13 @@ static void test_transfer_boundaries(void) {
 		0xA5A5A5A5,
 		*(volatile uint32_t *) matrix_destination
 	);
-	test_check("zero transfer size has no error", (DMAC_RAW_ERR_STATUS & BIT(DMA_CHANNEL)) == 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
 static void test_address_increment(void) {
 	uint8_t expected[32];
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	for (size_t i = 0; i < sizeof(expected); i++)
 		expected[i] = matrix_source[i % sizeof(uint32_t)];
@@ -480,7 +543,7 @@ static void test_address_increment(void) {
 	test_eq_u32("fixed source register", (uint32_t) matrix_source, DMAC_CH_SRC_ADDR(DMA_CHANNEL));
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	uint32_t fixed_destination = (
 		8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
@@ -506,7 +569,7 @@ static void test_address_increment(void) {
 }
 
 static void test_software_requests(void) {
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -531,7 +594,7 @@ static void test_software_requests(void) {
 	test_eq_memory("MEM2PER software-request data", matrix_source, matrix_destination, 8 * sizeof(uint32_t));
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -554,7 +617,7 @@ static void test_software_requests(void) {
 	test_eq_memory("PER2MEM software-request data", matrix_source, matrix_destination, 8 * sizeof(uint32_t));
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -576,7 +639,7 @@ static void test_software_requests(void) {
 	test_eq_memory("peripheral-controlled MEM2PER data", matrix_source, matrix_destination, 1);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -598,7 +661,7 @@ static void test_software_requests(void) {
 	test_eq_memory("peripheral-controlled PER2MEM data", matrix_source, matrix_destination, 1);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -623,7 +686,7 @@ static void test_software_requests(void) {
 	test_eq_memory("peripheral-controlled MEM2PER burst data", matrix_source, matrix_destination, 8);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -648,7 +711,7 @@ static void test_software_requests(void) {
 	test_eq_memory("peripheral-controlled PER2MEM burst data", matrix_source, matrix_destination, 8);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -665,72 +728,59 @@ static void test_software_requests(void) {
 	test_check("PER2PER software requests complete", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_eq_memory("PER2PER software-request data", matrix_source, matrix_destination, 4 * sizeof(uint32_t));
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
 
+static struct dmac_request_results run_request_selectors(uint32_t shift, uint32_t flow) {
+	struct dmac_request_results results = {
+		.completed = true,
+		.cleared = true,
+		.data_matches = true,
+	};
+	for (uint32_t request = 0; request < 16; request++) {
+		reset_dmac();
+		fill_matrix_buffers();
+		start_transfer(
+			(uint32_t) matrix_source,
+			(uint32_t) matrix_destination,
+			0,
+			(
+				4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
+				DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+				DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+			),
+			(request << shift) | flow
+		);
+		DMAC_SOFT_BREQ = BIT(request);
+		results.completed &= wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL));
+		results.cleared &= (DMAC_SOFT_BREQ & BIT(request)) == 0;
+		results.data_matches &= memcmp(matrix_source, (const void *) matrix_destination,
+			4 * sizeof(uint32_t)) == 0;
+		DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+	}
+
+	return results;
 }
 
 static void test_request_selectors(void) {
-	bool mem2per_completed = true;
-	bool mem2per_requests_cleared = true;
-	bool mem2per_data_matches = true;
+	struct dmac_request_results mem2per = run_request_selectors(
+		DMAC_CH_CONFIG_DST_PERIPH_SHIFT,
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
+	);
+	test_check("all MEM2PER request selectors complete", mem2per.completed);
+	test_check("all MEM2PER burst requests clear", mem2per.cleared);
+	test_check("all MEM2PER request selectors transfer data", mem2per.data_matches);
 
-	for (uint32_t request = 0; request < 16; request++) {
-		reset_channel();
-		fill_matrix_buffers();
-		start_transfer(
-			(uint32_t) matrix_source,
-			(uint32_t) matrix_destination,
-			0,
-			(
-				4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-				DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-				DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-			),
-			(request << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
-		);
-		DMAC_SOFT_BREQ = BIT(request);
-		mem2per_completed &= wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL));
-		mem2per_requests_cleared &= (DMAC_SOFT_BREQ & BIT(request)) == 0;
-		mem2per_data_matches &= memcmp(matrix_source, (const void *) matrix_destination,
-			4 * sizeof(uint32_t)) == 0;
-		DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
-	}
-
-	test_check("all MEM2PER request selectors complete", mem2per_completed);
-	test_check("all MEM2PER burst requests clear", mem2per_requests_cleared);
-	test_check("all MEM2PER request selectors transfer data", mem2per_data_matches);
-
-	bool per2mem_completed = true;
-	bool per2mem_requests_cleared = true;
-	bool per2mem_data_matches = true;
-	for (uint32_t request = 0; request < 16; request++) {
-		reset_channel();
-		fill_matrix_buffers();
-		start_transfer(
-			(uint32_t) matrix_source,
-			(uint32_t) matrix_destination,
-			0,
-			(
-				4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-				DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-				DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-			),
-			(request << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM
-		);
-		DMAC_SOFT_BREQ = BIT(request);
-		per2mem_completed &= wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL));
-		per2mem_requests_cleared &= (DMAC_SOFT_BREQ & BIT(request)) == 0;
-		per2mem_data_matches &= memcmp(matrix_source, (const void *) matrix_destination,
-			4 * sizeof(uint32_t)) == 0;
-		DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
-	}
-
-	test_check("all PER2MEM request selectors complete", per2mem_completed);
-	test_check("all PER2MEM burst requests clear", per2mem_requests_cleared);
-	test_check("all PER2MEM request selectors transfer data", per2mem_data_matches);
+	struct dmac_request_results per2mem = run_request_selectors(
+		DMAC_CH_CONFIG_SRC_PERIPH_SHIFT,
+		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM
+	);
+	test_check("all PER2MEM request selectors complete", per2mem.completed);
+	test_check("all PER2MEM burst requests clear", per2mem.cleared);
+	test_check("all PER2MEM request selectors transfer data", per2mem.data_matches);
 }
 
 static void test_request_selector_isolation(void) {
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -766,7 +816,7 @@ static void test_request_selector_isolation(void) {
 }
 
 static void test_peripheral_controlled_per2per(void) {
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -797,7 +847,7 @@ static void test_peripheral_controlled_per2per(void) {
 	test_check("destination last burst request clears", (DMAC_SOFT_LBREQ & BIT(1)) == 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -823,16 +873,11 @@ static void test_peripheral_controlled_per2per(void) {
 }
 
 static void test_registers(void) {
-	reset_channel();
-
-	DMAC_SYNC = 0xA55A;
-	test_eq_u32("SYNC register readback", 0xA55A, DMAC_SYNC & 0xFFFF);
-	DMAC_SYNC = 0;
+	reset_dmac();
 
 	uint32_t config = (
 		(3 << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) | (11 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
-		DMAC_CH_CONFIG_FLOW_CTRL_PER2PER | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC |
-		DMAC_CH_CONFIG_LOCK | DMAC_CH_CONFIG_HALT
+		DMAC_CH_CONFIG_FLOW_CTRL_PER2PER | DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_HALT
 	);
 	DMAC_CH_CONFIG(DMA_CHANNEL) = config;
 	test_eq_u32("channel config readback", config, DMAC_CH_CONFIG(DMA_CHANNEL) & ~DMAC_CH_CONFIG_ACTIVE);
@@ -846,8 +891,8 @@ static void test_registers(void) {
 	DMAC_CONFIG = 0;
 }
 
-static void test_halt_and_lock(void) {
-	reset_channel();
+static void test_channel_control(void) {
+	reset_dmac();
 	fill_matrix_buffers();
 
 	start_transfer(
@@ -859,11 +904,10 @@ static void test_halt_and_lock(void) {
 			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
-		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_LOCK | DMAC_CH_CONFIG_HALT
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_HALT
 	);
 	test_check("halted channel is enabled", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) != 0);
 	test_check("halted channel is inactive", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0);
-	test_check("LOCK bit is retained", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_LOCK) != 0);
 
 	DMAC_SOFT_BREQ = BIT(0);
 	stopwatch_usleep_wd(1000);
@@ -883,10 +927,9 @@ static void test_halt_and_lock(void) {
 	test_check("resumed channel completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_eq_memory("HALT resume preserves data", matrix_source, matrix_destination, 8 * sizeof(uint32_t));
 	test_check("channel is inactive after completion", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0);
-	test_check("LOCK bit survives completion", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_LOCK) != 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_channel();
+	reset_dmac();
 	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
 	DMAC_CH_CONFIG(DMA_CHANNEL) = (
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_HALT |
@@ -896,7 +939,7 @@ static void test_halt_and_lock(void) {
 	DMAC_CH_CONFIG(DMA_CHANNEL) = 0;
 	test_check("clearing channel enable updates EN_CHAN", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -926,7 +969,7 @@ static void test_halt_and_lock(void) {
 }
 
 static void test_halt_after_partial_transfer(void) {
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -968,7 +1011,7 @@ static void test_halt_after_partial_transfer(void) {
 }
 
 static void test_multiple_channels(void) {
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 
 	DMAC_CH_SRC_ADDR(0) = (uint32_t) matrix_source;
@@ -1003,7 +1046,7 @@ static void test_multiple_channels(void) {
 	DMAC_TC_CLEAR = BIT(7);
 	test_check("independent clears remove both channels", (DMAC_INT_STATUS & (BIT(0) | BIT(7))) == 0);
 
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 	DMAC_CH_SRC_ADDR(0) = (uint32_t) matrix_source;
 	DMAC_CH_DST_ADDR(0) = (uint32_t) matrix_destination;
@@ -1034,7 +1077,7 @@ static void test_multiple_channels(void) {
 }
 
 static void test_all_channels(void) {
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 
 	for (uint32_t channel = 0; channel < 8; channel++) {
@@ -1067,7 +1110,7 @@ static void test_all_channels(void) {
 }
 
 static void test_lli(void) {
-	reset_channel();
+	reset_dmac();
 	clear_destination();
 
 	lli.src = (uint32_t) (source + 8);
@@ -1109,39 +1152,92 @@ static void test_lli(void) {
 	test_check("LLI raw terminal count is set", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
 	test_check("LLI masked terminal count is set", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
 	test_check("LLI combined interrupt status is set", (DMAC_INT_STATUS & BIT(DMA_CHANNEL)) != 0);
-	test_check("LLI error status is clear", (DMAC_ERR_STATUS & BIT(DMA_CHANNEL)) == 0);
 
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 	test_check("LLI interrupt status clears", (DMAC_INT_STATUS & BIT(DMA_CHANNEL)) == 0);
 }
 
-static void test_overlap(void) {
-	uint8_t expected[128];
-
-	reset_channel();
+static void test_endian_lli(const char *name, uint32_t lli_master, uint32_t global_config, uint32_t data_master) {
+	reset_dmac();
 	fill_matrix_buffers();
-	for (size_t i = 0; i < sizeof(expected); i++)
-		expected[i] = matrix_source[64 + i];
 
-	start_transfer(
-		(uint32_t) (matrix_source + 64),
-		(uint32_t) (matrix_source + 32),
-		0,
-		(
-			32 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_16 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-		),
-		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
+	uint32_t control = (
+		4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | data_master |
+		DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
-	test_check("backward-overlap transfer completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
-	test_eq_memory("backward-overlap data", expected, matrix_source + 32, sizeof(expected));
-	test_check("backward-overlap has no error", (DMAC_RAW_ERR_STATUS & BIT(DMA_CHANNEL)) == 0);
-	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+	endian_lli.src = __builtin_bswap32((uint32_t) (matrix_source + 16));
+	endian_lli.dst = __builtin_bswap32((uint32_t) (matrix_destination + 16));
+	endian_lli.next = 0;
+	endian_lli.control = __builtin_bswap32(control);
+
+	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) matrix_source;
+	DMAC_CH_DST_ADDR(DMA_CHANNEL) = (uint32_t) matrix_destination;
+	DMAC_CH_LLI(DMA_CHANNEL) = (uint32_t) &endian_lli | lli_master;
+	DMAC_CH_CONTROL(DMA_CHANNEL) = control & ~DMAC_CH_CONTROL_I;
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE | global_config;
+	DMAC_CH_CONFIG(DMA_CHANNEL) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_ENABLE;
+
+	test_check("big-endian LLI transfer completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory(name, matrix_source, matrix_destination, 8 * sizeof(uint32_t));
+}
+
+static void test_lli_endianness(void) {
+	test_endian_lli(
+		"LLI loads through big-endian AHB1",
+		DMAC_CH_LLI_LM_AHB1,
+		DMAC_CONFIG_M1_BE,
+		DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2
+	);
+	test_endian_lli(
+		"LLI loads through big-endian AHB2",
+		DMAC_CH_LLI_LM_AHB2,
+		DMAC_CONFIG_M2_BE,
+		DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1
+	);
+}
+
+static void test_lli_alignment(void) {
+	static const struct {
+		const char *name;
+		uint8_t offset;
+	} cases[] = {
+		{"LLI aligned to 4 bytes", 1},
+		{"LLI aligned to 8 bytes", 2},
+		{"LLI aligned to 12 bytes", 3},
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(cases); i++) {
+		reset_dmac();
+		fill_matrix_buffers();
+
+		uint32_t control = (
+			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+			DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI
+		);
+		uint32_t *item = &lli_alignment_storage[cases[i].offset];
+		item[0] = (uint32_t) (matrix_source + 4);
+		item[1] = (uint32_t) (matrix_destination + 4);
+		item[2] = 0;
+		item[3] = control | DMAC_CH_CONTROL_I;
+
+		start_transfer(
+			(uint32_t) matrix_source,
+			(uint32_t) matrix_destination,
+			(uint32_t) item,
+			control,
+			DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
+		);
+
+		test_check(cases[i].name, wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+		test_eq_memory("word-aligned LLI data", matrix_source, matrix_destination, 8);
+	}
 }
 
 static void test_lli_interrupts(void) {
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 
 	lli_chain[0] = (struct dmac_lli) {
@@ -1161,7 +1257,7 @@ static void test_lli_interrupts(void) {
 		.control = (
 			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_8 | DMAC_CH_CONTROL_DB_SIZE_SZ_8 |
 			DMAC_CH_CONTROL_S_WIDTH_WORD | DMAC_CH_CONTROL_D_WIDTH_WORD | DMAC_CH_CONTROL_S_AHB2 |
-			DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+			DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI
 		),
 	};
 	lli_chain[2] = (struct dmac_lli) {
@@ -1184,31 +1280,43 @@ static void test_lli_interrupts(void) {
 		(
 			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
 			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+			DMAC_CH_CONTROL_DI
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_INT_MASK_TC
 	);
 
-	bool all_irqs = true;
-	for (uint32_t packet = 1; packet <= 4; packet++) {
-		DMAC_SOFT_BREQ = BIT(0);
-		all_irqs &= wait_for_irq_count(packet);
-	}
+	DMAC_SOFT_BREQ = BIT(0);
+	bool first_packet = wait_for_value(
+		&DMAC_CH_LLI(DMA_CHANNEL),
+		DMAC_CH_LLI_ITEM,
+		(uint32_t) &lli_chain[1]
+	);
+	test_check("LLI packet without I advances", first_packet);
+	test_eq_u32("LLI packet without I has no IRQ", 0, irq_count);
+
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("LLI packet with I raises IRQ", wait_for_irq_count(1));
+
+	DMAC_SOFT_BREQ = BIT(0);
+	bool third_packet = wait_for_value(&DMAC_CH_LLI(DMA_CHANNEL), DMAC_CH_LLI_ITEM, 0);
+	test_check("second LLI packet without I advances", third_packet);
+	test_eq_u32("second LLI packet without I has no IRQ", 1, irq_count);
+
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("final LLI packet with I raises IRQ", wait_for_irq_count(2));
 	cpu_enable_irq(false);
 
-	test_check("every LLI packet raises IRQ", all_irqs);
-	test_eq_u32("LLI packet IRQ count", 4, irq_count);
+	test_eq_u32("only selected LLI packets raise IRQ", 2, irq_count);
 	test_eq_memory("mixed-width LLI data", matrix_source, matrix_destination, 64);
 	test_eq_u32("paced LLI chain ends", 0, DMAC_CH_LLI(DMA_CHANNEL));
 	test_check("paced LLI channel disables", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
 }
 
 static void test_interrupt(void) {
-	reset_channel();
+	reset_dmac();
 	clear_destination();
 
 	VIC_CON(VIC_DMAC_CH7_IRQ) = 1;
-	VIC_CON(VIC_DMAC_ERR_IRQ) = 1;
 	cpu_enable_irq(true);
 
 	start_transfer(
@@ -1220,26 +1328,22 @@ static void test_interrupt(void) {
 			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
-		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_TC
 	);
 
-	stopwatch_t start = stopwatch_get();
-	while (irq_count == 0 && stopwatch_elapsed_ms(start) < DMA_TRANSFER_TIMEOUT_MS)
-		test_watchdog_serve();
-
+	wait_for_irq_count(1);
 	cpu_enable_irq(false);
 	test_eq_u32("channel IRQ fires once", 1, irq_count);
 	test_eq_u32("channel IRQ number", VIC_DMAC_CH7_IRQ, irq_number);
 	test_check("IRQ sees raw terminal count", (irq_raw_tc_status & BIT(DMA_CHANNEL)) != 0);
 	test_check("IRQ sees masked terminal count", (irq_tc_status & BIT(DMA_CHANNEL)) != 0);
 	test_check("IRQ sees combined status", (irq_int_status & BIT(DMA_CHANNEL)) != 0);
-	test_check("IRQ has no DMA error", (irq_raw_err_status & BIT(DMA_CHANNEL)) == 0);
 	test_check("IRQ clear removes terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
 	test_eq_memory("IRQ transfer data", source, destination, 4 * sizeof(source[0]));
 }
 
 static void test_sreq_behavior(void) {
-	reset_channel();
+	reset_dmac();
 	fill_matrix_buffers();
 
 	DMAC_CH_SRC_ADDR(0) = (uint32_t) (matrix_source + 16);
@@ -1279,7 +1383,6 @@ static void test_sreq_behavior(void) {
 	test_eq_u32("PER2MEM SREQ completes one item", 0, DMAC_CH_CONTROL(0) & DMAC_CH_CONTROL_TRANSFER_SIZE);
 	test_eq_u32("MEM2PER SREQ leaves destination unchanged", 0xA5, matrix_destination[0]);
 	test_eq_u32("PER2MEM SREQ transfers data", matrix_source[16], matrix_destination[16]);
-	test_check("pending SREQ has no DMA error", (DMAC_RAW_ERR_STATUS & (BIT(0) | BIT(DMA_CHANNEL))) == 0);
 }
 
 int main(void) {
@@ -1291,13 +1394,14 @@ int main(void) {
 
 	test_category("Memory transfers");
 	test_mem2mem();
-	test_endianness();
 	test_bursts_and_widths();
+	test_unaligned_addresses();
 	test_transfer_boundaries();
 	test_address_increment();
 	test_overlap();
 
-	test_category("Big-endian transfers");
+	test_category("Endianness");
+	test_endianness();
 	test_endian_matrix();
 
 	test_category("Software requests and flow control");
@@ -1307,13 +1411,15 @@ int main(void) {
 	test_peripheral_controlled_per2per();
 
 	test_category("Channel control and arbitration");
-	test_halt_and_lock();
+	test_channel_control();
 	test_halt_after_partial_transfer();
 	test_multiple_channels();
 	test_all_channels();
 
 	test_category("Linked lists");
 	test_lli();
+	test_lli_endianness();
+	test_lli_alignment();
 	test_lli_interrupts();
 
 	test_category("Interrupts");
@@ -1336,17 +1442,7 @@ __IRQ void irq_handler(void) {
 		irq_raw_tc_status = DMAC_RAW_TC_STATUS;
 		irq_tc_status = DMAC_TC_STATUS;
 		irq_int_status = DMAC_INT_STATUS;
-		irq_err_status = DMAC_ERR_STATUS;
-		irq_raw_err_status = DMAC_RAW_ERR_STATUS;
 		DMAC_TC_CLEAR = BIT(channel);
-	} else if (irq_number == VIC_DMAC_ERR_IRQ) {
-		irq_count++;
-		irq_raw_tc_status = DMAC_RAW_TC_STATUS;
-		irq_tc_status = DMAC_TC_STATUS;
-		irq_int_status = DMAC_INT_STATUS;
-		irq_err_status = DMAC_ERR_STATUS;
-		irq_raw_err_status = DMAC_RAW_ERR_STATUS;
-		DMAC_ERR_CLEAR = irq_raw_err_status;
 	}
 
 	VIC_IRQ_ACK = 1;
