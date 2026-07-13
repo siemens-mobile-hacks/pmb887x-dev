@@ -31,8 +31,8 @@ Run a test on real hardware:
 | `dif-v1-dma` | DIFv1 full-duplex FIFO DMA, bursts, LLI, widths, statuses, and interrupts |
 | `usart` | USART loopback, frame modes, FIFO, interrupts, and timeout |
 | `usart-dma` | USART loopback transfers through DMA |
-| `dif-v2` | DIFv2 IRQ loopback, serial modes, FIFO alignment, 8/9-bit BSCONF, LCD reads, and conversion |
-| `dif-v2-dma` | DIFv2 DMA flows, FIFO alignment, BSCONF, burst configurations, isolation, and recovery |
+| `dif-v2` | DIFv2 IRQ loopback, serial modes, FIFO alignment and bursts, BSCONF, LCD reads, and conversion |
+| `dif-v2-dma` | DIFv2 DMA flows, FIFO alignment and bursts, BSCONF, parallel LCD reads, and recovery |
 | `cfi-intel` | Safe Intel/ST CFI discovery, identification, geometry, and read commands |
 | `cfi-intel-rw` | Intel/ST CFI program, erase, lock, and suspend/resume operations |
 | `cfi-intel-efa-rw` | Intel/ST extended flash array program and erase operations |

@@ -6,10 +6,6 @@
 
 #include <string.h>
 
-#define DIF_REQUEST_IRQS 0xFF
-#define DIF_IRQ_MASK 0x7FF
-#define DIF_ERROR_MASK 0x383F
-#define DIF_FATAL_ERRORS (DIF_ERROR_MASK & ~DIF_ERRIRQSS_PHASE)
 #define DIF_TIMEOUT_MS 100
 #define DMA_RX_CHANNEL 0
 #define DMA_TX_CHANNEL 1
@@ -19,16 +15,16 @@
 #define DIF_BCSEL1_ALL_FROM_BCREG 0x55555555
 #define DIF_9BIT_WORD_MASK GENMASK(8, 0)
 
-static const uint8_t tx_data[] = {
+static const uint8_t TX_DATA[] = {
 	0x03, 0x14, 0x25, 0x36, 0x47, 0x58, 0x69, 0x7A, 0x8B, 0x9C,
 	0xAD, 0xBE, 0xCF, 0xD0, 0xE1, 0xF2, 0x12, 0x34, 0x56, 0x78,
 	0x9A, 0xBC, 0xDE, 0xF0, 0x0F, 0x1E, 0x2D, 0x3C, 0x4B, 0x5A,
 	0x69, 0x78, 0x87, 0x96, 0xA5, 0xB4, 0xC3,
 };
 
-static uint8_t rx_data[sizeof(tx_data)];
-static uint32_t dma_tx[sizeof(tx_data)] __attribute__((aligned(16)));
-static uint32_t dma_rx[sizeof(tx_data)] __attribute__((aligned(16)));
+static uint8_t rx_data[sizeof(TX_DATA)];
+static uint32_t dma_tx[sizeof(TX_DATA)] __attribute__((aligned(16)));
+static uint32_t dma_rx[sizeof(TX_DATA)] __attribute__((aligned(16)));
 static struct transfer_config {
 	uint32_t tx_size;
 	uint32_t rx_size;
@@ -55,18 +51,115 @@ enum dma_flow {
 	PERIPHERAL_CONTROLLED,
 };
 
+struct fifo_config {
+	uint32_t rx;
+	uint32_t tx;
+};
+
 struct dma_transfer {
 	uint32_t size;
 	uint32_t bsconf_bytes;
+	uint32_t source_burst;
+	uint32_t destination_burst;
 	enum dma_flow flow;
 	uint32_t con;
-	uint32_t rx_fifo;
-	uint32_t tx_fifo;
+	struct fifo_config fifo;
 	uint32_t channels;
 	bool preload_tx;
 };
 
-static const uint32_t bsconf_8bit[] = {
+struct fifo_burst {
+	uint32_t bytes;
+	struct fifo_config fifo;
+};
+
+struct dma_fifo_burst {
+	struct fifo_config fifo;
+	uint32_t source;
+	uint32_t destination;
+};
+
+static const struct fifo_burst FIFO_BURSTS[] = {
+	{
+		.bytes = 4,
+		.fifo = {
+			.rx = DIF_RXFIFO_CFG_RXBS_1_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
+			.tx = DIF_TXFIFO_CFG_TXBS_1_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
+		},
+	},
+	{
+		.bytes = 8,
+		.fifo = {
+			.rx = DIF_RXFIFO_CFG_RXBS_2_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
+			.tx = DIF_TXFIFO_CFG_TXBS_2_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
+		},
+	},
+	{
+		.bytes = 16,
+		.fifo = {
+			.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
+			.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
+		},
+	},
+};
+
+static const struct dma_fifo_burst DMA_FIFO_BURSTS[] = {
+	{
+		.fifo = {
+			.rx = DIF_RXFIFO_CFG_RXBS_1_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
+			.tx = DIF_TXFIFO_CFG_TXBS_1_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
+		},
+		.source = DMAC_CH_CONTROL_SB_SIZE_SZ_1,
+		.destination = DMAC_CH_CONTROL_DB_SIZE_SZ_1,
+	},
+	{
+		.fifo = {
+			.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
+			.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
+		},
+		.source = DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+		.destination = DMAC_CH_CONTROL_DB_SIZE_SZ_4,
+	},
+};
+
+static const struct fifo_config FIFO_DEFAULT = {
+	.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
+	.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
+};
+
+static const uint32_t DIF_IRQ_REQUESTS = (
+	DIF_IMSC_RXLSREQ | DIF_IMSC_RXSREQ | DIF_IMSC_RXLBREQ | DIF_IMSC_RXBREQ |
+	DIF_IMSC_TXLSREQ | DIF_IMSC_TXSREQ | DIF_IMSC_TXLBREQ | DIF_IMSC_TXBREQ
+);
+
+static const uint32_t DIF_DMA_REQUESTS = (
+	DIF_DMAE_RXLSREQ | DIF_DMAE_RXSREQ | DIF_DMAE_RXLBREQ | DIF_DMAE_RXBREQ |
+	DIF_DMAE_TXLSREQ | DIF_DMAE_TXSREQ | DIF_DMAE_TXLBREQ | DIF_DMAE_TXBREQ
+);
+
+static const uint32_t DIF_CLEAR_IRQS = (
+	DIF_ICR_RXLSREQ | DIF_ICR_RXSREQ | DIF_ICR_RXLBREQ | DIF_ICR_RXBREQ |
+	DIF_ICR_TXLSREQ | DIF_ICR_TXSREQ | DIF_ICR_TXLBREQ | DIF_ICR_TXBREQ | DIF_ICR_ERR
+);
+
+static const uint32_t DIF_ERROR_SOURCES = (
+	DIF_ERRIRQSM_RXFUFL | DIF_ERRIRQSM_RXFOFL | DIF_ERRIRQSM_TXFOFL | DIF_ERRIRQSM_PHASE |
+	DIF_ERRIRQSM_CMD | DIF_ERRIRQSM_MASTER | DIF_ERRIRQSM_TXUFL | DIF_ERRIRQSM_MASTER2 |
+	DIF_ERRIRQSM_IDLE
+);
+
+static const uint32_t DIF_CLEAR_ERRORS = (
+	DIF_ERRIRQSC_RXFUFL | DIF_ERRIRQSC_RXFOFL | DIF_ERRIRQSC_TXFOFL | DIF_ERRIRQSC_PHASE |
+	DIF_ERRIRQSC_CMD | DIF_ERRIRQSC_MASTER | DIF_ERRIRQSC_TXUFL | DIF_ERRIRQSC_MASTER2 |
+	DIF_ERRIRQSC_IDLE
+);
+
+static const uint32_t DIF_FATAL_ERRORS = (
+	DIF_ERRIRQSS_RXFUFL | DIF_ERRIRQSS_RXFOFL | DIF_ERRIRQSS_TXFOFL | DIF_ERRIRQSS_CMD |
+	DIF_ERRIRQSS_MASTER | DIF_ERRIRQSS_TXUFL | DIF_ERRIRQSS_MASTER2 | DIF_ERRIRQSS_IDLE
+);
+
+static const uint32_t BSCONF_8BIT[] = {
 	DIF_CSREG_BSCONF_1x8BIT,
 	DIF_CSREG_BSCONF_2x8BIT,
 	DIF_CSREG_BSCONF_3x8BIT,
@@ -91,7 +184,7 @@ static void reset_data_conversion(void) {
 	DIF_OFFSET = 0;
 }
 
-static void configure_dif(uint32_t con, uint32_t rx_fifo, uint32_t tx_fifo) {
+static void configure_dif(uint32_t con, struct fifo_config fifo) {
 	DIF_RUNCTRL = 0;
 	reset_data_conversion();
 	DIF_CON = con | DIF_CON_LB;
@@ -99,13 +192,13 @@ static void configure_dif(uint32_t con, uint32_t rx_fifo, uint32_t tx_fifo) {
 	DIF_CSREG = DIF_CSREG_BSCONF_OFF;
 	DIF_BR = 0;
 	DIF_FDIV = 0;
-	DIF_RXFIFO_CFG = rx_fifo;
-	DIF_TXFIFO_CFG = tx_fifo;
+	DIF_RXFIFO_CFG = fifo.rx;
+	DIF_TXFIFO_CFG = fifo.tx;
 	DIF_DMAE = 0;
 	DIF_IMSC = 0;
-	DIF_ICR = DIF_IRQ_MASK;
-	DIF_ERRIRQSM = DIF_ERROR_MASK;
-	DIF_ERRIRQSC = DIF_ERROR_MASK;
+	DIF_ICR = DIF_CLEAR_IRQS;
+	DIF_ERRIRQSM = DIF_ERROR_SOURCES;
+	DIF_ERRIRQSC = DIF_CLEAR_ERRORS;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 }
 
@@ -120,7 +213,7 @@ static void configure_8bit_split(uint32_t bytes, const uint8_t *value) {
 	DIF_BCSEL0 = DIF_BCSEL0_LOW_BYTE_FROM_TX;
 	DIF_BCSEL1 = DIF_BCSEL1_ALL_FROM_BCREG;
 	DIF_BCREG = fixed_bytes;
-	DIF_CSREG = bsconf_8bit[bytes - 1];
+	DIF_CSREG = BSCONF_8BIT[bytes - 1];
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 }
 
@@ -136,7 +229,7 @@ static void write_tx_fifo(uint32_t stages) {
 
 			if (offset >= stage_end)
 				break;
-			value |= (uint32_t) tx_data[offset] << (byte * irq_transfer.tx_alignment * 8);
+			value |= (uint32_t) TX_DATA[offset] << (byte * irq_transfer.tx_alignment * 8);
 		}
 		transfer.tx_offset = stage_end;
 		DIF_TXD = value;
@@ -176,6 +269,15 @@ static bool wait_for_transfer(void) {
 	);
 }
 
+static bool wait_until_idle(void) {
+	stopwatch_t start = stopwatch_get();
+
+	while ((DIF_STAT & DIF_STAT_BSY) != 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+
+	return (DIF_STAT & DIF_STAT_BSY) == 0;
+}
+
 static void test_registers(void) {
 	test_module_id("module ID", 0xF043C000, DIF_ID);
 	test_module_clock("module clock", DIF_CLC);
@@ -210,7 +312,7 @@ static void test_conversion_defaults(void) {
 static void test_irq_status(void) {
 	cpu_enable_irq(false);
 	DIF_IMSC = 0;
-	DIF_ICR = DIF_IRQ_MASK;
+	DIF_ICR = DIF_CLEAR_IRQS;
 	DIF_ISR = DIF_ISR_TXSREQ | DIF_ISR_RXSREQ;
 	test_eq_u32(
 		"software IRQ sets raw status",
@@ -255,7 +357,7 @@ static void execute_irq_loopback_transfer(
 	VIC_CON(VIC_DIF_RX_BURST_IRQ) = 1;
 	VIC_CON(VIC_DIF_TX_IRQ) = 1;
 	VIC_CON(VIC_DIF_ERR_IRQ) = 1;
-	DIF_IMSC = DIF_REQUEST_IRQS;
+	DIF_IMSC = DIF_IRQ_REQUESTS;
 	cpu_enable_irq(true);
 	DIF_TPS_CTRL = tx_count;
 
@@ -275,21 +377,20 @@ static void execute_irq_loopback(uint32_t size, const uint8_t *expected, uint32_
 	execute_irq_loopback_transfer(size, size, 4 / tx_alignment, expected, rx_size);
 }
 
-static void run_irq_loopback(uint32_t size, uint32_t con, uint32_t rx_fifo, uint32_t tx_fifo) {
-	configure_dif(con, rx_fifo, tx_fifo);
-	execute_irq_loopback(size, tx_data, size);
+static void run_irq_loopback(uint32_t size, uint32_t con, struct fifo_config fifo) {
+	configure_dif(con, fifo);
+	execute_irq_loopback(size, TX_DATA, size);
 }
 
 static void test_bit_conversion(void) {
 	uint8_t expected[16];
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
 
-	configure_dif(DIF_CON_BM_8, fifo, fifo);
+	configure_dif(DIF_CON_BM_8, FIFO_DEFAULT);
 
 	test_category("INVERT_BIT conversion");
 	DIF_RUNCTRL = 0;
 	for (uint32_t byte = 0; byte < sizeof(expected); byte++)
-		expected[byte] = tx_data[byte] ^ 1;
+		expected[byte] = TX_DATA[byte] ^ 1;
 	DIF_INVERT_BIT = 1;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
@@ -300,7 +401,7 @@ static void test_bit_conversion(void) {
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 	test_category("BMREG bit mapping");
 	for (uint32_t byte = 0; byte < sizeof(expected); byte++)
-		expected[byte] = (tx_data[byte] & ~3) | ((tx_data[byte] & 1) << 1) | ((tx_data[byte] & 2) >> 1);
+		expected[byte] = (TX_DATA[byte] & ~3) | ((TX_DATA[byte] & 1) << 1) | ((TX_DATA[byte] & 2) >> 1);
 	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
 
 	DIF_RUNCTRL = 0;
@@ -310,23 +411,22 @@ static void test_bit_conversion(void) {
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 	test_category("BCREG bit clamp");
 	for (uint32_t byte = 0; byte < sizeof(expected); byte++)
-		expected[byte] = tx_data[byte] | 1;
+		expected[byte] = TX_DATA[byte] | 1;
 	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
 	DIF_RUNCTRL = 0;
 	DIF_BCREG = 0;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 	for (uint32_t byte = 0; byte < sizeof(expected); byte++)
-		expected[byte] = tx_data[byte] & ~1;
+		expected[byte] = TX_DATA[byte] & ~1;
 	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
 }
 
 static void test_pixel_conversion(void) {
 	uint8_t expected[6];
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
 
 	for (uint32_t byte = 0; byte < sizeof(expected); byte++)
-		expected[byte] = tx_data[byte * 2];
-	configure_dif(DIF_CON_BM_8, fifo, fifo);
+		expected[byte] = TX_DATA[byte * 2];
+	configure_dif(DIF_CON_BM_8, FIFO_DEFAULT);
 	DIF_RUNCTRL = 0;
 	DIF_PBCCON = DIF_PBCCON_PBBCONV_MODE;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
@@ -343,19 +443,17 @@ static void test_pixel_conversion(void) {
 }
 
 static void test_irq_burst_boundaries(void) {
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
-
-	run_irq_loopback(15, DIF_CON_BM_8, fifo, fifo);
+	run_irq_loopback(15, DIF_CON_BM_8, FIFO_DEFAULT);
 	test_check("short packet uses last burst requests", (
 		(transfer.tx_status & DIF_RIS_TXLBREQ) != 0 &&
 		(transfer.rx_status & DIF_RIS_RXLBREQ) != 0
 	));
-	run_irq_loopback(16, DIF_CON_BM_8, fifo, fifo);
+	run_irq_loopback(16, DIF_CON_BM_8, FIFO_DEFAULT);
 	test_check("exact burst uses last burst requests", (
 		(transfer.tx_status & DIF_RIS_TXLBREQ) != 0 &&
 		(transfer.rx_status & DIF_RIS_RXLBREQ) != 0
 	));
-	run_irq_loopback(17, DIF_CON_BM_8, fifo, fifo);
+	run_irq_loopback(17, DIF_CON_BM_8, FIFO_DEFAULT);
 	test_check("long packet uses burst requests", (
 		(transfer.tx_status & DIF_RIS_TXBREQ) != 0 &&
 		(transfer.rx_status & DIF_RIS_RXBREQ) != 0
@@ -367,45 +465,64 @@ static void test_irq_burst_boundaries(void) {
 }
 
 static void test_irq_fifo_alignment(void) {
-	uint32_t fifo2 = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC;
-	uint32_t fifo4 = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC;
+	const struct fifo_config FIFO2 = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_2 | DIF_TXFIFO_CFG_TXFC,
+	};
+	const struct fifo_config FIFO4 = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	};
+	const struct fifo_config FIFO_RX2_TX1 = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC,
+	};
+	const struct fifo_config FIFO_RX1_TX4 = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	};
 
-	run_irq_loopback(17, DIF_CON_BM_8, fifo2, fifo2);
-	run_irq_loopback(17, DIF_CON_BM_8, fifo4, fifo4);
+	run_irq_loopback(17, DIF_CON_BM_8, FIFO2);
+	run_irq_loopback(17, DIF_CON_BM_8, FIFO4);
 
 	test_category("Asymmetric FIFO alignment");
-	run_irq_loopback(
-		17,
-		DIF_CON_BM_8,
-		DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC,
-		DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC
-	);
-	run_irq_loopback(
-		17,
-		DIF_CON_BM_8,
-		DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC,
-		DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC
-	);
+	run_irq_loopback(17, DIF_CON_BM_8, FIFO_RX2_TX1);
+	run_irq_loopback(17, DIF_CON_BM_8, FIFO_RX1_TX4);
+}
+
+static void test_irq_fifo_bursts(void) {
+	for (uint32_t burst = 0; burst < ARRAY_SIZE(FIFO_BURSTS); burst++) {
+		run_irq_loopback(FIFO_BURSTS[burst].bytes, DIF_CON_BM_8, FIFO_BURSTS[burst].fifo);
+		test_check("exact FIFO burst raises last burst requests", (
+			(transfer.tx_status & DIF_RIS_TXLBREQ) != 0 &&
+			(transfer.rx_status & DIF_RIS_RXLBREQ) != 0
+		));
+	}
 }
 
 static void test_bsconf_loopback(void) {
-	uint32_t rx_fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC;
-	uint32_t tx_fifo = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC;
+	struct fifo_config fifo = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	};
 
 	for (uint32_t bytes = 1; bytes <= 4; bytes++) {
-		configure_dif(DIF_CON_BM_8, rx_fifo, tx_fifo);
-		configure_8bit_split(bytes, tx_data);
-		execute_irq_loopback_transfer(1, bytes, bytes, tx_data, bytes);
+		configure_dif(DIF_CON_BM_8, fifo);
+		configure_8bit_split(bytes, TX_DATA);
+		execute_irq_loopback_transfer(1, bytes, bytes, TX_DATA, bytes);
 	}
 }
 
 static void test_bsconf_9bit_loopback(void) {
-	static const uint32_t configurations[] = {
+	static const uint32_t CONFIGURATIONS[] = {
 		DIF_CSREG_BSCONF_1x9BIT,
 		DIF_CSREG_BSCONF_2x9BIT,
 		DIF_CSREG_BSCONF_3x9BIT,
 	};
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4;
+	struct fifo_config fifo = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4,
+	};
 	uint32_t value = (
 		0x103 |
 		0x114 << 9 |
@@ -413,17 +530,14 @@ static void test_bsconf_9bit_loopback(void) {
 	);
 
 	for (uint32_t words = 1; words <= 3; words++) {
-		configure_dif(DIF_CON_BM_9, fifo, fifo);
+		configure_dif(DIF_CON_BM_9, fifo);
 		DIF_RUNCTRL = 0;
-		DIF_CSREG = configurations[words - 1];
+		DIF_CSREG = CONFIGURATIONS[words - 1];
 		DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 		DIF_TXD = value;
 		DIF_TPS_CTRL = 1;
-		stopwatch_t start = stopwatch_get();
-		while ((DIF_STAT & DIF_STAT_BSY) != 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
-			test_watchdog_serve();
 
-		test_eq_u32("9-bit split transfer completes", 0, DIF_STAT & DIF_STAT_BSY);
+		test_check("9-bit split transfer completes", wait_until_idle());
 		test_eq_u32("9-bit split produces one RX stage", 1, DIF_RXFFS_STAT);
 		test_eq_u32(
 			"9-bit split preserves first loopback word",
@@ -434,46 +548,57 @@ static void test_bsconf_9bit_loopback(void) {
 }
 
 static void test_start_lcd_read(void) {
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
+	struct fifo_config fifo = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	};
 	uint32_t read_size = 5;
 
-	configure_dif(DIF_CON_BM_8, fifo, fifo);
-	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD;
-	test_eq_u32("zero-length LCD read stays idle", 0, DIF_STAT & DIF_STAT_BSY);
-
+	configure_dif(DIF_CON_BM_8, fifo);
 	DIF_RUNCTRL = 0;
+	DIF_CON = DIF_CON_BM_8;
 	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
 	DIF_CSREG = DIF_CSREG_CS1;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
-	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | (read_size << DIF_STARTLCDRD_READBYTES_SHIFT);
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD;
+	test_check("minimum LCD read starts one-byte transaction", (DIF_STAT & DIF_STAT_BSY) != 0);
+	(void) DIF_RXD;
+	DIF_STARTLCDRD = 0;
+	test_check("minimum LCD read completes", wait_until_idle());
+
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((read_size - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
 	uint32_t start_status = DIF_STAT;
 	test_eq_u32(
-		"LCD read size readback",
-		read_size,
+		"LCD read length field",
+		read_size - 1,
 		(DIF_STARTLCDRD & DIF_STARTLCDRD_READBYTES) >> DIF_STARTLCDRD_READBYTES_SHIFT
 	);
 	test_check("STARTLCDRD starts parallel receive transaction", (start_status & DIF_STAT_BSY) != 0);
+	for (uint32_t byte = 0; byte < read_size; byte++)
+		(void) DIF_RXD;
+	DIF_STARTLCDRD &= ~DIF_STARTLCDRD_STARTREAD;
+	test_check("firmware-style LCD read completes", wait_until_idle());
+	test_check("clearing STARTREAD keeps the interface running", (DIF_RUNCTRL & DIF_RUNCTRL_RUN) != 0);
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((read_size - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
+	test_check("STARTLCDRD restarts parallel receive transaction", (DIF_STAT & DIF_STAT_BSY) != 0);
 	DIF_RUNCTRL = 0;
 	test_eq_u32("LCD read abort clears busy", 0, DIF_STAT & DIF_STAT_BSY);
 	test_eq_u32("LCD read abort clears RX FIFO", 0, DIF_RXFFS_STAT);
 	DIF_STARTLCDRD = 0;
-	configure_dif(DIF_CON_BM_8, fifo, fifo);
-	execute_irq_loopback(8, tx_data, 8);
+	configure_dif(DIF_CON_BM_8, fifo);
+	execute_irq_loopback(8, TX_DATA, 8);
 }
 
 static void test_serial_modes(void) {
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
-
-	run_irq_loopback(17, DIF_CON_BM_8, fifo, fifo);
-	run_irq_loopback(17, DIF_CON_PH_1 | DIF_CON_BM_8, fifo, fifo);
-	run_irq_loopback(17, DIF_CON_PO_1 | DIF_CON_BM_8, fifo, fifo);
-	run_irq_loopback(17, DIF_CON_PH_1 | DIF_CON_PO_1 | DIF_CON_BM_8, fifo, fifo);
-	run_irq_loopback(17, DIF_CON_HB_MSB | DIF_CON_BM_8, fifo, fifo);
+	run_irq_loopback(17, DIF_CON_BM_8, FIFO_DEFAULT);
+	run_irq_loopback(17, DIF_CON_PH_1 | DIF_CON_BM_8, FIFO_DEFAULT);
+	run_irq_loopback(17, DIF_CON_PO_1 | DIF_CON_BM_8, FIFO_DEFAULT);
+	run_irq_loopback(17, DIF_CON_PH_1 | DIF_CON_PO_1 | DIF_CON_BM_8, FIFO_DEFAULT);
+	run_irq_loopback(17, DIF_CON_HB_MSB | DIF_CON_BM_8, FIFO_DEFAULT);
 }
 
 static void test_fifo_errors(void) {
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
-	configure_dif(DIF_CON_BM_8, fifo, fifo);
+	configure_dif(DIF_CON_BM_8, FIFO_DEFAULT);
 	DIF_ERRIRQSM = DIF_ERRIRQSM_RXFUFL;
 	(void) DIF_RXD;
 	test_eq_u32("RX underflow status", DIF_ERRIRQSS_RXFUFL, DIF_ERRIRQSS & DIF_ERRIRQSS_RXFUFL);
@@ -493,9 +618,8 @@ static void test_fifo_errors(void) {
 }
 
 static void test_abort(void) {
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
-	configure_dif(DIF_CON_BM_8, fifo, fifo);
-	DIF_TPS_CTRL = sizeof(tx_data);
+	configure_dif(DIF_CON_BM_8, FIFO_DEFAULT);
+	DIF_TPS_CTRL = sizeof(TX_DATA);
 	DIF_TXD = 0x12345678;
 	test_check("transfer becomes busy", (DIF_STAT & DIF_STAT_BSY) != 0);
 	DIF_RUNCTRL = 0;
@@ -506,8 +630,18 @@ static void test_abort(void) {
 
 static bool run_dma_loopback(const struct dma_transfer *dma) {
 	uint32_t all_channels = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
-	uint32_t rx_alignment = 1 << ((dma->rx_fifo & DIF_RXFIFO_CFG_RXFA) >> DIF_RXFIFO_CFG_RXFA_SHIFT);
-	uint32_t tx_alignment = 1 << ((dma->tx_fifo & DIF_TXFIFO_CFG_TXFA) >> DIF_TXFIFO_CFG_TXFA_SHIFT);
+	struct fifo_config fifo = dma->fifo;
+
+	if (dma->flow == PERIPHERAL_CONTROLLED) {
+		fifo.rx |= DIF_RXFIFO_CFG_RXFC;
+		fifo.tx |= DIF_TXFIFO_CFG_TXFC;
+	} else {
+		fifo.rx &= ~DIF_RXFIFO_CFG_RXFC;
+		fifo.tx &= ~DIF_TXFIFO_CFG_TXFC;
+	}
+
+	uint32_t rx_alignment = 1 << ((fifo.rx & DIF_RXFIFO_CFG_RXFA) >> DIF_RXFIFO_CFG_RXFA_SHIFT);
+	uint32_t tx_alignment = 1 << ((fifo.tx & DIF_TXFIFO_CFG_TXFA) >> DIF_TXFIFO_CFG_TXFA_SHIFT);
 	uint32_t rx_bytes_per_stage = 4 / rx_alignment;
 	uint32_t tx_bytes_per_stage = 4 / tx_alignment;
 	uint32_t rx_transfer_size = 0;
@@ -524,20 +658,20 @@ static bool run_dma_loopback(const struct dma_transfer *dma) {
 			tx_transfer_size = tx_count;
 	}
 
-	configure_dif(dma->con, dma->rx_fifo, dma->tx_fifo);
+	configure_dif(dma->con, fifo);
 	if (dma->bsconf_bytes != 0)
-		configure_8bit_split(dma->bsconf_bytes, tx_data);
+		configure_8bit_split(dma->bsconf_bytes, TX_DATA);
 	memset(dma_tx, 0, sizeof(dma_tx));
 	memset(dma_rx, 0, sizeof(dma_rx));
 	memset(rx_data, 0, sizeof(rx_data));
 	if (dma->bsconf_bytes != 0) {
 		for (uint32_t group = 0; group < tx_count; group++)
-			dma_tx[group] = tx_data[group * dma->bsconf_bytes];
+			dma_tx[group] = TX_DATA[group * dma->bsconf_bytes];
 	} else if (tx_alignment == 1) {
-		memcpy(dma_tx, tx_data, dma->size);
+		memcpy(dma_tx, TX_DATA, dma->size);
 	} else {
 		for (uint32_t byte = 0; byte < dma->size; byte++)
-			dma_tx[byte / tx_bytes_per_stage] |= (uint32_t) tx_data[byte] <<
+			dma_tx[byte / tx_bytes_per_stage] |= (uint32_t) TX_DATA[byte] <<
 				(byte % tx_bytes_per_stage * tx_alignment * 8);
 	}
 	cpu_enable_irq(false);
@@ -552,8 +686,7 @@ static bool run_dma_loopback(const struct dma_transfer *dma) {
 	DMAC_CH_SRC_ADDR(DMA_RX_CHANNEL) = (uint32_t) &DIF_RXD;
 	DMAC_CH_DST_ADDR(DMA_RX_CHANNEL) = (uint32_t) dma_rx;
 	DMAC_CH_CONTROL(DMA_RX_CHANNEL) = (
-		rx_transfer_size | DMAC_CH_CONTROL_SB_SIZE_SZ_4 |
-		DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+		rx_transfer_size | dma->source_burst | dma->destination_burst |
 		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
 		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
@@ -568,8 +701,7 @@ static bool run_dma_loopback(const struct dma_transfer *dma) {
 	DMAC_CH_SRC_ADDR(DMA_TX_CHANNEL) = (uint32_t) dma_tx;
 	DMAC_CH_DST_ADDR(DMA_TX_CHANNEL) = (uint32_t) &DIF_TXD;
 	DMAC_CH_CONTROL(DMA_TX_CHANNEL) = (
-		tx_transfer_size | DMAC_CH_CONTROL_SB_SIZE_SZ_4 |
-		DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+		tx_transfer_size | dma->source_burst | dma->destination_burst |
 		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
 		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
 	);
@@ -581,8 +713,8 @@ static bool run_dma_loopback(const struct dma_transfer *dma) {
 		((dma->channels & BIT(DMA_TX_CHANNEL)) != 0 ? DMAC_CH_CONFIG_ENABLE : 0)
 	);
 
-	DIF_IMSC = DIF_REQUEST_IRQS;
-	DIF_DMAE = DIF_REQUEST_IRQS;
+	DIF_IMSC = DIF_IRQ_REQUESTS;
+	DIF_DMAE = DIF_DMA_REQUESTS;
 	if (dma->preload_tx)
 		DIF_TXD = dma_tx[0];
 	DIF_TPS_CTRL = tx_count;
@@ -604,92 +736,156 @@ static bool run_dma_loopback(const struct dma_transfer *dma) {
 	);
 }
 
+static void test_dma_lcd_read(void) {
+	uint32_t read_size = 32;
+
+	configure_dif(DIF_CON_BM_8, FIFO_DEFAULT);
+	DIF_RUNCTRL = 0;
+	DIF_CON = DIF_CON_BM_8;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_CSREG = DIF_CSREG_CS1;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	memset(dma_rx, 0, sizeof(dma_rx));
+
+	DMAC_CH_CONFIG(DMA_RX_CHANNEL) = 0;
+	DMAC_TC_CLEAR = BIT(DMA_RX_CHANNEL);
+	DMAC_ERR_CLEAR = BIT(DMA_RX_CHANNEL);
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	SCU_DMARS &= ~BIT(DMA_RX_REQUEST);
+	DMAC_CH_SRC_ADDR(DMA_RX_CHANNEL) = (uint32_t) &DIF_RXD;
+	DMAC_CH_DST_ADDR(DMA_RX_CHANNEL) = (uint32_t) dma_rx;
+	DMAC_CH_CONTROL(DMA_RX_CHANNEL) = (
+		DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
+		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+	);
+	DMAC_CH_CONFIG(DMA_RX_CHANNEL) = (
+		(DMA_RX_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM_PER |
+		DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_ENABLE
+	);
+	DIF_IMSC = DIF_IMSC_RXLSREQ | DIF_IMSC_RXSREQ | DIF_IMSC_RXLBREQ | DIF_IMSC_RXBREQ;
+	DIF_DMAE = DIF_DMAE_RXLSREQ | DIF_DMAE_RXSREQ | DIF_DMAE_RXLBREQ | DIF_DMAE_RXBREQ;
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((read_size - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
+	stopwatch_t start = stopwatch_get();
+	while ((DMAC_RAW_TC_STATUS & BIT(DMA_RX_CHANNEL)) == 0 &&
+		(DMAC_RAW_ERR_STATUS & BIT(DMA_RX_CHANNEL)) == 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS) {
+		test_watchdog_serve();
+	}
+
+	uint32_t tc_status = DMAC_RAW_TC_STATUS;
+	uint32_t error_status = DMAC_RAW_ERR_STATUS;
+	uint32_t received_size = DIF_RPS_STAT & DIF_RPS_STAT_RPS;
+	uint32_t fifo_stages = DIF_RXFFS_STAT;
+	DIF_STARTLCDRD &= ~DIF_STARTLCDRD_STARTREAD;
+	DIF_DMAE = 0;
+	DIF_IMSC = 0;
+	DMAC_CH_CONFIG(DMA_RX_CHANNEL) = 0;
+	test_eq_u32("LCD DMA reaches terminal count", BIT(DMA_RX_CHANNEL), tc_status & BIT(DMA_RX_CHANNEL));
+	test_eq_u32("LCD DMA has no bus errors", 0, error_status & BIT(DMA_RX_CHANNEL));
+	test_eq_u32("LCD DMA receives complete packet", read_size, received_size);
+	test_eq_u32("LCD DMA drains RX FIFO", 0, fifo_stages);
+	test_check("LCD DMA read clears busy", wait_until_idle());
+}
+
 static void test_dma(void) {
 	uint32_t channels = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1;
 	struct dma_transfer dma = {
-		.size = sizeof(tx_data),
+		.size = sizeof(TX_DATA),
+		.source_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+		.destination_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_4,
 		.flow = DMA_CONTROLLED,
 		.con = DIF_CON_BM_8,
-		.rx_fifo = fifo,
-		.tx_fifo = fifo,
+		.fifo = {
+			.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1,
+			.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1,
+		},
 		.channels = channels,
 	};
 
 	test_category("DMA controlled flow");
 	test_check("MEM2PER/PER2MEM partial burst completes", run_dma_loopback(&dma));
-	test_eq_memory("MEM2PER/PER2MEM partial burst data", tx_data, rx_data, sizeof(tx_data));
+	test_eq_memory("MEM2PER/PER2MEM partial burst data", TX_DATA, rx_data, sizeof(TX_DATA));
 	dma.size = 16;
 	test_check("MEM2PER/PER2MEM exact burst completes", run_dma_loopback(&dma));
-	test_eq_memory("MEM2PER/PER2MEM exact burst data", tx_data, rx_data, 16);
+	test_eq_memory("MEM2PER/PER2MEM exact burst data", TX_DATA, rx_data, 16);
 
 	test_category("Peripheral controlled DMA flow");
-	dma.size = sizeof(tx_data);
+	dma.size = sizeof(TX_DATA);
 	dma.flow = PERIPHERAL_CONTROLLED;
-	dma.rx_fifo |= DIF_RXFIFO_CFG_RXFC;
-	dma.tx_fifo |= DIF_TXFIFO_CFG_TXFC;
 	test_check("MEM2PER_PER/PER2MEM_PER partial burst completes", run_dma_loopback(&dma));
-	test_eq_memory("MEM2PER_PER/PER2MEM_PER partial burst data", tx_data, rx_data, sizeof(tx_data));
+	test_eq_memory("MEM2PER_PER/PER2MEM_PER partial burst data", TX_DATA, rx_data, sizeof(TX_DATA));
 	dma.size = 16;
 	test_check("MEM2PER_PER/PER2MEM_PER exact burst completes", run_dma_loopback(&dma));
-	test_eq_memory("MEM2PER_PER/PER2MEM_PER exact burst data", tx_data, rx_data, 16);
+	test_eq_memory("MEM2PER_PER/PER2MEM_PER exact burst data", TX_DATA, rx_data, 16);
 
 	test_category("DMA FIFO configurations");
 	dma.size = 17;
-	dma.rx_fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC;
-	dma.tx_fifo = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_2 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_2 | DIF_TXFIFO_CFG_TXFC;
 	test_check("DMA alignment 2 completes", run_dma_loopback(&dma));
-	test_eq_memory("DMA alignment 2 data", tx_data, rx_data, 17);
+	test_eq_memory("DMA alignment 2 data", TX_DATA, rx_data, 17);
 	dma.size = 9;
-	dma.rx_fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC;
-	dma.tx_fifo = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC;
 	test_check("DMA alignment 4 completes", run_dma_loopback(&dma));
-	test_eq_memory("DMA alignment 4 data", tx_data, rx_data, 9);
+	test_eq_memory("DMA alignment 4 data", TX_DATA, rx_data, 9);
 	dma.size = 16;
 	dma.con = DIF_CON_BM_16;
-	dma.rx_fifo = fifo | DIF_RXFIFO_CFG_RXFC;
-	dma.tx_fifo = fifo | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC;
 	test_check("DMA 16-bit words complete", run_dma_loopback(&dma));
-	test_eq_memory("DMA 16-bit word data", tx_data, rx_data, 16);
-	dma.size = sizeof(tx_data);
+	test_eq_memory("DMA 16-bit word data", TX_DATA, rx_data, 16);
+	dma.size = sizeof(TX_DATA);
 	dma.con = DIF_CON_BM_8;
-	dma.tx_fifo = DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC;
 	test_check("DMA asymmetric FIFO bursts complete", run_dma_loopback(&dma));
-	test_eq_memory("DMA asymmetric FIFO burst data", tx_data, rx_data, sizeof(tx_data));
+	test_eq_memory("DMA asymmetric FIFO burst data", TX_DATA, rx_data, sizeof(TX_DATA));
+
+	test_category("DMA FIFO burst sizes");
+	dma.size = 32;
+	for (uint32_t burst = 0; burst < ARRAY_SIZE(DMA_FIFO_BURSTS); burst++) {
+		dma.fifo = DMA_FIFO_BURSTS[burst].fifo;
+		dma.source_burst = DMA_FIFO_BURSTS[burst].source;
+		dma.destination_burst = DMA_FIFO_BURSTS[burst].destination;
+		test_check("DMA FIFO burst size completes", run_dma_loopback(&dma));
+		test_eq_memory("DMA FIFO burst size data", TX_DATA, rx_data, dma.size);
+	}
+	dma.source_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_4;
+	dma.destination_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_4;
 
 	test_category("DMA asymmetric FIFO alignment");
 	dma.flow = PERIPHERAL_CONTROLLED;
 	dma.size = 17;
-	dma.rx_fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC;
-	dma.tx_fifo = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_2 | DIF_RXFIFO_CFG_RXFC;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1 | DIF_TXFIFO_CFG_TXFC;
 	test_check("DMA TX alignment 1 to RX alignment 2 completes", run_dma_loopback(&dma));
-	test_eq_memory("DMA TX alignment 1 to RX alignment 2 data", tx_data, rx_data, dma.size);
-	dma.rx_fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
-	dma.tx_fifo = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC;
+	test_eq_memory("DMA TX alignment 1 to RX alignment 2 data", TX_DATA, rx_data, dma.size);
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC;
 	test_check("DMA TX alignment 4 to RX alignment 1 completes", run_dma_loopback(&dma));
-	test_eq_memory("DMA TX alignment 4 to RX alignment 1 data", tx_data, rx_data, dma.size);
+	test_eq_memory("DMA TX alignment 4 to RX alignment 1 data", TX_DATA, rx_data, dma.size);
 
 	test_category("DMA BSCONF loopback");
 	dma.flow = DMA_CONTROLLED;
-	dma.rx_fifo = DIF_RXFIFO_CFG_RXFA_4;
-	dma.tx_fifo = DIF_TXFIFO_CFG_TXFA_4;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXFA_4;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXFA_4;
 	for (uint32_t bytes = 1; bytes <= 4; bytes++) {
 		dma.size = bytes;
 		dma.bsconf_bytes = bytes;
 		test_check("BSCONF MEM2PER/PER2MEM completes", run_dma_loopback(&dma));
-		test_eq_memory("BSCONF MEM2PER/PER2MEM data", tx_data, rx_data, bytes);
+		test_eq_memory("BSCONF MEM2PER/PER2MEM data", TX_DATA, rx_data, bytes);
 	}
 
 	test_category("DMA repeated transfers");
-	dma.size = sizeof(tx_data);
+	dma.size = sizeof(TX_DATA);
 	dma.bsconf_bytes = 0;
 	dma.flow = DMA_CONTROLLED;
-	dma.rx_fifo = fifo;
-	dma.tx_fifo = fifo;
+	dma.fifo.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1;
+	dma.fifo.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_1;
 	bool large_block = true;
 	for (uint32_t packet = 0; packet < 28; packet++) {
 		large_block &= run_dma_loopback(&dma);
-		large_block &= memcmp(tx_data, rx_data, sizeof(tx_data)) == 0;
+		large_block &= memcmp(TX_DATA, rx_data, sizeof(TX_DATA)) == 0;
 	}
 	test_check("DMA repeated 1 KiB transfer completes", large_block);
 
@@ -705,7 +901,7 @@ static void test_dma(void) {
 	dma.channels = BIT(DMA_RX_CHANNEL);
 	dma.preload_tx = true;
 	test_check("RX request works without TX DMA", run_dma_loopback(&dma));
-	test_eq_memory("RX-only DMA data", tx_data, rx_data, 4);
+	test_eq_memory("RX-only DMA data", TX_DATA, rx_data, 4);
 	test_eq_u32(
 		"RX request does not complete TX channel",
 		BIT(DMA_RX_CHANNEL),
@@ -713,7 +909,7 @@ static void test_dma(void) {
 	);
 
 	test_category("DMA abort and recovery");
-	configure_dif(DIF_CON_BM_8, fifo, fifo);
+	configure_dif(DIF_CON_BM_8, dma.fifo);
 	DMAC_TC_CLEAR = channels;
 	DMAC_CH_CONFIG(DMA_RX_CHANNEL) = (
 		(DMA_RX_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
@@ -723,10 +919,10 @@ static void test_dma(void) {
 		(DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_HALT | DMAC_CH_CONFIG_ENABLE
 	);
-	DIF_IMSC = DIF_REQUEST_IRQS;
-	DIF_DMAE = DIF_REQUEST_IRQS;
-	DIF_TXD = tx_data[0] | (tx_data[1] << 8) | (tx_data[2] << 16) | (tx_data[3] << 24);
-	DIF_TPS_CTRL = sizeof(tx_data);
+	DIF_IMSC = DIF_IRQ_REQUESTS;
+	DIF_DMAE = DIF_DMA_REQUESTS;
+	DIF_TXD = TX_DATA[0] | (TX_DATA[1] << 8) | (TX_DATA[2] << 16) | (TX_DATA[3] << 24);
+	DIF_TPS_CTRL = sizeof(TX_DATA);
 	test_check("halted DMA transfer becomes busy", (DIF_STAT & DIF_STAT_BSY) != 0);
 	DIF_RUNCTRL = 0;
 	test_eq_u32("DMA abort clears busy", 0, DIF_STAT & DIF_STAT_BSY);
@@ -738,10 +934,13 @@ static void test_dma(void) {
 	dma.channels = channels;
 	dma.preload_tx = false;
 	test_check("DMA recovers after abort", run_dma_loopback(&dma));
-	test_eq_memory("DMA recovery data", tx_data, rx_data, 16);
+	test_eq_memory("DMA recovery data", TX_DATA, rx_data, 16);
 	test_eq_u32("DMA channels reach terminal count", channels, DMAC_RAW_TC_STATUS & channels);
 	test_eq_u32("DMA channels have no bus errors", 0, DMAC_RAW_ERR_STATUS & channels);
 	test_eq_u32("DMA channels stop after last requests", 0, DMAC_EN_CHAN & channels);
+
+	test_category("Parallel LCD DMA read");
+	test_dma_lcd_read();
 }
 
 int dif_v2_test(void) {
@@ -750,8 +949,7 @@ int dif_v2_test(void) {
 	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_category("Conversion reset values");
 	test_conversion_defaults();
-	uint32_t fifo = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
-	configure_dif(DIF_CON_HB_MSB | DIF_CON_PH_1 | DIF_CON_PO_1 | DIF_CON_BM_8, fifo, fifo);
+	configure_dif(DIF_CON_HB_MSB | DIF_CON_PH_1 | DIF_CON_PO_1 | DIF_CON_BM_8, FIFO_DEFAULT);
 
 	test_category("Registers");
 	test_registers();
@@ -759,15 +957,16 @@ int dif_v2_test(void) {
 	test_irq_status();
 	test_category("IRQ loopback");
 	run_irq_loopback(
-		sizeof(tx_data),
+		sizeof(TX_DATA),
 		DIF_CON_HB_MSB | DIF_CON_PH_1 | DIF_CON_PO_1 | DIF_CON_BM_8,
-		fifo,
-		fifo
+		FIFO_DEFAULT
 	);
 	test_category("Burst boundaries");
 	test_irq_burst_boundaries();
 	test_category("FIFO alignment");
 	test_irq_fifo_alignment();
+	test_category("FIFO burst sizes");
+	test_irq_fifo_bursts();
 	test_category("BSCONF loopback");
 	test_bsconf_loopback();
 	test_category("BSCONF 9-bit loopback");
@@ -777,14 +976,14 @@ int dif_v2_test(void) {
 	test_category("Serial modes");
 	test_serial_modes();
 	test_category("16-bit words");
-	run_irq_loopback(16, DIF_CON_BM_16, fifo, fifo);
+	run_irq_loopback(16, DIF_CON_BM_16, FIFO_DEFAULT);
 	test_bit_conversion();
 	test_pixel_conversion();
 	test_category("FIFO errors");
 	test_fifo_errors();
 	test_category("Abort and restart");
 	test_abort();
-	run_irq_loopback(17, DIF_CON_BM_8, fifo, fifo);
+	run_irq_loopback(17, DIF_CON_BM_8, FIFO_DEFAULT);
 	return test_finish();
 }
 
