@@ -786,336 +786,380 @@
 
 // DIF [MOD_NUM=F043, MOD_REV=00, MOD_32BIT=C0]
 // Display Interface (see SSC module)
-#define	DIF_BASE				0xF1B00000
+#define	DIF_BASE						0xF1B00000
 /* Clock Control Register */
-#define	DIF_CLC					MMIO32(DIF_BASE + 0x00)
+#define	DIF_CLC							MMIO32(DIF_BASE + 0x00)
 
 /* Port Input Select Register */
-#define	DIF_PISEL				MMIO32(DIF_BASE + 0x04)
-#define	DIF_PISEL_MRIS			BIT(0)					 // Master Mode Receive Input Select
-#define	DIF_PISEL_SRIS			BIT(1)					 // Slave Mode Receive Input Select
-#define	DIF_PISEL_SCIS			BIT(2)					 // Slave Mode Clock Input Select
-#define	DIF_PISEL_SLSIS			GENMASK(5, 3)			 // Slave Mode Slave Select Input Selection
-#define	DIF_PISEL_SLSIS_SHIFT	3
-#define	DIF_PISEL_STIP			BIT(8)					 // Slave Transmit Idle State Polarity
+#define	DIF_PISEL						MMIO32(DIF_BASE + 0x04)
+#define	DIF_PISEL_MRIS					BIT(0)					 // Master Mode Receive Input Select
+#define	DIF_PISEL_SRIS					BIT(1)					 // Slave Mode Receive Input Select
+#define	DIF_PISEL_SCIS					BIT(2)					 // Slave Mode Clock Input Select
+#define	DIF_PISEL_SLSIS					GENMASK(5, 3)			 // Slave Mode Slave Select Input Selection
+#define	DIF_PISEL_SLSIS_SHIFT			3
+#define	DIF_PISEL_STIP					BIT(8)					 // Slave Transmit Idle State Polarity
 
 /* Module Identifier Register */
-#define	DIF_ID					MMIO32(DIF_BASE + 0x08)
+#define	DIF_ID							MMIO32(DIF_BASE + 0x08)
 
 /* Control Register */
-#define	DIF_CON					MMIO32(DIF_BASE + 0x10)
-#define	DIF_CON_HB				BIT(4)					 // Heading Bit Control
-#define	DIF_CON_HB_LSB			0x0
-#define	DIF_CON_HB_MSB			0x10
-#define	DIF_CON_PH				BIT(5)					 // Clock Phase Control (CPHA)
-#define	DIF_CON_PH_0			0x0
-#define	DIF_CON_PH_1			0x20
-#define	DIF_CON_PO				BIT(6)					 // Clock Polarity Control (CPOL)
-#define	DIF_CON_PO_0			0x0
-#define	DIF_CON_PO_1			0x40
-#define	DIF_CON_LB				BIT(7)					 // Loop-Back Control
-#define	DIF_CON_TE				BIT(8)					 // Transmit Error Flag
-#define	DIF_CON_TEN				BIT(8)					 // Transmit Error Enable
-#define	DIF_CON_RE				BIT(9)					 // Receive Error Flag
-#define	DIF_CON_REN				BIT(9)					 // Receive Error Enable
-#define	DIF_CON_PE				BIT(10)					 // Phase Error Flag
-#define	DIF_CON_PEN				BIT(10)					 // Phase Error Enable
-#define	DIF_CON_BE				BIT(11)					 // Baud Rate Error Flag
-#define	DIF_CON_BEN				BIT(11)					 // Baud Rate Error Enable
-#define	DIF_CON_AREN			BIT(12)					 // Automatic Reset Enable
-#define	DIF_CON_BSY				BIT(12)					 // Busy Flag
-#define	DIF_CON_LOCK			BIT(13)					 // Lock bit for the 8 MSB bits of the Transmist data register
-#define	DIF_CON_MS				BIT(14)					 // Master Select
-#define	DIF_CON_MS_SLAVE		0x0
-#define	DIF_CON_MS_MASTER		0x4000
-#define	DIF_CON_EN				BIT(15)					 // Enable Bit
-#define	DIF_CON_BC				GENMASK(19, 16)			 // Bit Count Status
-#define	DIF_CON_BC_SHIFT		16
-#define	DIF_CON_BM				GENMASK(19, 16)			 // Data Width Selection
-#define	DIF_CON_BM_SHIFT		16
-#define	DIF_CON_BM_1			0x0
-#define	DIF_CON_BM_2			0x10000
-#define	DIF_CON_BM_3			0x20000
-#define	DIF_CON_BM_4			0x30000
-#define	DIF_CON_BM_5			0x40000
-#define	DIF_CON_BM_6			0x50000
-#define	DIF_CON_BM_7			0x60000
-#define	DIF_CON_BM_8			0x70000
-#define	DIF_CON_BM_9			0x80000
-#define	DIF_CON_BM_10			0x90000
-#define	DIF_CON_BM_11			0xA0000
-#define	DIF_CON_BM_12			0xB0000
-#define	DIF_CON_BM_13			0xC0000
-#define	DIF_CON_BM_14			0xD0000
-#define	DIF_CON_BM_15			0xE0000
-#define	DIF_CON_BM_16			0xF0000
+#define	DIF_CON							MMIO32(DIF_BASE + 0x10)
+#define	DIF_CON_HB						BIT(4)					 // Heading Bit Control
+#define	DIF_CON_HB_LSB					0x0
+#define	DIF_CON_HB_MSB					0x10
+#define	DIF_CON_PH						BIT(5)					 // Clock Phase Control (CPHA)
+#define	DIF_CON_PH_0					0x0
+#define	DIF_CON_PH_1					0x20
+#define	DIF_CON_PO						BIT(6)					 // Clock Polarity Control (CPOL)
+#define	DIF_CON_PO_0					0x0
+#define	DIF_CON_PO_1					0x40
+#define	DIF_CON_LB						BIT(7)					 // Loop-Back Control
+#define	DIF_CON_TE						BIT(8)					 // Transmit Error Flag
+#define	DIF_CON_TEN						BIT(8)					 // Transmit Error Enable
+#define	DIF_CON_RE						BIT(9)					 // Receive Error Flag
+#define	DIF_CON_REN						BIT(9)					 // Receive Error Enable
+#define	DIF_CON_PE						BIT(10)					 // Phase Error Flag
+#define	DIF_CON_PEN						BIT(10)					 // Phase Error Enable
+#define	DIF_CON_BE						BIT(11)					 // Baud Rate Error Flag
+#define	DIF_CON_BEN						BIT(11)					 // Baud Rate Error Enable
+#define	DIF_CON_AREN					BIT(12)					 // Automatic Reset Enable
+#define	DIF_CON_BSY						BIT(12)					 // Busy Flag
+#define	DIF_CON_LOCK					BIT(13)					 // Lock bit for the 8 MSB bits of the Transmist data register
+#define	DIF_CON_MS						BIT(14)					 // Master Select
+#define	DIF_CON_MS_SLAVE				0x0
+#define	DIF_CON_MS_MASTER				0x4000
+#define	DIF_CON_EN						BIT(15)					 // Enable Bit
+#define	DIF_CON_BC						GENMASK(19, 16)			 // Bit Count Status
+#define	DIF_CON_BC_SHIFT				16
+#define	DIF_CON_BM						GENMASK(19, 16)			 // Data Width Selection
+#define	DIF_CON_BM_SHIFT				16
+#define	DIF_CON_BM_1					0x0
+#define	DIF_CON_BM_2					0x10000
+#define	DIF_CON_BM_3					0x20000
+#define	DIF_CON_BM_4					0x30000
+#define	DIF_CON_BM_5					0x40000
+#define	DIF_CON_BM_6					0x50000
+#define	DIF_CON_BM_7					0x60000
+#define	DIF_CON_BM_8					0x70000
+#define	DIF_CON_BM_9					0x80000
+#define	DIF_CON_BM_10					0x90000
+#define	DIF_CON_BM_11					0xA0000
+#define	DIF_CON_BM_12					0xB0000
+#define	DIF_CON_BM_13					0xC0000
+#define	DIF_CON_BM_14					0xD0000
+#define	DIF_CON_BM_15					0xE0000
+#define	DIF_CON_BM_16					0xF0000
 
 /* Baud Rate Timer Reload Register */
-#define	DIF_BR					MMIO32(DIF_BASE + 0x14)
-#define	DIF_BR_BR_VALUE			GENMASK(15, 0)			 // Baud Rate Timer/Reload Register Value
-#define	DIF_BR_BR_VALUE_SHIFT	0
+#define	DIF_BR							MMIO32(DIF_BASE + 0x14)
+#define	DIF_BR_BR_VALUE					GENMASK(15, 0)			 // Baud Rate Timer/Reload Register Value
+#define	DIF_BR_BR_VALUE_SHIFT			0
 
 /* Transmit Buffer Register */
-#define	DIF_TB					MMIO32(DIF_BASE + 0x20)
-#define	DIF_TB_TB_VALUE			GENMASK(15, 0)			 // Transmit Data Register Value
-#define	DIF_TB_TB_VALUE_SHIFT	0
+#define	DIF_TB							MMIO32(DIF_BASE + 0x20)
+#define	DIF_TB_TB_VALUE					GENMASK(15, 0)			 // Transmit Data Register Value
+#define	DIF_TB_TB_VALUE_SHIFT			0
 
 /* Receive Buffer Register */
-#define	DIF_RB					MMIO32(DIF_BASE + 0x24)
-#define	DIF_RB_RB_VALUE			GENMASK(15, 0)			 // Receive Data Register Value
-#define	DIF_RB_RB_VALUE_SHIFT	0
+#define	DIF_RB							MMIO32(DIF_BASE + 0x24)
+#define	DIF_RB_RB_VALUE					GENMASK(15, 0)			 // Receive Data Register Value
+#define	DIF_RB_RB_VALUE_SHIFT			0
 
 /* Receive FIFO Control Register */
-#define	DIF_RXFCON				MMIO32(DIF_BASE + 0x30)
-#define	DIF_RXFCON_RXFEN		BIT(0)					 // Receive FIFO Enable
-#define	DIF_RXFCON_RXFLU		BIT(1)					 // Receive FIFO Flush
-#define	DIF_RXFCON_RXTMEN		BIT(2)					 // Receive FIFO Transparent Mode Enable
-#define	DIF_RXFCON_RXFITL		GENMASK(13, 8)			 // Receive FIFO Interrupt Trigger Level
-#define	DIF_RXFCON_RXFITL_SHIFT	8
+#define	DIF_RXFCON						MMIO32(DIF_BASE + 0x30)
+#define	DIF_RXFCON_RXFEN				BIT(0)					 // Receive FIFO Enable
+#define	DIF_RXFCON_RXFLU				BIT(1)					 // Receive FIFO Flush
+#define	DIF_RXFCON_RXTMEN				BIT(2)					 // Receive FIFO Transparent Mode Enable
+#define	DIF_RXFCON_RXFITL				GENMASK(13, 8)			 // Receive FIFO Interrupt Trigger Level
+#define	DIF_RXFCON_RXFITL_SHIFT			8
 
 /* Transmit FIFO Control Register */
-#define	DIF_TXFCON				MMIO32(DIF_BASE + 0x34)
-#define	DIF_TXFCON_TXFEN		BIT(0)					 // Transmit FIFO Enable
-#define	DIF_TXFCON_TXFLU		BIT(1)					 // Transmit FIFO Flush
-#define	DIF_TXFCON_TXTMEN		BIT(2)					 // Transmit FIFO Transparent Mode Enable
-#define	DIF_TXFCON_TXFITL		GENMASK(13, 8)			 // Transmit FIFO Interrupt Trigger Level
-#define	DIF_TXFCON_TXFITL_SHIFT	8
+#define	DIF_TXFCON						MMIO32(DIF_BASE + 0x34)
+#define	DIF_TXFCON_TXFEN				BIT(0)					 // Transmit FIFO Enable
+#define	DIF_TXFCON_TXFLU				BIT(1)					 // Transmit FIFO Flush
+#define	DIF_TXFCON_TXTMEN				BIT(2)					 // Transmit FIFO Transparent Mode Enable
+#define	DIF_TXFCON_TXFITL				GENMASK(13, 8)			 // Transmit FIFO Interrupt Trigger Level
+#define	DIF_TXFCON_TXFITL_SHIFT			8
 
-#define	DIF_FSTAT				MMIO32(DIF_BASE + 0x38)
-#define	DIF_FSTAT_RXFFL			GENMASK(5, 0)			 // Receive FIFO Filling Level
-#define	DIF_FSTAT_RXFFL_SHIFT	0
-#define	DIF_FSTAT_TXFFL			GENMASK(13, 8)			 // Transmit FIFO Filling Level
-#define	DIF_FSTAT_TXFFL_SHIFT	8
+#define	DIF_FSTAT						MMIO32(DIF_BASE + 0x38)
+#define	DIF_FSTAT_RXFFL					GENMASK(5, 0)			 // Receive FIFO Filling Level
+#define	DIF_FSTAT_RXFFL_SHIFT			0
+#define	DIF_FSTAT_TXFFL					GENMASK(13, 8)			 // Transmit FIFO Filling Level
+#define	DIF_FSTAT_TXFFL_SHIFT			8
 
-#define	DIF_UNK0				MMIO32(DIF_BASE + 0x40)
+#define	DIF_UNK0						MMIO32(DIF_BASE + 0x40)
 
-#define	DIF_UNK1				MMIO32(DIF_BASE + 0x44)
+#define	DIF_UNK1						MMIO32(DIF_BASE + 0x44)
 
-#define	DIF_IMSC				MMIO32(DIF_BASE + 0x48)
-#define	DIF_IMSC_TX				BIT(0)					 // Transmit interrupt mask
-#define	DIF_IMSC_RX				BIT(1)					 // Receive interrupt mask
-#define	DIF_IMSC_ERR			BIT(2)					 // Error interrupt mask
+#define	DIF_IMSC						MMIO32(DIF_BASE + 0x48)
+#define	DIF_IMSC_TX						BIT(0)					 // Transmit interrupt mask
+#define	DIF_IMSC_RX						BIT(1)					 // Receive interrupt mask
+#define	DIF_IMSC_ERR					BIT(2)					 // Error interrupt mask
 
-#define	DIF_RIS					MMIO32(DIF_BASE + 0x4C)
-#define	DIF_RIS_TX				BIT(0)					 // Transmit interrupt raw status
-#define	DIF_RIS_RX				BIT(1)					 // Receive interrupt raw status
-#define	DIF_RIS_ERR				BIT(2)					 // Error interrupt raw status
+#define	DIF_RIS							MMIO32(DIF_BASE + 0x4C)
+#define	DIF_RIS_TX						BIT(0)					 // Transmit interrupt raw status
+#define	DIF_RIS_RX						BIT(1)					 // Receive interrupt raw status
+#define	DIF_RIS_ERR						BIT(2)					 // Error interrupt raw status
 
-#define	DIF_MIS					MMIO32(DIF_BASE + 0x50)
-#define	DIF_MIS_TX				BIT(0)					 // Transmit interrupt status
-#define	DIF_MIS_RX				BIT(1)					 // Receive interrupt status
-#define	DIF_MIS_ERR				BIT(2)					 // Error interrupt status
+#define	DIF_MIS							MMIO32(DIF_BASE + 0x50)
+#define	DIF_MIS_TX						BIT(0)					 // Transmit interrupt status
+#define	DIF_MIS_RX						BIT(1)					 // Receive interrupt status
+#define	DIF_MIS_ERR						BIT(2)					 // Error interrupt status
 
-#define	DIF_ICR					MMIO32(DIF_BASE + 0x54)
-#define	DIF_ICR_TX				BIT(0)					 // Transmit interrupt mask
-#define	DIF_ICR_RX				BIT(1)					 // Receive interrupt mask
-#define	DIF_ICR_ERR				BIT(2)					 // Error interrupt mask
+#define	DIF_ICR							MMIO32(DIF_BASE + 0x54)
+#define	DIF_ICR_TX						BIT(0)					 // Transmit interrupt mask
+#define	DIF_ICR_RX						BIT(1)					 // Receive interrupt mask
+#define	DIF_ICR_ERR						BIT(2)					 // Error interrupt mask
 
-#define	DIF_ISR					MMIO32(DIF_BASE + 0x58)
-#define	DIF_ISR_TX				BIT(0)					 // Transmit interrupt set
-#define	DIF_ISR_RX				BIT(1)					 // Receive interrupt set
-#define	DIF_ISR_ERR				BIT(2)					 // Error interrupt set
+#define	DIF_ISR							MMIO32(DIF_BASE + 0x58)
+#define	DIF_ISR_TX						BIT(0)					 // Transmit interrupt set
+#define	DIF_ISR_RX						BIT(1)					 // Receive interrupt set
+#define	DIF_ISR_ERR						BIT(2)					 // Error interrupt set
 
-#define	DIF_DMAE				MMIO32(DIF_BASE + 0x5C)
-#define	DIF_DMAE_TX				BIT(0)					 // Transmit interrupt mask
-#define	DIF_DMAE_RX				BIT(1)					 // Receive interrupt mask
+#define	DIF_DMAE						MMIO32(DIF_BASE + 0x5C)
+#define	DIF_DMAE_TX						BIT(0)					 // Transmit interrupt mask
+#define	DIF_DMAE_RX						BIT(1)					 // Receive interrupt mask
 
-#define	DIF_UNK2				MMIO32(DIF_BASE + 0x60)
+#define	DIF_UNK2						MMIO32(DIF_BASE + 0x60)
+
+/* Unknown LCD Register (0x64) */
+#define	DIF_LCD_UNK64					MMIO32(DIF_BASE + 0x64)
+#define	DIF_LCD_UNK64_VALUE0			GENMASK(4, 0)
+#define	DIF_LCD_UNK64_VALUE0_SHIFT		0
+#define	DIF_LCD_UNK64_VALUE1			GENMASK(12, 8)
+#define	DIF_LCD_UNK64_VALUE1_SHIFT		8
+#define	DIF_LCD_UNK64_VALUE2			GENMASK(20, 16)
+#define	DIF_LCD_UNK64_VALUE2_SHIFT		16
+
+/* Unknown LCD Register (0x68) */
+#define	DIF_LCD_UNK68					MMIO32(DIF_BASE + 0x68)
+#define	DIF_LCD_UNK68_VALUE0			GENMASK(4, 0)
+#define	DIF_LCD_UNK68_VALUE0_SHIFT		0
+#define	DIF_LCD_UNK68_VALUE1			GENMASK(12, 8)
+#define	DIF_LCD_UNK68_VALUE1_SHIFT		8
+#define	DIF_LCD_UNK68_VALUE2			GENMASK(20, 16)
+#define	DIF_LCD_UNK68_VALUE2_SHIFT		16
+#define	DIF_LCD_UNK68_VALUE3			GENMASK(28, 24)
+#define	DIF_LCD_UNK68_VALUE3_SHIFT		24
 
 /* Pixel-Bit Conversion Register */
-#define	DIF_PBCCON				MMIO32(DIF_BASE + 0x70)
-#define	DIF_PBCCON_PBBCONV_MODE	BIT(0)
+#define	DIF_PBCCON						MMIO32(DIF_BASE + 0x70)
+#define	DIF_PBCCON_PBBCONV_MODE			BIT(0)
+#define	DIF_PBCCON_UNK8					BIT(8)					 // Enabled by firmware when UNK9 contains a mode from 0 to 3
+#define	DIF_PBCCON_UNK9					GENMASK(10, 9)			 // Firmware mode field; mode 4 is represented by clearing UNK8 and UNK9
+#define	DIF_PBCCON_UNK9_SHIFT			9
 
 /* Bit Multiplex Configuration Register 0 */
-#define	DIF_BMREG0				MMIO32(DIF_BASE + 0x74)
-#define	DIF_BMREG0_MUX0			GENMASK(4, 0)
-#define	DIF_BMREG0_MUX0_SHIFT	0
-#define	DIF_BMREG0_MUX1			GENMASK(9, 5)
-#define	DIF_BMREG0_MUX1_SHIFT	5
-#define	DIF_BMREG0_MUX2			GENMASK(14, 10)
-#define	DIF_BMREG0_MUX2_SHIFT	10
-#define	DIF_BMREG0_MUX3			GENMASK(20, 16)
-#define	DIF_BMREG0_MUX3_SHIFT	16
-#define	DIF_BMREG0_MUX4			GENMASK(25, 21)
-#define	DIF_BMREG0_MUX4_SHIFT	21
-#define	DIF_BMREG0_MUX5			GENMASK(30, 26)
-#define	DIF_BMREG0_MUX5_SHIFT	26
+#define	DIF_BMREG0						MMIO32(DIF_BASE + 0x74)
+#define	DIF_BMREG0_MUX0					GENMASK(4, 0)
+#define	DIF_BMREG0_MUX0_SHIFT			0
+#define	DIF_BMREG0_MUX1					GENMASK(9, 5)
+#define	DIF_BMREG0_MUX1_SHIFT			5
+#define	DIF_BMREG0_MUX2					GENMASK(14, 10)
+#define	DIF_BMREG0_MUX2_SHIFT			10
+#define	DIF_BMREG0_MUX3					GENMASK(20, 16)
+#define	DIF_BMREG0_MUX3_SHIFT			16
+#define	DIF_BMREG0_MUX4					GENMASK(25, 21)
+#define	DIF_BMREG0_MUX4_SHIFT			21
+#define	DIF_BMREG0_MUX5					GENMASK(30, 26)
+#define	DIF_BMREG0_MUX5_SHIFT			26
 
 /* Bit Multiplex Configuration Register 1 */
-#define	DIF_BMREG1				MMIO32(DIF_BASE + 0x78)
-#define	DIF_BMREG1_MUX6			GENMASK(4, 0)
-#define	DIF_BMREG1_MUX6_SHIFT	0
-#define	DIF_BMREG1_MUX7			GENMASK(9, 5)
-#define	DIF_BMREG1_MUX7_SHIFT	5
-#define	DIF_BMREG1_MUX8			GENMASK(14, 10)
-#define	DIF_BMREG1_MUX8_SHIFT	10
-#define	DIF_BMREG1_MUX9			GENMASK(20, 16)
-#define	DIF_BMREG1_MUX9_SHIFT	16
-#define	DIF_BMREG1_MUX10		GENMASK(25, 21)
-#define	DIF_BMREG1_MUX10_SHIFT	21
-#define	DIF_BMREG1_MUX11		GENMASK(30, 26)
-#define	DIF_BMREG1_MUX11_SHIFT	26
+#define	DIF_BMREG1						MMIO32(DIF_BASE + 0x78)
+#define	DIF_BMREG1_MUX6					GENMASK(4, 0)
+#define	DIF_BMREG1_MUX6_SHIFT			0
+#define	DIF_BMREG1_MUX7					GENMASK(9, 5)
+#define	DIF_BMREG1_MUX7_SHIFT			5
+#define	DIF_BMREG1_MUX8					GENMASK(14, 10)
+#define	DIF_BMREG1_MUX8_SHIFT			10
+#define	DIF_BMREG1_MUX9					GENMASK(20, 16)
+#define	DIF_BMREG1_MUX9_SHIFT			16
+#define	DIF_BMREG1_MUX10				GENMASK(25, 21)
+#define	DIF_BMREG1_MUX10_SHIFT			21
+#define	DIF_BMREG1_MUX11				GENMASK(30, 26)
+#define	DIF_BMREG1_MUX11_SHIFT			26
 
 /* Bit Multiplex Configuration Register 2 */
-#define	DIF_BMREG2				MMIO32(DIF_BASE + 0x7C)
-#define	DIF_BMREG2_MUX12		GENMASK(4, 0)
-#define	DIF_BMREG2_MUX12_SHIFT	0
-#define	DIF_BMREG2_MUX13		GENMASK(9, 5)
-#define	DIF_BMREG2_MUX13_SHIFT	5
-#define	DIF_BMREG2_MUX14		GENMASK(14, 10)
-#define	DIF_BMREG2_MUX14_SHIFT	10
-#define	DIF_BMREG2_MUX15		GENMASK(20, 16)
-#define	DIF_BMREG2_MUX15_SHIFT	16
-#define	DIF_BMREG2_MUX16		GENMASK(25, 21)
-#define	DIF_BMREG2_MUX16_SHIFT	21
-#define	DIF_BMREG2_MUX17		GENMASK(30, 26)
-#define	DIF_BMREG2_MUX17_SHIFT	26
+#define	DIF_BMREG2						MMIO32(DIF_BASE + 0x7C)
+#define	DIF_BMREG2_MUX12				GENMASK(4, 0)
+#define	DIF_BMREG2_MUX12_SHIFT			0
+#define	DIF_BMREG2_MUX13				GENMASK(9, 5)
+#define	DIF_BMREG2_MUX13_SHIFT			5
+#define	DIF_BMREG2_MUX14				GENMASK(14, 10)
+#define	DIF_BMREG2_MUX14_SHIFT			10
+#define	DIF_BMREG2_MUX15				GENMASK(20, 16)
+#define	DIF_BMREG2_MUX15_SHIFT			16
+#define	DIF_BMREG2_MUX16				GENMASK(25, 21)
+#define	DIF_BMREG2_MUX16_SHIFT			21
+#define	DIF_BMREG2_MUX17				GENMASK(30, 26)
+#define	DIF_BMREG2_MUX17_SHIFT			26
 
 /* Bit Multiplex Configuration Register 3 */
-#define	DIF_BMREG3				MMIO32(DIF_BASE + 0x80)
-#define	DIF_BMREG3_MUX18		GENMASK(4, 0)
-#define	DIF_BMREG3_MUX18_SHIFT	0
-#define	DIF_BMREG3_MUX19		GENMASK(9, 5)
-#define	DIF_BMREG3_MUX19_SHIFT	5
-#define	DIF_BMREG3_MUX20		GENMASK(14, 10)
-#define	DIF_BMREG3_MUX20_SHIFT	10
-#define	DIF_BMREG3_MUX21		GENMASK(20, 16)
-#define	DIF_BMREG3_MUX21_SHIFT	16
-#define	DIF_BMREG3_MUX22		GENMASK(25, 21)
-#define	DIF_BMREG3_MUX22_SHIFT	21
-#define	DIF_BMREG3_MUX23		GENMASK(30, 26)
-#define	DIF_BMREG3_MUX23_SHIFT	26
+#define	DIF_BMREG3						MMIO32(DIF_BASE + 0x80)
+#define	DIF_BMREG3_MUX18				GENMASK(4, 0)
+#define	DIF_BMREG3_MUX18_SHIFT			0
+#define	DIF_BMREG3_MUX19				GENMASK(9, 5)
+#define	DIF_BMREG3_MUX19_SHIFT			5
+#define	DIF_BMREG3_MUX20				GENMASK(14, 10)
+#define	DIF_BMREG3_MUX20_SHIFT			10
+#define	DIF_BMREG3_MUX21				GENMASK(20, 16)
+#define	DIF_BMREG3_MUX21_SHIFT			16
+#define	DIF_BMREG3_MUX22				GENMASK(25, 21)
+#define	DIF_BMREG3_MUX22_SHIFT			21
+#define	DIF_BMREG3_MUX23				GENMASK(30, 26)
+#define	DIF_BMREG3_MUX23_SHIFT			26
 
 /* Bit Multiplex Configuration Register 4 */
-#define	DIF_BMREG4				MMIO32(DIF_BASE + 0x84)
-#define	DIF_BMREG4_MUX24		GENMASK(4, 0)
-#define	DIF_BMREG4_MUX24_SHIFT	0
-#define	DIF_BMREG4_MUX25		GENMASK(9, 5)
-#define	DIF_BMREG4_MUX25_SHIFT	5
-#define	DIF_BMREG4_MUX26		GENMASK(14, 10)
-#define	DIF_BMREG4_MUX26_SHIFT	10
-#define	DIF_BMREG4_MUX27		GENMASK(20, 16)
-#define	DIF_BMREG4_MUX27_SHIFT	16
-#define	DIF_BMREG4_MUX28		GENMASK(25, 21)
-#define	DIF_BMREG4_MUX28_SHIFT	21
-#define	DIF_BMREG4_MUX29		GENMASK(30, 26)
-#define	DIF_BMREG4_MUX29_SHIFT	26
+#define	DIF_BMREG4						MMIO32(DIF_BASE + 0x84)
+#define	DIF_BMREG4_MUX24				GENMASK(4, 0)
+#define	DIF_BMREG4_MUX24_SHIFT			0
+#define	DIF_BMREG4_MUX25				GENMASK(9, 5)
+#define	DIF_BMREG4_MUX25_SHIFT			5
+#define	DIF_BMREG4_MUX26				GENMASK(14, 10)
+#define	DIF_BMREG4_MUX26_SHIFT			10
+#define	DIF_BMREG4_MUX27				GENMASK(20, 16)
+#define	DIF_BMREG4_MUX27_SHIFT			16
+#define	DIF_BMREG4_MUX28				GENMASK(25, 21)
+#define	DIF_BMREG4_MUX28_SHIFT			21
+#define	DIF_BMREG4_MUX29				GENMASK(30, 26)
+#define	DIF_BMREG4_MUX29_SHIFT			26
 
 /* Bit Multiplex Configuration Register 5 */
-#define	DIF_BMREG5				MMIO32(DIF_BASE + 0x88)
-#define	DIF_BMREG5_MUX30		GENMASK(4, 0)
-#define	DIF_BMREG5_MUX30_SHIFT	0
-#define	DIF_BMREG5_MUX31		GENMASK(9, 5)
-#define	DIF_BMREG5_MUX31_SHIFT	5
+#define	DIF_BMREG5						MMIO32(DIF_BASE + 0x88)
+#define	DIF_BMREG5_MUX30				GENMASK(4, 0)
+#define	DIF_BMREG5_MUX30_SHIFT			0
+#define	DIF_BMREG5_MUX31				GENMASK(9, 5)
+#define	DIF_BMREG5_MUX31_SHIFT			5
 
 /* Bit Clamp Value Register */
-#define	DIF_BCREG				MMIO32(DIF_BASE + 0x8C)
-#define	DIF_BCREG_B0			BIT(0)
-#define	DIF_BCREG_B16			BIT(0)
-#define	DIF_BCREG_B1			BIT(2)
-#define	DIF_BCREG_B17			BIT(2)
-#define	DIF_BCREG_B18			BIT(4)
-#define	DIF_BCREG_B2			BIT(4)
-#define	DIF_BCREG_B19			BIT(6)
-#define	DIF_BCREG_B3			BIT(6)
-#define	DIF_BCREG_B20			BIT(8)
-#define	DIF_BCREG_B4			BIT(8)
-#define	DIF_BCREG_B21			BIT(10)
-#define	DIF_BCREG_B5			BIT(10)
-#define	DIF_BCREG_B22			BIT(12)
-#define	DIF_BCREG_B6			BIT(12)
-#define	DIF_BCREG_B23			BIT(14)
-#define	DIF_BCREG_B7			BIT(14)
-#define	DIF_BCREG_B24			BIT(16)
-#define	DIF_BCREG_B8			BIT(16)
-#define	DIF_BCREG_B25			BIT(18)
-#define	DIF_BCREG_B9			BIT(18)
-#define	DIF_BCREG_B10			BIT(20)
-#define	DIF_BCREG_B26			BIT(20)
-#define	DIF_BCREG_B11			BIT(22)
-#define	DIF_BCREG_B27			BIT(22)
-#define	DIF_BCREG_B12			BIT(24)
-#define	DIF_BCREG_B28			BIT(24)
-#define	DIF_BCREG_B13			BIT(26)
-#define	DIF_BCREG_B29			BIT(26)
-#define	DIF_BCREG_B14			BIT(28)
-#define	DIF_BCREG_B30			BIT(28)
-#define	DIF_BCREG_B15			BIT(30)
-#define	DIF_BCREG_B31			BIT(30)
+#define	DIF_BCREG						MMIO32(DIF_BASE + 0x8C)
+#define	DIF_BCREG_B0					BIT(0)
+#define	DIF_BCREG_B1					BIT(1)
+#define	DIF_BCREG_B2					BIT(2)
+#define	DIF_BCREG_B3					BIT(3)
+#define	DIF_BCREG_B4					BIT(4)
+#define	DIF_BCREG_B5					BIT(5)
+#define	DIF_BCREG_B6					BIT(6)
+#define	DIF_BCREG_B7					BIT(7)
+#define	DIF_BCREG_B8					BIT(8)
+#define	DIF_BCREG_B9					BIT(9)
+#define	DIF_BCREG_B10					BIT(10)
+#define	DIF_BCREG_B11					BIT(11)
+#define	DIF_BCREG_B12					BIT(12)
+#define	DIF_BCREG_B13					BIT(13)
+#define	DIF_BCREG_B14					BIT(14)
+#define	DIF_BCREG_B15					BIT(15)
+#define	DIF_BCREG_B16					BIT(16)
+#define	DIF_BCREG_B17					BIT(17)
+#define	DIF_BCREG_B18					BIT(18)
+#define	DIF_BCREG_B19					BIT(19)
+#define	DIF_BCREG_B20					BIT(20)
+#define	DIF_BCREG_B21					BIT(21)
+#define	DIF_BCREG_B22					BIT(22)
+#define	DIF_BCREG_B23					BIT(23)
+#define	DIF_BCREG_B24					BIT(24)
+#define	DIF_BCREG_B25					BIT(25)
+#define	DIF_BCREG_B26					BIT(26)
+#define	DIF_BCREG_B27					BIT(27)
+#define	DIF_BCREG_B28					BIT(28)
+#define	DIF_BCREG_B29					BIT(29)
+#define	DIF_BCREG_B30					BIT(30)
+#define	DIF_BCREG_B31					BIT(31)
 
 /* Bit Control Register 0 */
-#define	DIF_BCSEL0				MMIO32(DIF_BASE + 0x90)
-#define	DIF_BCSEL0_B0			GENMASK(1, 0)
-#define	DIF_BCSEL0_B0_SHIFT		0
-#define	DIF_BCSEL0_B1			GENMASK(3, 2)
-#define	DIF_BCSEL0_B1_SHIFT		2
-#define	DIF_BCSEL0_B2			GENMASK(5, 4)
-#define	DIF_BCSEL0_B2_SHIFT		4
-#define	DIF_BCSEL0_B3			GENMASK(7, 6)
-#define	DIF_BCSEL0_B3_SHIFT		6
-#define	DIF_BCSEL0_B4			GENMASK(9, 8)
-#define	DIF_BCSEL0_B4_SHIFT		8
-#define	DIF_BCSEL0_B5			GENMASK(11, 10)
-#define	DIF_BCSEL0_B5_SHIFT		10
-#define	DIF_BCSEL0_B6			GENMASK(13, 12)
-#define	DIF_BCSEL0_B6_SHIFT		12
-#define	DIF_BCSEL0_B7			GENMASK(15, 14)
-#define	DIF_BCSEL0_B7_SHIFT		14
-#define	DIF_BCSEL0_B8			GENMASK(17, 16)
-#define	DIF_BCSEL0_B8_SHIFT		16
-#define	DIF_BCSEL0_B9			GENMASK(19, 18)
-#define	DIF_BCSEL0_B9_SHIFT		18
-#define	DIF_BCSEL0_B10			GENMASK(21, 20)
-#define	DIF_BCSEL0_B10_SHIFT	20
-#define	DIF_BCSEL0_B11			GENMASK(23, 22)
-#define	DIF_BCSEL0_B11_SHIFT	22
-#define	DIF_BCSEL0_B12			GENMASK(25, 24)
-#define	DIF_BCSEL0_B12_SHIFT	24
-#define	DIF_BCSEL0_B13			GENMASK(27, 26)
-#define	DIF_BCSEL0_B13_SHIFT	26
-#define	DIF_BCSEL0_B14			GENMASK(29, 28)
-#define	DIF_BCSEL0_B14_SHIFT	28
-#define	DIF_BCSEL0_B15			GENMASK(31, 30)
-#define	DIF_BCSEL0_B15_SHIFT	30
+#define	DIF_BCSEL0						MMIO32(DIF_BASE + 0x90)
+#define	DIF_BCSEL0_B0					GENMASK(1, 0)
+#define	DIF_BCSEL0_B0_SHIFT				0
+#define	DIF_BCSEL0_B1					GENMASK(3, 2)
+#define	DIF_BCSEL0_B1_SHIFT				2
+#define	DIF_BCSEL0_B2					GENMASK(5, 4)
+#define	DIF_BCSEL0_B2_SHIFT				4
+#define	DIF_BCSEL0_B3					GENMASK(7, 6)
+#define	DIF_BCSEL0_B3_SHIFT				6
+#define	DIF_BCSEL0_B4					GENMASK(9, 8)
+#define	DIF_BCSEL0_B4_SHIFT				8
+#define	DIF_BCSEL0_B5					GENMASK(11, 10)
+#define	DIF_BCSEL0_B5_SHIFT				10
+#define	DIF_BCSEL0_B6					GENMASK(13, 12)
+#define	DIF_BCSEL0_B6_SHIFT				12
+#define	DIF_BCSEL0_B7					GENMASK(15, 14)
+#define	DIF_BCSEL0_B7_SHIFT				14
+#define	DIF_BCSEL0_B8					GENMASK(17, 16)
+#define	DIF_BCSEL0_B8_SHIFT				16
+#define	DIF_BCSEL0_B9					GENMASK(19, 18)
+#define	DIF_BCSEL0_B9_SHIFT				18
+#define	DIF_BCSEL0_B10					GENMASK(21, 20)
+#define	DIF_BCSEL0_B10_SHIFT			20
+#define	DIF_BCSEL0_B11					GENMASK(23, 22)
+#define	DIF_BCSEL0_B11_SHIFT			22
+#define	DIF_BCSEL0_B12					GENMASK(25, 24)
+#define	DIF_BCSEL0_B12_SHIFT			24
+#define	DIF_BCSEL0_B13					GENMASK(27, 26)
+#define	DIF_BCSEL0_B13_SHIFT			26
+#define	DIF_BCSEL0_B14					GENMASK(29, 28)
+#define	DIF_BCSEL0_B14_SHIFT			28
+#define	DIF_BCSEL0_B15					GENMASK(31, 30)
+#define	DIF_BCSEL0_B15_SHIFT			30
 
 /* Bit Control Register 1 */
-#define	DIF_BCSEL1				MMIO32(DIF_BASE + 0x94)
-#define	DIF_BCSEL1_B16			GENMASK(1, 0)
-#define	DIF_BCSEL1_B16_SHIFT	0
-#define	DIF_BCSEL1_B17			GENMASK(3, 2)
-#define	DIF_BCSEL1_B17_SHIFT	2
-#define	DIF_BCSEL1_B18			GENMASK(5, 4)
-#define	DIF_BCSEL1_B18_SHIFT	4
-#define	DIF_BCSEL1_B19			GENMASK(7, 6)
-#define	DIF_BCSEL1_B19_SHIFT	6
-#define	DIF_BCSEL1_B20			GENMASK(9, 8)
-#define	DIF_BCSEL1_B20_SHIFT	8
-#define	DIF_BCSEL1_B21			GENMASK(11, 10)
-#define	DIF_BCSEL1_B21_SHIFT	10
-#define	DIF_BCSEL1_B22			GENMASK(13, 12)
-#define	DIF_BCSEL1_B22_SHIFT	12
-#define	DIF_BCSEL1_B23			GENMASK(15, 14)
-#define	DIF_BCSEL1_B23_SHIFT	14
-#define	DIF_BCSEL1_B24			GENMASK(17, 16)
-#define	DIF_BCSEL1_B24_SHIFT	16
-#define	DIF_BCSEL1_B25			GENMASK(19, 18)
-#define	DIF_BCSEL1_B25_SHIFT	18
-#define	DIF_BCSEL1_B26			GENMASK(21, 20)
-#define	DIF_BCSEL1_B26_SHIFT	20
-#define	DIF_BCSEL1_B27			GENMASK(23, 22)
-#define	DIF_BCSEL1_B27_SHIFT	22
-#define	DIF_BCSEL1_B28			GENMASK(25, 24)
-#define	DIF_BCSEL1_B28_SHIFT	24
-#define	DIF_BCSEL1_B29			GENMASK(27, 26)
-#define	DIF_BCSEL1_B29_SHIFT	26
-#define	DIF_BCSEL1_B30			GENMASK(29, 28)
-#define	DIF_BCSEL1_B30_SHIFT	28
-#define	DIF_BCSEL1_B31			GENMASK(31, 30)
-#define	DIF_BCSEL1_B31_SHIFT	30
+#define	DIF_BCSEL1						MMIO32(DIF_BASE + 0x94)
+#define	DIF_BCSEL1_B16					GENMASK(1, 0)
+#define	DIF_BCSEL1_B16_SHIFT			0
+#define	DIF_BCSEL1_B17					GENMASK(3, 2)
+#define	DIF_BCSEL1_B17_SHIFT			2
+#define	DIF_BCSEL1_B18					GENMASK(5, 4)
+#define	DIF_BCSEL1_B18_SHIFT			4
+#define	DIF_BCSEL1_B19					GENMASK(7, 6)
+#define	DIF_BCSEL1_B19_SHIFT			6
+#define	DIF_BCSEL1_B20					GENMASK(9, 8)
+#define	DIF_BCSEL1_B20_SHIFT			8
+#define	DIF_BCSEL1_B21					GENMASK(11, 10)
+#define	DIF_BCSEL1_B21_SHIFT			10
+#define	DIF_BCSEL1_B22					GENMASK(13, 12)
+#define	DIF_BCSEL1_B22_SHIFT			12
+#define	DIF_BCSEL1_B23					GENMASK(15, 14)
+#define	DIF_BCSEL1_B23_SHIFT			14
+#define	DIF_BCSEL1_B24					GENMASK(17, 16)
+#define	DIF_BCSEL1_B24_SHIFT			16
+#define	DIF_BCSEL1_B25					GENMASK(19, 18)
+#define	DIF_BCSEL1_B25_SHIFT			18
+#define	DIF_BCSEL1_B26					GENMASK(21, 20)
+#define	DIF_BCSEL1_B26_SHIFT			20
+#define	DIF_BCSEL1_B27					GENMASK(23, 22)
+#define	DIF_BCSEL1_B27_SHIFT			22
+#define	DIF_BCSEL1_B28					GENMASK(25, 24)
+#define	DIF_BCSEL1_B28_SHIFT			24
+#define	DIF_BCSEL1_B29					GENMASK(27, 26)
+#define	DIF_BCSEL1_B29_SHIFT			26
+#define	DIF_BCSEL1_B30					GENMASK(29, 28)
+#define	DIF_BCSEL1_B30_SHIFT			28
+#define	DIF_BCSEL1_B31					GENMASK(31, 30)
+#define	DIF_BCSEL1_B31_SHIFT			30
 
-#define	DIF_UNK3				MMIO32(DIF_BASE + 0x98)
+/* Transfer Synchronization Configuration Register */
+#define	DIF_SYNC_CONFIG					MMIO32(DIF_BASE + 0x98)
+#define	DIF_SYNC_CONFIG_SYNCEN			BIT(0)
+#define	DIF_SYNC_CONFIG_HDPOL			BIT(1)
+#define	DIF_SYNC_CONFIG_VDPOL			BIT(2)
+#define	DIF_SYNC_CONFIG_SYNCCD			BIT(3)
+#define	DIF_SYNC_CONFIG_SYNCCS1			BIT(4)
+#define	DIF_SYNC_CONFIG_SYNCCS2			BIT(5)
+#define	DIF_SYNC_CONFIG_SYNCCS3			BIT(6)
 
-#define	DIF_UNK4				MMIO32(DIF_BASE + 0x9C)
+/* Unknown LCD Control Register (0x9C) */
+#define	DIF_LCD_UNK9C					MMIO32(DIF_BASE + 0x9C)
+#define	DIF_LCD_UNK9C_BIT0				BIT(0)
+#define	DIF_LCD_UNK9C_BIT1				BIT(1)
+#define	DIF_LCD_UNK9C_BIT2				BIT(2)
+
+/* Transfer Synchronization Count Register */
+#define	DIF_SYNC_COUNT					MMIO32(DIF_BASE + 0xA0)
+#define	DIF_SYNC_COUNT_HDSTART			GENMASK(9, 0)
+#define	DIF_SYNC_COUNT_HDSTART_SHIFT	0
+#define	DIF_SYNC_COUNT_NUMBYTES			GENMASK(21, 10)
+#define	DIF_SYNC_COUNT_NUMBYTES_SHIFT	10
+#define	DIF_SYNC_COUNT_NUMROWS			GENMASK(31, 22)
+#define	DIF_SYNC_COUNT_NUMROWS_SHIFT	22
 
 
 // USB [MOD_NUM=F047, MOD_REV=00, MOD_32BIT=C0]

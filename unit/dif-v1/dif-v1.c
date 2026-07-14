@@ -12,6 +12,9 @@
 #define DIF_BLOCK_WORDS 256
 #define DIF_RX_FIFO_WORDS 4
 #define DIF_IRQ_MASK (DIF_IMSC_TX | DIF_IMSC_RX | DIF_IMSC_ERR)
+#define DIF_BCSEL_ALL_FROM_BCREG 0x55555555
+#define DIF_BCSEL_ALL_MODE_2 0xAAAAAAAA
+#define DIF_BCSEL_ALL_MODE_3 UINT32_MAX
 
 enum fifo_mode {
 	FIFO_OFF,
@@ -81,6 +84,69 @@ static bool transfer_loopback(uint32_t width, enum fifo_mode mode, uint32_t form
 	configure_dif(width, mode, format);
 	fill_data(width, words);
 	return transfer_active(mode, words);
+}
+
+static void set_bmreg_mapping(uint32_t output_bit, uint32_t input_bit) {
+	static volatile uint32_t * const REGISTERS[] = {
+		&DIF_BMREG0, &DIF_BMREG1, &DIF_BMREG2, &DIF_BMREG3, &DIF_BMREG4, &DIF_BMREG5,
+	};
+	static const uint8_t SHIFTS[] = {0, 5, 10, 16, 21, 26};
+	uint32_t register_index = output_bit / ARRAY_SIZE(SHIFTS);
+	uint32_t shift = SHIFTS[output_bit % ARRAY_SIZE(SHIFTS)];
+	volatile uint32_t *reg = REGISTERS[register_index];
+
+	*reg = (*reg & ~(GENMASK(4, 0) << shift)) | (input_bit << shift);
+}
+
+static void configure_pair_conversion(
+	uint32_t width,
+	int32_t first_input_bit,
+	int32_t input_bit_step,
+	uint32_t bcsel,
+	uint32_t bcreg
+) {
+	configure_dif(width, FIFO_ON, 0);
+	DIF_PBCCON = DIF_PBCCON_PBBCONV_MODE;
+	for (uint32_t output_bit = 0; output_bit < width; output_bit++) {
+		int32_t input_bit = first_input_bit + (int32_t) output_bit * input_bit_step;
+
+		set_bmreg_mapping(output_bit, input_bit);
+	}
+	DIF_BCSEL0 = bcsel;
+	DIF_BCREG = bcreg;
+}
+
+static bool wait_until_idle(void) {
+	for (uint32_t wait = 0; wait < DIF_WAIT_ITERATIONS; wait++) {
+		if ((DIF_FSTAT & DIF_FSTAT_TXFFL) == 0 && (DIF_CON & DIF_CON_BSY) == 0)
+			return true;
+		test_watchdog_serve();
+	}
+	return false;
+}
+
+static bool receive_word(uint16_t *value) {
+	for (uint32_t wait = 0; wait < DIF_WAIT_ITERATIONS; wait++) {
+		if ((DIF_FSTAT & DIF_FSTAT_RXFFL) != 0) {
+			*value = DIF_RB;
+			return true;
+		}
+		test_watchdog_serve();
+	}
+	return false;
+}
+
+static bool convert_word_pair(uint16_t first, uint16_t second, uint16_t *value) {
+	DIF_TB = first;
+	DIF_TB = second;
+	return receive_word(value);
+}
+
+static void check_word_pair(const char *name, uint16_t expected, uint16_t first, uint16_t second) {
+	uint16_t actual = 0;
+
+	test_check("word pair conversion completes", convert_word_pair(first, second, &actual));
+	test_eq_u32(name, expected, actual);
 }
 
 struct write_only_result {
@@ -206,6 +272,73 @@ static void test_registers(void) {
 	test_eq_u32("baud-rate reload", 0xA55A, DIF_BR);
 }
 
+static void test_lcd_register_masks(void) {
+	test_category("LCD register write masks");
+	DIF_CON = 0;
+	DIF_LCD_UNK64 = UINT32_MAX;
+	DIF_LCD_UNK68 = UINT32_MAX;
+	test_eq_u32(
+		"unknown LCD 0x64 write mask",
+		DIF_LCD_UNK64_VALUE0 | DIF_LCD_UNK64_VALUE1 | DIF_LCD_UNK64_VALUE2,
+		DIF_LCD_UNK64
+	);
+	test_eq_u32(
+		"unknown LCD 0x68 write mask",
+		DIF_LCD_UNK68_VALUE0 | DIF_LCD_UNK68_VALUE1 | DIF_LCD_UNK68_VALUE2 | DIF_LCD_UNK68_VALUE3,
+		DIF_LCD_UNK68
+	);
+	DIF_PBCCON = UINT32_MAX;
+	DIF_BCREG = UINT32_MAX;
+	DIF_SYNC_CONFIG = UINT32_MAX;
+	DIF_LCD_UNK9C = UINT32_MAX;
+	DIF_SYNC_COUNT = UINT32_MAX;
+	test_eq_u32(
+		"PBCCON write mask",
+		DIF_PBCCON_PBBCONV_MODE | DIF_PBCCON_UNK8 | DIF_PBCCON_UNK9,
+		DIF_PBCCON
+	);
+	test_eq_u32("BCREG write mask", UINT32_MAX, DIF_BCREG);
+	test_eq_u32(
+		"SYNC_CONFIG write mask",
+		DIF_SYNC_CONFIG_SYNCEN | DIF_SYNC_CONFIG_HDPOL | DIF_SYNC_CONFIG_VDPOL |
+			DIF_SYNC_CONFIG_SYNCCD | DIF_SYNC_CONFIG_SYNCCS1 | DIF_SYNC_CONFIG_SYNCCS2 |
+			DIF_SYNC_CONFIG_SYNCCS3,
+		DIF_SYNC_CONFIG
+	);
+	test_eq_u32(
+		"unknown LCD 0x9C write mask",
+		DIF_LCD_UNK9C_BIT0 | DIF_LCD_UNK9C_BIT1 | DIF_LCD_UNK9C_BIT2,
+		DIF_LCD_UNK9C
+	);
+	test_eq_u32("SYNC_COUNT write mask", UINT32_MAX, DIF_SYNC_COUNT);
+	DIF_LCD_UNK64 = 0;
+	DIF_LCD_UNK68 = 0;
+	DIF_PBCCON = 0;
+	DIF_BCREG = 0;
+	DIF_SYNC_CONFIG = 0;
+	DIF_LCD_UNK9C = 0;
+	DIF_SYNC_COUNT = 0;
+}
+
+static void test_transfer_synchronization(void) {
+	test_category("Transfer synchronization");
+	configure_dif(16, FIFO_OFF, 0);
+	DIF_CON = 0;
+	DIF_SYNC_CONFIG = DIF_SYNC_CONFIG_SYNCEN;
+	DIF_CON = DIF_CON_LB | DIF_CON_MS_MASTER | (15 << DIF_CON_BM_SHIFT) | DIF_CON_EN;
+	DIF_TB = 0x1234;
+	stopwatch_t start = stopwatch_get();
+	while (stopwatch_elapsed_ms(start) < 10)
+		test_watchdog_serve();
+	test_eq_u32("SYNCEN waits for synchronization event", 0, DIF_RIS & (DIF_RIS_TX | DIF_RIS_RX));
+	test_eq_u32("synchronization wait leaves engine idle", 0, DIF_CON & DIF_CON_BSY);
+	DIF_CON = 0;
+	DIF_SYNC_CONFIG = 0;
+	DIF_ICR = DIF_ICR_TX | DIF_ICR_RX | DIF_ICR_ERR;
+	test_check("loopback recovers after synchronization wait", transfer_loopback(16, FIFO_OFF, 0, 17));
+	test_eq_memory("synchronization recovery data", source, destination, 17 * sizeof(source[0]));
+}
+
 static void test_reset_values(void) {
 	test_category("Reset values");
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, DIF_CLC);
@@ -220,6 +353,8 @@ static void test_reset_values(void) {
 	test_eq_u32("RIS reset value", 0, DIF_RIS & DIF_IRQ_MASK);
 	test_eq_u32("MIS reset value", 0, DIF_MIS & DIF_IRQ_MASK);
 	test_eq_u32("DMAE reset value", 0, DIF_DMAE);
+	test_eq_u32("unknown LCD 0x64 reset value", 0, DIF_LCD_UNK64);
+	test_eq_u32("unknown LCD 0x68 reset value", 0, DIF_LCD_UNK68);
 	test_eq_u32("PBCCON reset value", 0, DIF_PBCCON);
 	test_eq_u32("BMREG0 identity mapping", 0x14830820, DIF_BMREG0);
 	test_eq_u32("BMREG1 identity mapping", 0x2D4920E6, DIF_BMREG1);
@@ -230,6 +365,9 @@ static void test_reset_values(void) {
 	test_eq_u32("BCREG reset value", 0, DIF_BCREG);
 	test_eq_u32("BCSEL0 reset value", 0, DIF_BCSEL0);
 	test_eq_u32("BCSEL1 reset value", 0, DIF_BCSEL1);
+	test_eq_u32("SYNC_CONFIG reset value", 0, DIF_SYNC_CONFIG);
+	test_eq_u32("unknown LCD 0x9C reset value", 0, DIF_LCD_UNK9C);
+	test_eq_u32("SYNC_COUNT reset value", 0, DIF_SYNC_COUNT);
 }
 
 static void test_irq_registers(void) {
@@ -411,7 +549,7 @@ static void test_lcd_registers(void) {
 		{&DIF_BMREG3, 0x7FFF7FFF},
 		{&DIF_BMREG4, 0x7FFF7FFF},
 		{&DIF_BMREG5, 0x000003FF},
-		{&DIF_BCREG, 0x55555555},
+		{&DIF_BCREG, UINT32_MAX},
 		{&DIF_BCSEL0, UINT32_MAX},
 		{&DIF_BCSEL1, UINT32_MAX},
 	};
@@ -459,6 +597,74 @@ static void test_lcd_loopback(void) {
 		expected[i] = (source[i] & 1) != 0 ? UINT16_MAX : 0;
 	test_check("bit fan-out loopback completes", transfer_active(FIFO_ON, ARRAY_SIZE(expected)));
 	test_eq_memory("BMREG fans input bit 0 out to all bits", expected, destination, sizeof(expected));
+}
+
+static void test_pair_conversion(void) {
+	test_category("PBCCON word-pair mapping");
+	configure_pair_conversion(16, 0, 1, 0, 0);
+	check_word_pair("identity mapping selects first word", 0x1234, 0x1234, 0xABCD);
+	configure_pair_conversion(16, 16, 1, 0, 0);
+	check_word_pair("mapping selects second word", 0xABCD, 0x1234, 0xABCD);
+	configure_pair_conversion(16, 31, -1, 0, 0);
+	check_word_pair("mapping reverses second word", 0xB3D5, 0x1234, 0xABCD);
+	configure_pair_conversion(16, 20, 0, 0, 0);
+	check_word_pair("mapping fans out a set bit", UINT16_MAX, 0, BIT(4));
+	configure_pair_conversion(16, 20, 0, 0, 0);
+	check_word_pair("mapping fans out a clear bit", 0, UINT16_MAX, 0);
+
+	test_category("PBCCON bit widths");
+	configure_pair_conversion(1, 0, 1, 0, 0);
+	check_word_pair("BM=1 selects first word", 1, 1, 0);
+	configure_pair_conversion(1, 16, 1, 0, 0);
+	check_word_pair("BM=1 selects second word", 1, 0, 1);
+	configure_pair_conversion(9, 0, 1, 0, 0);
+	check_word_pair("BM=9 selects first word", 0x123, 0x123, 0x0AB);
+	configure_pair_conversion(9, 16, 1, 0, 0);
+	check_word_pair("BM=9 selects second word", 0x0AB, 0x123, 0x0AB);
+	configure_pair_conversion(15, 0, 1, 0, 0);
+	check_word_pair("BM=15 selects first word", 0x1234, 0x1234, 0x6BCD);
+	configure_pair_conversion(15, 16, 1, 0, 0);
+	check_word_pair("BM=15 selects second word", 0x6BCD, 0x1234, 0x6BCD);
+}
+
+static void test_bcsel_modes(void) {
+	test_category("BCSEL and BCREG modes");
+	configure_pair_conversion(16, 0, 1, DIF_BCSEL_ALL_FROM_BCREG, 0xA55A);
+	check_word_pair("BCSEL mode 1 selects BCREG", 0xA55A, 0x1234, 0xABCD);
+	configure_pair_conversion(16, 0, 1, DIF_BCSEL_ALL_MODE_2, UINT16_MAX);
+	check_word_pair("BCSEL mode 2 selects zero", 0, 0x1234, 0xABCD);
+	configure_pair_conversion(16, 0, 1, DIF_BCSEL_ALL_MODE_3, UINT16_MAX);
+	check_word_pair("BCSEL mode 3 selects zero", 0, 0x1234, 0xABCD);
+	configure_pair_conversion(16, 0, 1, 0x11111111, 0xA55A);
+	check_word_pair("BCSEL mixes mapped and clamped bits", 0x0770, 0x1234, 0xABCD);
+}
+
+static void test_incomplete_pair(void) {
+	uint16_t actual = 0;
+
+	test_category("PBCCON incomplete pair");
+	configure_pair_conversion(16, 0, 1, 0, 0);
+	DIF_TB = 0x1234;
+	test_check("single word reaches idle state", wait_until_idle());
+	test_eq_u32("incomplete pair produces no RX data", 0, DIF_FSTAT & DIF_FSTAT_RXFFL);
+	DIF_TB = 0xABCD;
+	test_check("next word completes buffered pair", receive_word(&actual));
+	test_eq_u32("buffered pair preserves first word", 0x1234, actual);
+
+	configure_pair_conversion(16, 0, 1, 0, 0);
+	DIF_TB = 0x5678;
+	test_check("word before abort reaches idle state", wait_until_idle());
+	DIF_CON = 0;
+	DIF_CON = DIF_CON_LB | DIF_CON_MS_MASTER | (15 << DIF_CON_BM_SHIFT) | DIF_CON_EN;
+	DIF_TB = 0x9ABC;
+	test_check("word after restart completes preserved pair", receive_word(&actual));
+	test_eq_u32("CON.EN preserves buffered word", 0x5678, actual);
+	DIF_TB = 0xDEF0;
+	test_check("new word after preserved pair reaches idle state", wait_until_idle());
+	test_eq_u32("new incomplete pair produces no RX data", 0, DIF_FSTAT & DIF_FSTAT_RXFFL);
+	DIF_TB = 0x1357;
+	test_check("next pair after restart completes", receive_word(&actual));
+	test_eq_u32("next pair starts with new word", 0xDEF0, actual);
 }
 
 static void test_pixel_packing(void) {
@@ -518,6 +724,8 @@ int dif_v1_test(void) {
 	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	configure_irqs();
 	test_registers();
+	test_transfer_synchronization();
+	test_lcd_register_masks();
 	test_irq_registers();
 	test_irq_loopback();
 	test_bit_count();
@@ -530,6 +738,9 @@ int dif_v1_test(void) {
 	test_abort_restart();
 	test_lcd_registers();
 	test_lcd_loopback();
+	test_pair_conversion();
+	test_bcsel_modes();
+	test_incomplete_pair();
 	test_pixel_packing();
 	test_errors();
 	return test_finish();

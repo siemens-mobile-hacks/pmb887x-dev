@@ -32,6 +32,7 @@ struct dma_options {
 	uint32_t width;
 	uint32_t source_burst;
 	uint32_t destination_burst;
+	uint32_t tx_trigger;
 	uint32_t lli_split;
 	bool irq;
 	enum conversion_mode conversion;
@@ -51,6 +52,7 @@ static const struct dma_options dma_defaults = {
 	.width = 16,
 	.source_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_1,
 	.destination_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_1,
+	.tx_trigger = 1,
 };
 
 static void fill_buffers(const struct dma_options *options) {
@@ -93,7 +95,7 @@ static bool transfer_dma(const struct dma_options *options) {
 	dif_v1_configure(
 		options->width,
 		DIF_RXFCON_RXFEN | DIF_RXFCON_RXFLU | (1 << DIF_RXFCON_RXFITL_SHIFT),
-		DIF_TXFCON_TXFEN | DIF_TXFCON_TXFLU | (1 << DIF_TXFCON_TXFITL_SHIFT),
+		DIF_TXFCON_TXFEN | DIF_TXFCON_TXFLU | (options->tx_trigger << DIF_TXFCON_TXFITL_SHIFT),
 		0
 	);
 	if (options->conversion == CONVERSION_SWAP_BITS_0_1) {
@@ -248,6 +250,20 @@ static void test_bursts(void) {
 	}
 }
 
+static void test_fifo_thresholds(void) {
+	static const uint8_t THRESHOLDS[] = {1, 4, 16};
+	struct dma_options options = dma_defaults;
+
+	test_category("TX FIFO thresholds");
+	options.items = 63;
+	for (uint32_t i = 0; i < ARRAY_SIZE(THRESHOLDS); i++) {
+		options.tx_trigger = THRESHOLDS[i];
+		test_check("threshold transfer completes", transfer_dma(&options));
+		check_data(&options, "threshold loopback data");
+		check_dma_postconditions();
+	}
+}
+
 static void test_status(void) {
 	struct dma_options options = dma_defaults;
 
@@ -347,6 +363,7 @@ int dif_v1_dma_test(void) {
 	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_full_duplex();
 	test_bursts();
+	test_fifo_thresholds();
 	test_status();
 	test_lli();
 	test_widths();

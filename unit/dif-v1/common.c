@@ -10,6 +10,8 @@ void dif_v1_configure(uint32_t width, uint32_t rxfcon, uint32_t txfcon, uint32_t
 	DIF_ICR = DIF_ICR_TX | DIF_ICR_RX | DIF_ICR_ERR;
 	DIF_RXFCON = 0;
 	DIF_TXFCON = 0;
+	DIF_LCD_UNK64 = 0;
+	DIF_LCD_UNK68 = 0;
 	DIF_PBCCON = 0;
 	DIF_BMREG0 = 0x14830820;
 	DIF_BMREG1 = 0x2D4920E6;
@@ -20,6 +22,9 @@ void dif_v1_configure(uint32_t width, uint32_t rxfcon, uint32_t txfcon, uint32_t
 	DIF_BCREG = 0;
 	DIF_BCSEL0 = 0;
 	DIF_BCSEL1 = 0;
+	DIF_SYNC_CONFIG = 0;
+	DIF_LCD_UNK9C = 0;
+	DIF_SYNC_COUNT = 0;
 	DIF_RXFCON = rxfcon;
 	DIF_TXFCON = txfcon;
 	DIF_CON = format | DIF_CON_LB | DIF_CON_MS_MASTER | ((width - 1) << DIF_CON_BM_SHIFT) | DIF_CON_EN;
