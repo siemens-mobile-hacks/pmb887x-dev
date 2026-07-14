@@ -14,6 +14,7 @@ Run a test on real hardware:
 | `dmac` | DMA transfers, requests, linked lists, arbitration, and interrupts |
 | `mod` | Common CLC, SRC, and SRB register blocks |
 | `scu` | CPU identification, watchdog protection, mode transitions, counter, and status |
+| `scu-reset` | Intentional software reset using the firmware reset-control sequence |
 | `scu-wdt-reset` | Intentional watchdog reset; reaching the failure message means the reset did not occur |
 | `adc` | ADC registers, conversion, interrupts, and battery voltage measurement |
 | `rtc` | RTC registers, synchronous/asynchronous operation, timer chain, and interrupt sub-node |

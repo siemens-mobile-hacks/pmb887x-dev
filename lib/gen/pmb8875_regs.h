@@ -1900,6 +1900,13 @@
 #define	SCU_RST_SR_WDTRST			BIT(30)									 // The last reset was a watchdog reset.
 #define	SCU_RST_SR_PWDRST			BIT(31)									 // The last reset was a wake-up from power-down
 
+/* Reset Control Register */
+#define	SCU_RST_CON					MMIO32(SCU_BASE + 0x14)
+#define	SCU_RST_CON_SWCFG			GENMASK(18, 16)							 // Software Boot Configuration
+#define	SCU_RST_CON_SWCFG_SHIFT		16
+#define	SCU_RST_CON_SWBRKIN			BIT(21)									 // Software Break Signal Boot Value
+#define	SCU_RST_CON_SWBOOT			BIT(24)									 // Software Boot Configuration Selection
+
 /* Reset Request Register */
 #define	SCU_RST_REQ					MMIO32(SCU_BASE + 0x18)
 #define	SCU_RST_REQ_RRSTM			BIT(0)									 // Reset Request for the System Timer

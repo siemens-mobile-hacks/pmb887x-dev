@@ -24,6 +24,30 @@ static volatile uint32_t tbuf_irqs;
 static volatile uint32_t rx_irqs;
 static volatile uint32_t error_irqs;
 static volatile uint32_t timeout_irqs;
+static volatile uint32_t dma_tx_irqs;
+static volatile uint32_t dma_rx_irqs;
+
+struct dma_lli {
+	uint32_t source;
+	uint32_t destination;
+	uint32_t next;
+	uint32_t control;
+};
+
+struct dma_options {
+	uint32_t size;
+	uint32_t source_burst;
+	uint32_t destination_burst;
+	uint32_t lli_split;
+	bool irq;
+};
+
+static struct dma_lli tx_lli __attribute__((aligned(16)));
+static struct dma_lli rx_lli __attribute__((aligned(16)));
+static const struct dma_options dma_defaults = {
+	.source_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_1,
+	.destination_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_1,
+};
 
 static bool wait_for_status(uint32_t mask) {
 	stopwatch_t start = stopwatch_get();
@@ -105,60 +129,121 @@ static bool transfer_block(enum fifo_mode mode) {
 	return rx == sizeof(block_rx);
 }
 
-static bool transfer_block_mem2per_per2mem(uint32_t size) {
+static bool transfer_block_mem2per_per2mem(const struct dma_options *options) {
+	uint32_t channels = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
+	uint32_t first_count = options->lli_split == 0 ? options->size : options->lli_split;
+	uint32_t first_interrupt = options->lli_split == 0 ? DMAC_CH_CONTROL_I : 0;
+
 	configure_usart(USART_CON_M_ASYNC_8BIT);
-	configure_fifo(FIFO_ON);
 	USART_RXFCON(USART1) = (
 		USART_RXFCON_RXFEN | USART_RXFCON_RXFFLU |
 		(1 << USART_RXFCON_RXFITL_SHIFT)
 	);
+	USART_TXFCON(USART1) = (
+		USART_TXFCON_TXFEN | USART_TXFCON_TXFFLU |
+		(4 << USART_TXFCON_TXFITL_SHIFT)
+	);
 	fill_block();
 
+	USART_DMAE(USART1) = 0;
 	DMAC_CH_CONFIG(DMA_RX_CHANNEL) = 0;
 	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
-	DMAC_TC_CLEAR = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
-	DMAC_ERR_CLEAR = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
+	DMAC_TC_CLEAR = channels;
+	DMAC_ERR_CLEAR = channels;
 	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	DMAC_SYNC = 0;
 	SCU_DMARS &= ~(BIT(6) | BIT(7));
-	USART_IMSC(USART1) = USART_IMSC_RX | USART_IMSC_TX;
 
 	DMAC_CH_SRC_ADDR(DMA_RX_CHANNEL) = (uint32_t) &USART_RXB(USART1);
 	DMAC_CH_DST_ADDR(DMA_RX_CHANNEL) = (uint32_t) block_rx;
 	DMAC_CH_CONTROL(DMA_RX_CHANNEL) = (
-		size | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+		first_count | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | options->destination_burst |
 		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_DI | first_interrupt
 	);
 	DMAC_CH_CONFIG(DMA_RX_CHANNEL) = (
 		(7 << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
-		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC |
-		DMAC_CH_CONFIG_ENABLE
+		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC
 	);
 
 	DMAC_CH_SRC_ADDR(DMA_TX_CHANNEL) = (uint32_t) block_tx;
 	DMAC_CH_DST_ADDR(DMA_TX_CHANNEL) = (uint32_t) &USART_TXB(USART1);
 	DMAC_CH_CONTROL(DMA_TX_CHANNEL) = (
-		size | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+		first_count | options->source_burst | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
 		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-		DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | first_interrupt
 	);
 	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = (
 		(6 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER |
-		DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_ENABLE
+		DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC
 	);
+	DMAC_CH_LLI(DMA_RX_CHANNEL) = 0;
+	DMAC_CH_LLI(DMA_TX_CHANNEL) = 0;
+	if (options->lli_split != 0) {
+		uint32_t remaining = options->size - options->lli_split;
 
+		rx_lli = (struct dma_lli) {
+			.source = (uint32_t) &USART_RXB(USART1),
+			.destination = (uint32_t) block_rx + options->lli_split,
+			.control = remaining | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | options->destination_burst |
+				DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+				DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I,
+		};
+		tx_lli = (struct dma_lli) {
+			.source = (uint32_t) block_tx + options->lli_split,
+			.destination = (uint32_t) &USART_TXB(USART1),
+			.control = remaining | options->source_burst | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+				DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+				DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I,
+		};
+		DMAC_CH_LLI(DMA_RX_CHANNEL) = (uint32_t) &rx_lli;
+		DMAC_CH_LLI(DMA_TX_CHANNEL) = (uint32_t) &tx_lli;
+	}
+
+	dma_tx_irqs = 0;
+	dma_rx_irqs = 0;
 	USART_DMAE(USART1) = USART_DMAE_RX | USART_DMAE_TX;
+	DMAC_CH_CONFIG(DMA_RX_CHANNEL) |= DMAC_CH_CONFIG_ENABLE;
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) |= DMAC_CH_CONFIG_ENABLE;
 	stopwatch_t start = stopwatch_get();
-	while ((DMAC_RAW_TC_STATUS & (BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL))) !=
-		(BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL)) && stopwatch_elapsed_ms(start) < 500)
+	while ((DMAC_RAW_ERR_STATUS & channels) == 0 && stopwatch_elapsed_ms(start) < 500) {
+		bool complete = options->irq ?
+			dma_tx_irqs != 0 && dma_rx_irqs != 0 :
+			(DMAC_RAW_TC_STATUS & channels) == channels;
+
+		if (complete)
+			break;
 		test_watchdog_serve();
+	}
 
 	USART_DMAE(USART1) = 0;
-	USART_IMSC(USART1) = 0;
-	DMAC_CH_CONFIG(DMA_RX_CHANNEL) = 0;
-	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
-	return (DMAC_RAW_TC_STATUS & (BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL))) ==
-		(BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL));
+	return options->irq ?
+		dma_tx_irqs != 0 && dma_rx_irqs != 0 :
+		(DMAC_RAW_TC_STATUS & channels) == channels;
+}
+
+static void check_dma_postconditions(void) {
+	uint32_t channels = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
+
+	test_eq_u32("DMA has no bus errors", 0, DMAC_RAW_ERR_STATUS & channels);
+	test_eq_u32(
+		"DMA RX transfer size reaches zero",
+		0,
+		DMAC_CH_CONTROL(DMA_RX_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE
+	);
+	test_eq_u32(
+		"DMA TX transfer size reaches zero",
+		0,
+		DMAC_CH_CONTROL(DMA_TX_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE
+	);
+	test_eq_u32("DMA channels automatically disable", 0, DMAC_EN_CHAN & channels);
+	test_eq_u32("DMA RX FIFO drains", 0, USART_FSTAT(USART1) & USART_FSTAT_RXFFL);
+	test_eq_u32("DMA TX FIFO drains", 0, USART_FSTAT(USART1) & USART_FSTAT_TXFFL);
+	test_eq_u32(
+		"DMA loopback has no USART errors",
+		0,
+		USART_CON(USART1) & (USART_CON_PE | USART_CON_FE | USART_CON_OE)
+	);
 }
 
 static bool loopback_word(uint32_t tx, uint32_t rx) {
@@ -428,28 +513,94 @@ static void test_txb_then_tbuf(void) {
 	test_eq_memory("TXB then TBUF polling data", block_tx, block_rx, sizeof(block_tx));
 }
 
-static void test_dma(void) {
-	static const uint16_t sizes[] = {4, 8, 12, 37, BLOCK_SIZE};
+static void test_dma_full_duplex(void) {
+	static const uint16_t sizes[] = {1, 7, 8, 9, 31, 32, 33, 255, BLOCK_SIZE};
+	struct dma_options options = dma_defaults;
 
+	test_category("Full-duplex MEM2PER / PER2MEM");
 	for (uint32_t i = 0; i < ARRAY_SIZE(sizes); i++) {
-		test_check("MEM2PER/PER2MEM FIFO ON block completes", transfer_block_mem2per_per2mem(sizes[i]));
-		test_eq_memory("MEM2PER/PER2MEM FIFO ON block data", block_tx, block_rx, sizes[i]);
-		test_eq_u32(
-			"MEM2PER/PER2MEM has no bus errors",
-			0,
-			DMAC_RAW_ERR_STATUS & (BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL))
-		);
-		test_eq_u32(
-			"DMA RX transfer size reaches zero",
-			0,
-			DMAC_CH_CONTROL(DMA_RX_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE
-		);
-		test_eq_u32(
-			"DMA TX transfer size reaches zero",
-			0,
-			DMAC_CH_CONTROL(DMA_TX_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE
-		);
+		options.size = sizes[i];
+		test_check("DMA transfer completes", transfer_block_mem2per_per2mem(&options));
+		test_eq_memory("DMA loopback data", block_tx, block_rx, options.size);
+		check_dma_postconditions();
 	}
+}
+
+static void test_dma_bursts(void) {
+	static const struct {
+		uint32_t source;
+		uint32_t destination;
+	} bursts[] = {
+		{ DMAC_CH_CONTROL_SB_SIZE_SZ_1, DMAC_CH_CONTROL_DB_SIZE_SZ_1 },
+		{ DMAC_CH_CONTROL_SB_SIZE_SZ_4, DMAC_CH_CONTROL_DB_SIZE_SZ_4 },
+		{ DMAC_CH_CONTROL_SB_SIZE_SZ_8, DMAC_CH_CONTROL_DB_SIZE_SZ_8 },
+	};
+	struct dma_options options = dma_defaults;
+
+	test_category("Memory bursts");
+	options.size = 33;
+	for (uint32_t i = 0; i < ARRAY_SIZE(bursts); i++) {
+		options.source_burst = bursts[i].source;
+		options.destination_burst = bursts[i].destination;
+		test_check("burst transfer completes", transfer_block_mem2per_per2mem(&options));
+		test_eq_memory("burst loopback data", block_tx, block_rx, options.size);
+		check_dma_postconditions();
+	}
+}
+
+static void test_dma_status(void) {
+	struct dma_options options = dma_defaults;
+	uint32_t channels = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
+
+	test_category("DMA status");
+	options.size = 23;
+	test_check("status transfer completes", transfer_block_mem2per_per2mem(&options));
+	test_eq_u32("raw terminal count", channels, DMAC_RAW_TC_STATUS & channels);
+	test_eq_u32("masked terminal count", channels, DMAC_TC_STATUS & channels);
+	test_eq_u32("combined interrupt status", channels, DMAC_INT_STATUS & channels);
+	test_eq_u32("TX source reaches last byte", (uint32_t) (block_tx + options.size - 1), DMAC_CH_SRC_ADDR(DMA_TX_CHANNEL));
+	test_eq_u32("TX destination remains fixed", (uint32_t) &USART_TXB(USART1), DMAC_CH_DST_ADDR(DMA_TX_CHANNEL));
+	test_eq_u32("RX source remains fixed", (uint32_t) &USART_RXB(USART1), DMAC_CH_SRC_ADDR(DMA_RX_CHANNEL));
+	test_eq_u32(
+		"RX destination reaches last byte",
+		(uint32_t) (block_rx + options.size - 1),
+		DMAC_CH_DST_ADDR(DMA_RX_CHANNEL)
+	);
+	check_dma_postconditions();
+}
+
+static void test_dma_lli(void) {
+	struct dma_options options = dma_defaults;
+
+	test_category("Linked lists");
+	options.size = 37;
+	options.lli_split = 17;
+	test_check("LLI transfer completes", transfer_block_mem2per_per2mem(&options));
+	test_eq_memory("LLI loopback data", block_tx, block_rx, options.size);
+	test_eq_u32("TX reaches end of LLI chain", 0, DMAC_CH_LLI(DMA_TX_CHANNEL));
+	test_eq_u32("RX reaches end of LLI chain", 0, DMAC_CH_LLI(DMA_RX_CHANNEL));
+	check_dma_postconditions();
+}
+
+static void test_dma_irqs(void) {
+	struct dma_options options = dma_defaults;
+	uint32_t channels = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
+
+	test_category("DMA interrupts");
+	options.size = 17;
+	options.irq = true;
+	VIC_CON(VIC_DMAC_CH0_IRQ + DMA_RX_CHANNEL) = 2;
+	VIC_CON(VIC_DMAC_CH0_IRQ + DMA_TX_CHANNEL) = 1;
+	cpu_enable_irq(true);
+	test_check("IRQ transfer completes", transfer_block_mem2per_per2mem(&options));
+	cpu_enable_irq(false);
+	test_eq_u32("TX terminal-count IRQ", 1, dma_tx_irqs);
+	test_eq_u32("RX terminal-count IRQ", 1, dma_rx_irqs);
+	test_eq_u32("IRQ handler clears terminal count", 0, DMAC_RAW_TC_STATUS & channels);
+	test_eq_memory("IRQ loopback data", block_tx, block_rx, options.size);
+	check_dma_postconditions();
+	VIC_CON(VIC_DMAC_CH0_IRQ + DMA_RX_CHANNEL) = 0;
+	VIC_CON(VIC_DMAC_CH0_IRQ + DMA_TX_CHANNEL) = 0;
 }
 
 static void test_interrupts(void) {
@@ -557,9 +708,11 @@ int usart_dma_test(void) {
 	test_start("USART1 DMA test");
 
 	USART_CLC(USART1) = 1 << MOD_CLC_RMC_SHIFT;
-	configure_usart(USART_CON_M_ASYNC_8BIT);
-	test_category("DMA");
-	test_dma();
+	test_dma_full_duplex();
+	test_dma_bursts();
+	test_dma_status();
+	test_dma_lli();
+	test_dma_irqs();
 
 	return test_finish();
 }
@@ -583,6 +736,12 @@ __IRQ void irq_handler(void) {
 	} else if (irq == VIC_USART1_TMO_IRQ) {
 		timeout_irqs++;
 		USART_ICR(USART1) = USART_ICR_TMO;
+	} else if (irq == VIC_DMAC_CH0_IRQ + DMA_TX_CHANNEL) {
+		dma_tx_irqs++;
+		DMAC_TC_CLEAR = BIT(DMA_TX_CHANNEL);
+	} else if (irq == VIC_DMAC_CH0_IRQ + DMA_RX_CHANNEL) {
+		dma_rx_irqs++;
+		DMAC_TC_CLEAR = BIT(DMA_RX_CHANNEL);
 	}
 
 	VIC_IRQ_ACK = 1;

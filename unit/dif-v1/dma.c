@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <string.h>
 
 #include "dif-v1.h"
 #include "test.h"
@@ -158,6 +159,8 @@ static bool transfer_dma(const struct dma_options *options) {
 	DMAC_CH_CONFIG(DIF_DMA_RX_CHANNEL) |= DMAC_CH_CONFIG_ENABLE;
 	DMAC_CH_CONFIG(DIF_DMA_TX_CHANNEL) |= DMAC_CH_CONFIG_ENABLE;
 	for (uint32_t wait = 0; wait < DIF_DMA_WAIT_ITERATIONS; wait++) {
+		if ((DMAC_RAW_ERR_STATUS & DIF_DMA_CHANNELS) != 0)
+			break;
 		bool complete = options->irq ?
 			tx_irqs != 0 && rx_irqs != 0 : (DMAC_RAW_TC_STATUS & DIF_DMA_CHANNELS) == DIF_DMA_CHANNELS;
 
@@ -165,9 +168,32 @@ static bool transfer_dma(const struct dma_options *options) {
 			break;
 		test_watchdog_serve();
 	}
+	for (uint32_t wait = 0; wait < DIF_DMA_WAIT_ITERATIONS; wait++) {
+		if ((DIF_FSTAT & (DIF_FSTAT_RXFFL | DIF_FSTAT_TXFFL)) == 0 && (DIF_CON & DIF_CON_BSY) == 0)
+			break;
+		test_watchdog_serve();
+	}
 	DIF_DMAE = 0;
 	return options->irq ?
 		tx_irqs != 0 && rx_irqs != 0 : (DMAC_RAW_TC_STATUS & DIF_DMA_CHANNELS) == DIF_DMA_CHANNELS;
+}
+
+static void check_dma_postconditions(void) {
+	test_eq_u32("DMA has no bus errors", 0, DMAC_RAW_ERR_STATUS & DIF_DMA_CHANNELS);
+	test_eq_u32(
+		"DMA RX transfer size reaches zero",
+		0,
+		DMAC_CH_CONTROL(DIF_DMA_RX_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE
+	);
+	test_eq_u32(
+		"DMA TX transfer size reaches zero",
+		0,
+		DMAC_CH_CONTROL(DIF_DMA_TX_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE
+	);
+	test_eq_u32("DMA channels automatically disable", 0, DMAC_EN_CHAN & DIF_DMA_CHANNELS);
+	test_eq_u32("DMA RX FIFO drains", 0, DIF_FSTAT & DIF_FSTAT_RXFFL);
+	test_eq_u32("DMA TX FIFO drains", 0, DIF_FSTAT & DIF_FSTAT_TXFFL);
+	test_eq_u32("DMA loopback has no DIF errors", 0, DIF_CON & (DIF_CON_TE | DIF_CON_RE | DIF_CON_PE | DIF_CON_BE));
 }
 
 static void check_data(const struct dma_options *options, const char *name) {
@@ -195,8 +221,8 @@ static void test_full_duplex(void) {
 	for (uint32_t i = 0; i < ARRAY_SIZE(sizes); i++) {
 		options.items = sizes[i];
 		test_check("DMA transfer completes", transfer_dma(&options));
-		test_eq_u32("DMA has no bus error", 0, DMAC_RAW_ERR_STATUS & DIF_DMA_CHANNELS);
 		check_data(&options, "DMA loopback data");
+		check_dma_postconditions();
 	}
 }
 
@@ -218,6 +244,7 @@ static void test_bursts(void) {
 		options.destination_burst = bursts[i].destination;
 		test_check("burst transfer completes", transfer_dma(&options));
 		check_data(&options, "burst loopback data");
+		check_dma_postconditions();
 	}
 }
 
@@ -230,7 +257,6 @@ static void test_status(void) {
 	test_eq_u32("raw terminal count", DIF_DMA_CHANNELS, DMAC_RAW_TC_STATUS & DIF_DMA_CHANNELS);
 	test_eq_u32("masked terminal count", DIF_DMA_CHANNELS, DMAC_TC_STATUS & DIF_DMA_CHANNELS);
 	test_eq_u32("combined interrupt status", DIF_DMA_CHANNELS, DMAC_INT_STATUS & DIF_DMA_CHANNELS);
-	test_eq_u32("channels automatically disable", 0, DMAC_EN_CHAN & DIF_DMA_CHANNELS);
 	test_eq_u32(
 		"TX source reaches last item",
 		(uint32_t) (source16 + options.items - 1),
@@ -243,6 +269,7 @@ static void test_status(void) {
 		(uint32_t) (destination16 + options.items - 1),
 		DMAC_CH_DST_ADDR(DIF_DMA_RX_CHANNEL)
 	);
+	check_dma_postconditions();
 }
 
 static void test_lli(void) {
@@ -255,6 +282,7 @@ static void test_lli(void) {
 	check_data(&options, "LLI loopback data");
 	test_eq_u32("TX reaches end of LLI chain", 0, DMAC_CH_LLI(DIF_DMA_TX_CHANNEL));
 	test_eq_u32("RX reaches end of LLI chain", 0, DMAC_CH_LLI(DIF_DMA_RX_CHANNEL));
+	check_dma_postconditions();
 }
 
 static void test_widths(void) {
@@ -265,6 +293,7 @@ static void test_widths(void) {
 	options.width = 8;
 	test_check("8-bit DMA transfer completes", transfer_dma(&options));
 	check_data(&options, "8-bit DMA loopback data");
+	check_dma_postconditions();
 }
 
 static void test_conversion(void) {
@@ -275,9 +304,25 @@ static void test_conversion(void) {
 	options.conversion = CONVERSION_SWAP_BITS_0_1;
 	test_check("bit mapping DMA completes", transfer_dma(&options));
 	check_data(&options, "BMREG maps DMA data");
+	check_dma_postconditions();
 	options.conversion = CONVERSION_CLAMP_BIT_0;
 	test_check("bit clamp DMA completes", transfer_dma(&options));
 	check_data(&options, "BCREG clamps DMA data");
+	check_dma_postconditions();
+}
+
+static void test_repeated_transfers(void) {
+	struct dma_options options = dma_defaults;
+	bool complete = true;
+
+	test_category("Repeated transfers");
+	options.items = DIF_DMA_ITEMS;
+	for (uint32_t block = 0; block < 4; block++) {
+		complete &= transfer_dma(&options);
+		complete &= memcmp(source16, destination16, sizeof(source16)) == 0;
+	}
+	test_check("repeated DMA transfer of at least 1 KiB completes", complete);
+	check_dma_postconditions();
 }
 
 static void test_irqs(void) {
@@ -294,6 +339,7 @@ static void test_irqs(void) {
 	test_eq_u32("RX terminal-count IRQ", 1, rx_irqs);
 	test_eq_u32("IRQ handler clears terminal count", 0, DMAC_RAW_TC_STATUS & DIF_DMA_CHANNELS);
 	check_data(&options, "IRQ loopback data");
+	check_dma_postconditions();
 }
 
 int dif_v1_dma_test(void) {
@@ -305,6 +351,7 @@ int dif_v1_dma_test(void) {
 	test_lli();
 	test_widths();
 	test_conversion();
+	test_repeated_transfers();
 	test_irqs();
 	return test_finish();
 }
