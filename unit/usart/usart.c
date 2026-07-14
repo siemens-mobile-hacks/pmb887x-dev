@@ -5,6 +5,8 @@
 
 #define USART_IRQ_MASK 0xFF
 #define USART_TIMEOUT_MS 100
+#define USART_BG_RELOAD 0x0C
+#define USART_FDV_RELOAD 0x1D8
 #define BLOCK_SIZE 1024
 #define DMA_RX_CHANNEL 0
 #define DMA_TX_CHANNEL 1
@@ -24,6 +26,9 @@ static volatile uint32_t tbuf_irqs;
 static volatile uint32_t rx_irqs;
 static volatile uint32_t error_irqs;
 static volatile uint32_t timeout_irqs;
+static volatile stopwatch_t timeout_rx_start;
+static volatile uint32_t timeout_elapsed_us;
+static volatile bool timeout_timing_active;
 static volatile uint32_t dma_tx_irqs;
 static volatile uint32_t dma_rx_irqs;
 
@@ -62,8 +67,8 @@ static void configure_usart(uint32_t mode) {
 	uint32_t control = mode | USART_CON_FDE | USART_CON_LB;
 
 	USART_CON(USART1) = control;
-	USART_BG(USART1) = 0x0C;
-	USART_FDV(USART1) = 0x1D8;
+	USART_BG(USART1) = USART_BG_RELOAD;
+	USART_FDV(USART1) = USART_FDV_RELOAD;
 	USART_TMO(USART1) = 0;
 	USART_DMAE(USART1) = 0;
 	USART_IMSC(USART1) = 0;
@@ -328,6 +333,28 @@ static void test_registers(void) {
 	);
 	test_eq_u32("DMA starts disabled", 0, USART_DMAE(USART1));
 	test_eq_u32("timeout starts disabled", 0, USART_TMO(USART1));
+}
+
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, USART_CLC(USART1));
+	USART_CLC(USART1) = 1 << MOD_CLC_RMC_SHIFT;
+	test_eq_u32("PISEL reset value", 0, USART_PISEL(USART1));
+	test_eq_u32("CON reset value", 0, USART_CON(USART1));
+	test_eq_u32("BG reset value", 0, USART_BG(USART1));
+	test_eq_u32("FDV reset value", 0, USART_FDV(USART1));
+	test_eq_u32("PMW reset value", 0, USART_PMW(USART1));
+	test_eq_u32("ABCON reset value", 0, USART_ABCON(USART1));
+	test_eq_u32("ABSTAT reset value", 0, USART_ABSTAT(USART1));
+	test_eq_u32("RXFCON reset value", 1 << USART_RXFCON_RXFITL_SHIFT, USART_RXFCON(USART1));
+	test_eq_u32("TXFCON reset value", 1 << USART_TXFCON_TXFITL_SHIFT, USART_TXFCON(USART1));
+	test_eq_u32("FSTAT reset value", 0, USART_FSTAT(USART1));
+	test_eq_u32("FCCON reset value", 0, USART_FCCON(USART1));
+	test_eq_u32("IMSC reset value", 0, USART_IMSC(USART1));
+	test_eq_u32("RIS reset value", 0, USART_RIS(USART1) & USART_IRQ_MASK);
+	test_eq_u32("MIS reset value", 0, USART_MIS(USART1) & USART_IRQ_MASK);
+	test_eq_u32("DMAE reset value", 0, USART_DMAE(USART1));
+	test_eq_u32("TMO reset value", 0, USART_TMO(USART1));
 }
 
 static void test_loopback(void) {
@@ -651,20 +678,56 @@ static void test_timeout(void) {
 	test_check("disabled timeout still receives loopback byte", rx_irqs != 0);
 	test_eq_u32("zero timeout reload disables IRQ", 0, timeout_irqs);
 
-	USART_TMO(USART1) = 32;
-	test_eq_u32("timeout reload readback", 32, USART_TMO(USART1));
-	USART_TXB(USART1) = 0xC3;
+	static const uint32_t RELOADS[] = {32, 64, 128};
+	uint32_t durations_us[ARRAY_SIZE(RELOADS)] = {0};
+	uint32_t expected_us[ARRAY_SIZE(RELOADS)] = {0};
+	bool durations_match = true;
+	for (uint32_t i = 0; i < ARRAY_SIZE(RELOADS); i++) {
+		timeout_irqs = 0;
+		rx_irqs = 0;
+		timeout_elapsed_us = 0;
+		timeout_timing_active = true;
+		USART_TMO(USART1) = RELOADS[i];
+		USART_TXB(USART1) = 0xC3 + i;
+		start = stopwatch_get();
+		while (timeout_timing_active && stopwatch_elapsed_ms(start) < USART_TIMEOUT_MS)
+			test_watchdog_serve();
+		durations_us[i] = timeout_elapsed_us;
+		timeout_timing_active = false;
+
+		uint64_t baud_numerator = (uint64_t) PMB8876_SYSTEM_FREQ * USART_FDV_RELOAD;
+		uint64_t baud_denominator = 512 * 16 * (USART_BG_RELOAD + 1);
+		expected_us[i] = (uint64_t) RELOADS[i] * 1000000 * baud_denominator / baud_numerator;
+		/* Allow 10% plus 5 us for interrupt latency and STM quantization. */
+		uint32_t tolerance_us = expected_us[i] / 10 + 5;
+		durations_match = durations_match && durations_us[i] >= expected_us[i] - tolerance_us &&
+			durations_us[i] <= expected_us[i] + tolerance_us;
+	}
+
+	printf(
+		"# TMO measured/expected: 32 = %u/%u us, 64 = %u/%u us, 128 = %u/%u us\n",
+		durations_us[0],
+		expected_us[0],
+		durations_us[1],
+		expected_us[1],
+		durations_us[2],
+		expected_us[2]
+	);
+	test_eq_u32("timeout reload readback", RELOADS[2], USART_TMO(USART1));
+	test_check("inter-character timeout raises IRQ", durations_us[0] != 0);
+	test_check(
+		"timeout duration grows with reload",
+		durations_us[0] < durations_us[1] && durations_us[1] < durations_us[2]
+	);
+	test_check("timeout duration follows reload and baud rate", durations_match);
+
+	timeout_irqs = 0;
+	USART_TXB(USART1) = 0x5A;
 	start = stopwatch_get();
 	while (timeout_irqs == 0 && stopwatch_elapsed_ms(start) < USART_TIMEOUT_MS)
 		test_watchdog_serve();
-	test_check("inter-character timeout raises IRQ", timeout_irqs != 0);
-
-	USART_TXB(USART1) = 0x5A;
-	start = stopwatch_get();
-	while (timeout_irqs < 2 && stopwatch_elapsed_ms(start) < USART_TIMEOUT_MS)
-		test_watchdog_serve();
 	cpu_enable_irq(false);
-	test_check("timeout raises again after ICR", timeout_irqs >= 2);
+	test_check("timeout raises again after ICR", timeout_irqs != 0);
 
 	USART_TMO(USART1) = 0;
 	USART_IMSC(USART1) = 0;
@@ -675,6 +738,7 @@ static void test_timeout(void) {
 int usart_test(void) {
 	test_start("USART1 peripheral test");
 
+	test_reset_values();
 	USART_CLC(USART1) = 1 << MOD_CLC_RMC_SHIFT;
 	configure_usart(USART_CON_M_ASYNC_8BIT);
 
@@ -727,6 +791,8 @@ __IRQ void irq_handler(void) {
 		tbuf_irqs++;
 		USART_ICR(USART1) = USART_ICR_TB;
 	} else if (irq == VIC_USART1_RX_IRQ) {
+		if (timeout_timing_active)
+			timeout_rx_start = stopwatch_get();
 		rx_irqs++;
 		irq_rx_data = USART_RXB(USART1);
 		USART_ICR(USART1) = USART_ICR_RX;
@@ -734,6 +800,10 @@ __IRQ void irq_handler(void) {
 		error_irqs++;
 		USART_ICR(USART1) = USART_ICR_ERR;
 	} else if (irq == VIC_USART1_TMO_IRQ) {
+		if (timeout_timing_active) {
+			timeout_elapsed_us = stopwatch_elapsed_us(timeout_rx_start);
+			timeout_timing_active = false;
+		}
 		timeout_irqs++;
 		USART_ICR(USART1) = USART_ICR_TMO;
 	} else if (irq == VIC_DMAC_CH0_IRQ + DMA_TX_CHANNEL) {

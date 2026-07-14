@@ -251,6 +251,18 @@ static void test_registers(void) {
 	test_eq_u32("bus configuration", I2C_BUS_CONFIG, I2C_BUSCON);
 }
 
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, I2C_CLC);
+	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_eq_u32("PISEL reset value", 0, I2C_PISEL);
+	test_eq_u32("SYSCON reset value", 0, I2C_SYSCON);
+	test_eq_u32("BUSCON reset value", 0, I2C_BUSCON);
+	test_eq_u32("END SRC reset value", 0, I2C_END_SRC);
+	test_eq_u32("protocol SRC reset value", 0, I2C_PROTO_SRC);
+	test_eq_u32("data SRC reset value", 0, I2C_DATA_SRC);
+}
+
 static void test_hardware_bits(void) {
 	test_category("Hardware bits");
 	I2C_SYSCON = I2C_SYSCON_MOD_DISABLED;
@@ -395,6 +407,7 @@ static void test_recovery(void) {
 
 int i2c_v1_test(void) {
 	test_start("I2Cv1");
+	test_reset_values();
 	GPIO_PIN(GPIO_I2C_SCL) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
 	GPIO_PIN(GPIO_I2C_SDA) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
 	configure_i2c();

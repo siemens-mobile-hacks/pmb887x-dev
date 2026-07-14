@@ -45,6 +45,36 @@ static bool frequency_matches(uint32_t actual, uint32_t expected) {
 	return actual >= expected - tolerance && actual <= expected + tolerance;
 }
 
+static void test_reset_values(const gptu_t *gptu) {
+	test_category(gptu->name);
+	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, GPTU_CLC(gptu->base));
+	GPTU_CLC(gptu->base) = 1 << MOD_CLC_RMC_SHIFT;
+	test_eq_u32("T01IRS reset value", 0, GPTU_T01IRS(gptu->base));
+	test_eq_u32("T01OTS reset value", 0, GPTU_T01OTS(gptu->base));
+	test_eq_u32("T2CON reset value", 0, GPTU_T2CON(gptu->base));
+	test_eq_u32("T2RCCON reset value", 0, GPTU_T2RCCON(gptu->base));
+	test_eq_u32("T2AIS reset value", 0, GPTU_T2AIS(gptu->base));
+	test_eq_u32("T2BIS reset value", 0, GPTU_T2BIS(gptu->base));
+	test_eq_u32("T2ES reset value", 0, GPTU_T2ES(gptu->base));
+	test_eq_u32("OSEL reset value", 0, GPTU_OSEL(gptu->base));
+	test_eq_u32("T0DCBA reset value", 0, GPTU_T0DCBA(gptu->base));
+	test_eq_u32("T0CBA reset value", 0, GPTU_T0CBA(gptu->base));
+	test_eq_u32("T0RDCBA reset value", 0, GPTU_T0RDCBA(gptu->base));
+	test_eq_u32("T0RCBA reset value", 0, GPTU_T0RCBA(gptu->base));
+	test_eq_u32("T1DCBA reset value", 0, GPTU_T1DCBA(gptu->base));
+	test_eq_u32("T1CBA reset value", 0, GPTU_T1CBA(gptu->base));
+	test_eq_u32("T1RDCBA reset value", 0, GPTU_T1RDCBA(gptu->base));
+	test_eq_u32("T1RCBA reset value", 0, GPTU_T1RCBA(gptu->base));
+	test_eq_u32("T2 reset value", 0, GPTU_T2(gptu->base));
+	test_eq_u32("T2RC0 reset value", 0, GPTU_T2RC0(gptu->base));
+	test_eq_u32("T2RC1 reset value", 0, GPTU_T2RC1(gptu->base));
+	test_eq_u32("T012RUN reset value", 0, GPTU_T012RUN(gptu->base));
+	test_eq_u32("SRSEL reset value", 0, GPTU_SRSEL(gptu->base));
+	uint32_t src_config = MOD_SRC_SRPN | MOD_SRC_TOS | MOD_SRC_SRE;
+	for (uint32_t index = 0; index < 8; index++)
+		test_eq_u32("SRC routing reset value", 0, GPTU_SRC(gptu->base, index) & src_config);
+}
+
 static uint32_t measure_t2_frequency(const gptu_t *gptu, uint32_t rmc) {
 	gptu_stop(gptu);
 	GPTU_CLC(gptu->base) = rmc << MOD_CLC_RMC_SHIFT;
@@ -381,6 +411,9 @@ int main(void) {
 	};
 
 	test_start("GPTU peripheral test");
+	test_category("Reset values");
+	for (unsigned int i = 0; i < sizeof(instances) / sizeof(instances[0]); i++)
+		test_reset_values(&instances[i]);
 	for (unsigned int i = 0; i < sizeof(instances) / sizeof(instances[0]); i++)
 		test_instance(&instances[i]);
 

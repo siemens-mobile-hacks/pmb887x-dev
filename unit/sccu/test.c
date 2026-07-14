@@ -49,6 +49,28 @@ static bool duration_matches(uint32_t actual_us, uint32_t frames) {
 	return actual_us >= expected_us - tolerance && actual_us <= expected_us + tolerance;
 }
 
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("SPCR reset value", 0, SCCU_SPCR);
+	test_eq_u32("TDMINI reset value", 0, SCCU_TDMINI);
+	test_eq_u32("TDMOUT reset value", 0, SCCU_TDMOUT);
+	test_eq_u32("SLPCTRL reset value", 0, SCCU_SLPCTRL);
+	test_eq_u32("REFIN reset value", 0, SCCU_REFIN);
+	test_eq_u32("REF reset value", 0x000005E0, SCCU_REF);
+	test_eq_u32("NQTZ reset value", SCCU_NQTZ_VALUE, SCCU_NQTZ);
+	test_eq_u32("SCCTRL reset value", 0, SCCU_SCCTRL);
+	test_eq_u32("WAIT reset value", 0x0003003F, SCCU_WAIT);
+	test_eq_u32("HWWAKEUP reset value", 0, SCCU_HWWAKEUP);
+	test_eq_u32(
+		"clock status after reset",
+		SCCU_SCCUCLKSTA_CPUCLK | SCCU_SCCUCLKSTA_GSMCLK,
+		SCCU_SCCUCLKSTA
+	);
+	test_eq_u32("state-machine status after reset", SCCU_SCCUMSTA_UC_ON, SCCU_SCCUMSTA);
+	test_eq_u32("wakeup SRC reset value", 0, SCCU_WAKE_SRC);
+	test_eq_u32("unknown SRC reset value", 0, SCCU_UNK_SRC);
+}
+
 static void cpu_wait_for_interrupt(void) {
 	uint32_t value = 0;
 
@@ -282,6 +304,7 @@ static void test_system_sleep(uint32_t power_control) {
 
 int main(void) {
 	test_start("SCCU peripheral test");
+	test_reset_values();
 
 	SCU_CLC = 2 << MOD_CLC_RMC_SHIFT;
 	test_module_clock("module clock is enabled", SCU_CLC);

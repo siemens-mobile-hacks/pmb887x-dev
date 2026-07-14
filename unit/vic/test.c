@@ -44,6 +44,16 @@ static void reset_irq_capture(void) {
 	irq_status[1] = 0;
 }
 
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("FIQ_CON reset value", 0, VIC_FIQ_CON);
+	test_eq_u32("IRQ_CON reset value", 0, VIC_IRQ_CON);
+	test_eq_u32("FIQ_CURRENT reset value", 0, VIC_FIQ_CURRENT);
+	test_eq_u32("IRQ_CURRENT reset value", 0, VIC_IRQ_CURRENT);
+	for (uint32_t irq = 0; irq < VIC_IRQ_COUNT; irq++)
+		test_eq_u32("CON reset value", 0, VIC_CON(irq));
+}
+
 static void test_registers(void) {
 	test_module_id("module ID", 0x0031C000, VIC_ID);
 	test_eq_u32("IRQ_CON is clear without pending sources", 0, VIC_IRQ_CON);
@@ -630,6 +640,7 @@ static void test_pending_reroute(void) {
 
 int main(void) {
 	test_start("VIC peripheral test");
+	test_reset_values();
 	USART_CLC(USART1) = 1 << MOD_CLC_RMC_SHIFT;
 	GPTU_CLC(GPTU0) = 1 << MOD_CLC_RMC_SHIFT;
 	USART_IMSC(USART1) = USART_IMSC_TX;

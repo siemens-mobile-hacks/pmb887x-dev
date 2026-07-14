@@ -315,7 +315,22 @@ static void test_registers(void) {
 	test_eq_u32("DMA starts disabled", 0, DIF_DMAE);
 }
 
-static void test_conversion_defaults(void) {
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, DIF_CLC);
+	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_eq_u32("RUNCTRL reset value", 0, DIF_RUNCTRL);
+	test_eq_u32("CON reset value", 0, DIF_CON);
+	test_eq_u32("PERREG reset value", 0, DIF_PERREG);
+	test_eq_u32("CSREG reset value", 0, DIF_CSREG);
+	test_eq_u32("LCDTIM1 reset value", 0, DIF_LCDTIM1);
+	test_eq_u32("LCDTIM2 reset value", 0, DIF_LCDTIM2);
+	test_eq_u32("STARTLCDRD reset value", 0, DIF_STARTLCDRD);
+	test_eq_u32("STAT reset value", 0, DIF_STAT);
+	test_eq_u32("COEFF_REG1 reset value", 0, DIF_COEFF_REG1);
+	test_eq_u32("COEFF_REG2 reset value", 0, DIF_COEFF_REG2);
+	test_eq_u32("COEFF_REG3 reset value", 0, DIF_COEFF_REG3);
+	test_eq_u32("OFFSET reset value", 0, DIF_OFFSET);
 	test_eq_u32("PBCCON reset value", 0, DIF_PBCCON);
 	test_eq_u32("BMREG0 identity mapping", 0x14830820, DIF_BMREG0);
 	test_eq_u32("BMREG1 identity mapping", 0x2D4920E6, DIF_BMREG1);
@@ -327,10 +342,27 @@ static void test_conversion_defaults(void) {
 	test_eq_u32("BCSEL1 reset value", 0, DIF_BCSEL1);
 	test_eq_u32("BCREG reset value", 0, DIF_BCREG);
 	test_eq_u32("INVERT_BIT reset value", 0, DIF_INVERT_BIT);
-	test_eq_u32("COEFF_REG1 reset value", 0, DIF_COEFF_REG1);
-	test_eq_u32("COEFF_REG2 reset value", 0, DIF_COEFF_REG2);
-	test_eq_u32("COEFF_REG3 reset value", 0, DIF_COEFF_REG3);
-	test_eq_u32("OFFSET reset value", 0, DIF_OFFSET);
+	test_eq_u32("SYNC_CONFIG reset value", 0, DIF_SYNC_CONFIG);
+	test_eq_u32("SYNC_COUNT reset value", 0, DIF_SYNC_COUNT);
+	test_eq_u32("BR reset value", 0, DIF_BR);
+	test_eq_u32("FDIV reset value", 0, DIF_FDIV);
+	test_eq_u32("RXFIFO_CFG reset value", DIF_RXFIFO_CFG_RXBS_4_WORD, DIF_RXFIFO_CFG);
+	/* MRPS_CTRL is write-only on the hardware. */
+	test_eq_u32("RPS_STAT reset value", 0, DIF_RPS_STAT);
+	test_eq_u32("RXFFS_STAT reset value", 0, DIF_RXFFS_STAT);
+	test_eq_u32("TXFIFO_CFG reset value", DIF_TXFIFO_CFG_TXBS_8_WORD, DIF_TXFIFO_CFG);
+	test_eq_u32("TPS_CTRL reset value", 0, DIF_TPS_CTRL);
+	test_eq_u32("TXFFS_STAT reset value", 0, DIF_TXFFS_STAT);
+	test_eq_u32(
+		"ERRIRQSM reset value",
+		DIF_ERRIRQSM_RXFUFL | DIF_ERRIRQSM_RXFOFL | DIF_ERRIRQSM_TXFOFL | DIF_ERRIRQSM_PHASE,
+		DIF_ERRIRQSM
+	);
+	test_eq_u32("ERRIRQSS reset value", 0, DIF_ERRIRQSS & DIF_ERROR_SOURCES);
+	test_eq_u32("RIS reset value", 0, DIF_RIS);
+	test_eq_u32("IMSC reset value", 0, DIF_IMSC);
+	test_eq_u32("MIS reset value", 0, DIF_MIS);
+	test_eq_u32("DMAE reset value", 0, DIF_DMAE);
 }
 
 static void test_irq_status(void) {
@@ -1452,10 +1484,7 @@ static void test_dma(void) {
 
 int dif_v2_test(void) {
 	test_start("DIFv2 peripheral test");
-
-	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
-	test_category("Conversion reset values");
-	test_conversion_defaults();
+	test_reset_values();
 	configure_dif(DIF_CON_HB_MSB | DIF_CON_PH_1 | DIF_CON_PO_1 | DIF_CON_BM_8, FIFO_DEFAULT);
 
 	test_category("Registers");

@@ -108,6 +108,29 @@ static void reset_dmac(void) {
 	irq_raw_err_status = 0;
 }
 
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("interrupt status reset value", 0, DMAC_INT_STATUS);
+	test_eq_u32("terminal-count status reset value", 0, DMAC_TC_STATUS);
+	test_eq_u32("error status reset value", 0, DMAC_ERR_STATUS);
+	test_eq_u32("raw terminal-count status reset value", 0, DMAC_RAW_TC_STATUS);
+	test_eq_u32("raw error status reset value", 0, DMAC_RAW_ERR_STATUS);
+	test_eq_u32("enabled-channel status reset value", 0, DMAC_EN_CHAN);
+	test_eq_u32("software burst request reset value", 0, DMAC_SOFT_BREQ);
+	test_eq_u32("software single request reset value", 0, DMAC_SOFT_SREQ);
+	test_eq_u32("software last-burst request reset value", 0, DMAC_SOFT_LBREQ);
+	test_eq_u32("software last-single request reset value", 0, DMAC_SOFT_LSREQ);
+	test_eq_u32("global configuration reset value", 0, DMAC_CONFIG);
+	test_eq_u32("synchronization reset value", 0, DMAC_SYNC);
+	for (uint32_t channel = 0; channel < 8; channel++) {
+		test_eq_u32("channel source address reset value", 0, DMAC_CH_SRC_ADDR(channel));
+		test_eq_u32("channel destination address reset value", 0, DMAC_CH_DST_ADDR(channel));
+		test_eq_u32("channel LLI reset value", 0, DMAC_CH_LLI(channel));
+		test_eq_u32("channel control reset value", 0, DMAC_CH_CONTROL(channel));
+		test_eq_u32("channel configuration reset value", 0, DMAC_CH_CONFIG(channel));
+	}
+}
+
 static bool wait_for_status(volatile uint32_t *reg, uint32_t mask) {
 	stopwatch_t start = stopwatch_get();
 
@@ -256,11 +279,11 @@ static void test_endianness(void) {
 		0x00002143
 	);
 	test_endian_transfer(
-		"16-bit BE to LE reads the high source lane",
+		"32-bit BE to 16-bit LE splits swapped halfwords",
 		DMAC_CONFIG_M1_BE,
-		DMAC_CH_CONTROL_S_WIDTH_WORD | DMAC_CH_CONTROL_D_WIDTH_WORD,
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_WORD,
 		1,
-		0x00006587
+		0x21436587
 	);
 }
 
@@ -1410,6 +1433,7 @@ static void test_sreq_behavior(void) {
 
 int main(void) {
 	test_start("DMAC peripheral test");
+	test_reset_values();
 
 	test_category("Identification and registers");
 	test_amba_part_id("peripheral ID", 0x080, DMAC_PERIPH_ID0, DMAC_PERIPH_ID1);

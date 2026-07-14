@@ -326,6 +326,36 @@ static enum transfer_result dma_smbus_write(uint8_t reg, uint8_t value) {
 	return dma_write_bytes(PMIC_I2C_ADDR, data, sizeof(data));
 }
 
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, I2C_CLC);
+	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_eq_u32("RUNCTRL reset value", 0, I2C_RUNCTRL);
+	test_eq_u32("ENDDCTRL reset value", 0, I2C_ENDDCTRL);
+	test_eq_u32("FDIVCFG reset value", 0, I2C_FDIVCFG);
+	test_eq_u32("FDIVHIGHCFG reset value", 0, I2C_FDIVHIGHCFG);
+	test_eq_u32("ADDRCFG reset value", 0, I2C_ADDRCFG);
+	/* BUSSTAT reflects the live external bus and is not a reset value. */
+	test_eq_u32(
+		"FIFOCFG reset value",
+		I2C_FIFOCFG_RXBS_4_WORD | I2C_FIFOCFG_TXBS_4_WORD,
+		I2C_FIFOCFG
+	);
+	test_eq_u32("MRPSCTRL reset value", 0, I2C_MRPSCTRL);
+	test_eq_u32("RPSSTAT reset value", 0, I2C_RPSSTAT);
+	test_eq_u32("TPSCTRL reset value", 0, I2C_TPSCTRL);
+	test_eq_u32("FFSSTAT reset value", 0, I2C_FFSSTAT);
+	/* TIMCFG is not readable on the hardware. */
+	test_eq_u32("ERRIRQSM reset value", I2C_ERROR_CLEAR, I2C_ERRIRQSM);
+	test_eq_u32("ERRIRQSS reset value", 0, I2C_ERRIRQSS);
+	test_eq_u32("PIRQSM reset value", I2C_PROTOCOL_CLEAR, I2C_PIRQSM);
+	test_eq_u32("PIRQSS reset value", 0, I2C_PIRQSS);
+	test_eq_u32("RIS reset value", 0, I2C_RIS);
+	test_eq_u32("IMSC reset value", 0, I2C_IMSC);
+	test_eq_u32("MIS reset value", 0, I2C_MIS);
+	test_eq_u32("DMAE reset value", 0, I2C_DMAE);
+}
+
 static void test_registers(void) {
 	test_module_id("module ID", 0xF057C000, I2C_ID);
 	test_module_clock("module clock", I2C_CLC);
@@ -714,6 +744,7 @@ static void configure_i2c(void) {
 
 int i2c_v2_test(void) {
 	test_start("I2Cv2 peripheral test");
+	test_reset_values();
 	configure_i2c();
 
 	test_category("Registers");

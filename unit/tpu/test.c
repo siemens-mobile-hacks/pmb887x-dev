@@ -44,6 +44,37 @@ static bool frequency_matches(uint32_t actual, uint32_t expected) {
 	return actual >= expected - tolerance && actual <= expected + tolerance;
 }
 
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, TPU_CLC);
+	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_eq_u32("RFCON1 reset value", 0, TPU_RFCON1);
+	test_eq_u32("RFCON2 reset value", 0, TPU_RFCON2);
+	test_eq_u32("CORRECTION reset value", 0, TPU_CORRECTION);
+	test_eq_u32("OVERFLOW reset value", 0x270F, TPU_OVERFLOW);
+	for (uint32_t index = 0; index < 2; index++)
+		test_eq_u32("INT reset value", TPU_INT_VALUE, TPU_INT(index));
+	test_eq_u32("OFFSET reset value", 0, TPU_OFFSET);
+	test_eq_u32("SKIP reset value", 0, TPU_SKIP);
+	test_eq_u32("COUNTER reset value", 0, TPU_COUNTER);
+	test_eq_u32("CEAP reset value", 0, TPU_CEAP);
+	test_eq_u32("EAPT reset value", 0, TPU_EAPT);
+	test_eq_u32("EAPB reset value", 0, TPU_EAPB);
+	test_eq_u32("TGER reset value", 0, TPU_TGER);
+	test_eq_u32("PARAM reset value", 0, TPU_PARAM);
+	test_eq_u32("FADE reset value", 0x700, TPU_FADE);
+	test_eq_u32("GSMCLK1 reset value", 1 << TPU_GSMCLK1_K_SHIFT, TPU_GSMCLK1);
+	test_eq_u32("GSMCLK2 reset value", 2 << TPU_GSMCLK2_L_SHIFT, TPU_GSMCLK2);
+	test_eq_u32("GSMCLK3 reset value", 0, TPU_GSMCLK3);
+	test_eq_u32("unknown register reset value", 0, TPU_UNK);
+	uint32_t src_config = MOD_SRC_SRPN | MOD_SRC_TOS | MOD_SRC_SRE;
+	test_eq_u32("RF SSC SRC routing reset value", 0, TPU_RFSSC_SRC & src_config);
+	for (uint32_t index = 0; index < 6; index++)
+		test_eq_u32("GP SRC routing reset value", 0, TPU_GP_SRC(index) & src_config);
+	for (uint32_t index = 0; index < 2; index++)
+		test_eq_u32("compare SRC routing reset value", 0, TPU_SRC(index) & src_config);
+}
+
 static uint32_t measure_frequency(uint32_t rmc, uint32_t k, uint32_t l) {
 	TPU_PARAM = 0;
 	tpu_configure_clock(rmc, k, l);
@@ -267,6 +298,7 @@ static void test_compare_interrupts(void) {
 
 int main(void) {
 	test_start("TPU peripheral test");
+	test_reset_values();
 	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_module_id("module ID", 0xF021C000, TPU_ID);
 	test_module_clock("module clock is enabled", TPU_CLC);

@@ -120,6 +120,9 @@ static void test_itcm_overlay(void) {
 
 int main(void) {
 	test_start("ARM TCM test");
+	test_category("Reset values");
+	test_eq_u32("ITCM region reset value", TCM_REGION_SIZE_8K, read_itcm());
+	test_eq_u32("DTCM region reset value", TCM_REGION_SIZE_8K, read_dtcm());
 
 	test_category("Identification");
 	uint32_t main_id = read_main_id();

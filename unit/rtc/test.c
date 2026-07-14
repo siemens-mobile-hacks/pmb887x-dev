@@ -53,6 +53,19 @@ static void stop_and_clear(void) {
 	RTC_ISNRC = RTC_CLEAR_REQUESTS;
 }
 
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, RTC_CLC);
+	SCU_RTCIF = 0xAA;
+	RTC_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	/* CTRL through ALARM belong to the retained RTC domain and do not have system-reset values. */
+	test_eq_u32(
+		"SRC routing reset value",
+		0,
+		RTC_SRC & (MOD_SRC_SRPN | MOD_SRC_TOS | MOD_SRC_SRE)
+	);
+}
+
 static void test_registers(void) {
 	test_module_id("module ID", 0xF049C000, RTC_ID);
 	test_module_clock("module clock", RTC_CLC);
@@ -384,6 +397,7 @@ static void test_masked_alarm(void) {
 
 int main(void) {
 	test_start("RTC peripheral test");
+	test_reset_values();
 	SCU_RTCIF = 0xAA;
 	RTC_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	RTC_CTRL = RTC_SYNC_CONTROL | RTC_CTRL_CLR_RTCINT | RTC_CTRL_CLR_RTCBAD;

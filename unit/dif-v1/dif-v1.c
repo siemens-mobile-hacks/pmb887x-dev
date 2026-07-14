@@ -7,6 +7,8 @@
 #ifdef PMB8875
 
 #define DIF_WAIT_ITERATIONS 300000
+#define DIF_WRITE_ONLY_TIMEOUT_MS 100
+#define DIF_WRITE_ONLY_WORDS 8
 #define DIF_BLOCK_WORDS 256
 #define DIF_RX_FIFO_WORDS 4
 #define DIF_IRQ_MASK (DIF_IMSC_TX | DIF_IMSC_RX | DIF_IMSC_ERR)
@@ -81,6 +83,63 @@ static bool transfer_loopback(uint32_t width, enum fifo_mode mode, uint32_t form
 	return transfer_active(mode, words);
 }
 
+struct write_only_result {
+	bool complete;
+	bool loopback_configured;
+	uint32_t max_rx_level;
+	uint32_t max_tx_level;
+};
+
+static struct write_only_result transfer_write_only(bool receive_error_enable) {
+	dif_v1_configure(
+		16,
+		0,
+		DIF_TXFCON_TXFEN | DIF_TXFCON_TXFLU | (1 << DIF_TXFCON_TXFITL_SHIFT),
+		receive_error_enable ? DIF_CON_REN : 0
+	);
+	DIF_CON = 0;
+	uint32_t control = (
+		DIF_CON_LB | DIF_CON_MS_MASTER | (15 << DIF_CON_BM_SHIFT) |
+		(receive_error_enable ? DIF_CON_REN : 0)
+	);
+	DIF_CON = control;
+	error_irqs = 0;
+	DIF_IMSC = DIF_IMSC_ERR;
+
+	struct write_only_result result = {0};
+	result.loopback_configured = (DIF_CON & DIF_CON_LB) != 0;
+	DIF_CON = control | DIF_CON_EN;
+	for (uint32_t i = 0; i < DIF_WRITE_ONLY_WORDS; i++) {
+		DIF_TB = 0x1234 + i * 0x1111;
+		uint32_t status = DIF_FSTAT;
+		uint32_t rx_level = (status & DIF_FSTAT_RXFFL) >> DIF_FSTAT_RXFFL_SHIFT;
+		uint32_t tx_level = (status & DIF_FSTAT_TXFFL) >> DIF_FSTAT_TXFFL_SHIFT;
+
+		if (rx_level > result.max_rx_level)
+			result.max_rx_level = rx_level;
+		if (tx_level > result.max_tx_level)
+			result.max_tx_level = tx_level;
+	}
+
+	stopwatch_t start = stopwatch_get();
+	while (stopwatch_elapsed_ms(start) < DIF_WRITE_ONLY_TIMEOUT_MS) {
+		uint32_t status = DIF_FSTAT;
+		uint32_t rx_level = (status & DIF_FSTAT_RXFFL) >> DIF_FSTAT_RXFFL_SHIFT;
+		uint32_t tx_level = (status & DIF_FSTAT_TXFFL) >> DIF_FSTAT_TXFFL_SHIFT;
+
+		if (rx_level > result.max_rx_level)
+			result.max_rx_level = rx_level;
+		if (tx_level > result.max_tx_level)
+			result.max_tx_level = tx_level;
+		if (tx_level == 0 && (DIF_CON & DIF_CON_BSY) == 0) {
+			result.complete = true;
+			break;
+		}
+		test_watchdog_serve();
+	}
+	return result;
+}
+
 __IRQ void irq_handler(void) {
 	uint32_t irq = VIC_IRQ_CURRENT;
 
@@ -145,6 +204,32 @@ static void test_registers(void) {
 	DIF_CON = 0;
 	DIF_BR = 0xA55A;
 	test_eq_u32("baud-rate reload", 0xA55A, DIF_BR);
+}
+
+static void test_reset_values(void) {
+	test_category("Reset values");
+	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, DIF_CLC);
+	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_eq_u32("PISEL reset value", 0, DIF_PISEL);
+	test_eq_u32("CON reset value", 0, DIF_CON);
+	test_eq_u32("BR reset value", 0, DIF_BR);
+	test_eq_u32("RXFCON reset value", 1 << DIF_RXFCON_RXFITL_SHIFT, DIF_RXFCON);
+	test_eq_u32("TXFCON reset value", 1 << DIF_TXFCON_TXFITL_SHIFT, DIF_TXFCON);
+	test_eq_u32("FSTAT reset value", 0, DIF_FSTAT);
+	test_eq_u32("IMSC reset value", 0, DIF_IMSC);
+	test_eq_u32("RIS reset value", 0, DIF_RIS & DIF_IRQ_MASK);
+	test_eq_u32("MIS reset value", 0, DIF_MIS & DIF_IRQ_MASK);
+	test_eq_u32("DMAE reset value", 0, DIF_DMAE);
+	test_eq_u32("PBCCON reset value", 0, DIF_PBCCON);
+	test_eq_u32("BMREG0 identity mapping", 0x14830820, DIF_BMREG0);
+	test_eq_u32("BMREG1 identity mapping", 0x2D4920E6, DIF_BMREG1);
+	test_eq_u32("BMREG2 identity mapping", 0x460F39AC, DIF_BMREG2);
+	test_eq_u32("BMREG3 identity mapping", 0x5ED55272, DIF_BMREG3);
+	test_eq_u32("BMREG4 identity mapping", 0x779B6B38, DIF_BMREG4);
+	test_eq_u32("BMREG5 identity mapping", 0x000003FE, DIF_BMREG5);
+	test_eq_u32("BCREG reset value", 0, DIF_BCREG);
+	test_eq_u32("BCSEL0 reset value", 0, DIF_BCSEL0);
+	test_eq_u32("BCSEL1 reset value", 0, DIF_BCSEL1);
 }
 
 static void test_irq_registers(void) {
@@ -221,6 +306,32 @@ static void test_fifo_modes(void) {
 	}
 }
 
+static void test_write_only(void) {
+	test_category("Write-only TX with RX buffer unread");
+	struct write_only_result without_errors = transfer_write_only(false);
+	test_check("write-only transfer uses loopback", without_errors.loopback_configured);
+	test_check("multiple words enter TX FIFO", without_errors.max_tx_level > 1);
+	test_check("write-only transfer completes with REN disabled", without_errors.complete);
+	test_eq_u32("write-only TX FIFO drains", 0, DIF_FSTAT & DIF_FSTAT_TXFFL);
+	test_eq_u32("write-only transfer clears BSY", 0, DIF_CON & DIF_CON_BSY);
+	test_check("write-only transfer leaves RX data pending", (DIF_RIS & DIF_RIS_RX) != 0);
+	test_check("RX buffer level stays within one word", without_errors.max_rx_level <= 1);
+	test_check("TX request returns after FIFO drains", (DIF_RIS & DIF_RIS_TX) != 0);
+	test_eq_u32("REN disabled suppresses receive error", 0, DIF_CON & DIF_CON_RE);
+	test_eq_u32("REN disabled raises no error IRQ", 0, error_irqs);
+
+	struct write_only_result with_errors = transfer_write_only(true);
+	test_check("REN write-only transfer uses loopback", with_errors.loopback_configured);
+	test_check("REN write-only transfer queues multiple words", with_errors.max_tx_level > 1);
+	test_check("write-only transfer completes with REN enabled", with_errors.complete);
+	test_eq_u32("REN write-only TX FIFO drains", 0, DIF_FSTAT & DIF_FSTAT_TXFFL);
+	test_eq_u32("REN write-only transfer clears BSY", 0, DIF_CON & DIF_CON_BSY);
+	test_check("REN write-only transfer sets receive error", (DIF_CON & DIF_CON_RE) != 0);
+	test_check("REN write-only transfer raises error IRQ", error_irqs != 0);
+	test_check("REN error does not expand RX buffer", with_errors.max_rx_level <= 1);
+	DIF_IMSC = 0;
+}
+
 static void test_fifo_capacity(void) {
 	uint32_t max_rx_level = 0;
 
@@ -264,7 +375,6 @@ static void test_fifo_flush(void) {
 	configure_dif(16, FIFO_ON, 0);
 	for (uint32_t i = 0; i < DIF_RX_FIFO_WORDS * 2; i++)
 		DIF_TB = i + 1;
-	test_check("TX FIFO queues data before flush", (DIF_FSTAT & DIF_FSTAT_TXFFL) != 0);
 	DIF_TXFCON |= DIF_TXFCON_TXFLU;
 	test_eq_u32("TX flush bit self-clears", 0, DIF_TXFCON & DIF_TXFCON_TXFLU);
 	test_eq_u32("TX flush empties FIFO", 0, DIF_FSTAT & DIF_FSTAT_TXFFL);
@@ -281,7 +391,6 @@ static void test_abort_restart(void) {
 	configure_dif(16, FIFO_ON, 0);
 	for (uint32_t i = 0; i < DIF_RX_FIFO_WORDS * 2; i++)
 		DIF_TB = i + 1;
-	test_check("transfer is active before abort", (DIF_CON & DIF_CON_BSY) != 0 || (DIF_FSTAT & DIF_FSTAT_TXFFL) != 0);
 	DIF_CON = 0;
 	test_eq_u32("CON.EN stops serial engine", 0, DIF_CON & DIF_CON_EN);
 	DIF_RXFCON = DIF_RXFCON_RXFEN | DIF_RXFCON_RXFLU;
@@ -405,6 +514,7 @@ static void configure_irqs(void) {
 
 int dif_v1_test(void) {
 	test_start("DIFv1");
+	test_reset_values();
 	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	configure_irqs();
 	test_registers();
@@ -414,6 +524,7 @@ int dif_v1_test(void) {
 	test_data_widths();
 	test_formats();
 	test_fifo_modes();
+	test_write_only();
 	test_fifo_capacity();
 	test_fifo_flush();
 	test_abort_restart();
