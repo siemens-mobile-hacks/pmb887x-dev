@@ -17,6 +17,7 @@ Run a test on real hardware:
 | `scu-reset` | Intentional software reset using the firmware reset-control sequence |
 | `scu-wdt-reset` | Intentional watchdog reset; reaching the failure message means the reset did not occur |
 | `adc` | ADC registers, conversion, interrupts, and battery voltage measurement |
+| `afc` | AFC reference value, output enable, write mask, and firmware-safe nominal value |
 | `rtc` | RTC registers, synchronous/asynchronous operation, timer chain, and interrupt sub-node |
 | `vic` | VIC pending state, arbitration, priority masking, acknowledge, IRQ, and FIQ routing |
 | `gptu` | Both GPTU instances, T0/T1 concatenation, T2 split mode, reload, and service requests |

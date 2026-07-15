@@ -3501,12 +3501,18 @@
 
 // AFC [MOD_NUM=F004, MOD_REV=00, MOD_32BIT=C0]
 // Automatic Frequency Correction
-#define	AFC_BASE	0xF6300000
+#define	AFC_BASE				0xF6300000
 /* Clock Control Register */
-#define	AFC_CLC		MMIO32(AFC_BASE + 0x00)
+#define	AFC_CLC					MMIO32(AFC_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	AFC_ID		MMIO32(AFC_BASE + 0x08)
+#define	AFC_ID					MMIO32(AFC_BASE + 0x08)
+
+/* AFC Reference Value Register */
+#define	AFC_AFCVAL				MMIO32(AFC_BASE + 0x10)
+#define	AFC_AFCVAL_AFC			GENMASK(14, 0)			 // Pulse Number Modulation Reference Value
+#define	AFC_AFCVAL_AFC_SHIFT	0
+#define	AFC_AFCVAL_ENAFC		BIT(15)					 // AFC Output Enable
 
 
 // TPU [MOD_NUM=F021, MOD_REV=00, MOD_32BIT=C0]
