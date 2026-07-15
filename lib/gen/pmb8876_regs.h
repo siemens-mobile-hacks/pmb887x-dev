@@ -131,9 +131,9 @@
 #define	VIC_SSC_RX_IRQ			13
 #define	VIC_SSC_ERR_IRQ			14
 #define	VIC_SSC_TMO_IRQ			15
-#define	VIC_SIM_UNK0_IRQ		22
-#define	VIC_SIM_UNK1_IRQ		23
-#define	VIC_SIM_UNK2_IRQ		24
+#define	VIC_SIM_ERR_IRQ			22
+#define	VIC_SIM_IN_IRQ			23
+#define	VIC_SIM_OK_IRQ			24
 #define	VIC_USB_IRQ				25
 #define	VIC_USART1_TX_IRQ		26
 #define	VIC_USART1_TBUF_IRQ		27
@@ -818,12 +818,151 @@
 
 // SIM [MOD_NUM=F000, MOD_REV=32, MOD_32BIT=C0]
 // SIM Card Interface
-#define	SIM_BASE	0xF1300000
+#define	SIM_BASE					0xF1300000
 /* Clock Control Register */
-#define	SIM_CLC		MMIO32(SIM_BASE + 0x00)
+#define	SIM_CLC						MMIO32(SIM_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	SIM_ID		MMIO32(SIM_BASE + 0x08)
+#define	SIM_ID						MMIO32(SIM_BASE + 0x08)
+
+/* SIM Control Register */
+#define	SIM_CON						MMIO32(SIM_BASE + 0x20)
+#define	SIM_CON_INCON				BIT(0)					 // Character convention (0: direct; 1: inverse)
+#define	SIM_CON_SIMT0				BIT(1)					 // Protocol mode (0: character; 1: hardware T=0)
+#define	SIM_CON_SIMIOL				BIT(2)					 // SIM I/O line enable
+#define	SIM_CON_SIMEN				BIT(3)					 // SIM interface enable
+#define	SIM_CON_SIMVCC				BIT(4)					 // SIM supply voltage enable
+#define	SIM_CON_SIMRST				BIT(5)					 // SIM reset output level
+#define	SIM_CON_ERROFF				BIT(6)					 // Disable error signalling
+#define	SIM_CON_RPTOFF				BIT(7)					 // Disable character retransmission
+#define	SIM_CON_APDWN				BIT(8)					 // Automatic power-down enable
+#define	SIM_CON_SIMPDWN				BIT(9)					 // Force automatic power-down
+#define	SIM_CON_SIMON				BIT(10)					 // SIM clock enable
+#define	SIM_CON_CLKSEL				BIT(11)					 // SIM clock selection
+#define	SIM_CON_CLKHIGH				BIT(12)					 // Clock-stop level selection
+#define	SIM_CON_UARTON				BIT(13)					 // UART and protocol clock enable
+#define	SIM_CON_SMCSWACT			BIT(14)					 // Smart-card interface data switch
+#define	SIM_CON_SIMT1				BIT(15)					 // Hardware T=1 / DMA transfer mode enable
+
+/* SIM Baud Rate Factor Register */
+#define	SIM_BRF						MMIO32(SIM_BASE + 0x24)
+#define	SIM_BRF_BRF					GENMASK(6, 0)			 // Baud-rate factor F / (4D)
+#define	SIM_BRF_BRF_SHIFT			0
+
+/* Status Register */
+#define	SIM_STAT					MMIO32(SIM_BASE + 0x28)
+#define	SIM_STAT_UARTOK				BIT(0)					 // A byte was received or transmitted successfully
+#define	SIM_STAT_PARINT				BIT(1)					 // Parity error
+#define	SIM_STAT_OVRRUN				BIT(2)					 // Transmit or receive overrun
+#define	SIM_STAT_T0END				BIT(3)					 // Hardware T=0 instruction completed
+#define	SIM_STAT_SIMDET				BIT(4)					 // SIM presence input state
+#define	SIM_STAT_CHTIMEOUT			BIT(5)					 // Character timer expired
+#define	SIM_STAT_UNK6				BIT(6)
+#define	SIM_STAT_UNK7				BIT(7)
+#define	SIM_STAT_UNK8				BIT(8)
+
+/* SIM Event Enable Register */
+#define	SIM_IRQEN					MMIO32(SIM_BASE + 0x2C)
+#define	SIM_IRQEN_ENOKINT			BIT(0)					 // UARTOK event enable
+#define	SIM_IRQEN_ENPAR				BIT(1)					 // PARINT event enable
+#define	SIM_IRQEN_ENOVR				BIT(2)					 // OVRRUN event enable
+#define	SIM_IRQEN_ENT0END			BIT(3)					 // T0END event enable
+#define	SIM_IRQEN_ENCHTIMER			BIT(4)					 // Character timer event enable
+#define	SIM_IRQEN_ENBWTTIMER		BIT(5)					 // Block waiting timer event enable
+#define	SIM_IRQEN_UNK6				BIT(6)
+
+/* Receive Spacing Register */
+#define	SIM_RXSPC					MMIO32(SIM_BASE + 0x30)
+#define	SIM_RXSPC_RXSPC				GENMASK(7, 0)			 // RX-to-TX spacing in 1/16 ETU
+#define	SIM_RXSPC_RXSPC_SHIFT		0
+
+/* Transmit Spacing Register */
+#define	SIM_TXSPC					MMIO32(SIM_BASE + 0x34)
+#define	SIM_TXSPC_TXSPC				GENMASK(7, 0)			 // Extra TX-to-TX spacing in ETU
+#define	SIM_TXSPC_TXSPC_SHIFT		0
+
+/* Character Timer Register */
+#define	SIM_CHTIMER					MMIO32(SIM_BASE + 0x38)
+#define	SIM_CHTIMER_CHTIMER			GENMASK(23, 0)			 // Character wait timeout in ETU
+#define	SIM_CHTIMER_CHTIMER_SHIFT	0
+
+#define	SIM_UNK3C					MMIO32(SIM_BASE + 0x3C)
+#define	SIM_UNK3C_VALUE				GENMASK(4, 0)
+#define	SIM_UNK3C_VALUE_SHIFT		0
+
+#define	SIM_UNK40					MMIO32(SIM_BASE + 0x40)
+#define	SIM_UNK40_VALUE				GENMASK(10, 0)
+#define	SIM_UNK40_VALUE_SHIFT		0
+
+/* Block Waiting Timer Register */
+#define	SIM_BWT						MMIO32(SIM_BASE + 0x44)
+#define	SIM_BWT_BWT					GENMASK(23, 0)			 // Block wait timeout in ETU
+#define	SIM_BWT_BWT_SHIFT			0
+
+/* Transmit Buffer Register */
+#define	SIM_TXB						MMIO32(SIM_BASE + 0x50)
+#define	SIM_TXB_VALUE				GENMASK(7, 0)
+#define	SIM_TXB_VALUE_SHIFT			0
+
+/* Receive Buffer Register */
+#define	SIM_RXB						MMIO32(SIM_BASE + 0x54)
+#define	SIM_RXB_VALUE				GENMASK(7, 0)
+#define	SIM_RXB_VALUE_SHIFT			0
+
+/* T=0 Instruction Class Register */
+#define	SIM_INS						MMIO32(SIM_BASE + 0x58)
+#define	SIM_INS_INS					GENMASK(7, 0)			 // Instruction byte
+#define	SIM_INS_INS_SHIFT			0
+#define	SIM_INS_INSDIR				BIT(8)					 // Instruction direction (0: transmit; 1: receive)
+
+/* T=0 Parameter 3 Register */
+#define	SIM_P3						MMIO32(SIM_BASE + 0x5C)
+#define	SIM_P3_P3					GENMASK(7, 0)			 // Number of bytes to transmit or receive
+#define	SIM_P3_P3_SHIFT				0
+
+/* T=0 Status Word 1 Register */
+#define	SIM_SW1						MMIO32(SIM_BASE + 0x60)
+#define	SIM_SW1_SW1					GENMASK(7, 0)
+#define	SIM_SW1_SW1_SHIFT			0
+
+/* T=0 Status Word 2 Register */
+#define	SIM_SW2						MMIO32(SIM_BASE + 0x64)
+#define	SIM_SW2_SW2					GENMASK(7, 0)
+#define	SIM_SW2_SW2_SHIFT			0
+
+/* Interrupt Mask Control Register */
+#define	SIM_IMSC					MMIO32(SIM_BASE + 0x70)
+#define	SIM_IMSC_ERR				BIT(0)					 // Status/error interrupt
+#define	SIM_IMSC_IN					BIT(1)					 // SIM presence interrupt
+#define	SIM_IMSC_OK					BIT(2)					 // Successful character interrupt
+
+/* Raw Interrupt Status Register */
+#define	SIM_RIS						MMIO32(SIM_BASE + 0x74)
+#define	SIM_RIS_ERR					BIT(0)					 // Status/error interrupt
+#define	SIM_RIS_IN					BIT(1)					 // SIM presence interrupt
+#define	SIM_RIS_OK					BIT(2)					 // Successful character interrupt
+
+/* Masked Interrupt Status Register */
+#define	SIM_MIS						MMIO32(SIM_BASE + 0x78)
+#define	SIM_MIS_ERR					BIT(0)					 // Status/error interrupt
+#define	SIM_MIS_IN					BIT(1)					 // SIM presence interrupt
+#define	SIM_MIS_OK					BIT(2)					 // Successful character interrupt
+
+/* Interrupt Clear Register */
+#define	SIM_ICR						MMIO32(SIM_BASE + 0x7C)
+#define	SIM_ICR_ERR					BIT(0)					 // Status/error interrupt
+#define	SIM_ICR_IN					BIT(1)					 // SIM presence interrupt
+#define	SIM_ICR_OK					BIT(2)					 // Successful character interrupt
+
+/* Interrupt Set Register */
+#define	SIM_ISR						MMIO32(SIM_BASE + 0x80)
+#define	SIM_ISR_ERR					BIT(0)					 // Status/error interrupt
+#define	SIM_ISR_IN					BIT(1)					 // SIM presence interrupt
+#define	SIM_ISR_OK					BIT(2)					 // Successful character interrupt
+
+/* DMA Enable Register */
+#define	SIM_DMAE					MMIO32(SIM_BASE + 0x84)
+#define	SIM_DMAE_OK					BIT(0)					 // Successful-character DMA request enable
 
 
 // USB [MOD_NUM=F047, MOD_REV=12, MOD_32BIT=C0]
