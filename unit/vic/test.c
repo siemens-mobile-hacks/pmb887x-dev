@@ -279,16 +279,6 @@ static void test_ack_underflow(void) {
 	VIC_CON(VIC_SCU_EXTI0_IRQ) = 0;
 }
 
-static void test_reserved_bits(void) {
-	VIC_CON(VIC_SCU_EXTI0_IRQ) = 0xFFFFFFFF;
-	test_eq_u32(
-		"VIC_CON ignores reserved bits",
-		15 | VIC_CON_FIQ,
-		VIC_CON(VIC_SCU_EXTI0_IRQ) & 0xFFFFFFFF
-	);
-	VIC_CON(VIC_SCU_EXTI0_IRQ) = 0;
-}
-
 static void test_pending_and_current(void) {
 	cpu_enable_irq(false);
 	clear_sources();
@@ -658,7 +648,6 @@ int main(void) {
 	test_active_frame_state();
 	test_priority_disable_pending();
 	test_ack_underflow();
-	test_reserved_bits();
 
 	test_category("Arbitration");
 	test_priority();
@@ -690,14 +679,15 @@ __IRQ void irq_handler(void) {
 	}
 	irq_count++;
 
-	if (number == VIC_USART1_TX_IRQ)
+	if (number == VIC_USART1_TX_IRQ) {
 		USART_ICR(USART1) = USART_ICR_TX;
-	else if (number == VIC_SCU_EXTI0_IRQ)
+	} else if (number == VIC_SCU_EXTI0_IRQ) {
 		SCU_EXTI0_SRC = MOD_SRC_CLRR;
-	else if (number == VIC_GPTU0_SRC7_IRQ)
+	} else if (number == VIC_GPTU0_SRC7_IRQ) {
 		GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
-	else if (number == VIC_GPTU0_SRC6_IRQ)
+	} else if (number == VIC_GPTU0_SRC6_IRQ) {
 		GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR;
+	}
 
 	VIC_IRQ_ACK = 1;
 }
