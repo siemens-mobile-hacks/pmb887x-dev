@@ -3,7 +3,13 @@
 #include "i2c.h"
 #include "test.h"
 
-#ifdef SIM_DUMP_CARD_INFO
+#ifdef SIM_TIMER_TEST
+#define SIM_TEST_NAME "SIM card timers"
+#elif defined(SIM_HARDWARE_T0)
+#define SIM_TEST_NAME "SIM card hardware T=0"
+#elif defined(SIM_NO_CARD)
+#define SIM_TEST_NAME "SIM no card"
+#elif defined(SIM_DUMP_CARD_INFO)
 #define SIM_TEST_NAME "SIM card info"
 #else
 #define SIM_TEST_NAME "SIM card"
@@ -14,6 +20,8 @@
 #define SIM_IRQ_MASK (SIM_IMSC_ERR | SIM_IMSC_IN | SIM_IMSC_OK)
 #define SIM_MAX_ATR_SIZE 64
 #define SIM_MAX_APDU_DATA 256
+#define SIM_DMA_CHANNEL 0
+#define SIM_DMA_REQUEST 8
 
 struct apdu_response {
 	uint8_t data[SIM_MAX_APDU_DATA];
@@ -25,6 +33,28 @@ struct apdu_response {
 static uint8_t saved_pmic_reg06;
 static uint8_t saved_pmic_reg0a;
 static bool pmic_state_saved;
+
+#if defined(SIM_HARDWARE_T0) || defined(SIM_TIMER_TEST)
+
+static const uint8_t T0_HEADER[] __attribute__((aligned(4))) = {
+	0xA0, 0xA4, 0x00, 0x00, 0x02,
+};
+
+#ifdef SIM_HARDWARE_T0
+
+struct dma_lli {
+	uint32_t source;
+	uint32_t destination;
+	uint32_t next;
+	uint32_t control;
+};
+
+static const uint8_t T0_SELECT_MF[] __attribute__((aligned(4))) = {0x3F, 0x00};
+static struct dma_lli t0_data_lli __attribute__((aligned(16)));
+
+#endif
+
+#endif
 
 static void delay_ms(uint32_t milliseconds) {
 	stopwatch_t start = stopwatch_get();
@@ -156,6 +186,109 @@ static void sim_power_off(void) {
 	}
 }
 
+#ifdef SIM_HARDWARE_T0
+
+static bool sim_hardware_t0_select_dma(void) {
+	DMAC_CONFIG = 0;
+	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) = 0;
+	DMAC_TC_CLEAR = BIT(SIM_DMA_CHANNEL);
+	DMAC_ERR_CLEAR = BIT(SIM_DMA_CHANNEL);
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	DMAC_SYNC = 0;
+
+	DMAC_CH_SRC_ADDR(SIM_DMA_CHANNEL) = (uint32_t) T0_HEADER;
+	DMAC_CH_DST_ADDR(SIM_DMA_CHANNEL) = (uint32_t) &SIM_TXB;
+	t0_data_lli = (struct dma_lli) {
+		.source = (uint32_t) T0_SELECT_MF,
+		.destination = (uint32_t) &SIM_TXB,
+		.next = 0,
+		.control = (
+			ARRAY_SIZE(T0_SELECT_MF) | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+			DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+		),
+	};
+	DMAC_CH_LLI(SIM_DMA_CHANNEL) = (uint32_t) &t0_data_lli;
+	DMAC_CH_CONTROL(SIM_DMA_CHANNEL) = (
+		ARRAY_SIZE(T0_HEADER) | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+		DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+	);
+	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) = (
+		(SIM_DMA_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_INT_MASK_ERR |
+		DMAC_CH_CONFIG_INT_MASK_TC
+	);
+
+	SIM_CON |= SIM_CON_UARTON | SIM_CON_SIMT0;
+	SIM_IRQEN = SIM_IRQEN_ENOVR | SIM_IRQEN_ENT0END;
+	SIM_CON &= ~(SIM_CON_ERROFF | SIM_CON_RPTOFF);
+	SIM_DMAE = SIM_DMAE_OK;
+	SIM_INS = 0xA4;
+	SIM_P3 = 2;
+	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) |= DMAC_CH_CONFIG_ENABLE;
+
+	stopwatch_t start = stopwatch_get();
+	while (stopwatch_elapsed_ms(start) < 1000) {
+		if (SIM_STAT & SIM_STAT_T0END)
+			return true;
+		if (DMAC_RAW_ERR_STATUS & BIT(SIM_DMA_CHANNEL))
+			return false;
+		test_watchdog_serve();
+	}
+
+	return false;
+}
+
+#endif
+
+#ifdef SIM_TIMER_TEST
+
+static uint32_t sim_probe_character_timer(uint32_t ticks, uint32_t *elapsed_us) {
+	DMAC_CONFIG = 0;
+	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) = 0;
+	DMAC_TC_CLEAR = BIT(SIM_DMA_CHANNEL);
+	DMAC_ERR_CLEAR = BIT(SIM_DMA_CHANNEL);
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	DMAC_SYNC = 0;
+
+	DMAC_CH_SRC_ADDR(SIM_DMA_CHANNEL) = (uint32_t) T0_HEADER;
+	DMAC_CH_DST_ADDR(SIM_DMA_CHANNEL) = (uint32_t) &SIM_TXB;
+	DMAC_CH_LLI(SIM_DMA_CHANNEL) = 0;
+	DMAC_CH_CONTROL(SIM_DMA_CHANNEL) = (
+		ARRAY_SIZE(T0_HEADER) | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+		DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+	);
+	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) = (
+		(SIM_DMA_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_INT_MASK_ERR |
+		DMAC_CH_CONFIG_INT_MASK_TC
+	);
+
+	SIM_ICR = SIM_ICR_ERR | SIM_ICR_OK;
+	SIM_CON |= SIM_CON_UARTON | SIM_CON_SIMT0;
+	SIM_CHTIMER = ticks;
+	SIM_IRQEN = SIM_IRQEN_ENOVR | SIM_IRQEN_ENCHTIMER;
+	SIM_CON &= ~(SIM_CON_ERROFF | SIM_CON_RPTOFF);
+	SIM_DMAE = SIM_DMAE_OK;
+	SIM_INS = 0xA4;
+	SIM_P3 = 2;
+
+	stopwatch_t start = stopwatch_get();
+	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) |= DMAC_CH_CONFIG_ENABLE;
+	while (stopwatch_elapsed_us(start) < 100000) {
+		if (SIM_STAT & SIM_STAT_CHTIMEOUT)
+			break;
+		test_watchdog_serve();
+	}
+	*elapsed_us = stopwatch_elapsed_us(start);
+
+	return SIM_STAT;
+}
+
+#endif
+
 static bool sim_exchange(
 	const uint8_t header[5],
 	const uint8_t *tx_data,
@@ -164,6 +297,14 @@ static bool sim_exchange(
 	struct apdu_response *response
 ) {
 	response->size = 0;
+#ifdef SIM_DUMP_CARD_INFO
+	printf("# APDU TX:");
+	for (size_t i = 0; i < 5; i++)
+		printf(" %02X", header[i]);
+	for (size_t i = 0; i < tx_size; i++)
+		printf(" %02X", tx_data[i]);
+	printf("\n");
+#endif
 	for (size_t i = 0; i < 5; i++) {
 		if (!sim_send_byte(header[i]))
 			return false;
@@ -197,6 +338,13 @@ static bool sim_exchange(
 	if (!sim_receive_procedure(&response->sw1) || !sim_receive_byte(&response->sw2, 1000))
 		return false;
 
+#ifdef SIM_DUMP_CARD_INFO
+	printf("# APDU RX:");
+	for (size_t i = 0; i < response->size; i++)
+		printf(" %02X", response->data[i]);
+	printf(" | SW1 SW2: %02X %02X\n", response->sw1, response->sw2);
+#endif
+
 	return true;
 }
 
@@ -218,6 +366,16 @@ static bool sim_read_binary(uint8_t length, struct apdu_response *response) {
 
 	return sim_exchange(header, NULL, 0, length == 0 ? SIM_MAX_APDU_DATA : length, response);
 }
+
+#ifdef SIM_DUMP_CARD_INFO
+
+static bool sim_status(uint8_t length, struct apdu_response *response) {
+	const uint8_t header[5] = {0xA0, 0xF2, 0x00, 0x00, length};
+
+	return sim_exchange(header, NULL, 0, length == 0 ? SIM_MAX_APDU_DATA : length, response);
+}
+
+#endif
 
 #ifdef SIM_DUMP_CARD_INFO
 
@@ -333,10 +491,11 @@ static void print_spn(const uint8_t *data, size_t size) {
 	printf("# SPN display condition: %02X\n", data[0]);
 	printf("# SPN: ");
 	for (size_t i = 1; i < size && data[i] != 0xFF; i++) {
-		if (data[i] >= 0x20 && data[i] <= 0x7E)
+		if (data[i] >= 0x20 && data[i] <= 0x7E) {
 			printf("%c", data[i]);
-		else
+		} else {
 			printf("\\x%02X", data[i]);
+		}
 	}
 	printf("\n");
 }
@@ -442,14 +601,46 @@ int main(void) {
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, SIM_CLC);
 	test_module_id("ID", 0xF000C032, SIM_ID);
 
-	test_category("Activation and ATR");
+	test_category("Presence and activation");
 	bool powered = sim_power_on(atr, &atr_size);
+#ifdef SIM_NO_CARD
+	test_eq_u32("STAT.SIMDET remains clear with no card", 0, SIM_STAT & SIM_STAT_SIMDET);
+	test_check("No ATR arrives without a card", !powered);
+	goto done;
+#else
+	test_eq_u32("STAT.SIMDET remains clear with an inserted card", 0, SIM_STAT & SIM_STAT_SIMDET);
 	test_check("PMIC powers card and ATR arrives", powered);
 	if (!powered)
 		goto done;
 	print_bytes("ATR", atr, atr_size);
 	test_check("ATR contains TS and T0", atr_size >= 2);
 	test_check("ATR convention byte is valid", atr[0] == 0x3B || atr[0] == 0x3F);
+#endif
+
+#ifdef SIM_HARDWARE_T0
+	test_category("Hardware T=0 DMA start");
+	test_check("SELECT MF reaches T0END", sim_hardware_t0_select_dma());
+	test_check("header and data reach DMA terminal count", (DMAC_RAW_TC_STATUS & BIT(SIM_DMA_CHANNEL)) != 0);
+	test_eq_u32("T=0 DMA has no bus error", 0, DMAC_RAW_ERR_STATUS & BIT(SIM_DMA_CHANNEL));
+	test_check("T0END remains visible in STAT", (SIM_STAT & SIM_STAT_T0END) != 0);
+	printf("# SELECT MF hardware status: %02X%02X\n", (unsigned int) SIM_SW1, (unsigned int) SIM_SW2);
+	test_check("SELECT MF succeeds", SIM_SW1 == 0x90 || SIM_SW1 == 0x9F || SIM_SW1 == 0x61);
+	goto done;
+#endif
+
+#ifdef SIM_TIMER_TEST
+	test_category("Character timer");
+	uint32_t elapsed_us;
+	uint32_t timer_status = sim_probe_character_timer(1, &elapsed_us);
+	printf("# CHTIMER=1: elapsed=%u us, STAT=%03X\n", (unsigned int) elapsed_us,
+		(unsigned int) timer_status);
+	test_check("CHTIMER expires while T=0 waits for the next character",
+		(timer_status & SIM_STAT_CHTIMEOUT) != 0);
+
+	test_category("Block waiting timer");
+	test_skip("BWT timeout", "requires a T=1 card or card emulator");
+	goto done;
+#endif
 
 	test_category("T=0 APDU exchange");
 	bool exchanged = sim_select(0x3F00, &response);
@@ -466,6 +657,34 @@ int main(void) {
 		print_bytes("MF response", response.data, response.size);
 		test_eq_u32("MF GET RESPONSE status", 0x9000, (response.sw1 << 8) | response.sw2);
 	}
+
+#ifdef SIM_DUMP_CARD_INFO
+	test_category("Raw MF and DF_GSM responses");
+	exchanged = sim_select(0x7F20, &response);
+	test_check("SELECT DF_GSM exchange completes", exchanged);
+	if (!exchanged)
+		goto done;
+	test_check("SELECT DF_GSM requests response data", response_has_data(response.sw1));
+	if (!response_has_data(response.sw1))
+		goto done;
+	exchanged = sim_get_response(response.sw2, &response);
+	test_check("DF_GSM GET RESPONSE completes", exchanged);
+	if (!exchanged)
+		goto done;
+	test_eq_u32("DF_GSM GET RESPONSE status", 0x9000, (response.sw1 << 8) | response.sw2);
+
+	exchanged = sim_status(0x16, &response);
+	test_check("DF_GSM STATUS completes", exchanged);
+	if (!exchanged)
+		goto done;
+	test_eq_u32("DF_GSM STATUS returns 22 bytes", 0x16, response.size);
+	test_eq_u32("DF_GSM STATUS status", 0x9000, (response.sw1 << 8) | response.sw2);
+
+	exchanged = sim_select(0x3F00, &response);
+	test_check("SELECT MF restore completes", exchanged);
+	if (!exchanged)
+		goto done;
+#endif
 
 	exchanged = sim_select(0x2FE2, &response);
 	test_check("SELECT EF_ICCID exchange completes", exchanged);

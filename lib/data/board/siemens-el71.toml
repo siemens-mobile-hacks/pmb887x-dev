@@ -17,6 +17,11 @@ bus = "I2C"
 addr = 0x31
 revision = 0xED
 
+[peripheral.SIM_CARD]
+type = "sim-card"
+bus = "SIM"
+in = { RST = "SIM:CC_RST" }
+
 [gpio.aliases]
 DIF_HD = "OPEN_CLOSE_SW1"
 MMCI_DAT1 = "OPEN_CLOSE_SW2"

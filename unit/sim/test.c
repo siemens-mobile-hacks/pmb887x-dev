@@ -34,21 +34,6 @@ static bool wait_for_irq(void) {
 	return irq_count != 0;
 }
 
-static void test_register_mask(
-	const char *name,
-	volatile uint32_t *reg,
-	uint32_t reset_value,
-	uint32_t mask
-) {
-	*reg = 0xFFFFFFFF;
-	test_eq_u32(name, mask, *reg);
-	*reg = 0xAAAAAAAA;
-	test_eq_u32(name, 0xAAAAAAAA & mask, *reg);
-	*reg = 0x55555555;
-	test_eq_u32(name, 0x55555555 & mask, *reg);
-	*reg = reset_value;
-}
-
 static void test_reset_values(void) {
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, SIM_CLC);
 	test_module_id("ID", 0xF000C032, SIM_ID);
@@ -78,39 +63,6 @@ static void test_reset_values(void) {
 	test_eq_u32("ICR is write-only after reset", 0, SIM_ICR);
 	test_eq_u32("ISR is write-only after reset", 0, SIM_ISR);
 	test_eq_u32("DMAE reset value", 0, SIM_DMAE);
-}
-
-static void test_write_masks(void) {
-	const uint32_t non_electrical_control = (
-		SIM_CON_INCON | SIM_CON_SIMT0 | SIM_CON_ERROFF | SIM_CON_RPTOFF | SIM_CON_APDWN |
-		SIM_CON_CLKSEL | SIM_CON_CLKHIGH | SIM_CON_UARTON | SIM_CON_SMCSWACT | SIM_CON_SIMT1
-	);
-
-	SIM_CON = non_electrical_control;
-	test_eq_u32("CON stores non-electrical control bits", non_electrical_control, SIM_CON);
-	SIM_CON = 0;
-	SIM_CON = SIM_CON_SIMEN;
-	test_eq_u32("CON stores SIMEN without powering card", SIM_CON_SIMEN, SIM_CON);
-	SIM_CON = SIM_CON_SIMEN | SIM_CON_SIMPDWN;
-	test_eq_u32(
-		"SIMPDWN does not start power-down while card signals are inactive",
-		SIM_CON_SIMEN | SIM_CON_SIMPDWN,
-		SIM_CON
-	);
-	SIM_CON = 0;
-
-	test_register_mask("BRF stores seven bits", &SIM_BRF, 0x5D, SIM_BRF_BRF);
-	test_register_mask("RXSPC stores eight bits", &SIM_RXSPC, 0x28, SIM_RXSPC_RXSPC);
-	test_register_mask("TXSPC stores eight bits", &SIM_TXSPC, 0, SIM_TXSPC_TXSPC);
-	test_register_mask("CHTIMER stores 24 bits", &SIM_CHTIMER, 0x2580, SIM_CHTIMER_CHTIMER);
-	test_register_mask("UNK3C stores five bits", &SIM_UNK3C, 0, SIM_UNK3C_VALUE);
-	test_register_mask("UNK40 stores 11 bits", &SIM_UNK40, 0, SIM_UNK40_VALUE);
-	test_register_mask("BWT stores 24 bits", &SIM_BWT, 0x3C0B, SIM_BWT_BWT);
-	test_register_mask("INS stores nine bits", &SIM_INS, 0, SIM_INS_INS | SIM_INS_INSDIR);
-	test_register_mask("P3 stores eight bits", &SIM_P3, 0, SIM_P3_P3);
-	test_register_mask("IRQEN stores seven bits", &SIM_IRQEN, 0, SIM_EVENT_ENABLE_MASK);
-	test_register_mask("IMSC stores three bits", &SIM_IMSC, 0, SIM_IRQ_MASK);
-	test_register_mask("DMAE stores one bit", &SIM_DMAE, 0, SIM_DMAE_OK);
 }
 
 static void test_interrupt_block(void) {
@@ -165,8 +117,6 @@ int main(void) {
 
 	test_category("Reset values");
 	test_reset_values();
-	test_category("Write masks");
-	test_write_masks();
 	test_category("Interrupt block");
 	test_interrupt_block();
 

@@ -34,6 +34,8 @@ Run a test on real hardware:
 | `dif-v1-dma` | DIFv1 full-duplex FIFO DMA, bursts, LLI, widths, statuses, and interrupts |
 | `usart` | USART loopback, frame modes, FIFO, interrupts, and timeout |
 | `usart-dma` | USART loopback transfers through DMA |
+| `sim-card-dma` | Complete hardware T=0 SELECT through DMA, including data, T0END, and SW1/SW2 |
+| `sim-card-timers` | Hardware T=0 character timeout; BWT is skipped without a T=1 card |
 | `dif-v2` | DIFv2 IRQ loopback, serial modes, FIFO alignment and bursts, BSCONF, LCD reads, and conversion |
 | `dif-v2-dma` | DIFv2 DMA flows, FIFO alignment and bursts, BSCONF, parallel LCD reads, and recovery |
 | `cfi-intel` | Safe Intel/ST CFI discovery, identification, geometry, and read commands |
