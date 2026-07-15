@@ -8,11 +8,15 @@
 #define FREQUENCY_TOLERANCE_PERCENT 5
 #define GPTU_T2AIS_UNUSED_TRIGGER 0x03333333
 #define WAIT_ITERATIONS 100000
+#define GPTU_EVENT_TIMEOUT_MS 100
+#define GPTU_IRQ_TIMEOUT_MS 100
 
 typedef struct {
 	const char *name;
 	uint32_t base;
 } gptu_t;
+
+static volatile uint32_t gptu0_src7_irqs;
 
 static void gptu_stop(const gptu_t *gptu) {
 	GPTU_T012RUN(gptu->base) = GPTU_T012RUN_T2ACLRR | GPTU_T012RUN_T2BCLRR;
@@ -43,6 +47,52 @@ static bool frequency_matches(uint32_t actual, uint32_t expected) {
 	uint32_t tolerance = expected * FREQUENCY_TOLERANCE_PERCENT / 100;
 
 	return actual >= expected - tolerance && actual <= expected + tolerance;
+}
+
+static void clear_gptu0_sources(void) {
+	for (uint32_t index = 0; index < 8; index++)
+		GPTU_SRC(GPTU0, index) = MOD_SRC_CLRR;
+}
+
+static void configure_gptu0_pending_request(void) {
+	GPTU_CLC(GPTU0) = 1 << MOD_CLC_RMC_SHIFT;
+	GPTU_T01IRS(GPTU0) = 0;
+	GPTU_T01OTS(GPTU0) = GPTU_T01OTS_SSR00_A;
+	GPTU_SRSEL(GPTU0) = GPTU_SRSEL_SSR7_SR00;
+	GPTU_T0RDCBA(GPTU0) = 0;
+	GPTU_T0DCBA(GPTU0) = 0xF0;
+	GPTU_T012RUN(GPTU0) = GPTU_T012RUN_T0ARUN;
+}
+
+static void disable_gptu0(void) {
+	GPTU_T012RUN(GPTU0) = 0;
+	GPTU_T01IRS(GPTU0) = 0;
+	GPTU_T01OTS(GPTU0) = 0;
+	GPTU_SRSEL(GPTU0) = 0;
+	GPTU_T0RDCBA(GPTU0) = 0;
+	GPTU_T0DCBA(GPTU0) = 0;
+	GPTU_CLC(GPTU0) = MOD_CLC_DISR;
+}
+
+static bool wait_gptu0_source(uint32_t index) {
+	stopwatch_t start = stopwatch_get();
+
+	while (stopwatch_elapsed_ms(start) < GPTU_EVENT_TIMEOUT_MS) {
+		if ((GPTU_SRC(GPTU0, index) & MOD_SRC_SRR) != 0)
+			return true;
+		test_watchdog_serve();
+	}
+
+	return false;
+}
+
+static bool wait_gptu0_irq(volatile uint32_t *count) {
+	stopwatch_t start = stopwatch_get();
+
+	while (*count == 0 && stopwatch_elapsed_ms(start) < GPTU_IRQ_TIMEOUT_MS)
+		test_watchdog_serve();
+
+	return *count != 0;
 }
 
 static void test_reset_values(const gptu_t *gptu) {
@@ -105,10 +155,11 @@ static uint32_t measure_t01_frequency(const gptu_t *gptu, bool t1) {
 
 	gptu_stop(gptu);
 	GPTU_T01IRS(gptu->base) = input;
-	if (t1)
+	if (t1) {
 		GPTU_T1DCBA(gptu->base) = 0;
-	else
+	} else {
 		GPTU_T0DCBA(gptu->base) = 0;
+	}
 	stopwatch_t start = stopwatch_get();
 	GPTU_T012RUN(gptu->base) = run;
 	stopwatch_usleep_wd(FREQUENCY_WINDOW_US);
@@ -389,6 +440,40 @@ static void test_t2_events(const gptu_t *gptu) {
 	GPTU_SRC(gptu->base, 1) = MOD_SRC_CLRR;
 }
 
+static void test_pending_request_survives_disable(void) {
+	const uint32_t source_config = MOD_SRC_SRPN | MOD_SRC_TOS | MOD_SRC_SRE;
+	uint32_t saved_vic7 = VIC_CON(VIC_GPTU0_SRC7_IRQ);
+	uint32_t saved_src7 = GPTU_SRC(GPTU0, 7) & source_config;
+	bool irq_was_disabled = cpu_enable_irq(false);
+
+	test_category("GPTU0 pending request after module disable");
+	clear_gptu0_sources();
+	configure_gptu0_pending_request();
+	test_check("T0A overflow reaches SRC7", wait_gptu0_source(7));
+	test_eq_u32("SRC7 SRE remains disabled", 0, GPTU_SRC(GPTU0, 7) & MOD_SRC_SRE);
+
+	disable_gptu0();
+	test_check("CLC.DISR disables GPTU0", wait_mask_equal(&GPTU_CLC(GPTU0), MOD_CLC_DISS, MOD_CLC_DISS));
+	test_eq_u32("SRC7 pending request survives CLC.DISR", MOD_SRC_SRR, GPTU_SRC(GPTU0, 7) & MOD_SRC_SRR);
+
+	VIC_CON(VIC_GPTU0_SRC7_IRQ) = 1;
+	gptu0_src7_irqs = 0;
+	GPTU_CLC(GPTU0) = 1 << MOD_CLC_RMC_SHIFT;
+	GPTU_SRC(GPTU0, 7) = MOD_SRC_SRE;
+	cpu_enable_irq(true);
+	test_check("Surviving SRC7 request raises IRQ92", wait_gptu0_irq(&gptu0_src7_irqs));
+	stopwatch_usleep_wd(1000);
+	cpu_enable_irq(false);
+	test_eq_u32("Surviving request raises exactly one IRQ92", 1, gptu0_src7_irqs);
+	test_eq_u32("IRQ handler clears surviving request", 0, GPTU_SRC(GPTU0, 7) & MOD_SRC_SRR);
+
+	clear_gptu0_sources();
+	disable_gptu0();
+	GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR | saved_src7;
+	VIC_CON(VIC_GPTU0_SRC7_IRQ) = saved_vic7;
+	cpu_enable_irq(!irq_was_disabled);
+}
+
 static void test_instance(const gptu_t *gptu) {
 	test_category(gptu->name);
 	GPTU_CLC(gptu->base) = GPTU_RMC_MAX << MOD_CLC_RMC_SHIFT;
@@ -416,6 +501,17 @@ int main(void) {
 		test_reset_values(&instances[i]);
 	for (unsigned int i = 0; i < sizeof(instances) / sizeof(instances[0]); i++)
 		test_instance(&instances[i]);
+	test_pending_request_survives_disable();
 
 	return test_finish();
+}
+
+__IRQ void irq_handler(void) {
+	uint32_t irq = VIC_IRQ_CURRENT;
+
+	if (irq == VIC_GPTU0_SRC7_IRQ) {
+		gptu0_src7_irqs++;
+		GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
+	}
+	VIC_IRQ_ACK = 1;
 }
