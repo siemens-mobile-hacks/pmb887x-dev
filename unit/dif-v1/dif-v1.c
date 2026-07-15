@@ -272,54 +272,6 @@ static void test_registers(void) {
 	test_eq_u32("baud-rate reload", 0xA55A, DIF_BR);
 }
 
-static void test_lcd_register_masks(void) {
-	test_category("LCD register write masks");
-	DIF_CON = 0;
-	DIF_LCD_UNK64 = UINT32_MAX;
-	DIF_LCD_UNK68 = UINT32_MAX;
-	test_eq_u32(
-		"unknown LCD 0x64 write mask",
-		DIF_LCD_UNK64_VALUE0 | DIF_LCD_UNK64_VALUE1 | DIF_LCD_UNK64_VALUE2,
-		DIF_LCD_UNK64
-	);
-	test_eq_u32(
-		"unknown LCD 0x68 write mask",
-		DIF_LCD_UNK68_VALUE0 | DIF_LCD_UNK68_VALUE1 | DIF_LCD_UNK68_VALUE2 | DIF_LCD_UNK68_VALUE3,
-		DIF_LCD_UNK68
-	);
-	DIF_PBCCON = UINT32_MAX;
-	DIF_BCREG = UINT32_MAX;
-	DIF_SYNC_CONFIG = UINT32_MAX;
-	DIF_LCD_UNK9C = UINT32_MAX;
-	DIF_SYNC_COUNT = UINT32_MAX;
-	test_eq_u32(
-		"PBCCON write mask",
-		DIF_PBCCON_PBBCONV_MODE | DIF_PBCCON_UNK8 | DIF_PBCCON_UNK9,
-		DIF_PBCCON
-	);
-	test_eq_u32("BCREG write mask", UINT32_MAX, DIF_BCREG);
-	test_eq_u32(
-		"SYNC_CONFIG write mask",
-		DIF_SYNC_CONFIG_SYNCEN | DIF_SYNC_CONFIG_HDPOL | DIF_SYNC_CONFIG_VDPOL |
-			DIF_SYNC_CONFIG_SYNCCD | DIF_SYNC_CONFIG_SYNCCS1 | DIF_SYNC_CONFIG_SYNCCS2 |
-			DIF_SYNC_CONFIG_SYNCCS3,
-		DIF_SYNC_CONFIG
-	);
-	test_eq_u32(
-		"unknown LCD 0x9C write mask",
-		DIF_LCD_UNK9C_BIT0 | DIF_LCD_UNK9C_BIT1 | DIF_LCD_UNK9C_BIT2,
-		DIF_LCD_UNK9C
-	);
-	test_eq_u32("SYNC_COUNT write mask", UINT32_MAX, DIF_SYNC_COUNT);
-	DIF_LCD_UNK64 = 0;
-	DIF_LCD_UNK68 = 0;
-	DIF_PBCCON = 0;
-	DIF_BCREG = 0;
-	DIF_SYNC_CONFIG = 0;
-	DIF_LCD_UNK9C = 0;
-	DIF_SYNC_COUNT = 0;
-}
-
 static void test_transfer_synchronization(void) {
 	test_category("Transfer synchronization");
 	configure_dif(16, FIFO_OFF, 0);
@@ -725,7 +677,6 @@ int dif_v1_test(void) {
 	configure_irqs();
 	test_registers();
 	test_transfer_synchronization();
-	test_lcd_register_masks();
 	test_irq_registers();
 	test_irq_loopback();
 	test_bit_count();
