@@ -25,14 +25,13 @@ static struct test_state {
 	unsigned int failures;
 } state;
 
-static void __attribute__((noreturn)) exception_halt(const char *name, uint32_t pc, uint32_t spsr,
+static void __attribute__((noreturn)) exception_wait_for_watchdog_reset(const char *name, uint32_t pc, uint32_t spsr,
 	uint32_t fault_status, uint32_t fault_address) {
-	wdt_set_max_execution_time(0);
 	printf("# EXCEPTION: %s PC=%08X SPSR=%08X FSR=%08X FAR=%08X\n", name, pc, spsr,
 		fault_status, fault_address);
 	usart_putc(USART0, 0);
 	while (true)
-		wdt_serve();
+		__asm__ volatile("nop");
 }
 
 __IRQ void data_abort_handler(void) {
@@ -44,7 +43,7 @@ __IRQ void data_abort_handler(void) {
 	__asm__ volatile("mrs %0, spsr" : "=r" (spsr));
 	__asm__ volatile("mrc p15, 0, %0, c5, c0, 0" : "=r" (fault_status));
 	__asm__ volatile("mrc p15, 0, %0, c6, c0, 0" : "=r" (fault_address));
-	exception_halt("data abort", link - 8, spsr, fault_status, fault_address);
+	exception_wait_for_watchdog_reset("data abort", link - 8, spsr, fault_status, fault_address);
 }
 
 __IRQ void prefetch_abort_handler(void) {
@@ -56,7 +55,7 @@ __IRQ void prefetch_abort_handler(void) {
 	__asm__ volatile("mrs %0, spsr" : "=r" (spsr));
 	__asm__ volatile("mrc p15, 0, %0, c5, c0, 1" : "=r" (fault_status));
 	__asm__ volatile("mrc p15, 0, %0, c6, c0, 2" : "=r" (fault_address));
-	exception_halt("prefetch abort", link - 4, spsr, fault_status, fault_address);
+	exception_wait_for_watchdog_reset("prefetch abort", link - 4, spsr, fault_status, fault_address);
 }
 
 __IRQ void undef_handler(void) {
@@ -64,7 +63,7 @@ __IRQ void undef_handler(void) {
 	uint32_t spsr;
 	__asm__ volatile("mov %0, lr" : "=r" (link));
 	__asm__ volatile("mrs %0, spsr" : "=r" (spsr));
-	exception_halt("undefined instruction", link - 4, spsr, 0, 0);
+	exception_wait_for_watchdog_reset("undefined instruction", link - 4, spsr, 0, 0);
 }
 
 static bool read_flash_string(char *destination, size_t size, uint32_t address) {
