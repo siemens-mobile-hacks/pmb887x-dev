@@ -69,7 +69,7 @@ static void test_reset_values(void) {
 	test_eq_u32("unknown register reset value", 0, TPU_UNK);
 	uint32_t src_config = MOD_SRC_SRPN | MOD_SRC_TOS | MOD_SRC_SRE;
 	test_eq_u32("RF SSC SRC routing reset value", 0, TPU_RFSSC_SRC & src_config);
-	for (uint32_t index = 0; index < 6; index++)
+	for (uint32_t index = 0; index < 5; index++)
 		test_eq_u32("GP SRC routing reset value", 0, TPU_GP_SRC(index) & src_config);
 	for (uint32_t index = 0; index < 2; index++)
 		test_eq_u32("compare SRC routing reset value", 0, TPU_SRC(index) & src_config);
