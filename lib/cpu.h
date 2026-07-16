@@ -17,7 +17,6 @@ static inline bool cpu_enable_fiq(bool flag) {
 	return cpu_enable_irq_or_fiq(flag, 0x40);
 }
 
-
 uint32_t cpu_get_freq(void);
 uint32_t cpu_get_ahb_freq(void);
 uint32_t cpu_get_sys_freq(void);
