@@ -40,14 +40,14 @@ int main(void) {
 	KEYPAD_CON = 0x101;
 	
 	// Enable IRQ
-	KEYPAD_PRESS_SRC |= MOD_SRC_CLRR;
-	KEYPAD_PRESS_SRC |= MOD_SRC_SRE;
+	KEYPAD_INT0_SRC |= MOD_SRC_CLRR;
+	KEYPAD_INT0_SRC |= MOD_SRC_SRE;
 	
-	KEYPAD_RELEASE_SRC |= MOD_SRC_CLRR;
-	KEYPAD_RELEASE_SRC |= MOD_SRC_SRE;
+	KEYPAD_INT3_SRC |= MOD_SRC_CLRR;
+	KEYPAD_INT3_SRC |= MOD_SRC_SRE;
 	
-	VIC_CON(VIC_KEYPAD_PRESS_IRQ) = 1;
-	VIC_CON(VIC_KEYPAD_RELEASE_IRQ) = 1;
+	VIC_CON(VIC_KEYPAD_INT0_IRQ) = 1;
+	VIC_CON(VIC_KEYPAD_INT3_IRQ) = 1;
 	
 	printf("Hello?\n");
 	
@@ -124,14 +124,14 @@ __IRQ void irq_handler(void) {
 	
 	printf("irqn=%d\n", irqn);
 	
-	if (irqn == VIC_KEYPAD_PRESS_IRQ) {
-		KEYPAD_PRESS_SRC |= MOD_SRC_CLRR;
+	if (irqn == VIC_KEYPAD_INT0_IRQ) {
+		KEYPAD_INT0_SRC |= MOD_SRC_CLRR;
 		printf("key press\n");
 		read_keycodes();
 	}
 	
-	if (irqn == VIC_KEYPAD_RELEASE_IRQ) {
-		KEYPAD_RELEASE_SRC |= MOD_SRC_CLRR;
+	if (irqn == VIC_KEYPAD_INT3_IRQ) {
+		KEYPAD_INT3_SRC |= MOD_SRC_CLRR;
 		printf("key release\n");
 	}
 	

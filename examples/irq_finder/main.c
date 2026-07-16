@@ -117,7 +117,7 @@ int main(void) {
 	
 	SCU_RTCIF = 0xAA;
 	SCU_CLC = 0x200;
-	SCU_EXTI = 0xFFFFFFFF;
+	SCU_INT_EDGE = 0xFFFFFFFF;
 	
 	for (int i = 0; i < 0x200; i++)
 		VIC_CON(i) = 1;

@@ -158,18 +158,18 @@
 #define	VIC_SCU_EXTI2_IRQ		50
 #define	VIC_SCU_EXTI3_IRQ		51
 #define	VIC_SCU_EXTI4_IRQ		52
-#define	VIC_SCU_DSP0_IRQ		53
-#define	VIC_SCU_DSP1_IRQ		54
-#define	VIC_SCU_DSP2_IRQ		55
-#define	VIC_SCU_DSP3_IRQ		56
-#define	VIC_SCU_DSP4_IRQ		57
-#define	VIC_SCU_UNK0_IRQ		58
-#define	VIC_SCU_UNK1_IRQ		59
-#define	VIC_SCU_UNK2_IRQ		60
-#define	VIC_SCU_EXTI5_IRQ		61
-#define	VIC_SCU_EXTI6_IRQ		62
+#define	VIC_SCU_EXTI5_IRQ		53
+#define	VIC_SCU_EXTI6_IRQ		54
+#define	VIC_SCU_EXTI7_IRQ		55
+#define	VIC_SCU_DSP0_IRQ		56
+#define	VIC_SCU_DSP1_IRQ		57
+#define	VIC_SCU_DSP2_IRQ		58
+#define	VIC_SCU_DSP3_IRQ		59
+#define	VIC_SCU_DSP4_IRQ		60
+#define	VIC_SCU_UNK0_IRQ		61
+#define	VIC_SCU_UNK1_IRQ		62
 #define	VIC_SCCU_UNK_IRQ		63
-#define	VIC_SCU_EXTI7_IRQ		63
+#define	VIC_SCU_UNK2_IRQ		63
 #define	VIC_SCCU_WAKE_IRQ		64
 #define	VIC_PLL_IRQ				65
 #define	VIC_ADC_INT0_IRQ		70
@@ -210,10 +210,10 @@
 #define	VIC_GPTU1_SRC2_IRQ		105
 #define	VIC_GPTU1_SRC1_IRQ		106
 #define	VIC_GPTU1_SRC0_IRQ		107
-#define	VIC_KEYPAD_PRESS_IRQ	108
-#define	VIC_KEYPAD_UNK0_IRQ		109
-#define	VIC_KEYPAD_UNK1_IRQ		110
-#define	VIC_KEYPAD_RELEASE_IRQ	111
+#define	VIC_KEYPAD_INT0_IRQ		108
+#define	VIC_KEYPAD_INT1_IRQ		109
+#define	VIC_KEYPAD_INT2_IRQ		110
+#define	VIC_KEYPAD_INT3_IRQ		111
 #define	VIC_TPU_INT_GP0_IRQ		113
 #define	VIC_TPU_INT_GP1_IRQ		114
 #define	VIC_TPU_INT_GP2_IRQ		115
@@ -331,8 +331,8 @@
 #define	EBU_BFCON_FETBLEN1_SHIFT	16
 #define	EBU_BFCON_FBBMSEL1			BIT(20)									 // FLASH Burst Buffer Mode Select for Burst FLASH Type 1
 #define	EBU_BFCON_WAITFUNC1			BIT(21)									 // Function of WAIT Input for Burst FLASH Type 1
-#define	EBU_BFCON_DBA1				BIT(23)									 // Disable Burst Address Wrapping
 #define	EBU_BFCON_EBSE1				BIT(25)									 // Early Burst Signal Enable for Burst FLASH Type 1
+#define	EBU_BFCON_DBA1				BIT(26)									 // Disable Burst Address Wrapping for Burst FLASH Type 1
 
 #define	EBU_SDRMREF(n)				MMIO32(EBU_BASE + 0x40 + ((n) * 0x8))
 #define	EBU_SDRMREF_REFRESHC		GENMASK(5, 0)							 // Refresh counter period
@@ -364,6 +364,7 @@
 #define	EBU_SDRMCON_PAGEM_SHIFT		19
 #define	EBU_SDRMCON_BANKM			GENMASK(24, 22)							 // Mask for bank tag
 #define	EBU_SDRMCON_BANKM_SHIFT		22
+#define	EBU_SDRMCON_CRCE			BIT(25)									 // Row cycle time counter extension
 
 #define	EBU_SDRMOD(n)				MMIO32(EBU_BASE + 0x60 + ((n) * 0x8))
 #define	EBU_SDRMOD_BURSTL			GENMASK(2, 0)							 // Burst length
@@ -377,6 +378,7 @@
 #define	EBU_SDRSTAT(n)				MMIO32(EBU_BASE + 0x70 + ((n) * 0x8))
 #define	EBU_SDRSTAT_REFERR			BIT(0)									 // SDRAM Refresh Error
 #define	EBU_SDRSTAT_SDRM_BUSY		BIT(1)									 // SDRAM Busy
+#define	EBU_SDRSTAT_UNK8			BIT(8)									 // Undocumented status bit, reads as one
 
 #define	EBU_ADDRSEL(n)				MMIO32(EBU_BASE + 0x80 + ((n) * 0x8))
 #define	EBU_ADDRSEL_REGENAB			BIT(0)									 // Memory Region
@@ -391,6 +393,7 @@
 #define	EBU_BUSCON(n)				MMIO32(EBU_BASE + 0xC0 + ((n) * 0x8))
 #define	EBU_BUSCON_MULTMAP			GENMASK(6, 0)							 // Multiplier map
 #define	EBU_BUSCON_MULTMAP_SHIFT	0
+#define	EBU_BUSCON_UNK7				BIT(7)									 // Undocumented writable field
 #define	EBU_BUSCON_WPRE				BIT(8)									 // Weak prefetch
 #define	EBU_BUSCON_AALIGN			BIT(9)									 // Address alignment
 #define	EBU_BUSCON_CTYPE			GENMASK(11, 10)							 // Cycle Type
@@ -450,6 +453,7 @@
 #define	EBU_EMUBC					MMIO32(EBU_BASE + 0x168)
 #define	EBU_EMUBC_MULTMAP			GENMASK(6, 0)							 // Multiplier map
 #define	EBU_EMUBC_MULTMAP_SHIFT		0
+#define	EBU_EMUBC_UNK7				BIT(7)									 // Undocumented writable field
 #define	EBU_EMUBC_WPRE				BIT(8)									 // Weak prefetch
 #define	EBU_EMUBC_AALIGN			BIT(9)									 // Address alignment
 #define	EBU_EMUBC_CTYPE				GENMASK(11, 10)							 // Cycle Type
@@ -966,13 +970,156 @@
 
 
 // USB [MOD_NUM=F047, MOD_REV=12, MOD_32BIT=C0]
-// USB (sci-workx IP)
-#define	USB_BASE	0xF2200800
+// sci-worx USB device controller
+#define	USB_BASE									0xF2200000
+/* Endpoint Enable Register, endpoints 0-7 */
+#define	USB_EP_ENABLE_LOW							MMIO32(USB_BASE + 0x00)
+#define	USB_EP_ENABLE_LOW_ENDPOINTS					GENMASK(7, 0)
+#define	USB_EP_ENABLE_LOW_ENDPOINTS_SHIFT			0
+
+/* Endpoint Enable Register, endpoints 8-10 */
+#define	USB_EP_ENABLE_HIGH							MMIO32(USB_BASE + 0x04)
+#define	USB_EP_ENABLE_HIGH_ENDPOINTS				GENMASK(2, 0)
+#define	USB_EP_ENABLE_HIGH_ENDPOINTS_SHIFT			0
+
+/* USB Device Address Register */
+#define	USB_DEVICE_ADDRESS							MMIO32(USB_BASE + 0x08)
+#define	USB_DEVICE_ADDRESS_ADDRESS					GENMASK(6, 0)
+#define	USB_DEVICE_ADDRESS_ADDRESS_SHIFT			0
+#define	USB_DEVICE_ADDRESS_ENABLE					BIT(7)									 // Device address is active
+
+/* USB Frame Number Low Register */
+#define	USB_FRAME_NUMBER_LOW						MMIO32(USB_BASE + 0x0C)
+#define	USB_FRAME_NUMBER_LOW_VALUE					GENMASK(7, 0)
+#define	USB_FRAME_NUMBER_LOW_VALUE_SHIFT			0
+
+/* USB Frame Number High Register */
+#define	USB_FRAME_NUMBER_HIGH						MMIO32(USB_BASE + 0x10)
+#define	USB_FRAME_NUMBER_HIGH_VALUE					GENMASK(2, 0)
+#define	USB_FRAME_NUMBER_HIGH_VALUE_SHIFT			0
+
+/* USB Core Control Register */
+#define	USB_CONTROL									MMIO32(USB_BASE + 0x18)
+#define	USB_CONTROL_ENABLE							BIT(0)									 // Enable USB core
+
+/* Setup Packet Byte Register */
+#define	USB_SETUP_PACKET(n)							MMIO32(USB_BASE + 0x1C + ((n) * 0x4))
+#define	USB_SETUP_PACKET_DATA						GENMASK(7, 0)
+#define	USB_SETUP_PACKET_DATA_SHIFT					0
+
+/* Endpoint 0 Status Register */
+#define	USB_EP0_STATUS								MMIO32(USB_BASE + 0x3C)
+
+/* Endpoint Configuration Register */
+#define	USB_EP_CONFIG(n)							MMIO32(USB_BASE + 0x40 + ((n) * 0x4))
+
+/* Global Interrupt Status Register (write one to clear) */
+#define	USB_GLOBAL_INT_STATUS						MMIO32(USB_BASE + 0x180)
+#define	USB_GLOBAL_INT_STATUS_SOURCES				GENMASK(7, 0)
+#define	USB_GLOBAL_INT_STATUS_SOURCES_SHIFT			0
+
+/* Global Interrupt Enable Register */
+#define	USB_GLOBAL_INT_ENABLE						MMIO32(USB_BASE + 0x184)
+#define	USB_GLOBAL_INT_ENABLE_SOURCES				GENMASK(7, 0)
+#define	USB_GLOBAL_INT_ENABLE_SOURCES_SHIFT			0
+
+/* DMA Channel Group 0 Interrupt Status Register (write one to clear) */
+#define	USB_DMA0_INT_STATUS							MMIO32(USB_BASE + 0x188)
+#define	USB_DMA0_INT_STATUS_SOURCES					GENMASK(7, 0)
+#define	USB_DMA0_INT_STATUS_SOURCES_SHIFT			0
+
+/* DMA Channel Group 0 Interrupt Enable Register */
+#define	USB_DMA0_INT_ENABLE							MMIO32(USB_BASE + 0x18C)
+#define	USB_DMA0_INT_ENABLE_SOURCES					GENMASK(7, 0)
+#define	USB_DMA0_INT_ENABLE_SOURCES_SHIFT			0
+
+/* DMA Channel Group 1 Interrupt Status Register (write one to clear) */
+#define	USB_DMA1_INT_STATUS							MMIO32(USB_BASE + 0x190)
+#define	USB_DMA1_INT_STATUS_SOURCES					GENMASK(1, 0)
+#define	USB_DMA1_INT_STATUS_SOURCES_SHIFT			0
+
+/* DMA Channel Group 1 Interrupt Enable Register */
+#define	USB_DMA1_INT_ENABLE							MMIO32(USB_BASE + 0x194)
+#define	USB_DMA1_INT_ENABLE_SOURCES					GENMASK(1, 0)
+#define	USB_DMA1_INT_ENABLE_SOURCES_SHIFT			0
+
+/* USB Event Interrupt Status Register (write one to clear) */
+#define	USB_EVENT_INT_STATUS						MMIO32(USB_BASE + 0x198)
+#define	USB_EVENT_INT_STATUS_EVENTS					GENMASK(7, 0)
+#define	USB_EVENT_INT_STATUS_EVENTS_SHIFT			0
+
+/* USB Event Interrupt Enable Register */
+#define	USB_EVENT_INT_ENABLE						MMIO32(USB_BASE + 0x19C)
+#define	USB_EVENT_INT_ENABLE_EVENTS					GENMASK(7, 0)
+#define	USB_EVENT_INT_ENABLE_EVENTS_SHIFT			0
+
+/* Endpoint Interrupt Group A Status Register, endpoints 0-7 (write one to clear) */
+#define	USB_EP_A_INT_STATUS_LOW						MMIO32(USB_BASE + 0x1A0)
+#define	USB_EP_A_INT_STATUS_LOW_ENDPOINTS			GENMASK(7, 0)
+#define	USB_EP_A_INT_STATUS_LOW_ENDPOINTS_SHIFT		0
+
+/* Endpoint Interrupt Group A Enable Register, endpoints 0-7 */
+#define	USB_EP_A_INT_ENABLE_LOW						MMIO32(USB_BASE + 0x1A4)
+#define	USB_EP_A_INT_ENABLE_LOW_ENDPOINTS			GENMASK(7, 0)
+#define	USB_EP_A_INT_ENABLE_LOW_ENDPOINTS_SHIFT		0
+
+/* Endpoint Interrupt Group A Status Register, endpoints 8-10 (write one to clear) */
+#define	USB_EP_A_INT_STATUS_HIGH					MMIO32(USB_BASE + 0x1A8)
+#define	USB_EP_A_INT_STATUS_HIGH_ENDPOINTS			GENMASK(2, 0)
+#define	USB_EP_A_INT_STATUS_HIGH_ENDPOINTS_SHIFT	0
+
+/* Endpoint Interrupt Group A Enable Register, endpoints 8-10 */
+#define	USB_EP_A_INT_ENABLE_HIGH					MMIO32(USB_BASE + 0x1AC)
+#define	USB_EP_A_INT_ENABLE_HIGH_ENDPOINTS			GENMASK(2, 0)
+#define	USB_EP_A_INT_ENABLE_HIGH_ENDPOINTS_SHIFT	0
+
+/* Endpoint Interrupt Group B Status Register, endpoints 0-7 (write one to clear) */
+#define	USB_EP_B_INT_STATUS_LOW						MMIO32(USB_BASE + 0x1B0)
+#define	USB_EP_B_INT_STATUS_LOW_ENDPOINTS			GENMASK(7, 0)
+#define	USB_EP_B_INT_STATUS_LOW_ENDPOINTS_SHIFT		0
+
+/* Endpoint Interrupt Group B Enable Register, endpoints 0-7 */
+#define	USB_EP_B_INT_ENABLE_LOW						MMIO32(USB_BASE + 0x1B4)
+#define	USB_EP_B_INT_ENABLE_LOW_ENDPOINTS			GENMASK(7, 0)
+#define	USB_EP_B_INT_ENABLE_LOW_ENDPOINTS_SHIFT		0
+
+/* Endpoint Interrupt Group B Status Register, endpoints 8-10 (write one to clear) */
+#define	USB_EP_B_INT_STATUS_HIGH					MMIO32(USB_BASE + 0x1B8)
+#define	USB_EP_B_INT_STATUS_HIGH_ENDPOINTS			GENMASK(2, 0)
+#define	USB_EP_B_INT_STATUS_HIGH_ENDPOINTS_SHIFT	0
+
+/* Endpoint Interrupt Group B Enable Register, endpoints 8-10 */
+#define	USB_EP_B_INT_ENABLE_HIGH					MMIO32(USB_BASE + 0x1BC)
+#define	USB_EP_B_INT_ENABLE_HIGH_ENDPOINTS			GENMASK(2, 0)
+#define	USB_EP_B_INT_ENABLE_HIGH_ENDPOINTS_SHIFT	0
+
+/* Endpoint FIFO Data Register */
+#define	USB_EP_DATA(n)								MMIO32(USB_BASE + 0x1C0 + ((n) * 0x10))
+
+/* Endpoint FIFO Control Register */
+#define	USB_EP_CONTROL(n)							MMIO32(USB_BASE + 0x1C4 + ((n) * 0x10))
+
+/* Endpoint FIFO Byte Count Low Register */
+#define	USB_EP_COUNT_LOW(n)							MMIO32(USB_BASE + 0x1C8 + ((n) * 0x10))
+#define	USB_EP_COUNT_LOW_VALUE						GENMASK(7, 0)
+#define	USB_EP_COUNT_LOW_VALUE_SHIFT				0
+
+/* Endpoint FIFO Byte Count High Register */
+#define	USB_EP_COUNT_HIGH(n)						MMIO32(USB_BASE + 0x1CC + ((n) * 0x10))
+#define	USB_EP_COUNT_HIGH_VALUE						GENMASK(2, 0)
+#define	USB_EP_COUNT_HIGH_VALUE_SHIFT				0
+
+/* USB PHY Control and Status Register */
+#define	USB_PHY_CONTROL								MMIO32(USB_BASE + 0x2FC)
+
 /* Clock Control Register */
-#define	USB_CLC		MMIO32(USB_BASE + 0x00)
+#define	USB_CLC										MMIO32(USB_BASE + 0x800)
+
+/* Wrapper Configuration Register */
+#define	USB_CFG										MMIO32(USB_BASE + 0x804)
 
 /* Module Identifier Register */
-#define	USB_ID		MMIO32(USB_BASE + 0x08)
+#define	USB_ID										MMIO32(USB_BASE + 0x808)
 
 
 // VIC [MOD_NUM=0031, MOD_REV=11, MOD_32BIT=C0]
@@ -1665,63 +1812,113 @@
 
 
 // GPIO [MOD_NUM=F023, MOD_REV=32, MOD_32BIT=C0]
-// Port Control Logic (see drivers/pinctrl/pinctrl-thunderbay.c)
-#define	GPIO_BASE			0xF4300000
+// Port Control Logic
+#define	GPIO_BASE							0xF4300000
 /* Clock Control Register */
-#define	GPIO_CLC			MMIO32(GPIO_BASE + 0x00)
+#define	GPIO_CLC							MMIO32(GPIO_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	GPIO_ID				MMIO32(GPIO_BASE + 0x08)
+#define	GPIO_ID								MMIO32(GPIO_BASE + 0x08)
 
-#define	GPIO_MON_CR1		MMIO32(GPIO_BASE + 0x10)
+#define	GPIO_MON_CR1						MMIO32(GPIO_BASE + 0x10)
+#define	GPIO_MON_CR1_SIGNAL_SELECT			GENMASK(7, 0)
+#define	GPIO_MON_CR1_SIGNAL_SELECT_SHIFT	0
+#define	GPIO_MON_CR1_BLOCK_SELECT			GENMASK(11, 8)
+#define	GPIO_MON_CR1_BLOCK_SELECT_SHIFT		8
+#define	GPIO_MON_CR1_PDPU					GENMASK(14, 13)
+#define	GPIO_MON_CR1_PDPU_SHIFT				13
+#define	GPIO_MON_CR1_PDPU_NONE				0x0
+#define	GPIO_MON_CR1_PDPU_PULLUP			0x2000
+#define	GPIO_MON_CR1_PDPU_PULLDOWN			0x4000
+#define	GPIO_MON_CR1_ENAQ					BIT(15)
+#define	GPIO_MON_CR1_ENAQ_OUTPUT_ENABLED	0x0
+#define	GPIO_MON_CR1_ENAQ_TRISTATE			0x8000
 
-#define	GPIO_MON_CR2		MMIO32(GPIO_BASE + 0x14)
+#define	GPIO_MON_CR2						MMIO32(GPIO_BASE + 0x14)
+#define	GPIO_MON_CR2_SIGNAL_SELECT			GENMASK(7, 0)
+#define	GPIO_MON_CR2_SIGNAL_SELECT_SHIFT	0
+#define	GPIO_MON_CR2_BLOCK_SELECT			GENMASK(11, 8)
+#define	GPIO_MON_CR2_BLOCK_SELECT_SHIFT		8
+#define	GPIO_MON_CR2_PDPU					GENMASK(14, 13)
+#define	GPIO_MON_CR2_PDPU_SHIFT				13
+#define	GPIO_MON_CR2_PDPU_NONE				0x0
+#define	GPIO_MON_CR2_PDPU_PULLUP			0x2000
+#define	GPIO_MON_CR2_PDPU_PULLDOWN			0x4000
+#define	GPIO_MON_CR2_ENAQ					BIT(15)
+#define	GPIO_MON_CR2_ENAQ_OUTPUT_ENABLED	0x0
+#define	GPIO_MON_CR2_ENAQ_TRISTATE			0x8000
 
-#define	GPIO_MON_CR3		MMIO32(GPIO_BASE + 0x18)
+#define	GPIO_MON_CR3						MMIO32(GPIO_BASE + 0x18)
+#define	GPIO_MON_CR3_SIGNAL_SELECT			GENMASK(7, 0)
+#define	GPIO_MON_CR3_SIGNAL_SELECT_SHIFT	0
+#define	GPIO_MON_CR3_BLOCK_SELECT			GENMASK(11, 8)
+#define	GPIO_MON_CR3_BLOCK_SELECT_SHIFT		8
+#define	GPIO_MON_CR3_PDPU					GENMASK(14, 13)
+#define	GPIO_MON_CR3_PDPU_SHIFT				13
+#define	GPIO_MON_CR3_PDPU_NONE				0x0
+#define	GPIO_MON_CR3_PDPU_PULLUP			0x2000
+#define	GPIO_MON_CR3_PDPU_PULLDOWN			0x4000
+#define	GPIO_MON_CR3_ENAQ					BIT(15)
+#define	GPIO_MON_CR3_ENAQ_OUTPUT_ENABLED	0x0
+#define	GPIO_MON_CR3_ENAQ_TRISTATE			0x8000
 
-#define	GPIO_MON_CR4		MMIO32(GPIO_BASE + 0x1C)
+#define	GPIO_MON_CR4						MMIO32(GPIO_BASE + 0x1C)
+#define	GPIO_MON_CR4_SIGNAL_SELECT			GENMASK(7, 0)
+#define	GPIO_MON_CR4_SIGNAL_SELECT_SHIFT	0
+#define	GPIO_MON_CR4_BLOCK_SELECT			GENMASK(11, 8)
+#define	GPIO_MON_CR4_BLOCK_SELECT_SHIFT		8
+#define	GPIO_MON_CR4_PDPU					GENMASK(14, 13)
+#define	GPIO_MON_CR4_PDPU_SHIFT				13
+#define	GPIO_MON_CR4_PDPU_NONE				0x0
+#define	GPIO_MON_CR4_PDPU_PULLUP			0x2000
+#define	GPIO_MON_CR4_PDPU_PULLDOWN			0x4000
+#define	GPIO_MON_CR4_ENAQ					BIT(15)
+#define	GPIO_MON_CR4_ENAQ_OUTPUT_ENABLED	0x0
+#define	GPIO_MON_CR4_ENAQ_TRISTATE			0x8000
 
-#define	GPIO_PIN(n)			MMIO32(GPIO_BASE + 0x20 + ((n) * 0x4))
-#define	GPIO_IS				GENMASK(2, 0)
-#define	GPIO_IS_SHIFT		0
-#define	GPIO_IS_NONE		0x0
-#define	GPIO_IS_ALT0		0x1
-#define	GPIO_IS_ALT1		0x2
-#define	GPIO_IS_ALT2		0x3
-#define	GPIO_IS_ALT3		0x4
-#define	GPIO_IS_ALT4		0x5
-#define	GPIO_IS_ALT5		0x6
-#define	GPIO_IS_ALT6		0x7
-#define	GPIO_OS				GENMASK(6, 4)
-#define	GPIO_OS_SHIFT		4
-#define	GPIO_OS_NONE		0x0
-#define	GPIO_OS_ALT0		0x10
-#define	GPIO_OS_ALT1		0x20
-#define	GPIO_OS_ALT2		0x30
-#define	GPIO_OS_ALT3		0x40
-#define	GPIO_OS_ALT4		0x50
-#define	GPIO_OS_ALT5		0x60
-#define	GPIO_OS_ALT6		0x70
-#define	GPIO_PS				BIT(8)
-#define	GPIO_PS_ALT			0x0
-#define	GPIO_PS_MANUAL		0x100
-#define	GPIO_DATA			BIT(9)
-#define	GPIO_DATA_LOW		0x0
-#define	GPIO_DATA_HIGH		0x200
-#define	GPIO_DIR			BIT(10)
-#define	GPIO_DIR_IN			0x0
-#define	GPIO_DIR_OUT		0x400
-#define	GPIO_PPEN			BIT(12)
-#define	GPIO_PPEN_PUSHPULL	0x0
-#define	GPIO_PPEN_OPENDRAIN	0x1000
-#define	GPIO_PDPU			GENMASK(14, 13)
-#define	GPIO_PDPU_SHIFT		13
-#define	GPIO_PDPU_NONE		0x0
-#define	GPIO_PDPU_PULLUP	0x2000
-#define	GPIO_PDPU_PULLDOWN	0x4000
-#define	GPIO_ENAQ			BIT(15)
-#define	GPIO_ENAQ_OFF		0x0
-#define	GPIO_ENAQ_ON		0x8000
+#define	GPIO_PIN(n)							MMIO32(GPIO_BASE + 0x20 + ((n) * 0x4))
+#define	GPIO_IS								GENMASK(2, 0)
+#define	GPIO_IS_SHIFT						0
+#define	GPIO_IS_NONE						0x0
+#define	GPIO_IS_ALT0						0x1
+#define	GPIO_IS_ALT1						0x2
+#define	GPIO_IS_ALT2						0x3
+#define	GPIO_IS_ALT3						0x4
+#define	GPIO_IS_ALT4						0x5
+#define	GPIO_IS_ALT5						0x6
+#define	GPIO_IS_ALT6						0x7
+#define	GPIO_OS								GENMASK(6, 4)
+#define	GPIO_OS_SHIFT						4
+#define	GPIO_OS_NONE						0x0
+#define	GPIO_OS_ALT0						0x10
+#define	GPIO_OS_ALT1						0x20
+#define	GPIO_OS_ALT2						0x30
+#define	GPIO_OS_ALT3						0x40
+#define	GPIO_OS_ALT4						0x50
+#define	GPIO_OS_ALT5						0x60
+#define	GPIO_OS_ALT6						0x70
+#define	GPIO_PS								BIT(8)
+#define	GPIO_PS_ALT							0x0
+#define	GPIO_PS_MANUAL						0x100
+#define	GPIO_DATA							BIT(9)
+#define	GPIO_DATA_LOW						0x0
+#define	GPIO_DATA_HIGH						0x200
+#define	GPIO_DIR							BIT(10)
+#define	GPIO_DIR_IN							0x0
+#define	GPIO_DIR_OUT						0x400
+#define	GPIO_PPEN							BIT(12)
+#define	GPIO_PPEN_PUSHPULL					0x0
+#define	GPIO_PPEN_OPENDRAIN					0x1000
+#define	GPIO_PDPU							GENMASK(14, 13)
+#define	GPIO_PDPU_SHIFT						13
+#define	GPIO_PDPU_NONE						0x0
+#define	GPIO_PDPU_PULLUP					0x2000
+#define	GPIO_PDPU_PULLDOWN					0x4000
+#define	GPIO_ENAQ							BIT(15)
+#define	GPIO_ENAQ_OFF						0x0
+#define	GPIO_ENAQ_OUTPUT_ENABLED			0x0
+#define	GPIO_ENAQ_ON						0x8000
+#define	GPIO_ENAQ_TRISTATE					0x8000
 
 
 // SCU [MOD_NUM=F040, MOD_REV=12, MOD_32BIT=C0]
@@ -1754,16 +1951,17 @@
 #define	SCU_RST_CON_SWBRKIN			BIT(21)									 // Software Break Signal Boot Value
 #define	SCU_RST_CON_SWBOOT			BIT(24)									 // Software Boot Configuration Selection
 
-/* Reset Request Register */
+/* Peripheral Reset Request Register */
 #define	SCU_RST_REQ					MMIO32(SCU_BASE + 0x18)
-#define	SCU_RST_REQ_RRSTM			BIT(0)									 // Reset Request for the System Timer
-#define	SCU_RST_REQ_RREXT			BIT(2)									 // Reset Request for External Devices
-#define	SCU_RST_REQ_SWCFG			GENMASK(18, 16)							 // Software Boot Configuration
-#define	SCU_RST_REQ_SWCFG_SHIFT		16
-#define	SCU_RST_REQ_SWBRKIN			BIT(21)									 // Software Break Signal Boot Value
-#define	SCU_RST_REQ_SWBOOT			BIT(24)									 // Software Boot Configuration Selection
+#define	SCU_RST_REQ_DSP				BIT(0)									 // DSP software reset request
+#define	SCU_RST_REQ_RTC				BIT(1)									 // RTC software reset request
+#define	SCU_RST_REQ_USB				BIT(9)									 // USB software reset request
+#define	SCU_RST_REQ_DMAC			BIT(11)									 // DMAC software reset request
+#define	SCU_RST_REQ_I2C				BIT(15)									 // I2C software reset request
 
-#define	SCU_UNK0					MMIO32(SCU_BASE + 0x20)
+/* Sleep Request Register */
+#define	SCU_SLEEP_REQ				MMIO32(SCU_BASE + 0x20)
+#define	SCU_SLEEP_REQ_REQ			BIT(0)									 // Sleep request asserted before WFI
 
 #define	SCU_WDTCON0					MMIO32(SCU_BASE + 0x24)
 #define	SCU_WDTCON0_ENDINIT			BIT(0)									 // End-of-Initialization Control Bit.
@@ -1791,59 +1989,124 @@
 #define	SCU_WDT_SR_WDTTIM			GENMASK(31, 16)							 // Watchdog Timer Value
 #define	SCU_WDT_SR_WDTTIM_SHIFT		16
 
-#define	SCU_DSP_UNK0				MMIO32(SCU_BASE + 0x30)
+/* DSP Interrupt Request Register */
+#define	SCU_DSP_INT					MMIO32(SCU_BASE + 0x30)
+#define	SCU_DSP_INT_REQ				GENMASK(2, 0)							 // DSP interrupt request lines
+#define	SCU_DSP_INT_REQ_SHIFT		0
 
-#define	SCU_EXTI_UNK				MMIO32(SCU_BASE + 0x38)
+/* Interrupt Filter Select Register */
+#define	SCU_INT_FILTER				MMIO32(SCU_BASE + 0x38)
+#define	SCU_INT_FILTER_EXT0			GENMASK(1, 0)
+#define	SCU_INT_FILTER_EXT0_SHIFT	0
+#define	SCU_INT_FILTER_EXT0_OFF		0x0
+#define	SCU_INT_FILTER_EXT0_CLOCK_1	0x1
+#define	SCU_INT_FILTER_EXT0_CLOCK_2	0x2
+#define	SCU_INT_FILTER_EXT0_CLOCK_3	0x3
+#define	SCU_INT_FILTER_EXT1			GENMASK(3, 2)
+#define	SCU_INT_FILTER_EXT1_SHIFT	2
+#define	SCU_INT_FILTER_EXT1_OFF		0x0
+#define	SCU_INT_FILTER_EXT1_CLOCK_1	0x4
+#define	SCU_INT_FILTER_EXT1_CLOCK_2	0x8
+#define	SCU_INT_FILTER_EXT1_CLOCK_3	0xC
+#define	SCU_INT_FILTER_EXT2			GENMASK(5, 4)
+#define	SCU_INT_FILTER_EXT2_SHIFT	4
+#define	SCU_INT_FILTER_EXT2_OFF		0x0
+#define	SCU_INT_FILTER_EXT2_CLOCK_1	0x10
+#define	SCU_INT_FILTER_EXT2_CLOCK_2	0x20
+#define	SCU_INT_FILTER_EXT2_CLOCK_3	0x30
+#define	SCU_INT_FILTER_EXT3			GENMASK(7, 6)
+#define	SCU_INT_FILTER_EXT3_SHIFT	6
+#define	SCU_INT_FILTER_EXT3_OFF		0x0
+#define	SCU_INT_FILTER_EXT3_CLOCK_1	0x40
+#define	SCU_INT_FILTER_EXT3_CLOCK_2	0x80
+#define	SCU_INT_FILTER_EXT3_CLOCK_3	0xC0
+#define	SCU_INT_FILTER_EXT4			GENMASK(9, 8)
+#define	SCU_INT_FILTER_EXT4_SHIFT	8
+#define	SCU_INT_FILTER_EXT4_OFF		0x0
+#define	SCU_INT_FILTER_EXT4_CLOCK_1	0x100
+#define	SCU_INT_FILTER_EXT4_CLOCK_2	0x200
+#define	SCU_INT_FILTER_EXT4_CLOCK_3	0x300
+#define	SCU_INT_FILTER_EXT5			GENMASK(11, 10)
+#define	SCU_INT_FILTER_EXT5_SHIFT	10
+#define	SCU_INT_FILTER_EXT5_OFF		0x0
+#define	SCU_INT_FILTER_EXT5_CLOCK_1	0x400
+#define	SCU_INT_FILTER_EXT5_CLOCK_2	0x800
+#define	SCU_INT_FILTER_EXT5_CLOCK_3	0xC00
+#define	SCU_INT_FILTER_EXT6			GENMASK(13, 12)
+#define	SCU_INT_FILTER_EXT6_SHIFT	12
+#define	SCU_INT_FILTER_EXT6_OFF		0x0
+#define	SCU_INT_FILTER_EXT6_CLOCK_1	0x1000
+#define	SCU_INT_FILTER_EXT6_CLOCK_2	0x2000
+#define	SCU_INT_FILTER_EXT6_CLOCK_3	0x3000
+#define	SCU_INT_FILTER_EXT7			GENMASK(15, 14)
+#define	SCU_INT_FILTER_EXT7_SHIFT	14
+#define	SCU_INT_FILTER_EXT7_OFF		0x0
+#define	SCU_INT_FILTER_EXT7_CLOCK_1	0x4000
+#define	SCU_INT_FILTER_EXT7_CLOCK_2	0x8000
+#define	SCU_INT_FILTER_EXT7_CLOCK_3	0xC000
+#define	SCU_INT_FILTER_DSP0			GENMASK(17, 16)
+#define	SCU_INT_FILTER_DSP0_SHIFT	16
+#define	SCU_INT_FILTER_DSP0_OFF		0x0
+#define	SCU_INT_FILTER_DSP0_CLOCK_1	0x10000
+#define	SCU_INT_FILTER_DSP0_CLOCK_2	0x20000
+#define	SCU_INT_FILTER_DSP0_CLOCK_3	0x30000
 
-#define	SCU_EXTI					MMIO32(SCU_BASE + 0x3C)
-#define	SCU_EXTI_EXT0				GENMASK(1, 0)
-#define	SCU_EXTI_EXT0_SHIFT			0
-#define	SCU_EXTI_EXT0_OFF			0x0
-#define	SCU_EXTI_EXT0_RISING		0x1
-#define	SCU_EXTI_EXT0_FALLING		0x2
-#define	SCU_EXTI_EXT0_ANY			0x3
-#define	SCU_EXTI_EXT1				GENMASK(3, 2)
-#define	SCU_EXTI_EXT1_SHIFT			2
-#define	SCU_EXTI_EXT1_OFF			0x0
-#define	SCU_EXTI_EXT1_RISING		0x4
-#define	SCU_EXTI_EXT1_FALLING		0x8
-#define	SCU_EXTI_EXT1_ANY			0xC
-#define	SCU_EXTI_EXT2				GENMASK(5, 4)
-#define	SCU_EXTI_EXT2_SHIFT			4
-#define	SCU_EXTI_EXT2_OFF			0x0
-#define	SCU_EXTI_EXT2_RISING		0x10
-#define	SCU_EXTI_EXT2_FALLING		0x20
-#define	SCU_EXTI_EXT2_ANY			0x30
-#define	SCU_EXTI_EXT3				GENMASK(7, 6)
-#define	SCU_EXTI_EXT3_SHIFT			6
-#define	SCU_EXTI_EXT3_OFF			0x0
-#define	SCU_EXTI_EXT3_RISING		0x40
-#define	SCU_EXTI_EXT3_FALLING		0x80
-#define	SCU_EXTI_EXT3_ANY			0xC0
-#define	SCU_EXTI_EXT4				GENMASK(9, 8)
-#define	SCU_EXTI_EXT4_SHIFT			8
-#define	SCU_EXTI_EXT4_OFF			0x0
-#define	SCU_EXTI_EXT4_RISING		0x100
-#define	SCU_EXTI_EXT4_FALLING		0x200
-#define	SCU_EXTI_EXT4_ANY			0x300
-#define	SCU_EXTI_EXT5				GENMASK(11, 10)
-#define	SCU_EXTI_EXT5_SHIFT			10
-#define	SCU_EXTI_EXT5_OFF			0x0
-#define	SCU_EXTI_EXT5_RISING		0x400
-#define	SCU_EXTI_EXT5_FALLING		0x800
-#define	SCU_EXTI_EXT5_ANY			0xC00
-#define	SCU_EXTI_EXT6				GENMASK(13, 12)
-#define	SCU_EXTI_EXT6_SHIFT			12
-#define	SCU_EXTI_EXT6_OFF			0x0
-#define	SCU_EXTI_EXT6_RISING		0x1000
-#define	SCU_EXTI_EXT6_FALLING		0x2000
-#define	SCU_EXTI_EXT6_ANY			0x3000
-#define	SCU_EXTI_EXT7				GENMASK(15, 14)
-#define	SCU_EXTI_EXT7_SHIFT			14
-#define	SCU_EXTI_EXT7_OFF			0x0
-#define	SCU_EXTI_EXT7_RISING		0x4000
-#define	SCU_EXTI_EXT7_FALLING		0x8000
-#define	SCU_EXTI_EXT7_ANY			0xC000
+/* Interrupt Edge Select Register */
+#define	SCU_INT_EDGE				MMIO32(SCU_BASE + 0x3C)
+#define	SCU_INT_EDGE_EXT0			GENMASK(1, 0)
+#define	SCU_INT_EDGE_EXT0_SHIFT		0
+#define	SCU_INT_EDGE_EXT0_OFF		0x0
+#define	SCU_INT_EDGE_EXT0_RISING	0x1
+#define	SCU_INT_EDGE_EXT0_FALLING	0x2
+#define	SCU_INT_EDGE_EXT0_ANY		0x3
+#define	SCU_INT_EDGE_EXT1			GENMASK(3, 2)
+#define	SCU_INT_EDGE_EXT1_SHIFT		2
+#define	SCU_INT_EDGE_EXT1_OFF		0x0
+#define	SCU_INT_EDGE_EXT1_RISING	0x4
+#define	SCU_INT_EDGE_EXT1_FALLING	0x8
+#define	SCU_INT_EDGE_EXT1_ANY		0xC
+#define	SCU_INT_EDGE_EXT2			GENMASK(5, 4)
+#define	SCU_INT_EDGE_EXT2_SHIFT		4
+#define	SCU_INT_EDGE_EXT2_OFF		0x0
+#define	SCU_INT_EDGE_EXT2_RISING	0x10
+#define	SCU_INT_EDGE_EXT2_FALLING	0x20
+#define	SCU_INT_EDGE_EXT2_ANY		0x30
+#define	SCU_INT_EDGE_EXT3			GENMASK(7, 6)
+#define	SCU_INT_EDGE_EXT3_SHIFT		6
+#define	SCU_INT_EDGE_EXT3_OFF		0x0
+#define	SCU_INT_EDGE_EXT3_RISING	0x40
+#define	SCU_INT_EDGE_EXT3_FALLING	0x80
+#define	SCU_INT_EDGE_EXT3_ANY		0xC0
+#define	SCU_INT_EDGE_EXT4			GENMASK(9, 8)
+#define	SCU_INT_EDGE_EXT4_SHIFT		8
+#define	SCU_INT_EDGE_EXT4_OFF		0x0
+#define	SCU_INT_EDGE_EXT4_RISING	0x100
+#define	SCU_INT_EDGE_EXT4_FALLING	0x200
+#define	SCU_INT_EDGE_EXT4_ANY		0x300
+#define	SCU_INT_EDGE_EXT5			GENMASK(11, 10)
+#define	SCU_INT_EDGE_EXT5_SHIFT		10
+#define	SCU_INT_EDGE_EXT5_OFF		0x0
+#define	SCU_INT_EDGE_EXT5_RISING	0x400
+#define	SCU_INT_EDGE_EXT5_FALLING	0x800
+#define	SCU_INT_EDGE_EXT5_ANY		0xC00
+#define	SCU_INT_EDGE_EXT6			GENMASK(13, 12)
+#define	SCU_INT_EDGE_EXT6_SHIFT		12
+#define	SCU_INT_EDGE_EXT6_OFF		0x0
+#define	SCU_INT_EDGE_EXT6_RISING	0x1000
+#define	SCU_INT_EDGE_EXT6_FALLING	0x2000
+#define	SCU_INT_EDGE_EXT6_ANY		0x3000
+#define	SCU_INT_EDGE_EXT7			GENMASK(15, 14)
+#define	SCU_INT_EDGE_EXT7_SHIFT		14
+#define	SCU_INT_EDGE_EXT7_OFF		0x0
+#define	SCU_INT_EDGE_EXT7_RISING	0x4000
+#define	SCU_INT_EDGE_EXT7_FALLING	0x8000
+#define	SCU_INT_EDGE_EXT7_ANY		0xC000
+#define	SCU_INT_EDGE_DSP0			GENMASK(17, 16)
+#define	SCU_INT_EDGE_DSP0_SHIFT		16
+#define	SCU_INT_EDGE_DSP0_OFF		0x0
+#define	SCU_INT_EDGE_DSP0_RISING	0x10000
+#define	SCU_INT_EDGE_DSP0_FALLING	0x20000
+#define	SCU_INT_EDGE_DSP0_ANY		0x30000
 
 #define	SCU_EBUCLC1					MMIO32(SCU_BASE + 0x40)
 #define	SCU_EBUCLC1_FLAG1			GENMASK(3, 0)
@@ -1861,6 +2124,12 @@
 #define	SCU_EBUCLC_LOCK				BIT(0)
 #define	SCU_EBUCLC_VCOBYP			BIT(8)
 
+/* Emulator identification register */
+#define	SCU_EMU_ID					MMIO32(SCU_BASE + 0x4C)
+#define	SCU_EMU_ID_VALUE			GENMASK(31, 0)
+#define	SCU_EMU_ID_VALUE_SHIFT		0
+#define	SCU_EMU_ID_VALUE_QEMU		0x51454D55
+
 #define	SCU_MANID					MMIO32(SCU_BASE + 0x5C)
 #define	SCU_MANID_DEPT				GENMASK(3, 0)
 #define	SCU_MANID_DEPT_SHIFT		0
@@ -1873,7 +2142,10 @@
 #define	SCU_CHIPID_CHIPD			GENMASK(15, 8)
 #define	SCU_CHIPID_CHIPD_SHIFT		8
 
+/* Real Time Clock Interface Enable Register */
 #define	SCU_RTCIF					MMIO32(SCU_BASE + 0x64)
+#define	SCU_RTCIF_RTCIFEN			GENMASK(7, 0)							 // RTC interface enable field; 0xAA enables access
+#define	SCU_RTCIF_RTCIFEN_SHIFT		0
 
 #define	SCU_UID0					MMIO32(SCU_BASE + 0x6C)
 
@@ -1897,7 +2169,10 @@
 #define	SCU_ROMAMCR					MMIO32(SCU_BASE + 0x7C)
 #define	SCU_ROMAMCR_MOUNT_BROM		BIT(0)
 
+/* Redesign Tracing Identification Register */
 #define	SCU_RTID					MMIO32(SCU_BASE + 0x80)
+#define	SCU_RTID_RT					GENMASK(15, 0)							 // Redesign tracing value
+#define	SCU_RTID_RT_SHIFT			0
 
 /* DMA Request Select */
 #define	SCU_DMARS					MMIO32(SCU_BASE + 0x84)
@@ -1959,26 +2234,45 @@
 // Clock Control Unit
 #define	PLL_BASE						0xF4500000
 #define	PLL_OSC							MMIO32(PLL_BASE + 0xA0)
-#define	PLL_OSC_LOCK					BIT(0)
-#define	PLL_OSC_NDIV					GENMASK(18, 16)			 // Feedback divider (multiply by N+1)
+#define	PLL_OSC_PLL_POWER_UP			BIT(0)					 // Power up PLL
+#define	PLL_OSC_PHASE0_POWER_UP			BIT(1)					 // Power up phase-shifter output 0
+#define	PLL_OSC_PHASE1_POWER_UP			BIT(2)					 // Power up phase-shifter output 1
+#define	PLL_OSC_PHASE2_POWER_UP			BIT(3)					 // Power up phase-shifter output 2
+#define	PLL_OSC_PHASE3_POWER_UP			BIT(4)					 // Power up phase-shifter output 3
+#define	PLL_OSC_PLL_BYPASS_N			BIT(8)					 // Disable PLL bypass
+#define	PLL_OSC_PHASE0_BYPASS_N			BIT(9)					 // Disable bypass for phase-shifter output 0
+#define	PLL_OSC_PHASE1_BYPASS_N			BIT(10)					 // Disable bypass for phase-shifter output 1
+#define	PLL_OSC_PHASE2_BYPASS_N			BIT(11)					 // Disable bypass for phase-shifter output 2
+#define	PLL_OSC_PHASE3_BYPASS_N			BIT(12)					 // Disable bypass for phase-shifter output 3
+#define	PLL_OSC_NDIV					GENMASK(21, 16)			 // PLL feedback divider (multiply by N+1)
 #define	PLL_OSC_NDIV_SHIFT				16
+#define	PLL_OSC_MDIV					GENMASK(27, 24)			 // PLL input divider (divide by M+1)
+#define	PLL_OSC_MDIV_SHIFT				24
 
 #define	PLL_CON0						MMIO32(PLL_BASE + 0xA4)
-#define	PLL_CON0_PLL1_K2				GENMASK(2, 0)			 // div by (K1 * 6 + (K2 - 1))
+#define	PLL_CON0_PHASE0_CONFIG			GENMASK(7, 0)			 // Complete K1/K2 configuration byte for phase-shifter output 0
+#define	PLL_CON0_PHASE0_CONFIG_SHIFT	0
+#define	PLL_CON0_PLL1_K2				GENMASK(2, 0)			 // Phase 0 divider denominator term, valid values 0..5
 #define	PLL_CON0_PLL1_K2_SHIFT			0
-#define	PLL_CON0_PLL1_K1				GENMASK(6, 3)
+#define	PLL_CON0_PLL1_K1				GENMASK(6, 3)			 // Phase 0 divider: fPLL * 12 / (K1 * 6 + K2)
 #define	PLL_CON0_PLL1_K1_SHIFT			3
-#define	PLL_CON0_PLL2_K2				GENMASK(10, 8)			 // div by (K1 * 6 + (K2 - 1))
+#define	PLL_CON0_PHASE1_CONFIG			GENMASK(15, 8)			 // Complete K1/K2 configuration byte for phase-shifter output 1
+#define	PLL_CON0_PHASE1_CONFIG_SHIFT	8
+#define	PLL_CON0_PLL2_K2				GENMASK(10, 8)			 // Phase 1 divider denominator term, valid values 0..5
 #define	PLL_CON0_PLL2_K2_SHIFT			8
-#define	PLL_CON0_PLL2_K1				GENMASK(14, 11)
+#define	PLL_CON0_PLL2_K1				GENMASK(14, 11)			 // Phase 1 divider: fPLL * 12 / (K1 * 6 + K2)
 #define	PLL_CON0_PLL2_K1_SHIFT			11
-#define	PLL_CON0_PLL3_K2				GENMASK(18, 16)			 // div by (K1 * 6 + (K2 - 1))
+#define	PLL_CON0_PHASE2_CONFIG			GENMASK(23, 16)			 // Complete K1/K2 configuration byte for phase-shifter output 2
+#define	PLL_CON0_PHASE2_CONFIG_SHIFT	16
+#define	PLL_CON0_PLL3_K2				GENMASK(18, 16)			 // Phase 2 divider denominator term, valid values 0..5
 #define	PLL_CON0_PLL3_K2_SHIFT			16
-#define	PLL_CON0_PLL3_K1				GENMASK(22, 19)
+#define	PLL_CON0_PLL3_K1				GENMASK(22, 19)			 // Phase 2 divider: fPLL * 12 / (K1 * 6 + K2)
 #define	PLL_CON0_PLL3_K1_SHIFT			19
-#define	PLL_CON0_PLL4_K2				GENMASK(26, 24)			 // div by (K1 * 6 + (K2 - 1))
+#define	PLL_CON0_PHASE3_CONFIG			GENMASK(31, 24)			 // Complete K1/K2 configuration byte for phase-shifter output 3
+#define	PLL_CON0_PHASE3_CONFIG_SHIFT	24
+#define	PLL_CON0_PLL4_K2				GENMASK(26, 24)			 // Phase 3 divider denominator term, valid values 0..5
 #define	PLL_CON0_PLL4_K2_SHIFT			24
-#define	PLL_CON0_PLL4_K1				GENMASK(30, 27)
+#define	PLL_CON0_PLL4_K1				GENMASK(30, 27)			 // Phase 3 divider: fPLL * 12 / (K1 * 6 + K2)
 #define	PLL_CON0_PLL4_K1_SHIFT			27
 
 #define	PLL_CON1						MMIO32(PLL_BASE + 0xA8)
@@ -1987,7 +2281,7 @@
 #define	PLL_CON1_FSYS_CLKSEL_BYPASS		0x0
 #define	PLL_CON1_FSYS_CLKSEL_PLL		0x20000
 #define	PLL_CON1_FSYS_CLKSEL_DISABLE	0x30000
-#define	PLL_CON1_AHB_CLKSEL				GENMASK(22, 20)			 // Source clock for fPLL
+#define	PLL_CON1_AHB_CLKSEL				GENMASK(22, 20)			 // Source clock for fAHB
 #define	PLL_CON1_AHB_CLKSEL_SHIFT		20
 #define	PLL_CON1_AHB_CLKSEL_BYPASS		0x0
 #define	PLL_CON1_AHB_CLKSEL_PLL0		0x200000
@@ -1996,23 +2290,30 @@
 #define	PLL_CON1_AHB_CLKSEL_PLL3		0x500000
 #define	PLL_CON1_AHB_CLKSEL_PLL4		0x600000
 #define	PLL_CON1_FSTM_DIV_EN			BIT(25)					 // Enable fSTM divider
-#define	PLL_CON1_FSTM_DIV				GENMASK(29, 28)			 // fSTM divider value (n^2)
+#define	PLL_CON1_FSTM_DIV				GENMASK(29, 28)			 // fSTM divider: divide fOSC by 4 * 2^n
 #define	PLL_CON1_FSTM_DIV_SHIFT			28
-#define	PLL_CON1_FSTM_DIV_1				0x0
-#define	PLL_CON1_FSTM_DIV_2				0x10000000
-#define	PLL_CON1_FSTM_DIV_4				0x20000000
-#define	PLL_CON1_FSTM_DIV_8				0x30000000
+#define	PLL_CON1_FSTM_DIV_4				0x0
+#define	PLL_CON1_FSTM_DIV_8				0x10000000
+#define	PLL_CON1_FSTM_DIV_16			0x20000000
+#define	PLL_CON1_FSTM_DIV_32			0x30000000
 
 #define	PLL_CON2						MMIO32(PLL_BASE + 0xAC)
 #define	PLL_CON2_CPU_DIV				GENMASK(9, 8)
 #define	PLL_CON2_CPU_DIV_SHIFT			8
 #define	PLL_CON2_CPU_DIV_EN				BIT(12)
+#define	PLL_CON2_USB_CLKSEL				GENMASK(15, 14)			 // Source clock for USB
+#define	PLL_CON2_USB_CLKSEL_SHIFT		14
+#define	PLL_CON2_USB_CLKSEL_OSC			0x0
+#define	PLL_CON2_USB_CLKSEL_PHASE3		0x8000
+#define	PLL_CON2_USB_CLKSEL_DISABLE		0xC000
 #define	PLL_CON2_CLK32_EN				BIT(24)
 
 #define	PLL_STAT						MMIO32(PLL_BASE + 0xB0)
 #define	PLL_STAT_LOCK					BIT(13)
 
 #define	PLL_CON3						MMIO32(PLL_BASE + 0xB4)
+#define	PLL_CON3_USB_CLKDIV				GENMASK(25, 24)			 // USB clock divider (divide by 2^n)
+#define	PLL_CON3_USB_CLKDIV_SHIFT		24
 
 /* Service Routing Control Register */
 #define	PLL_SRC							MMIO32(PLL_BASE + 0xCC)
@@ -2988,59 +3289,143 @@
 
 
 // KEYPAD [MOD_NUM=F046, MOD_REV=21, MOD_32BIT=C0]
-// Keypad scaner module
-#define	KEYPAD_BASE			0xF4D00000
+// Keypad scanner module
+#define	KEYPAD_BASE							0xF4D00000
 /* Module Identifier Register */
-#define	KEYPAD_ID			MMIO32(KEYPAD_BASE + 0x08)
+#define	KEYPAD_ID							MMIO32(KEYPAD_BASE + 0x08)
 
-#define	KEYPAD_CON			MMIO32(KEYPAD_BASE + 0x10)
+/* Keypad Control Register */
+#define	KEYPAD_CON							MMIO32(KEYPAD_BASE + 0x10)
+#define	KEYPAD_CON_NEXT_REPEAT_DELAY		GENMASK(3, 0)								 // Delay between repeated key events in 10 ms units, encoded as N - 1
+#define	KEYPAD_CON_NEXT_REPEAT_DELAY_SHIFT	0
+#define	KEYPAD_CON_FIRST_REPEAT_DELAY		GENMASK(15, 8)								 // Delay before the first repeated key event in 10 ms units
+#define	KEYPAD_CON_FIRST_REPEAT_DELAY_SHIFT	8
 
-#define	KEYPAD_PORT(n)		MMIO32(KEYPAD_BASE + 0x18 + ((n) * 0x4))
+/* Captured Key Matrix State Register */
+#define	KEYPAD_PORT(n)						MMIO32(KEYPAD_BASE + 0x18 + ((n) * 0x4))
+#define	KEYPAD_PORT_STATE					GENMASK(31, 0)								 // Four output rows of eight active-low input states
+#define	KEYPAD_PORT_STATE_SHIFT				0
 
-#define	KEYPAD_ISR			MMIO32(KEYPAD_BASE + 0x24)
-#define	KEYPAD_ISR_PRESS	BIT(2)
-#define	KEYPAD_ISR_RELEASE	BIT(3)
+/* Keypad Internal Status Register */
+#define	KEYPAD_ISR							MMIO32(KEYPAD_BASE + 0x24)
+#define	KEYPAD_ISR_FSM_STATE0				BIT(0)										 // Keypad state machine state bit 0
+#define	KEYPAD_ISR_FSM_STATE1				BIT(1)										 // Keypad state machine state bit 1
+#define	KEYPAD_ISR_INT0						BIT(2)										 // Internal interrupt condition 0
+#define	KEYPAD_ISR_INT1						BIT(3)										 // Internal interrupt condition 1
+#define	KEYPAD_ISR_INT2						BIT(4)										 // Internal interrupt condition 2
+#define	KEYPAD_ISR_INT3						BIT(5)										 // Internal interrupt condition 3
+#define	KEYPAD_ISR_KEY_PRESSED				BIT(6)										 // At least one key is pressed
 
-/* Service Routing Control Register */
-#define	KEYPAD_PRESS_SRC	MMIO32(KEYPAD_BASE + 0xF0)
+/* Key press interrupt service request */
+#define	KEYPAD_INT0_SRC						MMIO32(KEYPAD_BASE + 0xF0)
 
-/* Service Routing Control Register */
-#define	KEYPAD_UNK0_SRC		MMIO32(KEYPAD_BASE + 0xF4)
+/* Key repeat interrupt service request */
+#define	KEYPAD_INT1_SRC						MMIO32(KEYPAD_BASE + 0xF4)
 
-/* Service Routing Control Register */
-#define	KEYPAD_UNK1_SRC		MMIO32(KEYPAD_BASE + 0xF8)
+/* Internal interrupt 2 service request */
+#define	KEYPAD_INT2_SRC						MMIO32(KEYPAD_BASE + 0xF8)
 
-/* Service Routing Control Register */
-#define	KEYPAD_RELEASE_SRC	MMIO32(KEYPAD_BASE + 0xFC)
+/* Key release interrupt service request */
+#define	KEYPAD_INT3_SRC						MMIO32(KEYPAD_BASE + 0xFC)
 
 
 // DSP [MOD_NUM=F022, MOD_REV=31, MOD_32BIT=C0]
 // Digital Signal Processor
-#define	DSP_BASE	0xF6000000
+#define	DSP_BASE					0xF6000000
 /* Clock Control Register */
-#define	DSP_CLC		MMIO32(DSP_BASE + 0x00)
+#define	DSP_CLC						MMIO32(DSP_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	DSP_ID		MMIO32(DSP_BASE + 0x08)
+#define	DSP_ID						MMIO32(DSP_BASE + 0x08)
 
-#define	DSP_UNK0	MMIO32(DSP_BASE + 0x1C)
+/* Communication Flag Set Register (write one to set, reads as zero) */
+#define	DSP_COM_SET					MMIO32(DSP_BASE + 0x1C)
+#define	DSP_COM_SET_FLAGS			GENMASK(15, 0)							 // Communication flags to set
+#define	DSP_COM_SET_FLAGS_SHIFT		0
 
-#define	DSP_UNK1	MMIO32(DSP_BASE + 0x24)
+/* Communication Flag Clear Register (write one to clear, reads as zero) */
+#define	DSP_COM_CLEAR				MMIO32(DSP_BASE + 0x20)
+#define	DSP_COM_CLEAR_FLAGS			GENMASK(15, 0)							 // Communication flags to clear
+#define	DSP_COM_CLEAR_FLAGS_SHIFT	0
 
-#define	DSP_RAM(n)	MMIO32(DSP_BASE + 0x1000 + ((n) * 0x4))
+/* Communication Flag Status Register (read-only) */
+#define	DSP_COM_STATUS				MMIO32(DSP_BASE + 0x24)
+#define	DSP_COM_STATUS_FLAGS		GENMASK(15, 0)							 // Communication flag status
+#define	DSP_COM_STATUS_FLAGS_SHIFT	0
+
+#define	DSP_RAM(n)					MMIO32(DSP_BASE + 0x1000 + ((n) * 0x4))
 
 
 // GPRSCU [MOD_NUM=F003, MOD_REV=22, MOD_32BIT=C0]
-// GPRS Cipher Uinit
-#define	GPRSCU_BASE		0xF6200000
+// GPRS Cipher Unit
+#define	GPRSCU_BASE						0xF6200000
 /* Clock Control Register */
-#define	GPRSCU_CLC		MMIO32(GPRSCU_BASE + 0x00)
+#define	GPRSCU_CLC						MMIO32(GPRSCU_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	GPRSCU_ID		MMIO32(GPRSCU_BASE + 0x08)
+#define	GPRSCU_ID						MMIO32(GPRSCU_BASE + 0x08)
+
+/* GPRS Control Register */
+#define	GPRSCU_CON						MMIO32(GPRSCU_BASE + 0x10)
+#define	GPRSCU_CON_INIT					BIT(0)										 // Start initialization
+#define	GPRSCU_CON_DIRECTION			BIT(1)										 // Data direction
+#define	GPRSCU_CON_DIRECTION_UPLINK		0x0
+#define	GPRSCU_CON_DIRECTION_DOWNLINK	0x2
+#define	GPRSCU_CON_CRC_CTRL				BIT(2)										 // CRC processing enable
+#define	GPRSCU_CON_CRC_CTRL_OFF			0x0
+#define	GPRSCU_CON_CRC_CTRL_ON			0x4
+#define	GPRSCU_CON_CIPH_CTRL			BIT(3)										 // Cipher processing enable
+#define	GPRSCU_CON_CIPH_CTRL_OFF		0x0
+#define	GPRSCU_CON_CIPH_CTRL_ON			0x8
+#define	GPRSCU_CON_GEA2					BIT(4)										 // Select GEA2 instead of GEA1
+#define	GPRSCU_CON_SEGMENT_MODE			BIT(5)										 // Segment-list processing mode
+#define	GPRSCU_CON_SEGMENT_START		BIT(6)										 // Start segment-list processing
+#define	GPRSCU_CON_SEGMENT_RESET		BIT(9)										 // Reset segment-list processing state
+#define	GPRSCU_CON_BUSY					BIT(16)										 // Initialization in progress
+#define	GPRSCU_CON_GEA3					BIT(20)										 // Select GEA3 instead of GEA1/2
+
+/* Input and Output FIFO Data Register */
+#define	GPRSCU_DATA						MMIO32(GPRSCU_BASE + 0x14)
+#define	GPRSCU_DATA_VALUE				GENMASK(31, 0)
+#define	GPRSCU_DATA_VALUE_SHIFT			0
+
+/* FIFO Status Register */
+#define	GPRSCU_STAT						MMIO32(GPRSCU_BASE + 0x18)
+#define	GPRSCU_STAT_OUTPUT_COUNT		GENMASK(5, 0)								 // Bytes available in the output FIFO
+#define	GPRSCU_STAT_OUTPUT_COUNT_SHIFT	0
+#define	GPRSCU_STAT_INPUT_FREE			GENMASK(13, 8)								 // Bytes free in the input FIFO
+#define	GPRSCU_STAT_INPUT_FREE_SHIFT	8
+#define	GPRSCU_STAT_OUTPUT_UNDERRUN		BIT(23)										 // Output FIFO was read while empty
+
+/* Segment Descriptor Register */
+#define	GPRSCU_SEGMENT					MMIO32(GPRSCU_BASE + 0x20)
+#define	GPRSCU_SEGMENT_LENGTH			GENMASK(10, 0)								 // Segment length in bytes
+#define	GPRSCU_SEGMENT_LENGTH_SHIFT		0
+#define	GPRSCU_SEGMENT_CRC_CTRL			BIT(18)										 // Enable CRC processing for the segment
+#define	GPRSCU_SEGMENT_CIPH_CTRL		BIT(19)										 // Enable cipher processing for the segment
+
+/* Cipher Input Register */
+#define	GPRSCU_INPUT(n)					MMIO32(GPRSCU_BASE + 0x24 + ((n) * 0x4))
+#define	GPRSCU_INPUT_VALUE				GENMASK(31, 0)
+#define	GPRSCU_INPUT_VALUE_SHIFT		0
+
+/* Cipher Key Register */
+#define	GPRSCU_KEY(n)					MMIO32(GPRSCU_BASE + 0x2C + ((n) * 0x4))
+#define	GPRSCU_KEY_VALUE				GENMASK(31, 0)
+#define	GPRSCU_KEY_VALUE_SHIFT			0
+
+/* Frame Check Sequence Register */
+#define	GPRSCU_FCS						MMIO32(GPRSCU_BASE + 0x3C)
+#define	GPRSCU_FCS_VALUE				GENMASK(31, 0)
+#define	GPRSCU_FCS_VALUE_SHIFT			0
+
+/* CRC Polynomial Register */
+#define	GPRSCU_POLYNOM					MMIO32(GPRSCU_BASE + 0x44)
+#define	GPRSCU_POLYNOM_VALUE			GENMASK(31, 0)
+#define	GPRSCU_POLYNOM_VALUE_SHIFT		0
 
 /* Service Routing Control Register */
-#define	GPRSCU_SRC(n)	MMIO32(GPRSCU_BASE + 0xF8 + ((n) * 0x4))
+#define	GPRSCU_SRC(n)					MMIO32(GPRSCU_BASE + 0xF8 + ((n) * 0x4))
 
 
 // AFC [MOD_NUM=F004, MOD_REV=11, MOD_32BIT=C0]
