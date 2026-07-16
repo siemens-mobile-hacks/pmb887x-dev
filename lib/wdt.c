@@ -32,12 +32,13 @@ void wdt_init(void) {
 	wdt_init_custom(550);
 }
 
-void wdt_init_custom(uint32_t interval) {
-	if (interval == 0)
-		interval = 1;
+void wdt_set_interval(uint32_t interval) {
+	wdt_interval = interval != 0 ? interval : 1;
+}
 
+void wdt_init_custom(uint32_t interval) {
 	stopwatch_init();
-	wdt_interval = interval;
+	wdt_set_interval(interval);
 
 #ifdef GPIO_PM_WADOG
 #ifdef BOOT_EXTRAM
