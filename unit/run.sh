@@ -2,6 +2,14 @@
 set -e
 set -x
 
-cmake -B build -DBOARD="$BOARD" -DBOOT=extram -DTEST_COLOR="${TEST_COLOR:-ON}"
-cmake --build build --target "$1"
-perl ../chaos-boot.pl --exec="build/$1.bin" "${@:2}"
+test_name="$1"
+shift
+
+cmake_args=(-B build -DBOOT=extram -DTEST_COLOR="${TEST_COLOR:-ON}")
+if [[ -n "${BOARD:-}" ]]; then
+	cmake_args+=(-DBOARD="$BOARD")
+fi
+
+cmake "${cmake_args[@]}"
+cmake --build build --target "$test_name"
+perl ../chaos-boot.pl --exec="build/$test_name.bin" "$@"
