@@ -12,4 +12,6 @@ fi
 
 cmake "${cmake_args[@]}"
 cmake --build build --target "$test_name"
-perl ../chaos-boot.pl --exec="build/$test_name.bin" "$@"
+
+chaos_args=(--exec="build/$test_name.bin" --speed=115200)
+perl ../chaos-boot.pl "${chaos_args[@]}" "$@"
