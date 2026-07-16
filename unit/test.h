@@ -16,6 +16,7 @@ bool test_amba_part_id(const char *name, uint16_t expected, uint32_t id0, uint32
 bool test_eq_memory(const char *name, const void *expected, const volatile void *actual, size_t size);
 
 bool test_u32_in_interval(uint32_t value, uint32_t first, uint32_t last);
+bool test_is_qemu(void);
 void test_watchdog_serve(void);
 void test_watchdog_reset(void);
 void test_spin(unsigned int iterations);

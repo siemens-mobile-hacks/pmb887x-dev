@@ -16,6 +16,74 @@ typedef struct {
 	bool modified;
 } watchdog_measurement_t;
 
+typedef struct {
+	volatile uint32_t *source;
+	uint32_t irq;
+} scu_irq_source_t;
+
+static const scu_irq_source_t IRQ_SOURCES[] = {
+	{&SCU_EXTI0_SRC, VIC_SCU_EXTI0_IRQ},
+	{&SCU_EXTI1_SRC, VIC_SCU_EXTI1_IRQ},
+	{&SCU_EXTI2_SRC, VIC_SCU_EXTI2_IRQ},
+	{&SCU_EXTI3_SRC, VIC_SCU_EXTI3_IRQ},
+	{&SCU_EXTI4_SRC, VIC_SCU_EXTI4_IRQ},
+	{&SCU_EXTI5_SRC, VIC_SCU_EXTI5_IRQ},
+	{&SCU_EXTI6_SRC, VIC_SCU_EXTI6_IRQ},
+	{&SCU_EXTI7_SRC, VIC_SCU_EXTI7_IRQ},
+	{&SCU_DSP_SRC(0), VIC_SCU_DSP0_IRQ},
+	{&SCU_DSP_SRC(1), VIC_SCU_DSP1_IRQ},
+	{&SCU_DSP_SRC(2), VIC_SCU_DSP2_IRQ},
+	{&SCU_DSP_SRC(3), VIC_SCU_DSP3_IRQ},
+	{&SCU_DSP_SRC(4), VIC_SCU_DSP4_IRQ},
+	{&SCU_UNK0_SRC, VIC_SCU_UNK0_IRQ},
+	{&SCU_UNK1_SRC, VIC_SCU_UNK1_IRQ},
+	{&SCU_UNK2_SRC, VIC_SCU_UNK2_IRQ},
+};
+
+static void test_reset_values(void) {
+	uint32_t reset_status = SCU_RST_SR;
+	uint32_t reset_control = SCU_RST_CON;
+	uint32_t peripheral_reset_requests = SCU_RST_REQ;
+	uint32_t sleep_request = SCU_SLEEP_REQ;
+	uint32_t dsp_interrupt = SCU_DSP_INT;
+	uint32_t interrupt_filter = SCU_INT_FILTER;
+	uint32_t interrupt_edge = SCU_INT_EDGE;
+	uint32_t rtc_interface = SCU_RTCIF;
+	uint32_t redesign_tracing = SCU_RTID;
+	uint32_t dma_request_select = SCU_DMARS;
+	uint32_t emulator_id = SCU_EMU_ID;
+
+	test_module_id("module ID", 0xF040C000, SCU_ID);
+	test_module_clock("module clock is enabled", SCU_CLC);
+	test_eq_u32("peripheral reset requests are inactive", 0, peripheral_reset_requests);
+	test_eq_u32("sleep request is inactive", 0, sleep_request & SCU_SLEEP_REQ_REQ);
+	test_eq_u32("DSP interrupt requests are inactive", 0, dsp_interrupt & SCU_DSP_INT_REQ);
+	test_eq_u32("RTC interface starts disabled", 0, rtc_interface & SCU_RTCIF_RTCIFEN);
+	test_eq_u32("RTID reserved bits are zero", 0, redesign_tracing & GENMASK(31, 16));
+	test_eq_u32(
+		"emulator ID matches the execution environment",
+		test_is_qemu() ? SCU_EMU_ID_VALUE_QEMU : 0,
+		emulator_id
+	);
+	printf(
+		"# SCU: RST_SR=%08X RST_CON=%08X RST_REQ=%08X SLEEP=%08X DSP_INT=%08X\n",
+		(unsigned int) reset_status,
+		(unsigned int) reset_control,
+		(unsigned int) peripheral_reset_requests,
+		(unsigned int) sleep_request,
+		(unsigned int) dsp_interrupt
+	);
+	printf(
+		"# SCU: INT_FILTER=%08X INT_EDGE=%08X RTCIF=%08X RTID=%08X DMARS=%08X EMU_ID=%08X\n",
+		(unsigned int) interrupt_filter,
+		(unsigned int) interrupt_edge,
+		(unsigned int) rtc_interface,
+		(unsigned int) redesign_tracing,
+		(unsigned int) dma_request_select,
+		(unsigned int) emulator_id
+	);
+}
+
 static bool frequency_matches(uint32_t actual, uint32_t expected) {
 	uint32_t tolerance = expected * WDT_FREQUENCY_TOLERANCE_PERCENT / 100;
 
@@ -58,8 +126,6 @@ static void test_cpu_identification(void) {
 	uint32_t uid1 = SCU_UID1;
 	uint32_t uid2 = SCU_UID2;
 
-	test_module_id("module ID", 0xF040C000, SCU_ID);
-	test_module_clock("module clock is enabled", SCU_CLC);
 	test_eq_u32("manufacturer is Infineon", 0x182, manufacturer);
 	test_eq_u32("manufacturer department", 3, department);
 	test_eq_u32("CPU model", EXPECTED_CHIP, chip);
@@ -75,6 +141,88 @@ static void test_cpu_identification(void) {
 		(unsigned int) uid1,
 		(unsigned int) uid2
 	);
+}
+
+static void pulse_reset_request(const char *name, uint32_t request) {
+	SCU_RST_REQ = request;
+	/* Firmware uses the same readback before deasserting reset; back-to-back writes are too short. */
+	uint32_t asserted_requests = SCU_RST_REQ;
+	SCU_RST_REQ = 0;
+	test_eq_u32(name, request, asserted_requests);
+}
+
+static void test_reset_requests(void) {
+	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_module_clock("DSP clock is enabled for the reset probe", DSP_CLC);
+	DSP_COM_CLEAR = UINT16_MAX;
+	DSP_COM_SET = BIT(15);
+	test_eq_u32("DSP communication flag is prepared set", BIT(15), DSP_COM_STATUS & BIT(15));
+	pulse_reset_request("DSP reset request asserts", SCU_RST_REQ_DSP);
+	test_eq_u32("DSP reset does not affect clock control", 1 << MOD_CLC_RMC_SHIFT, DSP_CLC);
+	test_eq_u32("DSP communication flags return to reset value", 0, DSP_COM_STATUS);
+	DSP_CLC = MOD_CLC_DISR;
+
+	USB_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_module_clock("USB is prepared in a non-reset state", USB_CLC);
+	USB_CFG = 3;
+	pulse_reset_request("USB reset request asserts", SCU_RST_REQ_USB);
+	test_eq_u32("USB wrapper returns to reset value", 0, USB_CFG);
+	test_eq_u32("USB reset does not affect clock control", 1 << MOD_CLC_RMC_SHIFT, USB_CLC);
+	USB_CLC = MOD_CLC_DISR;
+
+	DMAC_CH_SRC_ADDR(7) = 0x12345678;
+	pulse_reset_request("DMAC reset request asserts", SCU_RST_REQ_DMAC);
+	test_eq_u32("DMAC channel returns to reset value", 0, DMAC_CH_SRC_ADDR(7));
+
+	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_module_clock("I2C is prepared in a non-reset state", I2C_CLC);
+#ifdef PMB8876
+	I2C_FDIVCFG = 0x0004003D;
+#endif
+	pulse_reset_request("I2C reset request asserts", SCU_RST_REQ_I2C);
+	test_eq_u32("I2C clock control returns to reset value", MOD_CLC_DISR | MOD_CLC_DISS, I2C_CLC);
+#ifdef PMB8876
+	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_eq_u32("I2C divider returns to reset value", 0, I2C_FDIVCFG);
+#endif
+
+	test_eq_u32("reset requests finish deasserted", 0, SCU_RST_REQ);
+}
+
+static void test_interrupt_routing(void) {
+	bool routed = true;
+
+	for (size_t i = 0; i < ARRAY_SIZE(IRQ_SOURCES); i++) {
+		*IRQ_SOURCES[i].source = MOD_SRC_CLRR;
+		VIC_CON(VIC_SCU_EXTI0_IRQ + i) = 1;
+	}
+
+	for (size_t i = 0; i < ARRAY_SIZE(IRQ_SOURCES); i++) {
+		const scu_irq_source_t *irq_source = &IRQ_SOURCES[i];
+
+		*irq_source->source = MOD_SRC_SRE | MOD_SRC_SETR;
+
+		uint32_t source_status = *irq_source->source;
+		uint32_t selected_irq = VIC_IRQ_CON & VIC_IRQ_CON_NUM;
+		if (selected_irq != irq_source->irq) {
+			printf(
+				"# SCU source %u status %08X selected VIC IRQ %u instead of %u\n",
+				(unsigned int) i,
+				(unsigned int) source_status,
+				(unsigned int) selected_irq,
+				(unsigned int) irq_source->irq
+			);
+			routed = false;
+		}
+
+		*irq_source->source = MOD_SRC_CLRR;
+	}
+
+	for (size_t i = 0; i < ARRAY_SIZE(IRQ_SOURCES); i++) {
+		VIC_CON(VIC_SCU_EXTI0_IRQ + i) = 0;
+	}
+
+	test_check("all SCU service requests route to their documented VIC IRQ", routed);
 }
 
 static void test_watchdog(void) {
@@ -136,8 +284,14 @@ static void test_watchdog(void) {
 int main(void) {
 	test_start("SCU peripheral test");
 
+	test_category("Reset values");
+	test_reset_values();
 	test_category("CPU identification");
 	test_cpu_identification();
+	test_category("Reset requests");
+	test_reset_requests();
+	test_category("Interrupt routing");
+	test_interrupt_routing();
 	test_category("Watchdog");
 	test_watchdog();
 
