@@ -2,3 +2,8 @@
 cpu.type = "pmb8875"
 vendor = "Generic"
 model = "PMB8875"
+
+[peripheral.SIM_CARD]
+type = "sim-card"
+bus = "SIM"
+in = { RST = "SIM:CC_RST" }

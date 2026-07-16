@@ -7,6 +7,11 @@ cpu.uid0 = 0x030488E3
 cpu.uid1 = 0x1B040288
 cpu.uid2 = 0x000E0A0B
 
+[peripheral.SIM_CARD]
+type = "sim-card"
+bus = "SIM"
+in = { RST = "SIM:CC_RST" }
+
 [peripheral.FLASH0]
 type = "cfi-flash"
 bus = "EBU"

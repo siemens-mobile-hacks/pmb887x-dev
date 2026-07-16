@@ -2,6 +2,11 @@
 cpu.type = "pmb8876"
 cpu.rev = 0x10
 
+[peripheral.SIM_CARD]
+type = "sim-card"
+bus = "SIM"
+in = { RST = "SIM:CC_RST" }
+
 [peripheral.FLASH0]
 type = "cfi-flash"
 bus = "EBU"
