@@ -16,6 +16,7 @@ typedef struct {
 	uint32_t base;
 } gptu_t;
 
+static volatile uint32_t gptu0_src6_irqs;
 static volatile uint32_t gptu0_src7_irqs;
 
 static void gptu_stop(const gptu_t *gptu) {
@@ -52,6 +53,17 @@ static bool frequency_matches(uint32_t actual, uint32_t expected) {
 static void clear_gptu0_sources(void) {
 	for (uint32_t index = 0; index < 8; index++)
 		GPTU_SRC(GPTU0, index) = MOD_SRC_CLRR;
+}
+
+static uint32_t gptu0_pending_mask(void) {
+	uint32_t mask = 0;
+
+	for (uint32_t index = 0; index < 8; index++) {
+		if ((GPTU_SRC(GPTU0, index) & MOD_SRC_SRR) != 0)
+			mask |= BIT(index);
+	}
+
+	return mask;
 }
 
 static void configure_gptu0_pending_request(void) {
@@ -442,7 +454,9 @@ static void test_t2_events(const gptu_t *gptu) {
 
 static void test_pending_request_survives_disable(void) {
 	const uint32_t source_config = MOD_SRC_SRPN | MOD_SRC_TOS | MOD_SRC_SRE;
+	uint32_t saved_vic6 = VIC_CON(VIC_GPTU0_SRC6_IRQ);
 	uint32_t saved_vic7 = VIC_CON(VIC_GPTU0_SRC7_IRQ);
+	uint32_t saved_src6 = GPTU_SRC(GPTU0, 6) & source_config;
 	uint32_t saved_src7 = GPTU_SRC(GPTU0, 7) & source_config;
 	bool irq_was_disabled = cpu_enable_irq(false);
 
@@ -450,15 +464,28 @@ static void test_pending_request_survives_disable(void) {
 	clear_gptu0_sources();
 	configure_gptu0_pending_request();
 	test_check("T0A overflow reaches SRC7", wait_gptu0_source(7));
+	uint32_t pending_before_disable = gptu0_pending_mask();
+	test_eq_u32("T0A overflow only raises its routed SR00 request", BIT(7), pending_before_disable);
 	test_eq_u32("SRC7 SRE remains disabled", 0, GPTU_SRC(GPTU0, 7) & MOD_SRC_SRE);
 
 	disable_gptu0();
 	test_check("CLC.DISR disables GPTU0", wait_mask_equal(&GPTU_CLC(GPTU0), MOD_CLC_DISS, MOD_CLC_DISS));
-	test_eq_u32("SRC7 pending request survives CLC.DISR", MOD_SRC_SRR, GPTU_SRC(GPTU0, 7) & MOD_SRC_SRR);
+	uint32_t pending_after_disable = gptu0_pending_mask();
+	printf("# GPTU0 pending mask: before CLC.DISR=%02X after=%02X\n",
+		(unsigned int) pending_before_disable, (unsigned int) pending_after_disable);
+	test_eq_u32("only SRC7 pending request survives CLC.DISR", BIT(7), pending_after_disable);
+
+	VIC_CON(VIC_GPTU0_SRC6_IRQ) = 1;
+	gptu0_src6_irqs = 0;
+	GPTU_CLC(GPTU0) = 1 << MOD_CLC_RMC_SHIFT;
+	GPTU_SRC(GPTU0, 6) = MOD_SRC_SRE;
+	cpu_enable_irq(true);
+	stopwatch_usleep_wd(1000);
+	cpu_enable_irq(false);
+	test_eq_u32("enabling SRC6 does not raise stale START_A IRQ93", 0, gptu0_src6_irqs);
 
 	VIC_CON(VIC_GPTU0_SRC7_IRQ) = 1;
 	gptu0_src7_irqs = 0;
-	GPTU_CLC(GPTU0) = 1 << MOD_CLC_RMC_SHIFT;
 	GPTU_SRC(GPTU0, 7) = MOD_SRC_SRE;
 	cpu_enable_irq(true);
 	test_check("Surviving SRC7 request raises IRQ92", wait_gptu0_irq(&gptu0_src7_irqs));
@@ -468,9 +495,11 @@ static void test_pending_request_survives_disable(void) {
 	test_eq_u32("IRQ handler clears surviving request", 0, GPTU_SRC(GPTU0, 7) & MOD_SRC_SRR);
 
 	clear_gptu0_sources();
-	disable_gptu0();
+	GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR | saved_src6;
 	GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR | saved_src7;
+	VIC_CON(VIC_GPTU0_SRC6_IRQ) = saved_vic6;
 	VIC_CON(VIC_GPTU0_SRC7_IRQ) = saved_vic7;
+	disable_gptu0();
 	cpu_enable_irq(!irq_was_disabled);
 }
 
@@ -509,7 +538,10 @@ int main(void) {
 __IRQ void irq_handler(void) {
 	uint32_t irq = VIC_IRQ_CURRENT;
 
-	if (irq == VIC_GPTU0_SRC7_IRQ) {
+	if (irq == VIC_GPTU0_SRC6_IRQ) {
+		gptu0_src6_irqs++;
+		GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR;
+	} else if (irq == VIC_GPTU0_SRC7_IRQ) {
 		gptu0_src7_irqs++;
 		GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
 	}
