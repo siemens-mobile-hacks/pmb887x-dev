@@ -26,6 +26,8 @@ static struct adc_channel_t adc_channels[] = {
 #ifdef BOARD_PANASONIC_VS7
 	{"M0_BAT_ID",	ADC_CTRL_MX_M0,			100,		1,		0,		0,		ADC_READ_VOLTS,				0},
 	{"M10_PCB_ID",	ADC_CTRL_MX_M10,		100,		1,		0,		0,		ADC_READ_RESISTANCE,		60},
+#elif defined(BOARD_LG_KE970)
+	{"M8_VBAT",		ADC_CTRL_MX_M8,			96,		-1,		390000,	100000,		ADC_READ_VOLTS,				0},
 #else
 	{"M1_VBAT",		ADC_CTRL_MX_M1,			44,		1,		330000,	220000,		ADC_READ_VOLTS,				0},
 	{"M7_AKKU_TYP",	ADC_CTRL_MX_M7,			100,	-1,		0,		0,			ADC_READ_RESISTANCE,		60},
