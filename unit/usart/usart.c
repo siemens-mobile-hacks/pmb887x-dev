@@ -10,6 +10,7 @@
 #define BLOCK_SIZE 1024
 #define DMA_RX_CHANNEL 0
 #define DMA_TX_CHANNEL 1
+#define TIMEOUT_BURST_SIZE 3
 
 enum fifo_mode {
 	FIFO_OFF,
@@ -29,6 +30,10 @@ static volatile uint32_t timeout_irqs;
 static volatile stopwatch_t timeout_rx_start;
 static volatile uint32_t timeout_elapsed_us;
 static volatile bool timeout_timing_active;
+static volatile uint8_t timeout_burst_rx[TIMEOUT_BURST_SIZE];
+static volatile uint32_t timeout_burst_rx_count;
+static volatile uint32_t timeout_first_irq_rx_count;
+static volatile bool timeout_burst_active;
 static volatile uint32_t dma_tx_irqs;
 static volatile uint32_t dma_rx_irqs;
 
@@ -722,6 +727,80 @@ static void test_timeout(void) {
 	test_check("timeout duration follows reload and baud rate", durations_match);
 
 	timeout_irqs = 0;
+	rx_irqs = 0;
+	timeout_elapsed_us = 0;
+	timeout_timing_active = true;
+	USART_TMO(USART1) = RELOADS[2];
+	USART_TXB(USART1) = 0x69;
+	start = stopwatch_get();
+	while (rx_irqs == 0 && stopwatch_elapsed_ms(start) < USART_TIMEOUT_MS)
+		test_watchdog_serve();
+	bool first_byte_received = rx_irqs == 1;
+	stopwatch_usleep_wd(expected_us[2] / 2);
+	bool timeout_stayed_pending = timeout_irqs == 0;
+	USART_TXB(USART1) = 0x96;
+	start = stopwatch_get();
+	while (rx_irqs < 2 && stopwatch_elapsed_ms(start) < USART_TIMEOUT_MS)
+		test_watchdog_serve();
+	bool second_byte_received = rx_irqs == 2;
+	start = stopwatch_get();
+	while (timeout_timing_active && stopwatch_elapsed_ms(start) < USART_TIMEOUT_MS)
+		test_watchdog_serve();
+	uint32_t restarted_duration_us = timeout_elapsed_us;
+	timeout_timing_active = false;
+	uint32_t restart_tolerance_us = expected_us[2] / 10 + 5;
+	bool restart_duration_matches = (
+		restarted_duration_us >= expected_us[2] - restart_tolerance_us &&
+		restarted_duration_us <= expected_us[2] + restart_tolerance_us
+	);
+
+	printf(
+		"# TMO reload after second byte: measured/expected = %u/%u us\n",
+		restarted_duration_us,
+		expected_us[2]
+	);
+	test_check("first byte starts timeout", first_byte_received);
+	test_check("timeout stays pending before second byte", timeout_stayed_pending);
+	test_check("second byte is received before timeout", second_byte_received);
+	test_eq_u32("second byte produces exactly one timeout IRQ", 1, timeout_irqs);
+	test_check("second byte reloads the complete timeout period", restart_duration_matches);
+
+	static const uint8_t TIMEOUT_BURST[] = { 0x41, 0x54, 0x0D };
+	static const uint32_t TIMEOUT_BURST_RELOAD = 58;
+	timeout_irqs = 0;
+	rx_irqs = 0;
+	timeout_elapsed_us = 0;
+	timeout_timing_active = true;
+	timeout_burst_rx_count = 0;
+	timeout_first_irq_rx_count = 0;
+	timeout_burst_active = true;
+	USART_ICR(USART1) = USART_ICR_RX | USART_ICR_TMO;
+	USART_TMO(USART1) = TIMEOUT_BURST_RELOAD;
+	USART_TXFCON(USART1) = (
+		USART_TXFCON_TXFEN | USART_TXFCON_TXFFLU |
+		(1 << USART_TXFCON_TXFITL_SHIFT)
+	);
+	for (uint32_t i = 0; i < ARRAY_SIZE(TIMEOUT_BURST); i++)
+		USART_TXB(USART1) = TIMEOUT_BURST[i];
+
+	start = stopwatch_get();
+	while ((timeout_burst_rx_count < ARRAY_SIZE(TIMEOUT_BURST) || timeout_irqs == 0) &&
+		stopwatch_elapsed_ms(start) < USART_TIMEOUT_MS)
+		test_watchdog_serve();
+	timeout_burst_active = false;
+	timeout_timing_active = false;
+	USART_TXFCON(USART1) = 0;
+
+	test_eq_u32("timeout burst receives every byte", ARRAY_SIZE(TIMEOUT_BURST), timeout_burst_rx_count);
+	test_eq_memory("timeout burst preserves byte order", TIMEOUT_BURST, timeout_burst_rx, sizeof(TIMEOUT_BURST));
+	test_eq_u32(
+		"timeout burst raises first TMO after the final byte",
+		ARRAY_SIZE(TIMEOUT_BURST),
+		timeout_first_irq_rx_count
+	);
+	test_eq_u32("timeout burst raises exactly one TMO", 1, timeout_irqs);
+
+	timeout_irqs = 0;
 	USART_TXB(USART1) = 0x5A;
 	start = stopwatch_get();
 	while (timeout_irqs == 0 && stopwatch_elapsed_ms(start) < USART_TIMEOUT_MS)
@@ -795,11 +874,15 @@ __IRQ void irq_handler(void) {
 			timeout_rx_start = stopwatch_get();
 		rx_irqs++;
 		irq_rx_data = USART_RXB(USART1);
+		if (timeout_burst_active && timeout_burst_rx_count < ARRAY_SIZE(timeout_burst_rx))
+			timeout_burst_rx[timeout_burst_rx_count++] = irq_rx_data;
 		USART_ICR(USART1) = USART_ICR_RX;
 	} else if (irq == VIC_USART1_ERR_IRQ) {
 		error_irqs++;
 		USART_ICR(USART1) = USART_ICR_ERR;
 	} else if (irq == VIC_USART1_TMO_IRQ) {
+		if (timeout_burst_active && timeout_irqs == 0)
+			timeout_first_irq_rx_count = timeout_burst_rx_count;
 		if (timeout_timing_active) {
 			timeout_elapsed_us = stopwatch_elapsed_us(timeout_rx_start);
 			timeout_timing_active = false;
