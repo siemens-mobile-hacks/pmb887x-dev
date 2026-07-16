@@ -1010,6 +1010,11 @@ static void test_halt_and_lock(void) {
 }
 
 static void test_halt_after_partial_transfer(void) {
+	if (test_is_qemu()) {
+		test_skip("HALT drains buffered data", "QEMU does not model the DMAC FIFO");
+		return;
+	}
+
 	reset_dmac();
 	fill_matrix_buffers();
 	start_transfer(
@@ -1049,6 +1054,47 @@ static void test_halt_after_partial_transfer(void) {
 	test_eq_memory("halted partial transfer data", matrix_source, matrix_destination, 8 * sizeof(uint32_t));
 	test_check("final request clears after drain", (DMAC_SOFT_BREQ & BIT(0)) == 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
+static void test_halt_while_waiting_for_source_request(void) {
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM
+	);
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check(
+		"source request completes before HALT",
+		wait_for_value(&DMAC_CH_CONTROL(DMA_CHANNEL), DMAC_CH_CONTROL_TRANSFER_SIZE, 4)
+	);
+	test_check("source request clears before HALT", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
+	test_check(
+		"channel is inactive after source request",
+		(DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0
+	);
+
+	DMAC_CH_CONFIG(DMA_CHANNEL) |= DMAC_CH_CONFIG_HALT;
+	bool inactive = wait_for_value(&DMAC_CH_CONFIG(DMA_CHANNEL), DMAC_CH_CONFIG_ACTIVE, 0);
+	uint32_t config_after_halt = DMAC_CH_CONFIG(DMA_CHANNEL);
+	test_eq_u32(
+		"HALT preserves request-waiting transfer count",
+		4,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE
+	);
+	test_eq_memory("HALT preserves completed source burst", matrix_source, matrix_destination, 4 * sizeof(uint32_t));
+	test_check("HALT makes request-waiting channel inactive", inactive);
+	test_check("request-waiting channel remains enabled while halted", (config_after_halt & DMAC_CH_CONFIG_ENABLE) != 0);
+	test_check("HALT remains set after channel becomes inactive", (config_after_halt & DMAC_CH_CONFIG_HALT) != 0);
+	test_eq_u32("halted partial transfer has no terminal count", 0, DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL));
+	DMAC_CH_CONFIG(DMA_CHANNEL) = 0;
 }
 
 static void test_multiple_channels(void) {
@@ -1460,6 +1506,7 @@ int main(void) {
 	test_category("Channel control and arbitration");
 	test_halt_and_lock();
 	test_halt_after_partial_transfer();
+	test_halt_while_waiting_for_source_request();
 	test_multiple_channels();
 	test_all_channels();
 
