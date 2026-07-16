@@ -32,6 +32,7 @@ Run a test on real hardware:
 | `i2c-v1` | I2Cv1 registers, hardware bits, IRQ transfers, and PMIC SMBus reads |
 | `i2c-v2` | I2Cv2 registers, IRQ transfers, SMBus, FIFO modes, and bus scan |
 | `i2c-v2-dma` | I2Cv2 SMBus transfers through DMA |
+| `cfi-intel-buffer-abort` | Destructive Intel/ST E8/E9 cross-block buffered-program abort and recovery |
 | `ssc` | SSC loopback, serial formats, FIFO modes, interrupts, and errors |
 | `ssc-dma` | SSC full-duplex FIFO DMA, bursts, LLI, widths, statuses, and interrupts |
 | `dif-v1` | DIFv1 loopback, FIFO modes, interrupts, errors, and LCD bit conversion registers |
@@ -46,3 +47,8 @@ Run a test on real hardware:
 | `cfi-intel-rw` | Intel/ST CFI program, erase, lock, and suspend/resume operations |
 | `cfi-intel-efa-rw` | Intel/ST extended flash array program and erase operations |
 | `cfi-intel-otp-rw` | Irreversible Intel/ST OTP program and freeze operations |
+
+`cfi-intel-buffer-abort` uses a detected blank, non-lock-down erase block and the geometry reported by that flash. It
+unlocks the block for the test, verifies the affected write buffer, cross-block word, and both full-block CRCs, then
+restores the original lock state. It skips destructive access if no suitable block or Intel/ST buffered-program command
+set is found.
