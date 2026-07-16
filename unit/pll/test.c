@@ -11,6 +11,8 @@
 #define RTC_T14_RELOAD 61440
 #define RTC_T14_PERIOD (65536 - RTC_T14_RELOAD)
 #define RTC_T14_MEASURE_TICKS 512
+#define CLOCK_MANAGER_WAIT_ITERATIONS 100000
+#define USART_IRQ_MASK 0xFF
 
 static volatile uint32_t irq_count;
 static volatile uint32_t irq_number;
@@ -174,6 +176,81 @@ static uint32_t benchmark_stm_ticks(void) {
 
 static uint32_t stm_ticks_to_khz(uint32_t stm_ticks) {
 	return (uint64_t) stm_ticks * RTC_T14_PERIOD / RTC_T14_MEASURE_TICKS / 1000;
+}
+
+static void configure_clock_control_usart(void) {
+	uint32_t control = USART_CON_M_ASYNC_8BIT | USART_CON_FDE | USART_CON_LB;
+	USART_CLC(USART1) = 1 << MOD_CLC_RMC_SHIFT;
+	USART_CON(USART1) = control;
+	USART_BG(USART1) = 0x0C;
+	USART_FDV(USART1) = 0x1D8;
+	USART_TMO(USART1) = 0;
+	USART_DMAE(USART1) = 0;
+	USART_IMSC(USART1) = 0;
+	USART_ICR(USART1) = USART_IRQ_MASK;
+	USART_RXFCON(USART1) = 0;
+	USART_TXFCON(USART1) = 0;
+	USART_WHBCON(USART1) = USART_WHBCON_CLRPE | USART_WHBCON_CLRFE | USART_WHBCON_CLROE;
+	USART_CON(USART1) = control | USART_CON_CON_R;
+	USART_WHBCON(USART1) = USART_WHBCON_SETREN;
+}
+
+static bool clock_control_usart_loopback(uint8_t value) {
+	USART_ICR(USART1) = USART_IRQ_MASK;
+	USART_TXB(USART1) = value;
+	for (uint32_t index = 0;
+		index < CLOCK_MANAGER_WAIT_ITERATIONS && (USART_RIS(USART1) & USART_RIS_RX) == 0;
+		index++)
+		__asm__ volatile("nop");
+	if ((USART_RIS(USART1) & USART_RIS_RX) == 0)
+		return false;
+	uint32_t actual = USART_RXB(USART1);
+	USART_ICR(USART1) = USART_ICR_RX;
+	return actual == value;
+}
+
+static void test_clock_manager_control(void) {
+	uint32_t initial_con1 = PLL_CON1;
+	uint32_t initial_control = initial_con1 & PLL_CON1_SYSTEM_OUT_CTRL;
+	uint32_t bypass_base =
+		(initial_con1 & ~(PLL_CON1_SYSTEM_OUT_CTRL | PLL_CON1_FSYS_CLKSEL)) |
+		PLL_CON1_FSYS_CLKSEL_BYPASS;
+	uint32_t off_bypass_con1 = bypass_base | PLL_CON1_SYSTEM_OUT_CTRL_OFF;
+	uint32_t on_bypass_con1 = bypass_base | PLL_CON1_SYSTEM_OUT_CTRL_ON;
+	uint32_t on_pll_con1 =
+		(bypass_base | PLL_CON1_FSYS_CLKSEL_PLL) | PLL_CON1_SYSTEM_OUT_CTRL_ON;
+	configure_clock_control_usart();
+	/* USART TX IRQ means that TXB is empty, not that the last frame has left the shifter. */
+	stopwatch_usleep_wd(1000);
+
+	/* Firmware only disables an unselected branch and enables it before selecting it. */
+	PLL_CON1 = off_bypass_con1;
+	uint32_t off_bypass_readback = PLL_CON1;
+
+	PLL_CON1 = on_bypass_con1;
+	uint32_t on_bypass_readback = PLL_CON1;
+	bool on_bypass_loopback = clock_control_usart_loopback(0x5A);
+
+	PLL_CON1 = on_pll_con1;
+	uint32_t on_pll_readback = PLL_CON1;
+	bool on_pll_loopback = clock_control_usart_loopback(0xC3);
+	PLL_CON1 = on_bypass_con1;
+	USART_CLC(USART1) = MOD_CLC_DISR;
+	PLL_CON1 = initial_con1;
+	uint32_t restored_readback = PLL_CON1;
+
+	printf("# PLL CON1[1:0] Clock Manager control: initial=%u OFF/BYPASS=%08X ON/BYPASS=%08X ON/PLL=%08X restored=%08X\n",
+		(unsigned int) initial_control, (unsigned int) off_bypass_readback,
+		(unsigned int) on_bypass_readback, (unsigned int) on_pll_readback,
+		(unsigned int) restored_readback);
+	test_eq_u32("SYSTEM_OUT OFF state reads back as 3", PLL_CON1_SYSTEM_OUT_CTRL_OFF,
+		off_bypass_readback & PLL_CON1_SYSTEM_OUT_CTRL);
+	test_eq_u32("SYSTEM_OUT ON state reads back as 2", PLL_CON1_SYSTEM_OUT_CTRL_ON,
+		on_bypass_readback & PLL_CON1_SYSTEM_OUT_CTRL);
+	test_check("bypass keeps USART running while SYSTEM_OUT is ON", on_bypass_loopback);
+	test_eq_u32("SYSTEM_OUT ON permits selecting PLL for fSYS", on_pll_con1, on_pll_readback);
+	test_check("USART loopback runs with SYSTEM_OUT ON and PLL selected", on_pll_loopback);
+	test_eq_u32("Clock Manager sequence restores PLL CON1", initial_con1, restored_readback);
 }
 
 static void test_example_fsys_benchmark(void) {
@@ -881,6 +958,8 @@ int main(void) {
 	test_reset_values();
 	test_category("Boot clock calculation");
 	test_boot_clock_calculation();
+	test_category("PLL CON1 Clock Manager control");
+	test_clock_manager_control();
 	test_category("Working example fSYS benchmark");
 	test_example_fsys_benchmark();
 	test_category("AHB frequency measurement");
