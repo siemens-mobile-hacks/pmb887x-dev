@@ -158,7 +158,7 @@ sub parsePRI {
 					id				=> $i,
 					addr			=> $otp0_addr,
 					factory			=> $otp0_size_f,
-					size			=> max($otp0_size_u, $otp0_size_f),
+					size			=> $otp0_size_f + $otp0_size_u,
 				};
 			} else {
 				my $otp1_addr = $r->readUInt32();

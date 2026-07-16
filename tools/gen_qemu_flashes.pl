@@ -79,6 +79,24 @@ for my $dump_file (sort @files) {
 	print "static const struct pmb887x_flash_cfg_part_t ${var_name}_parts[] = {\n";
 	print "\t".join(",\n\t", @partitions)."\n";
 	print "};\n";
+
+	my @efa_erase_regions;
+	my $efa_offset = 0;
+	for my $region (@{$info->{pri}->{regions_efa}}) {
+		for (my $i = 0; $i < $region->{identical_banks}; $i++) {
+			for my $erase (@{$region->{erase_regions}}) {
+				push @efa_erase_regions, sprintf("{ 0x%X, 0x%X, 0x%X }", $efa_offset,
+					$erase->{blocks} * $erase->{block_size}, $erase->{block_size});
+				$efa_offset += $erase->{blocks} * $erase->{block_size};
+			}
+		}
+	}
+
+	if (@efa_erase_regions) {
+		print "static const struct pmb887x_flash_erase_region_t ${var_name}_efa_erase_regions[] = {\n";
+		print "\t".join(",\n\t", @efa_erase_regions)."\n";
+		print "};\n";
+	}
 	
 	# CFI dump
 	print "static const uint8_t ${var_name}_cfi[] = {\n";
@@ -93,7 +111,6 @@ for my $dump_file (sort @files) {
 	my @flash_struct = (
 		vid			=> sprintf("0x%04X", $info->{vid}),
 		pid			=> sprintf("0x%04X", $info->{pid}),
-		lock		=> sprintf("0x%04X", $info->{lock}),
 		cr			=> sprintf("0x%04X", $info->{cr}),
 		ehcr		=> sprintf("0x%04X", $info->{ehcr}),
 		size		=> sprintf("0x%04X", $info->{cfi}->{flash_size}),
@@ -103,9 +120,12 @@ for my $dump_file (sort @files) {
 		pri_size	=> "ARRAY_SIZE(${var_name}_pri)",
 		parts		=> "${var_name}_parts",
 		parts_count	=> "ARRAY_SIZE(${var_name}_parts)",
+		efa_erase_regions		=> @efa_erase_regions ? "${var_name}_efa_erase_regions" : "NULL",
+		efa_erase_regions_count	=> @efa_erase_regions ? "ARRAY_SIZE(${var_name}_efa_erase_regions)" : 0,
 		pri_addr	=> sprintf("0x%X", $info->{cfi}->{pri_addr}),
 		otp0_addr	=> sprintf("0x%X", $has_otp ? $info->{pri}->{otp}->[0]->{addr} : 0),
 		otp0_size	=> sprintf("0x%X", $has_otp ? $info->{pri}->{otp}->[0]->{size} + 2 : 0),
+		otp0_factory_size	=> sprintf("0x%X", $has_otp ? $info->{pri}->{otp}->[0]->{factory} : 0),
 		otp1_addr	=> sprintf("0x%X", $has_otp ? $info->{pri}->{otp}->[1]->{addr} : 0),
 		otp1_size	=> sprintf("0x%X", $has_otp ? $info->{pri}->{otp}->[1]->{size} + 2 : 0),
 	);
