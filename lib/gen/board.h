@@ -8,6 +8,14 @@
 #include "board_generic_pmb8876.h"
 #endif
 
+#ifdef BOARD_LG_KE800
+#include "board_lg_ke800.h"
+#endif
+
+#ifdef BOARD_LG_KE970
+#include "board_lg_ke970.h"
+#endif
+
 #ifdef BOARD_PANASONIC_705P
 #include "board_panasonic_705p.h"
 #endif
