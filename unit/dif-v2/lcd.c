@@ -13,6 +13,23 @@
 #define LCD_WIDTH 240U
 #define LCD_GRAM_READ_DUMMY_BYTES 4U
 #define LCD_GRAM_TEST_BYTES_MAX 4U
+#define LCD_DEVICE_CODE_READ_BYTES 8U
+/* EL71 uses a fast write profile; JBT6K71 reads require the longer /RD cycle from its AC specification. */
+#define LCD_WRITE_TIM1 0x00000400U
+#define LCD_WRITE_TIM2 0x02000400U
+#define LCD_READ_TIM1 0x00030F00U
+#define LCD_READ_TIM2 0x05020601U
+#define LCD_ENTRY_MODE_BGR BIT(12)
+#define LCD_ENTRY_MODE_TRI BIT(15)
+#define LCD_ENTRY_MODE_DFM1 BIT(14)
+#define LCD_ENTRY_MODE_DFM0 BIT(13)
+#define LCD_ENTRY_MODE_ID1 BIT(5)
+#define LCD_ENTRY_MODE_ID0 BIT(4)
+#define LCD_ENTRY_MODE_AM BIT(3)
+
+#ifndef LCD_CONTROLLER_TEST
+#define LCD_CONTROLLER_TEST 0
+#endif
 
 static const struct lcd_register {
 	uint16_t index;
@@ -81,6 +98,23 @@ static const struct lcd_packed_bsconf_profile {
 	{ "1x9", DIF_CSREG_BSCONF_1x9BIT, 9, 1, 1 },
 	{ "2x9", DIF_CSREG_BSCONF_2x9BIT, 9, 1, 1 },
 	{ "3x9", DIF_CSREG_BSCONF_3x9BIT, 9, 1, 1 },
+};
+
+static const struct lcd_pixel_format {
+	const char *name;
+	uint16_t entry_bits;
+	uint32_t bytes_per_pixel;
+	uint8_t byte_masks[3];
+} LCD_PIXEL_FORMATS[] = {
+	{ "8-bit bus / RGB565 in 2 transfers", 0, 2, { 0xFF, 0xFF, 0x00 } },
+	{ "8-bit bus / RGB666 8+8+2", LCD_ENTRY_MODE_TRI | LCD_ENTRY_MODE_DFM0, 3, { 0xFF, 0xFF, 0xC0 } },
+	{ "8-bit bus / RGB666 2+8+8", LCD_ENTRY_MODE_TRI | LCD_ENTRY_MODE_DFM1, 3, { 0x03, 0xFF, 0xFF } },
+	{
+		"8-bit bus / RGB666 6+6+6",
+		LCD_ENTRY_MODE_TRI | LCD_ENTRY_MODE_DFM1 | LCD_ENTRY_MODE_DFM0,
+		3,
+		{ 0xFC, 0xFC, 0xFC },
+	},
 };
 
 static uint32_t lcd_command_bsconf = DIF_CSREG_BSCONF_1x8BIT;
@@ -164,6 +198,17 @@ static bool dif_wait_idle(void) {
 		test_watchdog_serve();
 
 	return (DIF_STAT & DIF_STAT_BSY) == 0;
+}
+
+static bool lcd_set_parallel_timings(uint32_t lcdtim1, uint32_t lcdtim2) {
+	if (!dif_wait_idle())
+		return false;
+	DIF_RUNCTRL = 0;
+	DIF_LCDTIM1 = lcdtim1;
+	DIF_LCDTIM2 = lcdtim2;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+
+	return true;
 }
 
 static bool dif_write_word(bool command, uint32_t value) {
@@ -308,12 +353,26 @@ static bool lcd_write_queued_register(uint16_t index, uint16_t value) {
 	return dif_wait_idle();
 }
 
-static bool dif_read_bytes(bool data, uint8_t *buffer, uint32_t size) {
-	if (!dif_wait_idle())
+static bool lcd_set_gram_address(uint16_t x, uint16_t y) {
+	return lcd_write_register(0x0200, x) && lcd_write_register(0x0201, y);
+}
+
+static bool lcd_set_gram_window(uint16_t x_start, uint16_t x_end, uint16_t y_start, uint16_t y_end) {
+	return lcd_write_register(0x0406, x_start) &&
+		lcd_write_register(0x0407, x_end) &&
+		lcd_write_register(0x0408, y_start) &&
+		lcd_write_register(0x0409, y_end);
+}
+
+static bool dif_read_bytes_selected(uint32_t chip_select, bool data, uint8_t *buffer, uint32_t size) {
+	uint32_t previous_lcdtim1 = DIF_LCDTIM1;
+	uint32_t previous_lcdtim2 = DIF_LCDTIM2;
+
+	if (!lcd_set_parallel_timings(LCD_READ_TIM1, LCD_READ_TIM2))
 		return false;
 	DIF_RUNCTRL = 0;
 	DIF_RXFIFO_CFG = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC;
-	DIF_CSREG = DIF_CSREG_CS1 | (data ? lcd_data_bsconf : lcd_command_bsconf) |
+	DIF_CSREG = chip_select | (data ? lcd_data_bsconf : lcd_command_bsconf) |
 		(data ? 0 : DIF_CSREG_CD);
 	DIF_STARTLCDRD = 0;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
@@ -327,6 +386,8 @@ static bool dif_read_bytes(bool data, uint8_t *buffer, uint32_t size) {
 		if (DIF_RXFFS_STAT == 0) {
 			DIF_RUNCTRL = 0;
 			DIF_STARTLCDRD = 0;
+			DIF_LCDTIM1 = previous_lcdtim1;
+			DIF_LCDTIM2 = previous_lcdtim2;
 			DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 			return false;
 		}
@@ -336,11 +397,14 @@ static bool dif_read_bytes(bool data, uint8_t *buffer, uint32_t size) {
 	bool idle = dif_wait_idle();
 	DIF_STARTLCDRD = 0;
 
-	return idle;
+	return idle && lcd_set_parallel_timings(previous_lcdtim1, previous_lcdtim2);
 }
 
-static void lcd_init_gpio(void) {
-	GPIO_CLC = 1U << MOD_CLC_RMC_SHIFT;
+static bool dif_read_bytes(bool data, uint8_t *buffer, uint32_t size) {
+	return dif_read_bytes_selected(DIF_CSREG_CS1, data, buffer, size);
+}
+
+static void lcd_configure_dif_gpio(void) {
 	uint32_t control = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PS_ALT | GPIO_DATA_HIGH;
 	GPIO_PIN(GPIO_DIF_CD) = control;
 	GPIO_PIN(GPIO_DIF_CS1) = control;
@@ -356,6 +420,11 @@ static void lcd_init_gpio(void) {
 	GPIO_PIN(GPIO_DIF_D5) = data;
 	GPIO_PIN(GPIO_DIF_D6) = data;
 	GPIO_PIN(GPIO_DIF_D7) = data;
+}
+
+static void lcd_init_gpio(void) {
+	GPIO_CLC = 1U << MOD_CLC_RMC_SHIFT;
+	lcd_configure_dif_gpio();
 
 	GPIO_PIN(GPIO_DIF_VD) = GPIO_PS_MANUAL | GPIO_DIR_IN;
 	gpio_init_output(
@@ -375,8 +444,8 @@ static void lcd_init_dif(void) {
 	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
 	DIF_TXFIFO_CFG = DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC;
 	DIF_RXFIFO_CFG = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC;
-	DIF_LCDTIM1 = 0x00000400;
-	DIF_LCDTIM2 = 0x02000400;
+	DIF_LCDTIM1 = LCD_WRITE_TIM1;
+	DIF_LCDTIM2 = LCD_WRITE_TIM2;
 	DIF_CSREG = DIF_CSREG_CS1 | DIF_CSREG_CD | DIF_CSREG_BSCONF_OFF;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 }
@@ -470,6 +539,7 @@ static bool lcd_init_controller(void) {
 	success &= lcd_write_register(0x0100, 0xC010);
 	stopwatch_msleep_wd(30);
 	success &= lcd_write_register(0x0101, 0x0001);
+	success &= lcd_write_register(0x0100, 0xF7FE);
 
 	return success;
 }
@@ -602,6 +672,70 @@ static bool lcd_read_pixel_1x8(uint16_t y, uint16_t *pixel) {
 	*pixel = gram[4] << 8 | gram[5];
 
 	return true;
+}
+
+static bool lcd_read_pixel_xy_1x8(uint16_t x, uint16_t y, uint16_t *pixel) {
+	uint8_t gram[LCD_GRAM_READ_DUMMY_BYTES + 2] = { 0 };
+	lcd_command_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	lcd_data_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	if (!lcd_set_gram_window(x, x, y, y) || !lcd_set_gram_address(x, y) || !lcd_write_command(0x0202) ||
+		!dif_read_bytes(true, gram, sizeof(gram)))
+		return false;
+	*pixel = gram[LCD_GRAM_READ_DUMMY_BYTES] << 8 | gram[LCD_GRAM_READ_DUMMY_BYTES + 1];
+
+	return true;
+}
+
+static bool lcd_write_rgb565_sequence(const uint16_t *colors, uint32_t count) {
+	bool success = true;
+
+	for (uint32_t i = 0; i < count; i++) {
+		success &= dif_write_word(false, colors[i] >> 8);
+		success &= dif_write_word(false, colors[i]);
+	}
+
+	return success;
+}
+
+static bool lcd_fill_gram_window(
+	uint16_t x_start,
+	uint16_t x_end,
+	uint16_t y_start,
+	uint16_t y_end,
+	uint16_t color
+) {
+	lcd_command_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	lcd_data_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	bool success = lcd_write_register(0x0003, LCD_ENTRY_MODE_ID1 | LCD_ENTRY_MODE_ID0) &&
+		lcd_set_gram_window(x_start, x_end, y_start, y_end) &&
+		lcd_set_gram_address(x_start, y_start) &&
+		lcd_write_command(0x0202);
+	uint32_t pixel_count = (x_end - x_start + 1) * (y_end - y_start + 1);
+
+	for (uint32_t i = 0; i < pixel_count; i++) {
+		success &= dif_write_word(false, color >> 8);
+		success &= dif_write_word(false, color);
+	}
+
+	return success;
+}
+
+static bool lcd_read_horizontal_span(uint16_t x_start, uint16_t y, uint16_t *pixels, uint32_t count) {
+	bool success = true;
+
+	for (uint32_t i = 0; i < count; i++)
+		success &= lcd_read_pixel_xy_1x8(x_start + i, y, &pixels[i]);
+
+	return success;
+}
+
+static bool lcd_read_vertical_span(uint16_t x, uint16_t y_start, uint16_t *pixels, uint32_t count) {
+	bool success = true;
+
+	for (uint32_t i = 0; i < count; i++)
+		success &= lcd_read_pixel_xy_1x8(x, y_start + i, &pixels[i]);
+
+	return success;
 }
 
 enum dif_conversion {
@@ -765,17 +899,295 @@ static int32_t find_pixel(const uint8_t *data, uint32_t size, uint16_t pixel) {
 	return -1;
 }
 
-int main(void) {
-	uint16_t probe_pixel = 0;
+static bool lcd_read_device_code(uint8_t code[LCD_DEVICE_CODE_READ_BYTES]) {
+	return lcd_write_command(0x0000) && dif_read_bytes(true, code, LCD_DEVICE_CODE_READ_BYTES);
+}
 
-	test_start("DIFv2 EL71 LCD test");
+static uint32_t encode_pixel(
+	const struct lcd_pixel_format *format,
+	uint32_t rgb666,
+	uint8_t encoded[3]
+) {
+	uint8_t red = (rgb666 >> 12) & 0x3F;
+	uint8_t green = (rgb666 >> 6) & 0x3F;
+	uint8_t blue = rgb666 & 0x3F;
+
+	if (format->entry_bits == 0) {
+		encoded[0] = (red & 0x3E) << 2 | green >> 3;
+		encoded[1] = green << 5 | blue >> 1;
+	} else if (format->entry_bits == (LCD_ENTRY_MODE_TRI | LCD_ENTRY_MODE_DFM0)) {
+		encoded[0] = red << 2 | green >> 4;
+		encoded[1] = green << 4 | blue >> 2;
+		encoded[2] = blue << 6;
+	} else if (format->entry_bits == (LCD_ENTRY_MODE_TRI | LCD_ENTRY_MODE_DFM1)) {
+		encoded[0] = red >> 4;
+		encoded[1] = red << 4 | green >> 2;
+		encoded[2] = green << 6 | blue;
+	} else {
+		encoded[0] = red << 2;
+		encoded[1] = green << 2;
+		encoded[2] = blue << 2;
+	}
+
+	return format->bytes_per_pixel;
+}
+
+static int32_t find_masked_bytes(
+	const uint8_t *data,
+	uint32_t data_size,
+	const uint8_t *expected,
+	const uint8_t *masks,
+	uint32_t expected_size
+) {
+	for (uint32_t offset = 0; offset + expected_size <= data_size; offset++) {
+		bool match = true;
+
+		for (uint32_t i = 0; i < expected_size; i++) {
+			if ((data[offset + i] & masks[i]) != expected[i]) {
+				match = false;
+				break;
+			}
+		}
+		if (match)
+			return offset;
+	}
+
+	return -1;
+}
+
+static bool run_entry_mode(uint32_t id, bool am, uint16_t expected[4], uint16_t actual[4]) {
+	static const uint16_t COLORS[] = { 0xF800, 0x07E0, 0x001F, 0xFFFF };
+	const uint16_t X_START = 8;
+	const uint16_t X_END = 9;
+	const uint16_t Y_START = 24;
+	const uint16_t Y_END = 25;
+	bool horizontal_increment = (id & 1) != 0;
+	bool vertical_increment = (id & 2) != 0;
+	uint16_t entry_mode = LCD_ENTRY_MODE_BGR | (id << 4) | (am ? LCD_ENTRY_MODE_AM : 0);
+	uint16_t start_x = horizontal_increment ? X_START : X_END;
+	uint16_t start_y = vertical_increment ? Y_START : Y_END;
+	bool success = lcd_fill_gram_window(X_START, X_END, Y_START, Y_END, 0x39E7) &&
+		lcd_write_register(0x0003, entry_mode) &&
+		lcd_set_gram_window(X_START, X_END, Y_START, Y_END) &&
+		lcd_set_gram_address(start_x, start_y) &&
+		lcd_write_command(0x0202);
+
+	for (uint32_t i = 0; i < ARRAY_SIZE(COLORS); i++) {
+		success &= dif_write_word(false, COLORS[i] >> 8);
+		success &= dif_write_word(false, COLORS[i]);
+		uint32_t primary = i & 1;
+		uint32_t secondary = i >> 1;
+		uint32_t x_step = am ? secondary : primary;
+		uint32_t y_step = am ? primary : secondary;
+		uint32_t x = horizontal_increment ? x_step : 1 - x_step;
+		uint32_t y = vertical_increment ? y_step : 1 - y_step;
+
+		expected[y * 2 + x] = COLORS[i];
+	}
+
+	success &= lcd_write_register(0x0003, LCD_ENTRY_MODE_BGR | LCD_ENTRY_MODE_ID1 | LCD_ENTRY_MODE_ID0);
+	for (uint32_t y = 0; y < 2; y++) {
+		for (uint32_t x = 0; x < 2; x++)
+			success &= lcd_read_pixel_xy_1x8(X_START + x, Y_START + y, &actual[y * 2 + x]);
+	}
+
+	return success;
+}
+
+static bool run_pixel_format(const struct lcd_pixel_format *format, int32_t *pixel_offset) {
+	static const uint32_t COLORS[] = { 0x2B554, 0x12AAB };
+	const struct lcd_pixel_format *read_format = &LCD_PIXEL_FORMATS[3];
+	const uint16_t X_START = 16;
+	const uint16_t Y = 32;
+	uint8_t write_data[6] = { 0 };
+	uint8_t expected[6] = { 0 };
+	uint8_t masks[6] = { 0 };
+	uint8_t gram[24] = { 0 };
+	uint32_t write_size = 0;
+	uint32_t expected_size = 0;
+	uint16_t write_entry_mode = LCD_ENTRY_MODE_ID1 | LCD_ENTRY_MODE_ID0 | format->entry_bits;
+	uint16_t read_entry_mode = LCD_ENTRY_MODE_ID1 | LCD_ENTRY_MODE_ID0 | read_format->entry_bits;
+
+	for (uint32_t pixel = 0; pixel < ARRAY_SIZE(COLORS); pixel++) {
+		uint32_t encoded_size = encode_pixel(format, COLORS[pixel], &write_data[write_size]);
+		write_size += encoded_size;
+		encoded_size = encode_pixel(read_format, COLORS[pixel], &expected[expected_size]);
+		expected_size += encoded_size;
+	}
+	for (uint32_t i = 0; i < expected_size; i++) {
+		masks[i] = read_format->byte_masks[i % read_format->bytes_per_pixel];
+		expected[i] &= masks[i];
+	}
+
+	bool success = lcd_fill_gram_window(X_START, X_START + ARRAY_SIZE(COLORS) - 1, Y, Y, 0x0000) &&
+		lcd_write_register(0x0003, write_entry_mode) &&
+		lcd_set_gram_window(X_START, X_START + ARRAY_SIZE(COLORS) - 1, Y, Y) &&
+		lcd_set_gram_address(X_START, Y) && lcd_write_command(0x0202);
+	for (uint32_t i = 0; i < write_size; i++)
+		success &= dif_write_word(false, write_data[i]);
+	success &= lcd_write_register(0x0003, read_entry_mode) &&
+		lcd_set_gram_address(X_START, Y) && lcd_write_command(0x0202) &&
+		dif_read_bytes(true, gram, sizeof(gram));
+	uint32_t invalid_pixel_size = read_format->bytes_per_pixel;
+	*pixel_offset = find_masked_bytes(
+		gram,
+		sizeof(gram),
+		&expected[invalid_pixel_size],
+		&masks[invalid_pixel_size],
+		read_format->bytes_per_pixel
+	);
+	if (*pixel_offset < 0) {
+		printf("# unmatched GRAM bytes:");
+		for (uint32_t i = 0; i < sizeof(gram); i++)
+			printf(" %02X", gram[i]);
+		printf("\n");
+	}
+
+	return success;
+}
+
+static void run_lcd_controller_tests(void) {
+	test_category("JBT6K71 device code");
+	uint8_t initialized_code[LCD_DEVICE_CODE_READ_BYTES] = { 0 };
+	test_check("controller initialization before device code read", lcd_reset_and_init_controller());
+	test_check("initialized device code read completes", lcd_read_device_code(initialized_code));
+	printf("# index 0000 RS=1 read:");
+	for (uint32_t i = 0; i < sizeof(initialized_code); i++)
+		printf(" %02X", initialized_code[i]);
+	printf("\n");
+	bool repeated_code = true;
+	for (uint32_t i = 2; i < sizeof(initialized_code); i += 2)
+		repeated_code &= initialized_code[i] == initialized_code[0] && initialized_code[i + 1] == initialized_code[1];
+	test_check("continuous reads repeat the same device code", repeated_code);
+	test_eq_u32("device code matches the documented 71xx family", 0x71, initialized_code[0]);
+	test_eq_u32("EL71 LCD reports device code 7114", 0x7114,
+		(initialized_code[0] << 8) | initialized_code[1]);
+
+	test_category("GRAM window X1/X2/Y1/Y2 registers");
+	enum { BASELINE_COLOR = 0x39E7 };
+	static const uint16_t HORIZONTAL_COLORS[] = { 0xF800, 0x07E0 };
+	static const uint16_t HORIZONTAL_EXPECTED[] = {
+		BASELINE_COLOR, 0x07E0, BASELINE_COLOR, 0xF800, BASELINE_COLOR,
+	};
+	uint16_t horizontal_actual[ARRAY_SIZE(HORIZONTAL_EXPECTED)] = { 0 };
+	test_check("controller reset before window register tests", lcd_reset_and_init_controller());
+	test_check("X1/X2 baseline fill completes", lcd_fill_gram_window(0xE8, 0xEC, 40, 40, BASELINE_COLOR));
+	test_check("X1/X2 bounded write completes",
+		lcd_write_register(0x0003, LCD_ENTRY_MODE_ID1 | LCD_ENTRY_MODE_ID0) &&
+		lcd_set_gram_window(0xE9, 0xEB, 40, 40) && lcd_set_gram_address(0xEB, 40) &&
+		lcd_write_command(0x0202) &&
+		lcd_write_rgb565_sequence(HORIZONTAL_COLORS, ARRAY_SIZE(HORIZONTAL_COLORS)));
+	test_check("X1/X2 result reads complete",
+		lcd_read_horizontal_span(0xE8, 40, horizontal_actual, ARRAY_SIZE(horizontal_actual)));
+	test_eq_memory("X1/X2 contain writes and wrap from X2 to X1",
+		HORIZONTAL_EXPECTED, horizontal_actual, sizeof(horizontal_actual));
+
+	static const uint16_t VERTICAL_COLORS[] = { 0x001F, 0xFFE0 };
+	static const uint16_t VERTICAL_EXPECTED[] = {
+		BASELINE_COLOR, 0xFFE0, BASELINE_COLOR, 0x001F, BASELINE_COLOR,
+	};
+	uint16_t vertical_actual[ARRAY_SIZE(VERTICAL_EXPECTED)] = { 0 };
+	test_check("Y1/Y2 baseline fill completes", lcd_fill_gram_window(30, 30, 0xFF, 0x103, BASELINE_COLOR));
+	test_check("Y1/Y2 bounded write completes",
+		lcd_write_register(0x0003, LCD_ENTRY_MODE_ID1 | LCD_ENTRY_MODE_ID0 | LCD_ENTRY_MODE_AM) &&
+		lcd_set_gram_window(30, 30, 0x100, 0x102) && lcd_set_gram_address(30, 0x102) &&
+		lcd_write_command(0x0202) &&
+		lcd_write_rgb565_sequence(VERTICAL_COLORS, ARRAY_SIZE(VERTICAL_COLORS)));
+	test_check("Y1/Y2 result reads complete",
+		lcd_read_vertical_span(30, 0xFF, vertical_actual, ARRAY_SIZE(vertical_actual)));
+	test_eq_memory("Y1/Y2 contain writes and wrap from Y2 to Y1",
+		VERTICAL_EXPECTED, vertical_actual, sizeof(vertical_actual));
+
+	test_category("GRAM current X/Y address registers");
+	static const uint16_t CURRENT_X_EXPECTED[] = {
+		BASELINE_COLOR, BASELINE_COLOR, 0xF81F, BASELINE_COLOR, BASELINE_COLOR,
+	};
+	uint16_t current_x_actual[ARRAY_SIZE(CURRENT_X_EXPECTED)] = { 0 };
+	test_check("current X baseline fill completes", lcd_fill_gram_window(0xD9, 0xDD, 60, 60, BASELINE_COLOR));
+	test_check("current X selects the requested column",
+		lcd_set_gram_window(0xD9, 0xDD, 60, 60) && lcd_set_gram_address(0xDB, 60) &&
+		lcd_write_command(0x0202) && dif_write_word(false, 0xF8) && dif_write_word(false, 0x1F));
+	test_check("current X result reads complete",
+		lcd_read_horizontal_span(0xD9, 60, current_x_actual, ARRAY_SIZE(current_x_actual)));
+	test_eq_memory("register 0200 sets only the requested X address",
+		CURRENT_X_EXPECTED, current_x_actual, sizeof(current_x_actual));
+
+	static const uint16_t CURRENT_Y_EXPECTED[] = {
+		BASELINE_COLOR, BASELINE_COLOR, 0x07FF, BASELINE_COLOR, BASELINE_COLOR,
+	};
+	uint16_t current_y_actual[ARRAY_SIZE(CURRENT_Y_EXPECTED)] = { 0 };
+	test_check("current Y baseline fill completes", lcd_fill_gram_window(50, 50, 0x109, 0x10D, BASELINE_COLOR));
+	test_check("current Y selects the requested row",
+		lcd_set_gram_window(50, 50, 0x109, 0x10D) && lcd_set_gram_address(50, 0x10B) &&
+		lcd_write_command(0x0202) && dif_write_word(false, 0x07) && dif_write_word(false, 0xFF));
+	test_check("current Y result reads complete",
+		lcd_read_vertical_span(50, 0x109, current_y_actual, ARRAY_SIZE(current_y_actual)));
+	test_eq_memory("register 0201 sets only the requested Y address",
+		CURRENT_Y_EXPECTED, current_y_actual, sizeof(current_y_actual));
+
+	test_category("GRAM entry addressing ID1/ID0/AM");
+	test_check("controller reset before entry mode matrix", lcd_reset_and_init_controller());
+	uint32_t entry_mode_coverage = 0;
+	for (uint32_t am = 0; am < 2; am++) {
+		for (uint32_t id = 0; id < 4; id++) {
+			uint16_t expected[4] = { 0 };
+			uint16_t actual[ARRAY_SIZE(expected)] = { 0 };
+
+			printf("# entry mode: ID1/ID0=%u%u AM=%u\n", (unsigned int) (id >> 1),
+				(unsigned int) (id & 1), (unsigned int) am);
+			test_check("entry mode GRAM transaction completes", run_entry_mode(id, am != 0, expected, actual));
+			test_eq_memory("entry mode follows the datasheet address route",
+				expected, actual, sizeof(expected));
+			entry_mode_coverage |= BIT(am * 4 + id);
+		}
+	}
+	test_eq_u32("ID1/ID0/AM matrix covers all eight combinations", 0xFF, entry_mode_coverage);
+
+	test_category("8-bit MPU pixel formats");
+	for (uint32_t i = 0; i < ARRAY_SIZE(LCD_PIXEL_FORMATS); i++) {
+		const struct lcd_pixel_format *format = &LCD_PIXEL_FORMATS[i];
+		int32_t pixel_offset = -1;
+
+		printf("# pixel format: %s\n", format->name);
+		test_check("controller reset before pixel format", lcd_reset_and_init_controller());
+		test_check("pixel format GRAM round-trip completes", run_pixel_format(format, &pixel_offset));
+		printf("# pixel format data offset: %d\n", (int) pixel_offset);
+		test_check("pixel format preserves the valid RGB pixel after the invalid first read", pixel_offset >= 0);
+	}
+
+	test_category("BGR output routing");
+	uint16_t bgr_off[2] = { 0 };
+	uint16_t bgr_on[ARRAY_SIZE(bgr_off)] = { 0 };
+	test_check("controller reset before visible BGR pattern", lcd_reset_and_init_controller());
+	test_check("visible red BGR stripe completes",
+		lcd_draw_solid(DIF_CSREG_BSCONF_1x8BIT, 64, 16, 0xF800));
+	test_check("visible blue BGR stripe completes",
+		lcd_draw_solid(DIF_CSREG_BSCONF_1x8BIT, 80, 16, 0x001F));
+	test_check("BGR-off GRAM reads complete",
+		lcd_read_pixel_xy_1x8(0x00EF, 64, &bgr_off[0]) &&
+		lcd_read_pixel_xy_1x8(0x00EF, 80, &bgr_off[1]));
+	test_check("BGR output swap enables", lcd_write_register(0x0003, 0x0120 | LCD_ENTRY_MODE_BGR));
+	test_check("BGR-on GRAM reads complete",
+		lcd_read_pixel_xy_1x8(0x00EF, 64, &bgr_on[0]) &&
+		lcd_read_pixel_xy_1x8(0x00EF, 80, &bgr_on[1]));
+	test_eq_memory("BGR changes panel output without changing GRAM", bgr_off, bgr_on, sizeof(bgr_off));
+}
+
+int main(void) {
+	test_start(LCD_CONTROLLER_TEST ? "JBT6K71 EL71 LCD controller test" : "DIFv2 EL71 LCD test");
 	test_reset_values();
 	test_module_id("module ID", 0xF043C000, DIF_ID);
-
-	test_category("TXD ordering across CD changes");
 	lcd_init_gpio();
 	lcd_init_dif();
 	lcd_enable_panel_power();
+	if (LCD_CONTROLLER_TEST) {
+		lcd_enable_backlight();
+		run_lcd_controller_tests();
+		return test_finish();
+	}
+
+	uint16_t probe_pixel = 0;
+	test_category("TXD ordering across CD changes");
 	test_check("queued polling initialization transfers complete", lcd_init_queued_polling_sequence());
 	lcd_enable_backlight();
 	test_check("queued 2x9 GRAM write completes",
@@ -1009,10 +1421,6 @@ int main(void) {
 	uint16_t pbc_pixel = 0;
 	test_check("CD=0 PBCCON pixel write completes", probe_pbc_lcd_data(22, 0x07E0, &pbc_pixel));
 	test_eq_u32("CD=0 PBCCON consumes the raw pixel packet", 0x001F, pbc_pixel);
-
-	lcd_command_bsconf = DIF_CSREG_BSCONF_1x8BIT;
-	lcd_data_bsconf = DIF_CSREG_BSCONF_1x8BIT;
-	test_check("display enters normal GRAM mode", lcd_write_register(0x0100, 0xF7FE));
 
 	return test_finish();
 }

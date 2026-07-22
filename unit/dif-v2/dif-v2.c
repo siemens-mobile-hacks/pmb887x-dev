@@ -1440,6 +1440,49 @@ static bool polling_read(uint8_t *buffer, uint32_t size) {
 	return idle;
 }
 
+static uint32_t run_immediate_lcd_read_transaction(uint8_t command, uint32_t read_size) {
+	configure_dif(DIF_CON_BM_8, FIFO_POLLING);
+	DIF_RUNCTRL = 0;
+	DIF_CON = DIF_CON_BM_8;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_CSREG = DIF_CSREG_CS1 | DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	DIF_TXD = command;
+	test_check("immediate read command completes", polling_wait_until_idle());
+
+	DIF_RUNCTRL = 0;
+	DIF_RXFIFO_CFG = FIFO_POLLING.rx;
+	DIF_CSREG &= ~DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((read_size - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
+	for (uint32_t i = 0; i < read_size; i++)
+		(void) DIF_RXD;
+	uint32_t received_size = DIF_RPS_STAT & DIF_RPS_STAT_RPS;
+	uint32_t fifo_stages = DIF_RXFFS_STAT;
+	uint32_t errors = DIF_ERRIRQSS;
+	DIF_STARTLCDRD &= ~DIF_STARTLCDRD_STARTREAD;
+	bool idle = polling_wait_until_idle();
+	DIF_RUNCTRL = 0;
+
+	printf("# immediate LCD read %02X: RPS=%u RXFFS=%u ERR=%08X\n",
+		(unsigned int) command,
+		(unsigned int) received_size,
+		(unsigned int) fifo_stages,
+		(unsigned int) errors);
+	test_check("immediate RXD reads complete", idle);
+	return errors;
+}
+
+static void test_immediate_lcd_reads(void) {
+	uint32_t display_id_errors = run_immediate_lcd_read_transaction(LCD_COMMAND_READ_DISPLAY_ID, 4);
+	uint32_t id4_errors = run_immediate_lcd_read_transaction(LCD_COMMAND_READ_ID4, 5);
+
+	test_eq_u32("immediate reads have no errors except RX underflow", 0,
+		(display_id_errors | id4_errors) & (DIF_ERROR_SOURCES & ~DIF_ERRIRQSS_RXFUFL));
+	test_eq_u32("D3 immediate RXD polling raises underflow", DIF_ERRIRQSS_RXFUFL,
+		id4_errors & DIF_ERRIRQSS_RXFUFL);
+}
+
 static void test_firmware_polling(void) {
 	uint8_t buffer[5];
 
@@ -2010,6 +2053,8 @@ int dif_v2_test(void) {
 	test_start_lcd_read();
 	test_category("Firmware polling");
 	test_firmware_polling();
+	test_category("Immediate RXD underflow");
+	test_immediate_lcd_reads();
 	return test_finish();
 }
 
