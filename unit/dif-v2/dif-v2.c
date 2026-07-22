@@ -181,6 +181,22 @@ static const uint32_t BSCONF_8BIT[] = {
 	DIF_CSREG_BSCONF_4x8BIT,
 };
 
+static const struct bsconf_config {
+	const char *name;
+	uint32_t value;
+	uint32_t word_bits;
+	uint32_t word_count;
+	uint32_t packed_value;
+} BSCONF_CONFIGURATIONS[] = {
+	{ "1x8", DIF_CSREG_BSCONF_1x8BIT, 8, 1, 0x00000011 },
+	{ "2x8", DIF_CSREG_BSCONF_2x8BIT, 8, 2, 0x00002211 },
+	{ "3x8", DIF_CSREG_BSCONF_3x8BIT, 8, 3, 0x00332211 },
+	{ "4x8", DIF_CSREG_BSCONF_4x8BIT, 8, 4, 0x44332211 },
+	{ "1x9", DIF_CSREG_BSCONF_1x9BIT, 9, 1, 0x00000103 },
+	{ "2x9", DIF_CSREG_BSCONF_2x9BIT, 9, 2, 0x00022903 },
+	{ "3x9", DIF_CSREG_BSCONF_3x9BIT, 9, 3, 0x049A2903 },
+};
+
 static void reset_data_conversion(void) {
 	DIF_PBCCON = 0;
 	DIF_BMREG0 = 0x14830820;
@@ -452,6 +468,13 @@ static void test_bit_conversion(void) {
 	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
 
 	DIF_RUNCTRL = 0;
+	DIF_CSREG |= DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_category("Serial LB with CD keeps INVERT_BIT conversion");
+	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
+
+	DIF_RUNCTRL = 0;
+	DIF_CSREG &= ~DIF_CSREG_CD;
 	DIF_INVERT_BIT = 0;
 	DIF_BMREG0 = 0x14830801;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
@@ -461,6 +484,13 @@ static void test_bit_conversion(void) {
 	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
 
 	DIF_RUNCTRL = 0;
+	DIF_CSREG |= DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_category("Serial LB with CD bypasses BMREG conversion");
+	execute_irq_loopback(sizeof(expected), TX_DATA, sizeof(expected));
+
+	DIF_RUNCTRL = 0;
+	DIF_CSREG &= ~DIF_CSREG_CD;
 	DIF_BMREG0 = 0x14830820;
 	DIF_BCSEL0 = 1;
 	DIF_BCREG = 1;
@@ -470,6 +500,13 @@ static void test_bit_conversion(void) {
 		expected[byte] = TX_DATA[byte] | 1;
 	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
 	DIF_RUNCTRL = 0;
+	DIF_CSREG |= DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_category("Serial LB with CD keeps BCREG conversion");
+	execute_irq_loopback(sizeof(expected), expected, sizeof(expected));
+
+	DIF_RUNCTRL = 0;
+	DIF_CSREG &= ~DIF_CSREG_CD;
 	DIF_BCREG = 0;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 	for (uint32_t byte = 0; byte < sizeof(expected); byte++)
@@ -542,6 +579,239 @@ static uint16_t convert_word_pair(uint16_t first, uint16_t second) {
 	test_eq_u32("word pair produces one RX stage", 1, DIF_RXFFS_STAT);
 
 	return DIF_RXD;
+}
+
+static bool convert_matrix_word(uint32_t input, uint32_t *output) {
+	DIF_TPS_CTRL = 2;
+	if (!wait_for_tx_request())
+		return false;
+	DIF_TXD = input;
+	DIF_ICR = DIF_CLEAR_IRQS;
+	if (!wait_for_tx_request())
+		return false;
+	DIF_TXD = input >> 16;
+	if (!wait_until_idle())
+		return false;
+
+	stopwatch_t start = stopwatch_get();
+	while (DIF_RXFFS_STAT < 4 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+	if (DIF_RXFFS_STAT != 4)
+		return false;
+
+	*output = 0;
+	for (uint32_t byte = 0; byte < 4; byte++)
+		*output |= (DIF_RXD & 0xFF) << (byte * 8);
+
+	return (DIF_ERRIRQSS & DIF_FATAL_ERRORS) == 0;
+}
+
+static void configure_full_matrix(void) {
+	const struct fifo_config FIFO_MATRIX = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	};
+
+	configure_dif(DIF_CON_BM_16, FIFO_MATRIX);
+	DIF_RUNCTRL = 0;
+	DIF_PBCCON = DIF_PBCCON_PBBCONV_MODE;
+	DIF_CSREG = DIF_CSREG_BSCONF_4x8BIT;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+}
+
+static void test_full_bmreg_matrix(void) {
+	uint32_t output;
+
+	test_category("BMREG full 32x32 matrix");
+	configure_full_matrix();
+	test_check("identity matrix transfer completes", convert_matrix_word(0x89ABCDEF, &output));
+	test_eq_u32("identity matrix preserves all 32 bits", 0x89ABCDEF, output);
+
+	for (uint32_t input_bit = 0; input_bit < 32; input_bit++) {
+		DIF_RUNCTRL = 0;
+		for (uint32_t output_bit = 0; output_bit < 32; output_bit++)
+			set_bmreg_mapping(output_bit, input_bit);
+		DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+		printf("# matrix input bit %u\n", (unsigned int) input_bit);
+		test_check("matrix input selector transfer completes", convert_matrix_word(BIT(input_bit), &output));
+		test_eq_u32("every output can select matrix input", UINT32_MAX, output);
+	}
+
+	for (uint32_t output_bit = 0; output_bit < 32; output_bit++) {
+		DIF_RUNCTRL = 0;
+		for (uint32_t bit = 0; bit < 32; bit++)
+			set_bmreg_mapping(bit, 0);
+		set_bmreg_mapping(output_bit, 31);
+		DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+		printf("# matrix output bit %u\n", (unsigned int) output_bit);
+		test_check("matrix output isolation transfer completes", convert_matrix_word(BIT(31), &output));
+		test_eq_u32("matrix routes only the selected output", BIT(output_bit), output);
+	}
+
+	DIF_RUNCTRL = 0;
+	for (uint32_t output_bit = 0; output_bit < 32; output_bit++)
+		set_bmreg_mapping(output_bit, 31 - output_bit);
+	DIF_CSREG |= DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_check("CD matrix bypass transfer completes", convert_matrix_word(0x89ABCDEF, &output));
+	test_eq_u32("serial LB with CD bypasses the complete BMREG matrix", 0x89ABCDEF, output);
+}
+
+static uint32_t pack_color_coefficients(int32_t first, int32_t second, int32_t third) {
+	return ((uint32_t) first & 0x3FF) |
+		(((uint32_t) second & 0x3FF) << 10) |
+		(((uint32_t) third & 0x3FF) << 20);
+}
+
+static bool convert_color(uint32_t input, uint32_t *output) {
+	DIF_TPS_CTRL = 1;
+	if (!wait_for_tx_request())
+		return false;
+	DIF_TXD = input;
+	if (!wait_until_idle())
+		return false;
+
+	stopwatch_t start = stopwatch_get();
+	while (DIF_RXFFS_STAT < 3 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+	if (DIF_RXFFS_STAT != 3)
+		return false;
+
+	*output = 0;
+	for (uint32_t byte = 0; byte < 3; byte++)
+		*output |= (DIF_RXD & 0xFF) << (byte * 8);
+
+	return (DIF_ERRIRQSS & DIF_FATAL_ERRORS) == 0;
+}
+
+static void configure_color_conversion(uint32_t coeff1, uint32_t coeff2, uint32_t coeff3, uint32_t offset) {
+	const struct fifo_config FIFO_COLOR = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_4 | DIF_RXFIFO_CFG_RXFC,
+		.tx = DIF_TXFIFO_CFG_TXBS_4_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	};
+
+	configure_dif(DIF_CON_BM_8, FIFO_COLOR);
+	DIF_RUNCTRL = 0;
+	DIF_CSREG = DIF_CSREG_GRACMD | DIF_CSREG_BSCONF_3x8BIT;
+	DIF_COEFF_REG1 = coeff1;
+	DIF_COEFF_REG2 = coeff2;
+	DIF_COEFF_REG3 = coeff3;
+	DIF_OFFSET = offset;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+}
+
+struct color_vector {
+	const char *name;
+	uint32_t input;
+	uint32_t expected;
+};
+
+static void check_color_vector(const char *direction, const struct color_vector *vector) {
+	uint32_t output = 0;
+
+	printf("# %s %s\n", direction, vector->name);
+	test_check("color matrix transfer completes", convert_color(vector->input, &output));
+	test_eq_u32("color matrix output matches", vector->expected, output);
+}
+
+static void test_color_conversion(void) {
+	static const struct color_vector RGB_TO_YUV[] = {
+		{ "black", 0x000000, 0x807F00 },
+		{ "white", 0xFFFFFF, 0x807FFF },
+		{ "red", 0x0000FF, 0xFF534C },
+		{ "green", 0x00FF00, 0x152B96 },
+		{ "blue", 0xFF0000, 0x6CFE1E },
+	};
+	static const struct color_vector YUV_TO_RGB[] = {
+		{ "black", 0x807F00, 0x000000 },
+		{ "white", 0x807FFF, 0xFDFFFF },
+		{ "red", 0xFF534C, 0x0001FD },
+		{ "green", 0x152B96, 0x00FF00 },
+		{ "blue", 0x6CFE1E, 0xFD0002 },
+	};
+	const uint32_t IDENTITY1 = pack_color_coefficients(128, 0, 0);
+	const uint32_t IDENTITY2 = pack_color_coefficients(0, 128, 0);
+	const uint32_t IDENTITY3 = pack_color_coefficients(0, 0, 128);
+	uint32_t output = 0;
+
+	/* Coefficients and offsets are signed 10-bit values. Coefficients use Q7 scale. */
+	test_category("RGB/YUV coefficient format");
+	configure_color_conversion(IDENTITY1, IDENTITY2, IDENTITY3, 0);
+	test_check("Q7 identity transfer completes", convert_color(0x00332211, &output));
+	test_eq_u32("128 is a Q7 identity coefficient", 0x00332211, output);
+
+	configure_color_conversion(
+		IDENTITY1,
+		IDENTITY2,
+		IDENTITY3,
+		pack_color_coefficients(-1, -2, -3)
+	);
+	test_check("signed offset transfer completes", convert_color(0x00332211, &output));
+	test_eq_u32("signed offsets are subtracted before multiplication", 0x00362412, output);
+
+	configure_color_conversion(
+		pack_color_coefficients(-128, 0, 0),
+		pack_color_coefficients(0, -128, 0),
+		pack_color_coefficients(0, 0, -128),
+		0
+	);
+	test_check("negative saturation transfer completes", convert_color(0x00332211, &output));
+	test_eq_u32("negative color results saturate to zero", 0, output);
+
+	configure_color_conversion(
+		pack_color_coefficients(511, 0, 0),
+		pack_color_coefficients(0, 511, 0),
+		pack_color_coefficients(0, 0, 511),
+		0
+	);
+	test_check("positive saturation transfer completes", convert_color(0x00FFFFFF, &output));
+	test_eq_u32("positive color results saturate to 8 bits", 0x00FFFFFF, output);
+
+	test_category("GRACMD and CD color matrix gating");
+	configure_color_conversion(
+		pack_color_coefficients(0, 0, 128),
+		IDENTITY2,
+		pack_color_coefficients(128, 0, 0),
+		0
+	);
+	test_check("color matrix test uses loopback", (DIF_CON & DIF_CON_LB) != 0);
+	test_eq_u32("loopback color data starts with CD=0", 0, DIF_CSREG & DIF_CSREG_CD);
+	test_check("LB with CD=0 transfer completes", convert_color(0x00332211, &output));
+	test_eq_u32("LB with CD=0 applies the color matrix", 0x00112233, output);
+
+	DIF_RUNCTRL = 0;
+	DIF_CSREG &= ~DIF_CSREG_GRACMD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_check("GRACMD-disabled transfer completes", convert_color(0x00332211, &output));
+	test_eq_u32("GRACMD disabled bypasses the color matrix", 0x00332211, output);
+
+	DIF_RUNCTRL = 0;
+	DIF_CSREG |= DIF_CSREG_GRACMD | DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_check("LB with CD=1 transfer completes", convert_color(0x00332211, &output));
+	test_eq_u32("LB with CD=1 applies the color matrix", 0x00112233, output);
+
+	test_category("RGB to YUV matrix");
+	for (uint32_t i = 0; i < ARRAY_SIZE(RGB_TO_YUV); i++) {
+		configure_color_conversion(
+			pack_color_coefficients(38, 75, 15),
+			pack_color_coefficients(-22, -42, 64),
+			pack_color_coefficients(64, -54, -10),
+			pack_color_coefficients(-179, 135, -227)
+		);
+		check_color_vector("RGB to YUV", &RGB_TO_YUV[i]);
+	}
+
+	test_category("YUV to RGB matrix");
+	for (uint32_t i = 0; i < ARRAY_SIZE(YUV_TO_RGB); i++) {
+		configure_color_conversion(
+			pack_color_coefficients(128, 0, 179),
+			pack_color_coefficients(128, -44, -91),
+			pack_color_coefficients(128, 227, 0),
+			pack_color_coefficients(0, 128, 128)
+		);
+		check_color_vector("YUV to RGB", &YUV_TO_RGB[i]);
+	}
 }
 
 static void test_16bit_pair_conversion(void) {
@@ -625,6 +895,17 @@ static void test_incomplete_pbccon_pair(void) {
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 	send_16bit_word(0x9ABC);
 	test_eq_u32("RUNCTRL reset clears buffered word", 0, DIF_RXFFS_STAT);
+
+	test_category("PBCCON command pair with CD");
+	configure_pair_conversion(DIF_CON_BM_16, 16, 16, 1, 0, 0, 0);
+	DIF_RUNCTRL = 0;
+	DIF_CSREG |= DIF_CSREG_CD;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	send_16bit_word(0x2468);
+	test_eq_u32("CD command remains buffered by PBCCON", 0, DIF_RXFFS_STAT);
+	send_16bit_word(0x1357);
+	test_eq_u32("second CD command completes PBCCON pair", 1, DIF_RXFFS_STAT);
+	test_eq_u32("CD bypasses BMREG inside PBCCON pair", 0x2468, DIF_RXD & 0xFFFF);
 }
 
 static void run_pbccon_loopback(uint32_t size, uint32_t con) {
@@ -810,6 +1091,131 @@ static void test_bsconf_9bit_loopback(void) {
 	}
 }
 
+static void configure_cd_bsconf_loopback(const struct bsconf_config *config, bool command) {
+	uint32_t con = config->word_bits == 9 ? DIF_CON_BM_9 : DIF_CON_BM_8;
+
+	configure_dif(con, FIFO_DWORD);
+	DIF_RUNCTRL = 0;
+	DIF_CSREG = config->value | (command ? DIF_CSREG_CD : 0);
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+}
+
+static struct bsconf_result {
+	uint32_t packet_size;
+	uint32_t stage_count;
+	uint32_t stages[4];
+	uint32_t errors;
+} execute_cd_bsconf_loopback(uint32_t packed_value) {
+	struct bsconf_result result = {0};
+
+	DIF_TXD = packed_value;
+	DIF_TPS_CTRL = 1;
+	test_check("CD/BSCONF transfer completes", wait_until_idle());
+	result.packet_size = DIF_RPS_STAT & DIF_RPS_STAT_RPS;
+	result.stage_count = DIF_RXFFS_STAT;
+	for (uint32_t i = 0; i < result.stage_count; i++) {
+		uint32_t stage = DIF_RXD;
+
+		if (i < ARRAY_SIZE(result.stages))
+			result.stages[i] = stage;
+	}
+	result.errors = DIF_ERRIRQSS;
+	test_check("CD/BSCONF stage count fits capture buffer", result.stage_count <= ARRAY_SIZE(result.stages));
+	test_eq_u32("CD/BSCONF drains RX FIFO", 0, DIF_RXFFS_STAT);
+	test_eq_u32("CD/BSCONF has no fatal errors", 0, result.errors & DIF_FATAL_ERRORS);
+
+	return result;
+}
+
+static void test_cd_bsconf_interaction(void) {
+	test_category("CD and BSCONF interaction");
+	for (uint32_t i = 0; i < ARRAY_SIZE(BSCONF_CONFIGURATIONS); i++) {
+		const struct bsconf_config *config = &BSCONF_CONFIGURATIONS[i];
+
+		printf("# BSCONF %s\n", config->name);
+		configure_cd_bsconf_loopback(config, false);
+		struct bsconf_result data = execute_cd_bsconf_loopback(config->packed_value);
+		configure_cd_bsconf_loopback(config, true);
+		struct bsconf_result command = execute_cd_bsconf_loopback(config->packed_value);
+		printf(
+			"# data: RPS=%u stages=%u first=%08X; command: RPS=%u stages=%u first=%08X\n",
+			(unsigned int) data.packet_size,
+			(unsigned int) data.stage_count,
+			(unsigned int) data.stages[0],
+			(unsigned int) command.packet_size,
+			(unsigned int) command.stage_count,
+			(unsigned int) command.stages[0]
+		);
+		test_eq_u32("CD does not change BSCONF packet size", data.packet_size, command.packet_size);
+		test_eq_u32("CD does not change BSCONF stage count", data.stage_count, command.stage_count);
+		uint32_t compared_stages = data.stage_count;
+		if (compared_stages > ARRAY_SIZE(data.stages))
+			compared_stages = ARRAY_SIZE(data.stages);
+		test_eq_memory("CD does not change BSCONF stages", data.stages, command.stages,
+			compared_stages * sizeof(data.stages[0]));
+		uint32_t expected_stages = config->word_bits == 8 ? config->word_count : 1;
+		uint32_t word_mask = GENMASK(config->word_bits - 1, 0);
+
+		test_eq_u32("BSCONF produces the expected TPS stage count", expected_stages, data.stage_count);
+		for (uint32_t stage = 0; stage < expected_stages; stage++) {
+			uint32_t expected = (config->packed_value >> (stage * config->word_bits)) & word_mask;
+
+			test_eq_u32("BSCONF preserves the packed TPS word", expected, data.stages[stage] & word_mask);
+		}
+	}
+}
+
+static void test_cd_bsconf_conversion(void) {
+	const struct bsconf_config *config = &BSCONF_CONFIGURATIONS[5];
+	const uint32_t packed_value = 0x00022902;
+
+	test_category("BMREG with CD and BSCONF");
+	configure_cd_bsconf_loopback(config, false);
+	DIF_RUNCTRL = 0;
+	set_bmreg_mapping(0, 1);
+	set_bmreg_mapping(1, 0);
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	struct bsconf_result mapped_data = execute_cd_bsconf_loopback(packed_value);
+	test_eq_u32("BMREG maps first BSCONF data word", 0x101, mapped_data.stages[0]);
+	configure_cd_bsconf_loopback(config, true);
+	DIF_RUNCTRL = 0;
+	set_bmreg_mapping(0, 1);
+	set_bmreg_mapping(1, 0);
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	struct bsconf_result raw_command = execute_cd_bsconf_loopback(packed_value);
+	test_eq_u32("CD bypasses BMREG before BSCONF", 0x102, raw_command.stages[0]);
+
+	test_category("BCREG with CD and BSCONF");
+	configure_cd_bsconf_loopback(config, false);
+	DIF_RUNCTRL = 0;
+	DIF_BCSEL0 = 1;
+	DIF_BCREG = 1;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	struct bsconf_result forced_data = execute_cd_bsconf_loopback(packed_value);
+	test_eq_u32("BCREG clamps first BSCONF data word", 0x103, forced_data.stages[0]);
+	configure_cd_bsconf_loopback(config, true);
+	DIF_RUNCTRL = 0;
+	DIF_BCSEL0 = 1;
+	DIF_BCREG = 1;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	struct bsconf_result forced_command = execute_cd_bsconf_loopback(packed_value);
+	test_eq_u32("BCREG clamps first BSCONF command word", 0x103, forced_command.stages[0]);
+
+	test_category("INVERT_BIT with CD and BSCONF");
+	configure_cd_bsconf_loopback(config, false);
+	DIF_RUNCTRL = 0;
+	DIF_INVERT_BIT = 1;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	struct bsconf_result inverted_data = execute_cd_bsconf_loopback(packed_value);
+	test_eq_u32("INVERT_BIT changes first BSCONF data word", 0x103, inverted_data.stages[0]);
+	configure_cd_bsconf_loopback(config, true);
+	DIF_RUNCTRL = 0;
+	DIF_INVERT_BIT = 1;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	struct bsconf_result inverted_command = execute_cd_bsconf_loopback(packed_value);
+	test_eq_u32("INVERT_BIT changes first BSCONF command word", 0x103, inverted_command.stages[0]);
+}
+
 static void test_lcd_read_transaction(uint8_t command, uint32_t read_size) {
 	DIF_CSREG = DIF_CSREG_CS1 | DIF_CSREG_CD;
 	DIF_TXD = command;
@@ -947,13 +1353,85 @@ static bool polling_write(uint32_t value) {
 	return polling_wait_until_idle();
 }
 
+static void run_direct_bsconf(uint32_t bsconf) {
+	configure_dif(DIF_CON_BM_9, FIFO_POLLING);
+	DIF_RUNCTRL = 0;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_CSREG = bsconf;
+	DIF_LCDTIM1 = DIF_LCDTIM1_ADDRDELAY | DIF_LCDTIM1_ACCESSCYCLE | DIF_LCDTIM1_DATADELAY;
+	DIF_LCDTIM2 = DIF_LCDTIM2_CSACT | DIF_LCDTIM2_CSDEACT | DIF_LCDTIM2_WRRDACT | DIF_LCDTIM2_WRRDDEACT;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+
+	for (uint32_t i = 0; i < 8; i++)
+		DIF_TXD = TX_DATA[i];
+	bool idle = polling_wait_until_idle();
+
+	test_check("direct BSCONF polling transfer completes", idle);
+	test_eq_u32("direct BSCONF polling drains TX FIFO", 0, DIF_TXFFS_STAT);
+	test_eq_u32("direct BSCONF polling does not use TPS_CTRL", 0, DIF_TPS_CTRL);
+}
+
+static void test_direct_bsconf_polling(void) {
+	static const struct {
+		const char *name;
+		uint32_t value;
+	} CONFIGURATIONS[] = {
+		{ "1x8", DIF_CSREG_BSCONF_1x8BIT },
+		{ "2x8", DIF_CSREG_BSCONF_2x8BIT },
+		{ "3x8", DIF_CSREG_BSCONF_3x8BIT },
+		{ "4x8", DIF_CSREG_BSCONF_4x8BIT },
+		{ "1x9", DIF_CSREG_BSCONF_1x9BIT },
+		{ "2x9", DIF_CSREG_BSCONF_2x9BIT },
+		{ "3x9", DIF_CSREG_BSCONF_3x9BIT },
+	};
+	test_category("Direct polling BSCONF completion");
+	for (uint32_t i = 0; i < ARRAY_SIZE(CONFIGURATIONS); i++) {
+		printf("# direct BSCONF %s with CD=0\n", CONFIGURATIONS[i].name);
+		run_direct_bsconf(CONFIGURATIONS[i].value);
+		printf("# direct BSCONF %s with CD=1\n", CONFIGURATIONS[i].name);
+		run_direct_bsconf(CONFIGURATIONS[i].value | DIF_CSREG_CD);
+	}
+
+	test_category("SL98 direct polling BSCONF=2x9");
+	configure_dif(DIF_CON_BM_9, FIFO_POLLING);
+	DIF_RUNCTRL = 0;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_CSREG = DIF_CSREG_CD | DIF_CSREG_BSCONF_2x9BIT;
+	DIF_LCDTIM1 = DIF_LCDTIM1_ADDRDELAY | DIF_LCDTIM1_ACCESSCYCLE | DIF_LCDTIM1_DATADELAY;
+	DIF_LCDTIM2 = DIF_LCDTIM2_CSACT | DIF_LCDTIM2_CSDEACT | DIF_LCDTIM2_WRRDACT | DIF_LCDTIM2_WRRDDEACT;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	DIF_TXD = 0x04;
+	DIF_TXD = 0x06;
+	DIF_CSREG &= ~DIF_CSREG_CD;
+	DIF_TXD = 0;
+	DIF_TXD = 0;
+	test_check("SL98 direct polling batch starts", (DIF_STAT & DIF_STAT_BSY) != 0 || DIF_TXFFS_STAT != 0);
+	test_check("SL98 direct polling batch completes", polling_wait_until_idle());
+	test_eq_u32("SL98 direct polling batch drains TX FIFO", 0, DIF_TXFFS_STAT);
+	test_eq_u32("SL98 direct polling batch does not use TPS_CTRL", 0, DIF_TPS_CTRL);
+
+	DIF_RUNCTRL = 0;
+	DIF_LCDTIM1 = 0;
+	DIF_LCDTIM2 = 0;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+}
+
 static bool polling_read(uint8_t *buffer, uint32_t size) {
 	DIF_RUNCTRL = 0;
 	DIF_RXFIFO_CFG = FIFO_POLLING.rx;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 	DIF_STARTLCDRD = DIF_STARTLCDRD_STARTREAD | ((size - 1) << DIF_STARTLCDRD_READBYTES_SHIFT);
-	for (uint32_t i = 0; i < size; i++)
+	for (uint32_t i = 0; i < size; i++) {
+		stopwatch_t start = stopwatch_get();
+
+		while (DIF_RXFFS_STAT == 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+			test_watchdog_serve();
+		if (DIF_RXFFS_STAT == 0) {
+			DIF_RUNCTRL = 0;
+			return false;
+		}
 		buffer[i] = DIF_RXD;
+	}
 	DIF_STARTLCDRD &= ~DIF_STARTLCDRD_STARTREAD;
 	bool idle = polling_wait_until_idle();
 	DIF_RUNCTRL = 0;
@@ -1009,10 +1487,8 @@ static void test_firmware_polling(void) {
 	test_check("polling read D3 completes", polling_read(buffer, 5));
 	test_eq_u32("polling read D3 reports five bytes", 5, DIF_RPS_STAT & DIF_RPS_STAT_RPS);
 	test_eq_u32("polling read D3 drains RX FIFO", 0, DIF_RXFFS_STAT);
-	test_check("fifth immediate read raises RX underflow", (DIF_ERRIRQSS & DIF_ERRIRQSS_RXFUFL) != 0);
-	test_eq_u32("polling reads do not overflow RX FIFO", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_RXFOFL);
-	DIF_ERRIRQSC = DIF_ERRIRQSC_RXFUFL;
-	test_eq_u32("polling RX underflow clears", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_RXFUFL);
+	test_eq_u32("polling read D3 has no FIFO errors", 0,
+		DIF_ERRIRQSS & (DIF_ERRIRQSS_RXFUFL | DIF_ERRIRQSS_RXFOFL));
 
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 	test_check("polling data completes", polling_write(0x5A));
@@ -1507,11 +1983,16 @@ int dif_v2_test(void) {
 	test_bsconf_loopback();
 	test_category("BSCONF 9-bit loopback");
 	test_bsconf_9bit_loopback();
+	test_cd_bsconf_interaction();
+	test_cd_bsconf_conversion();
+	test_direct_bsconf_polling();
 	test_category("Serial modes");
 	test_serial_modes();
 	test_category("16-bit words");
 	run_irq_loopback(16, DIF_CON_BM_16, FIFO_DEFAULT);
 	test_bit_conversion();
+	test_full_bmreg_matrix();
+	test_color_conversion();
 	test_16bit_pair_conversion();
 	test_pair_bit_widths();
 	test_incomplete_pbccon_pair();

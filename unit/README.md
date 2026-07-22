@@ -35,7 +35,7 @@ Run a test on real hardware:
 | `cfi-intel-buffer-abort` | Destructive Intel/ST E8/E9 cross-block buffered-program abort and recovery |
 | `ssc` | SSC loopback, serial formats, FIFO modes, interrupts, and errors |
 | `ssc-dma` | SSC full-duplex FIFO DMA, bursts, LLI, widths, statuses, and interrupts |
-| `dif-v1` | DIFv1 loopback, FIFO modes, interrupts, errors, and LCD bit conversion registers |
+| `dif-v1` | DIFv1 loopback, FIFO modes, interrupts, errors, and complete 32-to-16 BMREG matrix |
 | `dif-v1-dma` | DIFv1 full-duplex FIFO DMA, bursts, LLI, widths, statuses, and interrupts |
 | `usart` | USART loopback, frame modes, FIFO, interrupts, and timeout |
 | `usart-dma` | USART loopback transfers through DMA |
@@ -43,6 +43,7 @@ Run a test on real hardware:
 | `sim-card-timers` | Hardware T=0 character timeout; BWT is skipped without a T=1 card |
 | `dif-v2` | DIFv2 IRQ loopback, serial modes, FIFO alignment and bursts, BSCONF, LCD reads, and conversion |
 | `dif-v2-dma` | DIFv2 DMA flows, FIFO alignment and bursts, BSCONF, parallel LCD reads, and recovery |
+| `dif-v2-lcd` | EL71 JBT6K71 command/data I/O, polling/TPS BSCONF modes, GRAM, and conversion gating |
 | `cfi-intel` | Safe Intel/ST CFI discovery, identification, geometry, and read commands |
 | `cfi-intel-rw` | Intel/ST CFI program, erase, lock, and suspend/resume operations |
 | `cfi-intel-efa-rw` | Intel/ST extended flash array program and erase operations |

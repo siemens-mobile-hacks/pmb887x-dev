@@ -551,6 +551,32 @@ static void test_lcd_loopback(void) {
 	test_eq_memory("BMREG fans input bit 0 out to all bits", expected, destination, sizeof(expected));
 }
 
+static void test_full_bmreg_matrix(void) {
+	uint16_t output = 0;
+
+	test_category("Complete BMREG input matrix");
+	for (uint32_t input_bit = 0; input_bit < 32; input_bit++) {
+		uint16_t first = input_bit < 16 ? BIT(input_bit) : 0;
+		uint16_t second = input_bit >= 16 ? BIT(input_bit - 16) : 0;
+
+		configure_pair_conversion(16, input_bit, 0, 0, 0);
+		printf("# matrix input bit %u\n", (unsigned int) input_bit);
+		test_check("matrix input selector transfer completes", convert_word_pair(first, second, &output));
+		test_eq_u32("every output selects the matrix input", UINT16_MAX, output);
+		test_check("cleared matrix input transfer completes", convert_word_pair(0, 0, &output));
+		test_eq_u32("every output clears with the matrix input", 0, output);
+	}
+
+	test_category("Complete BMREG output matrix");
+	for (uint32_t output_bit = 0; output_bit < 16; output_bit++) {
+		configure_pair_conversion(16, 0, 0, 0, 0);
+		set_bmreg_mapping(output_bit, 31);
+		printf("# matrix output bit %u\n", (unsigned int) output_bit);
+		test_check("matrix output isolation transfer completes", convert_word_pair(0, BIT(15), &output));
+		test_eq_u32("matrix routes only the selected output", BIT(output_bit), output);
+	}
+}
+
 static void test_pair_conversion(void) {
 	test_category("PBCCON word-pair mapping");
 	configure_pair_conversion(16, 0, 1, 0, 0);
@@ -689,6 +715,7 @@ int dif_v1_test(void) {
 	test_abort_restart();
 	test_lcd_registers();
 	test_lcd_loopback();
+	test_full_bmreg_matrix();
 	test_pair_conversion();
 	test_bcsel_modes();
 	test_incomplete_pair();
