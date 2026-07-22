@@ -1392,7 +1392,7 @@ static void test_direct_bsconf_polling(void) {
 		run_direct_bsconf(CONFIGURATIONS[i].value | DIF_CSREG_CD);
 	}
 
-	test_category("SL98 direct polling BSCONF=2x9");
+	test_category("Direct polling BSCONF=2x9 without TPS");
 	configure_dif(DIF_CON_BM_9, FIFO_POLLING);
 	DIF_RUNCTRL = 0;
 	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
@@ -1405,10 +1405,11 @@ static void test_direct_bsconf_polling(void) {
 	DIF_CSREG &= ~DIF_CSREG_CD;
 	DIF_TXD = 0;
 	DIF_TXD = 0;
-	test_check("SL98 direct polling batch starts", (DIF_STAT & DIF_STAT_BSY) != 0 || DIF_TXFFS_STAT != 0);
-	test_check("SL98 direct polling batch completes", polling_wait_until_idle());
-	test_eq_u32("SL98 direct polling batch drains TX FIFO", 0, DIF_TXFFS_STAT);
-	test_eq_u32("SL98 direct polling batch does not use TPS_CTRL", 0, DIF_TPS_CTRL);
+	test_check("direct polling reports busy while TX FIFO is pending",
+		DIF_TXFFS_STAT == 0 || (DIF_STAT & DIF_STAT_BSY) != 0);
+	test_check("direct polling batch completes", polling_wait_until_idle());
+	test_eq_u32("direct polling batch drains TX FIFO", 0, DIF_TXFFS_STAT);
+	test_eq_u32("direct polling batch does not use TPS_CTRL", 0, DIF_TPS_CTRL);
 
 	DIF_RUNCTRL = 0;
 	DIF_LCDTIM1 = 0;

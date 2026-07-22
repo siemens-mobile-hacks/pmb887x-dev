@@ -178,6 +178,19 @@ static bool dif_write_word(bool command, uint32_t value) {
 	return dif_wait_idle();
 }
 
+static bool dif_write_queued_pair(bool command, uint8_t first, uint8_t second) {
+	if (!dif_wait_idle())
+		return false;
+	DIF_RUNCTRL = 0;
+	DIF_CSREG = DIF_CSREG_CS1 | (command ? lcd_command_bsconf : lcd_data_bsconf) |
+		(command ? DIF_CSREG_CD : 0);
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	DIF_TXD = first;
+	DIF_TXD = second;
+
+	return dif_wait_idle();
+}
+
 static bool dif_write_packed(bool command, uint32_t bsconf, uint32_t value, bool use_tps) {
 	if (!dif_wait_idle())
 		return false;
@@ -256,6 +269,10 @@ static bool lcd_write_command(uint16_t index) {
 	return dif_write_word(true, index >> 8) && dif_write_word(true, index & 0xFF);
 }
 
+static bool lcd_write_queued_command(uint16_t index) {
+	return dif_write_queued_pair(true, index >> 8, index & 0xFF);
+}
+
 static bool dif_write_pbc_pixel_packet(uint16_t color) {
 	if (!dif_wait_idle())
 		return false;
@@ -273,6 +290,22 @@ static bool dif_write_pbc_pixel_packet(uint16_t color) {
 
 static bool lcd_write_register(uint16_t index, uint16_t value) {
 	return lcd_write_command(index) && dif_write_word(false, value >> 8) && dif_write_word(false, value & 0xFF);
+}
+
+static bool lcd_write_queued_register(uint16_t index, uint16_t value) {
+	if (!dif_wait_idle())
+		return false;
+	/* Change CD immediately after queuing both command bytes. */
+	DIF_RUNCTRL = 0;
+	DIF_CSREG = DIF_CSREG_CS1 | DIF_CSREG_CD | lcd_command_bsconf;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	DIF_TXD = index >> 8;
+	DIF_TXD = index & 0xFF;
+	DIF_CSREG = DIF_CSREG_CS1 | lcd_data_bsconf;
+	DIF_TXD = value >> 8;
+	DIF_TXD = value & 0xFF;
+
+	return dif_wait_idle();
 }
 
 static bool dif_read_bytes(bool data, uint8_t *buffer, uint32_t size) {
@@ -403,6 +436,22 @@ static bool lcd_sync_parallel_interface(void) {
 	return success;
 }
 
+static bool lcd_program_controller_queued(void) {
+	bool success = true;
+
+	success &= lcd_write_queued_register(0x001D, 0x0005);
+	stopwatch_msleep_wd(1);
+
+	for (uint32_t i = 0; i < ARRAY_SIZE(LCD_INITIAL_STATE); i++)
+		success &= lcd_write_queued_register(LCD_INITIAL_STATE[i].index, LCD_INITIAL_STATE[i].value);
+
+	success &= lcd_write_queued_register(0x0100, 0xC010);
+	stopwatch_msleep_wd(30);
+	success &= lcd_write_queued_register(0x0101, 0x0001);
+
+	return success;
+}
+
 static bool lcd_init_controller(void) {
 	bool success = true;
 
@@ -425,15 +474,40 @@ static bool lcd_init_controller(void) {
 	return success;
 }
 
-static bool lcd_reset_and_init_controller(void) {
-	lcd_command_bsconf = DIF_CSREG_BSCONF_1x8BIT;
-	lcd_data_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+static void lcd_reset_controller(void) {
 	gpio_set(GPIO_DIF_RESET1, false);
 	stopwatch_msleep_wd(10);
 	gpio_set(GPIO_DIF_RESET1, true);
 	stopwatch_msleep_wd(120);
+}
+
+static bool lcd_reset_and_init_controller(void) {
+	lcd_command_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	lcd_data_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	lcd_reset_controller();
 
 	return lcd_init_controller();
+}
+
+static bool lcd_init_queued_polling_sequence(void) {
+	uint8_t id[5] = { 0 };
+
+	lcd_command_bsconf = DIF_CSREG_BSCONF_OFF;
+	lcd_data_bsconf = DIF_CSREG_BSCONF_OFF;
+	lcd_reset_controller();
+	bool success = dif_write_word(true, 0x04) && dif_read_bytes(true, id, 4);
+	success &= dif_write_word(true, 0xD3) && dif_read_bytes(true, id, 5);
+	for (uint32_t i = 0; i < 3; i++) {
+		success &= dif_write_word(true, 0x00);
+		stopwatch_msleep_wd(1);
+	}
+	success &= lcd_write_queued_register(0x001D, 0x0005);
+	success &= lcd_program_controller_queued();
+	success &= lcd_write_queued_register(0x0100, 0xF7FE);
+	lcd_command_bsconf = DIF_CSREG_BSCONF_2x9BIT;
+	lcd_data_bsconf = DIF_CSREG_BSCONF_2x9BIT;
+
+	return success;
 }
 
 static void lcd_enable_backlight(void) {
@@ -454,6 +528,20 @@ static bool lcd_draw_solid(uint32_t bsconf, uint16_t y, uint16_t height, uint16_
 	for (uint32_t pixel = 0; pixel < LCD_WIDTH * height; pixel++) {
 		success &= dif_write_word(false, color >> 8);
 		success &= dif_write_word(false, color & 0xFF);
+		if ((pixel & 0xFF) == 0)
+			test_watchdog_serve();
+	}
+
+	return success;
+}
+
+static bool lcd_draw_solid_queued(uint16_t y, uint16_t height, uint16_t color) {
+	bool success = lcd_write_queued_register(0x0200, 0x00EF);
+	success &= lcd_write_queued_register(0x0201, y);
+	success &= lcd_write_queued_command(0x0202);
+
+	for (uint32_t pixel = 0; pixel < LCD_WIDTH * height; pixel++) {
+		success &= dif_write_queued_pair(false, color >> 8, color & 0xFF);
 		if ((pixel & 0xFF) == 0)
 			test_watchdog_serve();
 	}
@@ -678,16 +766,22 @@ static int32_t find_pixel(const uint8_t *data, uint32_t size, uint16_t pixel) {
 }
 
 int main(void) {
+	uint16_t probe_pixel = 0;
+
 	test_start("DIFv2 EL71 LCD test");
 	test_reset_values();
 	test_module_id("module ID", 0xF043C000, DIF_ID);
 
-	test_category("EL71 JBT6K71 initialization");
+	test_category("TXD ordering across CD changes");
 	lcd_init_gpio();
 	lcd_init_dif();
 	lcd_enable_panel_power();
-	test_check("controller initialization completes", lcd_reset_and_init_controller());
+	test_check("queued polling initialization transfers complete", lcd_init_queued_polling_sequence());
 	lcd_enable_backlight();
+	test_check("queued 2x9 GRAM write completes",
+		lcd_draw_solid_queued(0, 1, 0x1234));
+	test_check("GRAM read after queued write completes", lcd_read_pixel_1x8(0, &probe_pixel));
+	test_eq_u32("later CSREG CD does not reclassify earlier TXD", 0x1234, probe_pixel);
 
 	test_category("Direct polling command BSCONF writes");
 	for (uint32_t i = 0; i < ARRAY_SIZE(LCD_DIRECT_PROFILES); i++) {
