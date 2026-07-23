@@ -66,6 +66,7 @@ sub buildRegIndex {
 	
 	$self->{id2irq} = {};
 	$self->{addr2reg} = {};
+	$self->{regions} = [];
 	
 	for my $module (values %{$self->{modules}}) {
 		my $alt_names = {};
@@ -111,6 +112,14 @@ sub buildRegIndex {
 					fields		=> $reg->{fields}
 				};
 			}
+		}
+
+		for my $region (values %{$module->{regions}}) {
+			push @{$self->{regions}}, {
+				name	=> $module->{name}."_".$region->{name},
+				start	=> $module->{base} + $region->{start},
+				end		=> $module->{base} + $region->{end},
+			};
 		}
 	}
 }
@@ -162,6 +171,13 @@ sub dumpReg {
 		
 		return "(".$reg->{name}.")".(@bitmap ? ": ".join(" | ", @bitmap) : "");
 	} else {
+		for my $region (@{$self->{regions}}) {
+			if ($addr >= $region->{start} && $addr < $region->{end}) {
+				my $offset = $addr - $region->{start};
+				return "(".$region->{name}.($offset ? sprintf("+0x%X", $offset) : "").")";
+			}
+		}
+
 		for my $module (values %{$self->{modules}}) {
 			if ($addr >= $module->{base} && $addr <= $module->{base} + $module->{size}) {
 				return "(".$module->{name}."_*)";
@@ -358,6 +374,7 @@ sub parseModule {
 		type		=> 'MODULE',
 		qemu		=> undef,
 		regs		=> {},
+		regions		=> {},
 		size		=> 0,
 		irqs		=> {},
 		irqs_needed	=> [],
@@ -402,6 +419,35 @@ sub parseModule {
 					$current_field_format = $value;
 				} elsif ($key eq 'enum_format') {
 					$current_enum_format = $value;
+				} elsif ($key eq 'region') {
+					my @parts = split(/\s+/, $value);
+					die "Invalid region: '$line'" if @parts < 3 || @parts > 4;
+					my ($name, $start, $end, $element_size) = @parts;
+					die "Invalid region name: '$line'" if $name !~ /^[A-Z][A-Z0-9_]*$/;
+
+					$start = parseAnyInt($start);
+					$end = parseAnyInt($end);
+					die "Invalid region bounds: '$line'" if $start >= $end;
+
+					if (defined($element_size)) {
+						$element_size = parseAnyInt($element_size);
+						die "Invalid region element size: '$line'"
+							if $element_size != 1 && $element_size != 2 && $element_size != 4;
+						die "Unaligned region: '$line'"
+							if ($start % $element_size) != 0 || (($end - $start) % $element_size) != 0;
+					}
+
+					die "Duplicate region: $name" if exists $module->{regions}->{$name};
+					for my $region (values %{$module->{regions}}) {
+						die "Overlapping region: '$line'" if $start < $region->{end} && $end > $region->{start};
+					}
+					$module->{regions}->{$name} = {
+						name			=> $name,
+						start			=> $start,
+						end				=> $end,
+						size			=> $end - $start,
+						element_size	=> $element_size,
+					};
 				} elsif ($key eq 'irq') {
 					push @{$module->{irqs_needed}}, $value || "";
 				} elsif ($key eq 'gpio') {

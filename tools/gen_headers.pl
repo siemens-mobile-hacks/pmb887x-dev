@@ -174,6 +174,44 @@ sub genModuleHeader {
 			push @header, ["#define", $module->{name}."_BASE", sprintf("0x%08X", $module->{base})];
 		}
 	}
+
+	for my $region_name (getSortedKeys($module->{regions} || {}, 'start')) {
+		my $region = $module->{regions}->{$region_name};
+		my $region_prefix = $prefix.$region_name;
+
+		if ($module->{multi}) {
+			push @header, [
+				"#define",
+				$region_prefix."_BASE(base)",
+				sprintf("((base) + 0x%X)", $region->{start})
+			];
+		} else {
+			push @header, [
+				"#define",
+				$region_prefix."_BASE",
+				sprintf("(%s_BASE + 0x%X)", $module->{name}, $region->{start})
+			];
+		}
+		push @header, ["#define", $region_prefix."_SIZE", sprintf("0x%X", $region->{size})];
+
+		if ($region->{element_size}) {
+			my $mmio = "MMIO".($region->{element_size} * 8);
+			if ($module->{multi}) {
+				push @header, [
+					"#define",
+					$region_prefix."(base, n)",
+					sprintf("%s(%s_BASE(base) + ((n) * 0x%X))", $mmio, $region_prefix, $region->{element_size})
+				];
+			} else {
+				push @header, [
+					"#define",
+					$region_prefix."(n)",
+					sprintf("%s(%s_BASE + ((n) * 0x%X))", $mmio, $region_prefix, $region->{element_size})
+				];
+			}
+		}
+		push @header, [];
+	}
 	
 	for my $reg_name (getSortedKeys($module->{regs}, 'start')) {
 		my $reg = $module->{regs}->{$reg_name};

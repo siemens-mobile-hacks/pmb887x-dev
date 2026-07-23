@@ -3336,6 +3336,10 @@
 // DSP [MOD_NUM=F022, MOD_REV=31, MOD_32BIT=C0]
 // Digital Signal Processor
 #define	DSP_BASE					0xF6000000
+#define	DSP_RAM_BASE				(DSP_BASE + 0x1000)
+#define	DSP_RAM_SIZE				0x1000
+#define	DSP_RAM(n)					MMIO32(DSP_RAM_BASE + ((n) * 0x4))
+
 /* Clock Control Register */
 #define	DSP_CLC						MMIO32(DSP_BASE + 0x00)
 
@@ -3344,20 +3348,18 @@
 
 /* Communication Flag Set Register (write one to set, reads as zero) */
 #define	DSP_COM_SET					MMIO32(DSP_BASE + 0x1C)
-#define	DSP_COM_SET_FLAGS			GENMASK(15, 0)							 // Communication flags to set
+#define	DSP_COM_SET_FLAGS			GENMASK(15, 0)						 // Communication flags to set
 #define	DSP_COM_SET_FLAGS_SHIFT		0
 
 /* Communication Flag Clear Register (write one to clear, reads as zero) */
 #define	DSP_COM_CLEAR				MMIO32(DSP_BASE + 0x20)
-#define	DSP_COM_CLEAR_FLAGS			GENMASK(15, 0)							 // Communication flags to clear
+#define	DSP_COM_CLEAR_FLAGS			GENMASK(15, 0)						 // Communication flags to clear
 #define	DSP_COM_CLEAR_FLAGS_SHIFT	0
 
 /* Communication Flag Status Register (read-only) */
 #define	DSP_COM_STATUS				MMIO32(DSP_BASE + 0x24)
-#define	DSP_COM_STATUS_FLAGS		GENMASK(15, 0)							 // Communication flag status
+#define	DSP_COM_STATUS_FLAGS		GENMASK(15, 0)						 // Communication flag status
 #define	DSP_COM_STATUS_FLAGS_SHIFT	0
-
-#define	DSP_RAM(n)					MMIO32(DSP_BASE + 0x1000 + ((n) * 0x4))
 
 
 // GPRSCU [MOD_NUM=F003, MOD_REV=22, MOD_32BIT=C0]
@@ -3451,6 +3453,10 @@
 // TPU [MOD_NUM=F021, MOD_REV=12, MOD_32BIT=C0]
 // Time Processing Unit
 #define	TPU_BASE									0xF6400000
+#define	TPU_RAM_BASE								(TPU_BASE + 0x1000)
+#define	TPU_RAM_SIZE								0x1000
+#define	TPU_RAM(n)									MMIO32(TPU_RAM_BASE + ((n) * 0x4))
+
 /* Clock Control Register */
 #define	TPU_CLC										MMIO32(TPU_BASE + 0x00)
 
@@ -3594,8 +3600,6 @@
 
 /* Service Routing Control Register */
 #define	TPU_SRC(n)									MMIO32(TPU_BASE + 0xF8 + ((n) * 0x4))
-
-#define	TPU_RAM(n)									MMIO32(TPU_BASE + 0x1000 + ((n) * 0x4))
 
 
 // CIF [MOD_NUM=F052, MOD_REV=12, MOD_32BIT=C0]

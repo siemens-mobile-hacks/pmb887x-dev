@@ -60,10 +60,29 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	my @modules_ref;
 	for my $id (@{$cpu_meta->getModuleNames()}) {
 		my $module = $cpu_meta->{modules}->{$id};
+		for my $region_name (getSortedKeys($module->{regions}, 'start')) {
+			my $region = $module->{regions}->{$region_name};
+			my $start = $module->{base} + $region->{start};
+			my $end = $module->{base} + $region->{end};
+			while ($start < $end) {
+				my $chunk_end = min($end, ($start & 0xFFF00000) + 0x00100000);
+				push @modules_ref, [
+					'"'.$module->{name}.'_'.$region_name.'",',
+					sprintf("0x%08X,", $start),
+					sprintf("0x%X,", $chunk_end - $start),
+					"NULL,",
+					"0"
+				];
+				$start = $chunk_end;
+			}
+		}
+		my $module_size_name = exists($module->{regions}->{IO})
+			? $module->{base_name}."_REG_SIZE"
+			: $module->{base_name}."_IO_SIZE";
 		push @modules_ref, [
 			'"'.$module->{name}.'",',
 			uc($cpu_meta->{name})."_".$module->{name}."_BASE,",
-			$module->{base_name}."_IO_SIZE,",
+			$module_size_name.",",
 			lc($module->{base_name})."_regs,",
 			"ARRAY_SIZE(".lc($module->{base_name})."_regs)",
 		];

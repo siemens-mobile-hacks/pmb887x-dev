@@ -97,6 +97,14 @@ if ($raw) {
 				start	=> $module->{base},
 				size	=> $module->{size}
 			};
+			for my $region_name (getSortedKeys($module->{regions}, 'start')) {
+				my $region = $module->{regions}->{$region_name};
+				push @ranges, {
+					name	=> $module->{name}."_".$region_name,
+					start	=> $module->{base} + $region->{start},
+					size	=> $region->{size}
+				};
+			}
 		}
 		
 		my @regs;

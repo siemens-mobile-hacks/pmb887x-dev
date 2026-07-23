@@ -93,7 +93,24 @@ sub genModuleHeader {
 	my $prefix = ($name ? $name."_" : "");
 	
 	if (!$module->{common}) {
-		push @header, ["#define ".$name."_IO_SIZE", sprintf("0x%08X", $module->{size})];
+		my $size_name = exists($module->{regions}->{IO}) ? $name."_REG_SIZE" : $name."_IO_SIZE";
+		push @header, ["#define ".$size_name, sprintf("0x%08X", $module->{size})];
+	}
+
+	for my $region_name (getSortedKeys($module->{regions} || {}, 'start')) {
+		my $region = $module->{regions}->{$region_name};
+		my $region_prefix = $prefix.$region_name;
+		push @header, ["#define ".$region_prefix."_BASE", sprintf("0x%X", $region->{start})];
+		if ($region->{element_size}) {
+			push @header, ["#define ".$region_prefix."0", $region_prefix."_BASE"];
+			push @header, [
+				"#define ".$region_prefix."(n)",
+				sprintf("(%s_BASE + ((n) * 0x%X))", $region_prefix, $region->{element_size})
+			];
+		} else {
+			push @header, ["#define ".$region_prefix."_SIZE", sprintf("0x%X", $region->{size})];
+		}
+		push @header, [];
 	}
 	
 	for my $reg_name (getSortedKeys($module->{regs}, 'start')) {
