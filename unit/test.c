@@ -197,7 +197,13 @@ bool test_eq_u32(const char *name, uint32_t expected, uint32_t actual) {
 	return passed;
 }
 
+bool test_id_u32(const char *name, uint32_t expected, uint32_t actual) {
+	printf("# %s: %08X\n", name, actual);
+	return test_eq_u32(name, expected, actual);
+}
+
 bool test_module_id(const char *name, uint32_t expected, uint32_t actual) {
+	printf("# %s: %08X\n", name, actual);
 	return test_eq_u32(name, expected & ~MOD_ID_REV, actual & ~MOD_ID_REV);
 }
 
@@ -216,7 +222,7 @@ bool test_module_clock(const char *name, uint32_t clc) {
 bool test_amba_part_id(const char *name, uint16_t expected, uint32_t id0, uint32_t id1) {
 	uint16_t actual = (id0 & 0xFF) | ((id1 & 0x0F) << 8);
 
-	return test_eq_u32(name, expected, actual);
+	return test_id_u32(name, expected, actual);
 }
 
 bool test_eq_memory(const char *name, const void *expected, const volatile void *actual, size_t size) {

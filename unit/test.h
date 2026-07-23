@@ -10,6 +10,7 @@ int test_finish(void);
 void test_skip(const char *name, const char *reason);
 bool test_check(const char *name, bool condition);
 bool test_eq_u32(const char *name, uint32_t expected, uint32_t actual);
+bool test_id_u32(const char *name, uint32_t expected, uint32_t actual);
 bool test_module_id(const char *name, uint32_t expected, uint32_t actual);
 bool test_module_clock(const char *name, uint32_t clc);
 bool test_amba_part_id(const char *name, uint16_t expected, uint32_t id0, uint32_t id1);
