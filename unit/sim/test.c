@@ -2,8 +2,6 @@
 
 #include "test.h"
 
-#ifdef PMB8876
-
 #define SIM_IRQ_MASK (SIM_IMSC_ERR | SIM_IMSC_IN | SIM_IMSC_OK)
 #define SIM_EVENT_ENABLE_MASK ( \
 	SIM_IRQEN_ENOKINT | SIM_IRQEN_ENPAR | SIM_IRQEN_ENOVR | SIM_IRQEN_ENT0END | \
@@ -129,14 +127,3 @@ __IRQ void irq_handler(void) {
 	SIM_ICR = SIM_IRQ_MASK;
 	VIC_IRQ_ACK = 1;
 }
-
-#else
-
-int main(void) {
-	test_start("SIM");
-	test_skip("SIM", "is only available on PMB8876");
-
-	return test_finish();
-}
-
-#endif
