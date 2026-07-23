@@ -63,7 +63,7 @@
 #define	GPIO_CLKOUT0	58
 #define	GPIO_RF_CLK		59
 #define	GPIO_PIN60		60
-#define	GPIO_PIN61		61
+#define	GPIO_DSPIN0		61
 #define	GPIO_DSPOUT1	62
 #define	GPIO_DSPIN1		63
 #define	GPIO_PIN64		64
@@ -92,13 +92,13 @@
 #define	GPIO_CIF_HSYNC	87
 #define	GPIO_CIF_VSYNC	88
 #define	GPIO_CLKOUT2	89
-#define	GPIO_PIN90		90
+#define	GPIO_CIF_RESET	90
 #define	GPIO_DIF_D3		91
 #define	GPIO_DIF_D4		92
 #define	GPIO_DIF_D5		93
 #define	GPIO_DIF_D6		94
 #define	GPIO_DIF_D7		95
-#define	GPIO_PIN96		96
+#define	GPIO_DIF_CS2	96
 #define	GPIO_DIF_WR		97
 #define	GPIO_DIF_RD		98
 #define	GPIO_MMCI_DAT1	99
@@ -4665,9 +4665,46 @@
 
 // MMICIF [MOD_NUM=F053, MOD_REV=12, MOD_32BIT=C0]
 // Multi Media Controller Interface
-#define	MMICIF_BASE	0xF8000000
-/* Clock Control Register */
-#define	MMICIF_CLC	MMIO32(MMICIF_BASE + 0x00)
+#define	MMICIF_BASE							0xF8000000
+#define	MMICIF_MMAP_BASE					(MMICIF_BASE + 0x2000000)
+#define	MMICIF_MMAP_SIZE					0x1000000
 
-/* Module Identifier Register */
-#define	MMICIF_ID	MMIO32(MMICIF_BASE + 0x08)
+/* Clock Control Register */
+#define	MMICIF_CLC							MMIO32(MMICIF_BASE + 0x00)
+
+/* Identification Register */
+#define	MMICIF_ID							MMIO32(MMICIF_BASE + 0x04)
+
+/* Interface Configuration Register */
+#define	MMICIF_CONFIG						MMIO32(MMICIF_BASE + 0x08)
+
+#define	MMICIF_UNK2C						MMIO32(MMICIF_BASE + 0x2C)
+
+#define	MMICIF_UNK44						MMIO32(MMICIF_BASE + 0x44)
+
+/* Transfer Configuration Register */
+#define	MMICIF_TRANSFER_CONFIG				MMIO32(MMICIF_BASE + 0x48)
+#define	MMICIF_TRANSFER_CONFIG_MODE			GENMASK(4, 0)
+#define	MMICIF_TRANSFER_CONFIG_MODE_SHIFT	0
+#define	MMICIF_TRANSFER_CONFIG_MODE_WRITE	0x3
+#define	MMICIF_TRANSFER_CONFIG_MODE_READ	0xA
+
+#define	MMICIF_UNK4C						MMIO32(MMICIF_BASE + 0x4C)
+
+#define	MMICIF_UNK50						MMIO32(MMICIF_BASE + 0x50)
+
+#define	MMICIF_UNK54						MMIO32(MMICIF_BASE + 0x54)
+
+/* Interrupt Request Source Mask Register */
+#define	MMICIF_IRQSM						MMIO32(MMICIF_BASE + 0x70)
+#define	MMICIF_IRQSM_EVENT0					BIT(0)
+
+/* Interrupt Request Source Status Register */
+#define	MMICIF_IRQSS						MMIO32(MMICIF_BASE + 0x74)
+#define	MMICIF_IRQSS_EVENT0					BIT(0)
+
+/* Interrupt Request Source Clear Register */
+#define	MMICIF_IRQSC						MMIO32(MMICIF_BASE + 0x78)
+#define	MMICIF_IRQSC_EVENT0					BIT(0)
+
+#define	MMICIF_UNK80						MMIO32(MMICIF_BASE + 0x80)

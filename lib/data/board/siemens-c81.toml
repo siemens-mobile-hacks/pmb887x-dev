@@ -3,6 +3,9 @@ vendor = "BenQ-Siemens"
 model = "C81"
 extends = "include/siemens-sg2-x75.toml"
 
+[gpio.aliases]
+CIF_HSYNC = "DIF_BYPASS"
+
 [gpio.inputs]
 # HWID 412
 HW_DET_MOB_TYPE1 = 0
