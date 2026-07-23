@@ -179,6 +179,7 @@ static bool l5f_probe(uint32_t *id) {
 
 const struct lcd_controller lcd_controller_l5f30539p00 = {
 	.name = "L5F30539P00",
+	.type = LCD_CONTROLLER_L5F30539P00,
 	.id = 3,
 	.width = 240,
 	.height = 320,

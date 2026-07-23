@@ -253,6 +253,7 @@ static bool jbt_probe(uint32_t *id) {
 
 const struct lcd_controller lcd_controller_jbt6k71 = {
 	.name = "JBT6K71",
+	.type = LCD_CONTROLLER_JBT6K71,
 	.id = 2,
 	.width = 240,
 	.height = 320,

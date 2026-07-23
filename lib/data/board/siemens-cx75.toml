@@ -27,6 +27,7 @@ ram.size = 0x1000000 # 16 Mb
 type = "s1d13732"
 bus = "DIF"
 in = { CS = "CIF_CS", SA0 = "CIF_RS", RESET = "CIF_RESET" }
+out = { FPDAT6 = "DISP_CS1" }
 
 [peripheral.LCD0]
 type = "ssd1286"

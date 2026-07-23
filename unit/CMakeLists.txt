@@ -68,6 +68,21 @@ add_peripheral_test(ssc ssc/test.c ssc/ssc.c)
 add_peripheral_test(ssc-dma ssc/test-dma.c ssc/ssc.c)
 add_peripheral_test(dif-v1 dif-v1/test.c dif-v1/dif-v1.c dif-v1/common.c)
 add_peripheral_test(dif-v1-dma dif-v1/test-dma.c dif-v1/dma.c dif-v1/common.c)
+add_peripheral_test(
+	dif-v1-lcd
+	dif-v1/lcd.c
+	dif-v1/lcd-board.c
+	dif-v1/lcd-transport.c
+	dif-v1/s1d13732.c
+	lcd/lcd-controller-test.c
+	lcd/pcf8882.c
+	lcd/ssd1286.c
+)
+add_peripheral_test(
+	dif-v1-lcd-if
+	dif-v1/lcd-if.c
+	dif-v1/s1d13732.c
+)
 add_peripheral_test(usart usart/test.c usart/usart.c)
 add_peripheral_test(usart-dma usart/test-dma.c usart/usart.c)
 add_peripheral_test(dif-v2 dif-v2/test.c dif-v2/dif-v2.c)

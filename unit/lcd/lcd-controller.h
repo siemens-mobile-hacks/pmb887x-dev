@@ -10,6 +10,15 @@ enum lcd_pixel_format {
 	LCD_PIXEL_FORMAT_RGB666,
 };
 
+enum lcd_controller_type {
+	LCD_CONTROLLER_UNKNOWN,
+	LCD_CONTROLLER_L5F30539P00,
+	LCD_CONTROLLER_JBT6K71,
+	LCD_CONTROLLER_PCF8882,
+	LCD_CONTROLLER_SSD1286,
+	LCD_CONTROLLER_LS020,
+};
+
 struct lcd_color {
 	uint8_t red;
 	uint8_t green;
@@ -25,6 +34,7 @@ struct lcd_address_mode {
 
 struct lcd_controller {
 	const char *name;
+	enum lcd_controller_type type;
 	uint32_t id;
 	uint16_t width;
 	uint16_t height;
@@ -52,6 +62,8 @@ struct lcd_controller {
 
 extern const struct lcd_controller lcd_controller_l5f30539p00;
 extern const struct lcd_controller lcd_controller_jbt6k71;
+extern const struct lcd_controller lcd_controller_pcf8882;
+extern const struct lcd_controller lcd_controller_ssd1286;
 
 void lcd_controller_reset(const struct lcd_controller *lcd);
 const struct lcd_controller *lcd_controller_detect(uint32_t *detected_id);
