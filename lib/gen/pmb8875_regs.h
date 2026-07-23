@@ -63,7 +63,7 @@
 #define	GPIO_CLKOUT0	58
 #define	GPIO_RF_CLK		59
 #define	GPIO_PIN60		60
-#define	GPIO_PIN61		61
+#define	GPIO_DSPIN0		61
 #define	GPIO_DSPOUT1	62
 #define	GPIO_DSPIN1		63
 #define	GPIO_PIN64		64
