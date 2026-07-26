@@ -1,0 +1,34 @@
+#include <pmb887x.h>
+
+#include "host.h"
+#include "test.h"
+
+#define MMICIF_HOST_DATA_BASE 0xFA000000U
+#define MMICIF_HOST_STATUS_BASE 0xFA0F0000U
+#define MMICIF_HOST_STATUS_READ_READY BIT(7)
+#define MMICIF_HOST_TIMEOUT_MS 100U
+
+bool mmicif_host_read32(uint32_t address, uint32_t *value) {
+	MMICIF_TRANSFER_CONFIG =
+		(MMICIF_TRANSFER_CONFIG & ~MMICIF_TRANSFER_CONFIG_MODE) |
+		MMICIF_TRANSFER_CONFIG_MODE_READ;
+	MMIO16(MMICIF_HOST_STATUS_BASE) = 0;
+	MMIO32(MMICIF_HOST_DATA_BASE) = address;
+	stopwatch_t started = stopwatch_get();
+	while ((MMIO16(MMICIF_HOST_STATUS_BASE) & MMICIF_HOST_STATUS_READ_READY) == 0 &&
+		stopwatch_elapsed_ms(started) < MMICIF_HOST_TIMEOUT_MS)
+		test_watchdog_serve();
+	if ((MMIO16(MMICIF_HOST_STATUS_BASE) & MMICIF_HOST_STATUS_READ_READY) == 0)
+		return false;
+	*value = MMIO32(MMICIF_HOST_DATA_BASE);
+	return true;
+}
+
+void mmicif_host_write32(uint32_t address, uint32_t value) {
+	MMICIF_TRANSFER_CONFIG =
+		(MMICIF_TRANSFER_CONFIG & ~MMICIF_TRANSFER_CONFIG_MODE) |
+		MMICIF_TRANSFER_CONFIG_MODE_WRITE;
+	MMIO16(MMICIF_HOST_STATUS_BASE) = 0;
+	MMIO32(MMICIF_HOST_DATA_BASE) = address;
+	MMIO32(MMICIF_HOST_DATA_BASE) = value;
+}
