@@ -114,11 +114,11 @@ AC_RX = 1
 
 [keyboard]
 # [KP_IN, KP_OUT, ..., KP_OUT]
-NAV_UP		= [0, 3]
+NAV_UP		= [4, 3]
 NAV_RIGHT	= [1, 3]
 NAV_CENTER	= [2, 3]
 NAV_LEFT	= [3, 3]
-NAV_DOWN	= [4, 3]
+NAV_DOWN	= [0, 3]
 
 SEND		= [0, 6]
 BROWSER		= [1, 6]
