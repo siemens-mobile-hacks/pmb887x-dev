@@ -5,6 +5,8 @@ extends = "include/siemens-sg2-x75.toml"
 
 [gpio.aliases]
 CIF_HSYNC = "DIF_BYPASS"
+CLKOUT2 = "DIF_RESET"
+DIF_RESET1 = "LCD_RESET"
 
 [gpio.inputs]
 # HWID 412
