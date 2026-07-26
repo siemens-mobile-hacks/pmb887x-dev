@@ -1,5 +1,5 @@
 #pragma once
-#include <stdint.h>
+// IWYU pragma: private, include <pmb887x.h>
 
 #define PMB8876
 

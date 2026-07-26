@@ -1,4 +1,5 @@
 #pragma once
+// IWYU pragma: private, include <pmb887x.h>
 #include <pmb887x.h>
 
 // GPIO numbers

@@ -31,7 +31,7 @@ set(CMAKE_C_COMPILER ${ARM_C_COMPILER} CACHE INTERNAL "CMAKE_C_COMPILER")
 set(CMAKE_CXX_COMPILER ${ARM_CXX_COMPILER} CACHE INTERNAL "CMAKE_CXX_COMPILER")
 
 add_compile_options(-mcpu=arm926ej-s -mthumb-interwork -msoft-float -mlittle-endian -ffreestanding -ffunction-sections -fdata-sections)
-include_directories(${PMB887X_LIB_PATH})
+include_directories(${PMB887X_LIB_PATH} ${PMB887X_LIB_PATH}/gen/peripheral)
 add_link_options(-Wl,-z,max-page-size=1 -ffreestanding -nostartfiles -Wl,--gc-sections)
 add_compile_definitions(BOARD_${BOARD_ID})
 add_compile_definitions(BOOT_${BOOT})

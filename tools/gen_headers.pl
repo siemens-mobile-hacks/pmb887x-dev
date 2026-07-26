@@ -2,6 +2,7 @@
 use warnings;
 use strict;
 use File::Basename;
+use File::Path qw(make_path);
 use lib dirname(__FILE__).'/lib';
 use Data::Dumper;
 use List::Util qw(min max);
@@ -9,16 +10,20 @@ use Sie::CpuMetadata;
 use Sie::BoardMetadata;
 use Sie::Utils;
 
+my $pmb887x_private = "// IWYU pragma: private, include <pmb887x.h>";
+
+genPeripheralHeaders();
+
 # CPU regs
 my $cpu_file = dirname(__FILE__).'/../lib/gen/cpu.h';
-my $cpu_str = "#pragma once\n\n";
+my $cpu_str = "#pragma once\n$pmb887x_private\n\n";
 
 for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	my $cpu_meta = Sie::CpuMetadata->new($cpu);
 	
 	my $file = dirname(__FILE__).'/../lib/gen/'.$cpu.'_regs.h';
 	
-	my $str = "#pragma once\n";
+	my $str = "#pragma once\n$pmb887x_private\n";
 	$str .= "#include <pmb887x.h>\n\n";
 	
 	my $irqs = {};
@@ -54,7 +59,7 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	close F;
 	
 	$cpu_str .= "#ifdef ".uc($cpu)."\n";
-	$cpu_str .= "#include \"".$cpu."_regs.h\"\n";
+	$cpu_str .= "#include \"".$cpu."_regs.h\" // IWYU pragma: export\n";
 	$cpu_str .= "#endif\n\n";
 }
 
@@ -64,7 +69,7 @@ close F;
 
 # Boards
 my $board_file = dirname(__FILE__).'/../lib/gen/board.h';
-my $board_str = "#pragma once\n\n";
+my $board_str = "#pragma once\n$pmb887x_private\n\n";
 
 for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	my $board_meta = Sie::BoardMetadata->new($board);
@@ -76,8 +81,7 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	$board_file =~ s/-/_/g;
 	
 	my $file = dirname(__FILE__).'/../lib/gen/board_'.$board_file.'.h';
-	my $str = "#pragma once\n";
-	$str .= "#include <stdint.h>\n\n";
+	my $str = "#pragma once\n$pmb887x_private\n\n";
 	
 	$str .= "#define ".uc($board_meta->cpu()->{name})."\n\n";
 	
@@ -90,7 +94,7 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	$str .= "\n";
 	
 	$board_str .= "#ifdef BOARD_".$board_name."\n";
-	$board_str .= "#include \"board_".$board_file.".h\"\n";
+	$board_str .= "#include \"board_".$board_file.".h\" // IWYU pragma: export\n";
 	$board_str .= "#endif\n\n";
 	
 	open(F, ">$file") or die "open($file): $!";
@@ -101,6 +105,97 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 open(F, ">$board_file") or die "open($board_file): $!";
 print F $board_str;
 close F;
+
+sub genPeripheralHeaders {
+	my $cpu_meta = Sie::CpuMetadata->new("generic");
+	my $root = dirname(__FILE__).'/../lib/gen/peripheral';
+
+	for my $peripheral (@{$cpu_meta->getAllPeripherals()}) {
+		my $relative_path = $peripheral->{relative_path};
+		$relative_path =~ s/\.cfg$/.h/i;
+
+		my $file = "$root/$relative_path";
+		make_path(dirname($file));
+
+		open my $fp, ">$file" or die "open($file): $!";
+		print $fp genPeripheralHeader($peripheral);
+		close $fp;
+	}
+}
+
+sub genPeripheralHeader {
+	my ($peripheral) = @_;
+
+	my @header;
+	my $prefix = $peripheral->{id}."_";
+	my $addr_width = 2;
+	for my $reg (values %{$peripheral->{regs}}) {
+		$addr_width = max($addr_width, length(sprintf("%X", $reg->{end})));
+	}
+
+	push @header, "#pragma once";
+	push @header, "";
+	push @header, "#include <bitops.h> // IWYU pragma: export";
+	push @header, "";
+	push @header, "// ".$peripheral->{id};
+	push @header, "// ".$peripheral->{descr} if $peripheral->{descr};
+
+	if (defined $peripheral->{addr}) {
+		push @header, ["#define", $prefix."I2C_ADDR", sprintf("0x%02X", $peripheral->{addr})];
+		push @header, [];
+	}
+
+	for my $reg_name (getSortedKeys($peripheral->{regs}, 'start')) {
+		my $reg = $peripheral->{regs}->{$reg_name};
+
+		push @header, "/* ".$reg->{descr}." */" if $reg->{descr};
+
+		if ($reg->{start} != $reg->{end}) {
+			push @header, [
+				"#define",
+				$prefix.$reg_name."(n)",
+				sprintf("(0x%0*X + ((n) * 0x%X))", $addr_width, $reg->{start}, $reg->{step})
+			];
+		} else {
+			push @header, ["#define", $prefix.$reg_name, sprintf("0x%0*X", $addr_width, $reg->{start})];
+		}
+
+		for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
+			my $field = $reg->{fields}->{$field_name};
+			my $field_name_prepared = $reg->{field_format};
+			$field_name_prepared =~ s/{reg}/$reg_name/g;
+			$field_name_prepared =~ s/{field}/$field_name/g;
+
+			my $descr = $field->{descr} ? " // ".$field->{descr} : "";
+			if ($field->{size} > 1) {
+				push @header, [
+					"#define",
+					$prefix.$field_name_prepared,
+					"GENMASK(".($field->{start} + $field->{size} - 1).", ".$field->{start}.")",
+					$descr
+				];
+				push @header, ["#define", $prefix.$field_name_prepared."_SHIFT", $field->{start}];
+			} else {
+				push @header, ["#define", $prefix.$field_name_prepared, "BIT(".$field->{start}.")", $descr];
+			}
+
+			for my $value_name (getSortedKeys($field->{values})) {
+				my $value_name_prepared = $reg->{enum_format};
+				$value_name_prepared =~ s/{reg}/$reg_name/g;
+				$value_name_prepared =~ s/{field}/$field_name/g;
+				$value_name_prepared =~ s/{value}/$value_name/g;
+
+				my $value = $field->{values}->{$value_name} << $field->{start};
+				push @header, ["#define", $prefix.$value_name_prepared, sprintf("0x%X", $value)];
+			}
+		}
+		push @header, [];
+	}
+
+	my $str = printTable(\@header);
+	$str =~ s/\s+\z/\n/;
+	return $str;
+}
 
 sub getCommonRegsHeader {
 	my ($cpu_meta, $regs) = @_;

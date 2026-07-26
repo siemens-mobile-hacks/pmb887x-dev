@@ -56,7 +56,7 @@ OBJCOPY	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 
 # Inclusion of library header files
-INCLUDES += $(patsubst %,-I%, . $(LIB_DIR) )
+INCLUDES += $(patsubst %,-I%, . $(LIB_DIR) $(LIB_DIR)/gen/peripheral)
 
 OBJS += $(LIB_CFILES:$(LIB_DIR)/%.c=$(BUILD_DIR)/lib/%.o)
 OBJS += $(LIB_CXXFILES:$(LIB_DIR)/%.cpp=$(BUILD_DIR)/lib/%.o)

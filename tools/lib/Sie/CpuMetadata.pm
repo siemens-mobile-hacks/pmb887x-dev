@@ -346,6 +346,7 @@ sub getAllPeripherals {
 		my $peripheral = $self->parseModule($file_path);
 		die "Invalid peripheral name in $file" if !defined $peripheral->{name} || $peripheral->{name} !~ /^[a-z][a-z0-9_]*$/;
 		$peripheral->{id} = $id;
+		($peripheral->{relative_path} = $file_path) =~ s/^\Q$path\/\E//;
 		push @$peripherals, $peripheral;
 	}
 

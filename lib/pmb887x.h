@@ -1,8 +1,9 @@
 #pragma once
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
+#include <stdint.h> // IWYU pragma: export
+#include <stdbool.h> // IWYU pragma: export
+#include <stddef.h> // IWYU pragma: export
+#include <bitops.h> // IWYU pragma: export
 
 #ifndef CPU_OSC_FREQ
 #define CPU_OSC_FREQ	26000000
@@ -19,24 +20,6 @@
 #define MMIO32(addr)		(*(volatile uint32_t *)(addr))
 #define MMIO64(addr)		(*(volatile uint64_t *)(addr))
 
-#define BITS_PER_LONG		32
-
-#define BIT(n)				(1 << (n))
-
-#define __AC(X,Y)			(X##Y)
-#define _AC(X,Y)			__AC(X,Y)
-#define _AT(T,X)			((T)(X))
-#define UL(x)				(_AC(x, UL))
-#define ULL(x)				(_AC(x, ULL))
-
-#define GENMASK(h, l) \
-(((~UL(0)) - (UL(1) << (l)) + 1) & \
-(~UL(0) >> (BITS_PER_LONG - 1 - (h))))
-
-#define GENMASK_ULL(h, l) \
-(((~ULL(0)) - (ULL(1) << (l)) + 1) & \
-(~ULL(0) >> (BITS_PER_LONG_LONG - 1 - (h))))
-
 #define REG_BYTE(addr)		MMIO8(addr)
 #define REG_SHORT(addr)		MMIO16(addr)
 #define REG(addr)			MMIO32(addr)
@@ -46,8 +29,8 @@
 
 #define __IRQ __attribute__((interrupt))
 
-#include "gen/board.h"
-#include "gen/cpu.h"
+#include "gen/board.h" // IWYU pragma: export
+#include "gen/cpu.h" // IWYU pragma: export
 
 #if !defined(PMB8875) && !defined(PMB8876)
 #error Unknown board!
@@ -63,10 +46,10 @@ __IRQ void reserved_handler(void);
 __IRQ void irq_handler(void);
 __IRQ void fiq_handler(void);
 
-#include "printf.h"
-#include "usart.h"
-#include "wdt.h"
-#include "gpio.h"
-#include "i2c.h"
-#include "cpu.h"
-#include "stopwatch.h"
+#include "printf.h" // IWYU pragma: export
+#include "usart.h" // IWYU pragma: export
+#include "wdt.h" // IWYU pragma: export
+#include "gpio.h" // IWYU pragma: export
+#include "i2c.h" // IWYU pragma: export
+#include "cpu.h" // IWYU pragma: export
+#include "stopwatch.h" // IWYU pragma: export
