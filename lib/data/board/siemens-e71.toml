@@ -24,6 +24,7 @@ addr = 0x10
 
 [gpio.aliases]
 DIF_HD = "HW_DET_FM_RADIO"
+USIF_TXD_MTSR = "A_FM_STANDBY"
 
 [gpio.inputs]
 # HWID 413
@@ -34,3 +35,6 @@ HW_DET_MOB_TYPE4=1
 HW_DET_BLUETOOTH=0
 HW_DET_BAND_SEL=0
 HW_DET_FM_RADIO=1
+
+# FM radio detection
+MMCI_DAT1=1
