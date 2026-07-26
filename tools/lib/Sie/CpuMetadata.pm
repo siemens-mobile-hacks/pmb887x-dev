@@ -315,18 +315,35 @@ sub getAllPeripherals {
 	my ($self) = @_;
 
 	my $path = getDataDir().'/peripheral';
-	opendir my $fp, $path or die "opendir($path): $!";
-	my @files = readdir $fp;
-	closedir $fp;
+	my @dirs = ($path);
+	my @files;
+	while (my $dir = shift @dirs) {
+		opendir my $fp, $dir or die "opendir($dir): $!";
+		my @entries = sort readdir $fp;
+		closedir $fp;
+
+		for my $file (@entries) {
+			next if $file eq '.' || $file eq '..';
+
+			my $file_path = "$dir/$file";
+			if (-d $file_path) {
+				push @dirs, $file_path;
+			} elsif (-f $file_path && $file =~ /\.cfg$/i) {
+				push @files, $file_path;
+			}
+		}
+	}
 
 	my $peripherals = [];
-	for my $file (sort @files) {
-		next if !-f "$path/$file";
-		next if $file !~ /\.cfg$/i;
+	my %ids;
+	for my $file_path (sort { basename($a) cmp basename($b) || $a cmp $b } @files) {
+		my $file = basename($file_path);
 		die "Invalid peripheral file name: $file" if $file !~ /^([A-Z][A-Z0-9_]*)\.cfg$/;
 
 		my $id = $1;
-		my $peripheral = $self->parseModule("$path/$file");
+		die "Duplicate peripheral ID: $id" if $ids{$id}++;
+
+		my $peripheral = $self->parseModule($file_path);
 		die "Invalid peripheral name in $file" if !defined $peripheral->{name} || $peripheral->{name} !~ /^[a-z][a-z0-9_]*$/;
 		$peripheral->{id} = $id;
 		push @$peripherals, $peripheral;
