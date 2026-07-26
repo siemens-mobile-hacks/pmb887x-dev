@@ -68,6 +68,8 @@
 		"write":	[
 			{ "addr": 0xb01490f4, "value": 1, "size": 1 },
 			{ "addr": 0xb001d9fc, "value": 1, "size": 1 },
+			{ "addr": 0xb0599666, "value": 0, "size": 2 },
+			{ "addr": 0xb0599668, "value": 0xFFFF, "size": 2 },
 		]
 	},
 	{
