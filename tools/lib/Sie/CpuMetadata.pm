@@ -205,7 +205,7 @@ sub loadCPU {
 	
 	open my $fp, "<$file" or die("open($file): $!");
 	while (my $line = <$fp>) {
-		next if $line =~ /^(\/\/|#)/;
+		next if $line =~ /^\s*(\/\/|#)/;
 		
 		# Replace comments
 		$line =~ s/\/\*.*?\*\///sig;
@@ -311,6 +311,30 @@ sub getAllModules {
 	return $modules;
 }
 
+sub getAllPeripherals {
+	my ($self) = @_;
+
+	my $path = getDataDir().'/peripheral';
+	opendir my $fp, $path or die "opendir($path): $!";
+	my @files = readdir $fp;
+	closedir $fp;
+
+	my $peripherals = [];
+	for my $file (sort @files) {
+		next if !-f "$path/$file";
+		next if $file !~ /\.cfg$/i;
+		die "Invalid peripheral file name: $file" if $file !~ /^([A-Z][A-Z0-9_]*)\.cfg$/;
+
+		my $id = $1;
+		my $peripheral = $self->parseModule("$path/$file");
+		die "Invalid peripheral name in $file" if !defined $peripheral->{name} || $peripheral->{name} !~ /^[a-z][a-z0-9_]*$/;
+		$peripheral->{id} = $id;
+		push @$peripherals, $peripheral;
+	}
+
+	return $peripherals;
+}
+
 sub loadModules {
 	my ($self) = @_;
 	
@@ -394,7 +418,7 @@ sub parseModule {
 	
 	open my $fp, "<$file" or die("open($file): $!");
 	while (my $line = <$fp>) {
-		next if $line =~ /^(\/\/|#)/;
+		next if $line =~ /^\s*(\/\/|#)/;
 		
 		# Replace comments
 		$line =~ s/\/\*.*?\*\///sig;
@@ -457,7 +481,7 @@ sub parseModule {
 						$module->{$key} = $value;
 					} elsif ($key eq "id") {
 						$module->{ids} = [map { parseAnyInt($_) } split(/\s*,\s*/, $value)];
-					} elsif ($key eq "size" || $key eq "multi") {
+					} elsif ($key eq "size" || $key eq "multi" || $key eq "addr") {
 						$module->{$key} = parseAnyInt($value);
 					} else {
 						die("Invalid: '$line'");

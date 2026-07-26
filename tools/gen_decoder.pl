@@ -9,11 +9,23 @@ use Sie::CpuMetadata;
 use Sie::BoardMetadata;
 use Sie::Utils;
 
+my $cpu_meta = Sie::CpuMetadata->new("generic");
+my $peripherals = $cpu_meta->getAllPeripherals();
+
+if (@ARGV) {
+	die "Usage: $0 [--header]\n" if @ARGV != 1 || $ARGV[0] ne "--header";
+	print genDecoderHeader($peripherals);
+	exit;
+}
+
 my $str = "#include \"hw/arm/pmb887x/gen/cpu_meta.h\"\n#include \"hw/arm/pmb887x/regs_dump.h\"\n#include \"hw/arm/pmb887x/gen/cpu_regs.h\"\n\n";
 
-my $cpu_meta = Sie::CpuMetadata->new("generic");
 for my $module (@{$cpu_meta->getAllModules()}) {
 	$str .= genModuleHeader($cpu_meta, $module);
+}
+
+for my $peripheral (@$peripherals) {
+	$str .= genPeripheralHeader($peripheral);
 }
 
 my @cpus;
@@ -88,7 +100,7 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 		];
 	}
 	
-	$str .= "static const pmb887x_module_t ".lc($cpu_meta->{name})."_modules[] = {\n";
+	$str .= "static const pmb887x_cpu_io_t ".lc($cpu_meta->{name})."_modules[] = {\n";
 	$str .= printTable(\@modules_ref, "\t{", "},");
 	$str .= "};\n\n";
 	
@@ -109,15 +121,137 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 
 $str .= "static const pmb887x_cpu_meta_t cpus_metadata[] = {\n";
 $str .= printTable(\@cpus, "\t{", "},");
+$str .= "};\n\n";
+
+my @io_meta;
+for my $peripheral (@$peripherals) {
+	my $var = peripheralVar($peripheral);
+	push @io_meta, [
+		"[".peripheralConst($peripheral)."] = { ".cString($peripheral->{name}).",",
+		$var."_regs,",
+		"ARRAY_SIZE(".$var."_regs)"
+	];
+}
+
+$str .= "static const pmb887x_io_meta_t io_metadata[PMB887X_TRACE_IO_COUNT] = {\n";
+$str .= printTable(\@io_meta, "\t", " },");
 $str .= "};\n";
 
 $str .= '
 const pmb887x_cpu_meta_t *pmb887x_get_cpu_meta(int cpu) {
 	return &cpus_metadata[cpu];
 }
+
+const pmb887x_io_meta_t *pmb887x_get_io_meta(pmb887x_trace_io_t id) {
+	if (id <= PMB887X_TRACE_IO_CPU || id >= PMB887X_TRACE_IO_COUNT)
+		return NULL;
+	return &io_metadata[id];
+}
 ';
 
-print $str."\n";
+print $str;
+
+sub genDecoderHeader {
+	my ($peripherals) = @_;
+
+	my $str = <<'HEADER';
+#pragma once
+
+#include "qemu/osdep.h"
+
+#define PMB887X_REG_IS_IRQ_NUM		1
+#define PMB887X_REG_IS_GPIO_PIN		2
+#define PMB887X_REG_IS_IRQ_CON		3
+#define PMB887X_REG_IS_I2C_TXD		4
+
+typedef struct pmb887x_cpu_meta_gpio_t pmb887x_cpu_meta_gpio_t;
+typedef struct pmb887x_cpu_meta_irq_t pmb887x_cpu_meta_irq_t;
+typedef struct pmb887x_cpu_meta_t pmb887x_cpu_meta_t;
+typedef struct pmb887x_cpu_io_t pmb887x_cpu_io_t;
+typedef struct pmb887x_io_meta_t pmb887x_io_meta_t;
+typedef struct pmb887x_io_reg_t pmb887x_io_reg_t;
+typedef struct pmb887x_io_field_t pmb887x_io_field_t;
+typedef struct pmb887x_io_value_t pmb887x_io_value_t;
+
+typedef enum pmb887x_trace_io_t {
+	PMB887X_TRACE_IO_CPU,
+HEADER
+
+	for my $peripheral (@$peripherals) {
+		$str .= "\t".peripheralConst($peripheral).",\n";
+	}
+
+	$str .= <<'HEADER';
+	PMB887X_TRACE_IO_COUNT,
+} pmb887x_trace_io_t;
+
+struct pmb887x_io_value_t {
+	const char *name;
+	uint32_t value;
+};
+
+struct pmb887x_io_field_t {
+	const char *name;
+	uint32_t mask;
+	uint32_t shift;
+	const pmb887x_io_value_t *values;
+	int values_count;
+};
+
+struct pmb887x_io_reg_t {
+	const char *name;
+	uint32_t addr;
+	const pmb887x_io_field_t *fields;
+	int fields_count;
+	int special;
+};
+
+struct pmb887x_cpu_io_t {
+	const char *name;
+	uint32_t base;
+	uint32_t size;
+	const pmb887x_io_reg_t *regs;
+	int regs_count;
+};
+
+struct pmb887x_cpu_meta_irq_t {
+	const char *name;
+	uint32_t id;
+	uint32_t addr;
+};
+
+struct pmb887x_cpu_meta_gpio_t {
+	const char *name;
+	const char *func_name;
+	const char *full_name;
+	uint32_t id;
+};
+
+struct pmb887x_cpu_meta_t {
+	const char *name;
+
+	const pmb887x_cpu_meta_irq_t *irqs;
+	int irqs_count;
+
+	const pmb887x_cpu_meta_gpio_t *gpios;
+	int gpios_count;
+
+	const pmb887x_cpu_io_t *modules;
+	int modules_count;
+};
+
+struct pmb887x_io_meta_t {
+	const char *name;
+	const pmb887x_io_reg_t *regs;
+	int regs_count;
+};
+
+const pmb887x_cpu_meta_t *pmb887x_get_cpu_meta(int cpu);
+const pmb887x_io_meta_t *pmb887x_get_io_meta(pmb887x_trace_io_t id);
+HEADER
+
+	return $str;
+}
 
 sub genModuleRefHeader {
 	my ($cpu_meta, $module) = @_;
@@ -179,14 +313,14 @@ sub genModuleHeader {
 				];
 				
 				if (@values) {
-					$str .= "static const pmb887x_module_value_t ".$values_var."[] = {\n";
+					$str .= "static const pmb887x_io_value_t ".$values_var."[] = {\n";
 					$str .= printTable(\@values, "\t{", "},");
 					$str .= "};\n\n";
 				}
 			}
 			
 			if (%{$reg->{fields}}) {
-				$str .= "static const pmb887x_module_field_t ".$fields_var."[] = {\n";
+				$str .= "static const pmb887x_io_field_t ".$fields_var."[] = {\n";
 				$str .= printTable(\@fields, "\t{", "},");
 				$str .= "};\n\n";
 			}
@@ -227,9 +361,95 @@ sub genModuleHeader {
 		}
 	}
 	
-	$str .= "static const pmb887x_module_reg_t ".lc($module->{name})."_regs[] = {\n";
+	$str .= "static const pmb887x_io_reg_t ".lc($module->{name})."_regs[] = {\n";
 	$str .= printTable(\@regs, "\t{", "},");
 	$str .= "};\n";
 	
 	return $str."\n";
+}
+
+sub genPeripheralHeader {
+	my ($peripheral) = @_;
+
+	my $str = "";
+	my $var = peripheralVar($peripheral);
+	my @regs;
+
+	for my $reg_name (getSortedKeys($peripheral->{regs}, 'start')) {
+		my $reg = $peripheral->{regs}->{$reg_name};
+		my $fields_var = $var."_".lc($reg->{name})."_fields";
+		$fields_var =~ s/[^a-z0-9_]/_/g;
+		my @fields;
+
+		for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
+			my $field = $reg->{fields}->{$field_name};
+			my $values_var = $fields_var."_".lc($field->{name})."_values";
+			$values_var =~ s/[^a-z0-9_]/_/g;
+			my @values;
+
+			for my $value_name (getSortedKeys($field->{values})) {
+				my $value = $field->{values}->{$value_name} << $field->{start};
+				push @values, [
+					cString($value_name).",",
+					sprintf("0x%08X", $value & $field->{mask})
+				];
+			}
+
+			if (@values) {
+				$str .= "static const pmb887x_io_value_t ".$values_var."[] = {\n";
+				$str .= printTable(\@values, "\t{ ", " },");
+				$str .= "};\n\n";
+			}
+
+			push @fields, [
+				cString($field->{name}).",",
+				sprintf("0x%08X,", $field->{mask}),
+				$field->{start}.",",
+				@values ? $values_var."," : "NULL,",
+				@values ? "ARRAY_SIZE(".$values_var.")" : 0
+			];
+		}
+
+		if (@fields) {
+			$str .= "static const pmb887x_io_field_t ".$fields_var."[] = {\n";
+			$str .= printTable(\@fields, "\t{ ", " },");
+			$str .= "};\n\n";
+		}
+
+		push @regs, [
+			cString($reg->{name}).",",
+			sprintf("0x%X,", $reg->{start}),
+			@fields ? $fields_var."," : "NULL,",
+			@fields ? "ARRAY_SIZE(".$fields_var.")," : "0,",
+			"0"
+		];
+	}
+
+	$str .= "static const pmb887x_io_reg_t ".$var."_regs[] = {\n";
+	$str .= printTable(\@regs, "\t{ ", " },");
+	$str .= "};\n";
+
+	return $str."\n";
+}
+
+sub peripheralVar {
+	my ($peripheral) = @_;
+	return lc($peripheral->{id});
+}
+
+sub peripheralConst {
+	my ($peripheral) = @_;
+	return "PMB887X_TRACE_IO_".$peripheral->{id};
+}
+
+sub cString {
+	my ($value) = @_;
+
+	$value = "" if !defined $value;
+	$value =~ s/\\/\\\\/g;
+	$value =~ s/"/\\"/g;
+	$value =~ s/\n/\\n/g;
+	$value =~ s/\r/\\r/g;
+	$value =~ s/\t/\\t/g;
+	return '"'.$value.'"';
 }
