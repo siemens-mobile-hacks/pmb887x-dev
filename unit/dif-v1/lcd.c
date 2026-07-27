@@ -29,12 +29,7 @@ static const struct lcd_controller *select_detected_controller(enum lcd_controll
 
 int main(void) {
 	test_start("DIFv1 S1D13732 LCD controller");
-	test_category("D1094EC initialization");
-	lcd_board_initialize_pmic();
-	lcd_board_enable_panel_power();
-	lcd_board_enable_vboost();
-	stopwatch_usleep_wd(10000);
-	lcd_board_enable_backlight();
+	lcd_board_initialize_light();
 	lcd_transport_init();
 	test_eq_u32(
 		"CX75 DIF is enabled as master",
@@ -79,6 +74,9 @@ int main(void) {
 	test_eq_u32("controller type matches selected backend", detection.controller_type, lcd->type);
 
 	test_category("Display power and initialization");
+	lcd_board_enable_vboost();
+	stopwatch_usleep_wd(10000);
+	lcd_board_enable_backlight();
 	lcd_transport_reset_controller();
 	test_check("LCD controller initializes", lcd->initialize());
 

@@ -70,19 +70,15 @@ static void s1d13732_write_display_frame(uint16_t frame) {
 }
 
 void s1d13732_init(void) {
+	SCU_RTCIF = 0xAA;
+	RTC_CLC = 1U << MOD_CLC_RMC_SHIFT;
+	RTC_CTRL |= RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN;
+	stopwatch_usleep_wd(1000);
+
 	GPIO_CLC = 1U << MOD_CLC_RMC_SHIFT;
 	DIF_CLC = 1U << MOD_CLC_RMC_SHIFT;
 	gpio_init_output(
 		GPIO_CIF_RESET,
-		GPIO_OS_NONE,
-		GPIO_PS_MANUAL,
-		true,
-		GPIO_PPEN_PUSHPULL,
-		GPIO_PDPU_NONE,
-		GPIO_ENAQ_OFF
-	);
-	gpio_init_output(
-		GPIO_CIF_RS,
 		GPIO_OS_NONE,
 		GPIO_PS_MANUAL,
 		false,
@@ -91,10 +87,19 @@ void s1d13732_init(void) {
 		GPIO_ENAQ_OFF
 	);
 	gpio_init_output(
-		GPIO_CIF_CS,
+		GPIO_CIF_RS,
 		GPIO_OS_NONE,
 		GPIO_PS_MANUAL,
 		true,
+		GPIO_PPEN_PUSHPULL,
+		GPIO_PDPU_NONE,
+		GPIO_ENAQ_OFF
+	);
+	gpio_init_output(
+		GPIO_CIF_CS,
+		GPIO_OS_NONE,
+		GPIO_PS_MANUAL,
+		false,
 		GPIO_PPEN_PUSHPULL,
 		GPIO_PDPU_NONE,
 		GPIO_ENAQ_OFF
@@ -112,7 +117,7 @@ void s1d13732_init(void) {
 		GPIO_CIF_CS_DISPLAY,
 		GPIO_OS_NONE,
 		GPIO_PS_MANUAL,
-		true,
+		false,
 		GPIO_PPEN_PUSHPULL,
 		GPIO_PDPU_NONE,
 		GPIO_ENAQ_OFF
@@ -130,7 +135,7 @@ void s1d13732_init(void) {
 		GPIO_DISPLAY_RESET,
 		GPIO_OS_NONE,
 		GPIO_PS_MANUAL,
-		true,
+		false,
 		GPIO_PPEN_PUSHPULL,
 		GPIO_PDPU_NONE,
 		GPIO_ENAQ_OFF
@@ -160,6 +165,8 @@ void s1d13732_init(void) {
 	stopwatch_usleep_wd(255);
 	gpio_set(GPIO_CIF_RESET, true);
 	PLL_CON2 &= ~PLL_CON2_CLK32_EN;
+
+	s1d13732_write_register(0x0004, 0x00C0);
 }
 
 static bool sample_display_detect_pattern(
@@ -180,10 +187,15 @@ static bool sample_display_detect_pattern(
 struct s1d13732_display_detect_result s1d13732_detect_display(void) {
 	struct s1d13732_display_detect_result result = { 0 };
 
+	gpio_set(GPIO_CIF_CS_DISPLAY, true);
+	s1d13732_write_register(0x0014, 0x1211);
+	/* The CPU releases DISP_CS1 while S1D presents the probe patterns on FPDAT[7:0]. */
+	GPIO_PIN(GPIO_DISP_CS1) |= GPIO_ENAQ_TRISTATE;
+	GPIO_PIN(GPIO_DISP_CS1) = GPIO_IS_NONE | GPIO_PS_MANUAL | GPIO_DATA_HIGH |
+		GPIO_DIR_IN | GPIO_PDPU_NONE | GPIO_ENAQ_OFF;
+
 	/* gimmick_begin_display_detection(): run the S1D PLL from the external 32.768 kHz clock. */
 	PLL_CON2 |= PLL_CON2_CLK32_EN;
-	s1d13732_write_register(0x0004, 0x00C0);
-	s1d13732_write_register(0x0014, 0x1211);
 	s1d13732_write_register(0x000C, 0x1027);
 	s1d13732_write_register(0x000E, 0x2840);
 	s1d13732_write_register(0x0010, 0x0103);
@@ -196,8 +208,6 @@ struct s1d13732_display_detect_result s1d13732_detect_display(void) {
 	uint16_t saved_display_detect_config = s1d13732_read_register(0x0202);
 	s1d13732_write_register(0x0202, 0x0000);
 
-	/* The CPU releases DISP_CS1 while S1D presents the probe patterns on FPDAT[7:0]. */
-	gpio_init_input(GPIO_DISP_CS1, GPIO_IS_NONE, GPIO_PS_MANUAL, GPIO_PDPU_NONE, GPIO_ENAQ_OFF);
 	s1d13732_write_register(0x0060, 0x00C0);
 	if (sample_display_detect_pattern(&result, 0x00C0, S1D13732_DETECT_PATTERN_C0)) {
 		result.controller_type = LCD_CONTROLLER_SSD1286;
