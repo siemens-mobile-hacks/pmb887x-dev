@@ -32,6 +32,7 @@ Run a test on real hardware:
 | `i2c-v1` | I2Cv1 registers, hardware bits, IRQ transfers, and PMIC SMBus reads |
 | `i2c-v2` | I2Cv2 registers, IRQ transfers, SMBus, FIFO modes, and bus scan |
 | `i2c-v2-dma` | I2Cv2 SMBus transfers through DMA |
+| `i2c-fm-radio` | E71 TEA5761UK identification, direct register transfer, and readback |
 | `cfi-intel-buffer-abort` | Destructive Intel/ST E8/E9 cross-block buffered-program abort and recovery |
 | `ssc` | SSC loopback, serial formats, FIFO modes, interrupts, and errors |
 | `ssc-dma` | SSC full-duplex FIFO DMA, bursts, LLI, widths, statuses, and interrupts |

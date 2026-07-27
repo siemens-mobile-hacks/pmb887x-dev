@@ -1,5 +1,6 @@
 #include <pmb887x.h>
 
+#include "i2c-v2.h"
 #include "test.h"
 
 #ifdef PMB8876
@@ -269,6 +270,10 @@ static enum transfer_result transfer_bytes(uint8_t address, const uint8_t *tx, u
 	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
 
 	return transfer_bytes_running(address, tx, rx, size);
+}
+
+bool i2c_v2_transfer(uint8_t address, const uint8_t *tx, uint8_t *rx, uint32_t size) {
+	return transfer_bytes(address, tx, rx, size) == TRANSFER_DONE;
 }
 
 static enum transfer_result smbus_read(uint8_t reg, uint8_t *data, uint32_t size) {
@@ -722,7 +727,7 @@ static void test_nack_recovery(void) {
 	test_check("recovered PMIC read has no NACK", (transfer.protocol_status & I2C_PIRQSS_NACK) == 0);
 }
 
-static void configure_i2c(void) {
+void i2c_v2_init(void) {
 	GPIO_PIN(GPIO_I2C_SCL) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
 	GPIO_PIN(GPIO_I2C_SDA) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
 	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
@@ -745,7 +750,7 @@ static void configure_i2c(void) {
 int i2c_v2_test(void) {
 	test_start("I2Cv2 peripheral test");
 	test_reset_values();
-	configure_i2c();
+	i2c_v2_init();
 
 	test_category("Registers");
 	test_registers();
@@ -775,7 +780,7 @@ int i2c_v2_test(void) {
 
 int i2c_v2_dma_test(void) {
 	test_start("I2Cv2 DMA test");
-	configure_i2c();
+	i2c_v2_init();
 	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
 	SCU_DMARS |= BIT(8) | BIT(9);
 
@@ -859,6 +864,18 @@ __IRQ void irq_handler(void) {
 }
 
 #else
+
+void i2c_v2_init(void) {
+}
+
+bool i2c_v2_transfer(uint8_t address, const uint8_t *tx, uint8_t *rx, uint32_t size) {
+	(void) address;
+	(void) tx;
+	(void) rx;
+	(void) size;
+
+	return false;
+}
 
 int i2c_v2_test(void) {
 	test_start("I2Cv2 peripheral test");
