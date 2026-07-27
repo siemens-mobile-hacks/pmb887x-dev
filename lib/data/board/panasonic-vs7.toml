@@ -89,3 +89,17 @@ HASH		= [0, 2]
 VOLUME_UP	= [0, 6]
 VOLUME_DOWN	= [2, 3]
 CAMERA		= [0, 5]
+
+[keyboard.gpio]
+END_CALL = [{ target = "PMIC:ON" }]
+
+[startup.ONLINE]
+duration = 5
+keys = ["END_CALL"]
+
+[startup.PTEST]
+duration = 5
+keys = ["STAR", "HASH", "END_CALL"]
+
+[startup.OFFLINE]
+keys = []

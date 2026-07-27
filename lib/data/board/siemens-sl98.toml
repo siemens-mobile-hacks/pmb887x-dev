@@ -74,3 +74,17 @@ NUM0		= [3, 1]
 HASH		= [3, 2]
 
 END_CALL	= [4, 0]
+
+[keyboard.gpio]
+END_CALL = [{ target = "PMIC:ON" }]
+
+[startup.ONLINE]
+duration = 5
+keys = ["END_CALL"]
+
+[startup.PTEST]
+duration = 5
+keys = ["STAR", "HASH", "END_CALL"]
+
+[startup.OFFLINE]
+keys = []
