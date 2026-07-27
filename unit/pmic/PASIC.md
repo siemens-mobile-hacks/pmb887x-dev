@@ -1,6 +1,6 @@
 # PASIC PMIC families
 
-PASIC is the common emulator model for the Dialog Mozart and ST Twigo4 PMIC families. The register map was
+PASIC is the common register superset for the Dialog Mozart and ST Twigo4 PMIC families. The register map was
 reconstructed from the EL71 firmware and the reset dumps in `qemu/hw/arm/pmb887x/i2c/d1094xx.c`.
 
 The common model is intentionally a superset. A register present in `PASIC.cfg` is not necessarily implemented by
@@ -165,7 +165,7 @@ higher values remain undocumented.
 
 - `D1094XX.cfg` describes the D1094xx family and generates its public header.
 - `D1601XX.cfg` describes the D1601xx family and generates its public header.
-- `PASIC.cfg` is the emulator-only union used for register decoding and tracing.
+- `PASIC.cfg` is the common superset used by the emulator and generic PASIC tools.
 
-`PASIC.cfg` has `.header 0`, so it does not expose a public header. Firmware code must use the matching
-family-specific map.
+Use `PASIC.h` only when code must work with multiple PASIC families. Code targeting one known family should use
+the matching family-specific header.

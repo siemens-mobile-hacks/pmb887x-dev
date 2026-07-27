@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <pmic/PASIC.h>
 
 #include "host.h"
 #include "test.h"
@@ -92,7 +93,7 @@ static void enable_ati_endpoint(void) {
 	gpio_init_input(GPIO_CIF_PCLK, GPIO_IS_NONE, GPIO_PS_MANUAL, GPIO_PDPU_PULLDOWN, GPIO_ENAQ_ON);
 	gpio_init_input(GPIO_CIF_VSYNC, GPIO_IS_NONE, GPIO_PS_MANUAL, GPIO_PDPU_PULLDOWN, GPIO_ENAQ_ON);
 
-	i2c_smbus_write_byte(0x31, 0x10, 0x08);
+	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_CHARGE_CONTROL, PASIC_CHARGE_CONTROL_CHARGE_EN);
 	stopwatch_usleep_wd(10000);
 	gpio_set(GPIO_MM_EN, true);
 	stopwatch_usleep_wd(40000);

@@ -1,5 +1,5 @@
 #include <pmb887x.h>
-#include <pmic/D1094XX.h>
+#include <pmic/PASIC.h>
 
 #include "lcd-board.h"
 #include "test.h"
@@ -13,71 +13,71 @@ void lcd_board_initialize_pmic(void) {
 		uint8_t reg;
 		uint8_t value;
 	} INITIAL_VALUES[] = {
-		{ D1094XX_IRQ_MASK_1, 0x0A },
-		{ D1094XX_IRQ_MASK_2, 0x40 },
-		{ D1094XX_SUPPLY_CONTROL_1, 0xB7 },
-		{ D1094XX_RF_VOLTAGE, 0x11 },
-		{ D1094XX_SUPPLY_ENABLE_1, 0x2F },
-		{ D1094XX_SUPPLY_ENABLE_2, 0x09 },
-		{ D1094XX_RF_ENABLE, 0x00 },
-		{ D1094XX_LIGHT_ENABLE, D1094XX_LIGHT_ENABLE_LED2_EN | D1094XX_LIGHT_ENABLE_LED3_EN },
+		{ PASIC_IRQ_MASK_1, 0x0A },
+		{ PASIC_IRQ_MASK_2, 0x40 },
+		{ PASIC_SUPPLY_CONTROL_1, 0xB7 },
+		{ PASIC_RF_VOLTAGE, 0x11 },
+		{ PASIC_SUPPLY_ENABLE_1, 0x2F },
+		{ PASIC_SUPPLY_ENABLE_2, 0x09 },
+		{ PASIC_RF_ENABLE, 0x00 },
+		{ PASIC_LIGHT_ENABLE, PASIC_LIGHT_ENABLE_LED2_EN | PASIC_LIGHT_ENABLE_LED3_EN },
 		{ 0x0D, 0x00 },
-		{ D1094XX_POWER, 0x10 },
-		{ D1094XX_CHARGE_CONTROL, 0x20 },
-		{ D1094XX_LIGHT_PWM1, 0x00 },
-		{ D1094XX_LIGHT_PWM2, 0x00 },
-		{ D1094XX_LIGHT_CONTROL, 0x00 },
+		{ PASIC_POWER, 0x10 },
+		{ PASIC_CHARGE_CONTROL, 0x20 },
+		{ PASIC_LIGHT_PWM1, 0x00 },
+		{ PASIC_LIGHT_PWM2, 0x00 },
+		{ PASIC_LIGHT_CONTROL, 0x00 },
 	};
 
 	i2c_init();
 	test_id_u32(
 		"D1094EC identification",
 		0x94,
-		i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_IDENTIFICATION)
+		i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_IDENTIFICATION)
 	);
 	for (uint32_t i = 0; i < ARRAY_SIZE(INITIAL_VALUES); i++)
-		i2c_smbus_write_byte(D1094XX_I2C_ADDR, INITIAL_VALUES[i].reg, INITIAL_VALUES[i].value);
+		i2c_smbus_write_byte(PASIC_I2C_ADDR, INITIAL_VALUES[i].reg, INITIAL_VALUES[i].value);
 	test_check("stock CX75 PMIC configuration sent", true);
 }
 
 void lcd_board_enable_panel_power(void) {
-	uint8_t charge_control = i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_CHARGE_CONTROL);
+	uint8_t charge_control = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_CHARGE_CONTROL);
 
 	/* The CX75 firmware enables charging immediately before LCD initialization. */
-	charge_control |= D1094XX_CHARGE_CONTROL_CHARGE_EN;
-	i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_CHARGE_CONTROL, charge_control);
+	charge_control |= PASIC_CHARGE_CONTROL_CHARGE_EN;
+	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_CHARGE_CONTROL, charge_control);
 	test_eq_u32(
 		"PMIC applies stock CX75 charger state",
 		charge_control,
-		i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_CHARGE_CONTROL)
+		i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_CHARGE_CONTROL)
 	);
 }
 
 void lcd_board_enable_vboost(void) {
-	uint8_t supply_enable = i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_SUPPLY_ENABLE_2);
+	uint8_t supply_enable = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2);
 
 	/* CX75 illumination enables VBOOST through D1094EC supply 0x0E (register 0x07 bit 2). */
-	supply_enable |= D1094XX_SUPPLY_ENABLE_2_VBOOST_EN;
-	i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_SUPPLY_ENABLE_2, supply_enable);
+	supply_enable |= PASIC_SUPPLY_ENABLE_2_VBOOST_EN;
+	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2, supply_enable);
 	test_eq_u32(
 		"PMIC enables CX75 LCD VBOOST",
 		supply_enable,
-		i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_SUPPLY_ENABLE_2)
+		i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2)
 	);
 }
 
 void lcd_board_enable_backlight(void) {
-	uint8_t control = i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_LIGHT_CONTROL);
+	uint8_t control = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_LIGHT_CONTROL);
 
-	control &= ~(D1094XX_LIGHT_CONTROL_PWM1_EN |
-		D1094XX_LIGHT_CONTROL_PWM2_EN | D1094XX_LIGHT_CONTROL_MASTER_EN);
-	control |= D1094XX_LIGHT_CONTROL_LED2_EN |
-		D1094XX_LIGHT_CONTROL_PWM1_EN | D1094XX_LIGHT_CONTROL_MASTER_EN;
-	i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_LIGHT_PWM1, 0x50);
-	i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_LIGHT_CONTROL, control);
+	control &= ~(PASIC_LIGHT_CONTROL_PWM1_EN |
+		PASIC_LIGHT_CONTROL_PWM2_EN | PASIC_LIGHT_CONTROL_MASTER_EN);
+	control |= PASIC_LIGHT_CONTROL_LED2_EN |
+		PASIC_LIGHT_CONTROL_PWM1_EN | PASIC_LIGHT_CONTROL_MASTER_EN;
+	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_LIGHT_PWM1, 0x50);
+	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_LIGHT_CONTROL, control);
 	test_eq_u32(
 		"PMIC enables CX75 display LIGHT",
 		control,
-		i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_LIGHT_CONTROL)
+		i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_LIGHT_CONTROL)
 	);
 }

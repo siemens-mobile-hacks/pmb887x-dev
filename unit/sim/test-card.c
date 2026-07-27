@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <pmic/PASIC.h>
 
 #include "i2c.h"
 #include "test.h"
@@ -65,12 +66,12 @@ static void delay_ms(uint32_t milliseconds) {
 
 static bool pmic_read_byte(uint8_t reg, uint8_t *value) {
 	i2c_start();
-	if (i2c_write(0x31 << 1) || i2c_write(reg))
+	if (i2c_write(PASIC_I2C_ADDR << 1) || i2c_write(reg))
 		goto no_ack;
 	i2c_stop();
 
 	i2c_start();
-	if (i2c_write((0x31 << 1) | 1))
+	if (i2c_write((PASIC_I2C_ADDR << 1) | 1))
 		goto no_ack;
 	*value = i2c_read(true);
 	i2c_stop();
@@ -84,7 +85,7 @@ no_ack:
 
 static bool pmic_write_byte(uint8_t reg, uint8_t value) {
 	i2c_start();
-	bool acknowledged = !i2c_write(0x31 << 1) && !i2c_write(reg) && !i2c_write(value);
+	bool acknowledged = !i2c_write(PASIC_I2C_ADDR << 1) && !i2c_write(reg) && !i2c_write(value);
 	i2c_stop();
 
 	return acknowledged;
@@ -141,7 +142,8 @@ static bool sim_receive_procedure(uint8_t *value) {
 
 static bool sim_power_on(uint8_t atr[SIM_MAX_ATR_SIZE], size_t *atr_size) {
 	i2c_init();
-	if (!pmic_read_byte(0x06, &saved_pmic_reg06) || !pmic_read_byte(0x0A, &saved_pmic_reg0a))
+	if (!pmic_read_byte(PASIC_SUPPLY_ENABLE_1, &saved_pmic_reg06) ||
+		!pmic_read_byte(PASIC_SUPPLY_MODE, &saved_pmic_reg0a))
 		return false;
 	pmic_state_saved = true;
 
@@ -153,7 +155,8 @@ static bool sim_power_on(uint8_t atr[SIM_MAX_ATR_SIZE], size_t *atr_size) {
 	SIM_IMSC = 0;
 	SIM_ICR = SIM_IRQ_MASK;
 	SIM_CON = SIM_CON_SIMEN;
-	if (!pmic_write_byte(0x0A, saved_pmic_reg0a) || !pmic_write_byte(0x06, saved_pmic_reg06 | BIT(4)))
+	if (!pmic_write_byte(PASIC_SUPPLY_MODE, saved_pmic_reg0a) ||
+		!pmic_write_byte(PASIC_SUPPLY_ENABLE_1, saved_pmic_reg06 | PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN))
 		return false;
 	GPIO_PIN(GPIO_I2C_SCL) = 0x1211;
 	GPIO_PIN(GPIO_I2C_SDA) = 0x1211;
@@ -182,7 +185,7 @@ static void sim_power_off(void) {
 	SIM_ICR = SIM_IRQ_MASK;
 	if (pmic_state_saved) {
 		i2c_init();
-		pmic_write_byte(0x06, saved_pmic_reg06);
+		pmic_write_byte(PASIC_SUPPLY_ENABLE_1, saved_pmic_reg06);
 	}
 }
 
