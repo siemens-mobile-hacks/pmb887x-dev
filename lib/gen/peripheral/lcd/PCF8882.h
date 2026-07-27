@@ -153,6 +153,7 @@
 #define	PCF8882_COLMOD_P_PIXEL_8_BIT			0x2
 #define	PCF8882_COLMOD_P_PIXEL_12_BIT			0x3
 #define	PCF8882_COLMOD_P_PIXEL_16_BIT			0x5
+#define	PCF8882_COLMOD_P_PIXEL_18_BIT			0x7
 
 /* Read manufacturer ID */
 #define	PCF8882_RDID1							0xDA

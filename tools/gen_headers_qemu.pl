@@ -2,12 +2,19 @@
 use warnings;
 use strict;
 use File::Basename;
+use File::Path qw(make_path);
 use lib dirname(__FILE__).'/lib';
 use Data::Dumper;
 use List::Util qw(min max);
 use Sie::CpuMetadata;
 use Sie::BoardMetadata;
 use Sie::Utils;
+
+if (@ARGV) {
+	die "Usage: $0 [--peripherals DIR]\n" if @ARGV != 2 || $ARGV[0] ne "--peripherals";
+	genPeripheralHeaders($ARGV[1]);
+	exit;
+}
 
 my $str = "#pragma once\n\n";
 
@@ -25,6 +32,92 @@ for my $module (@{$cpu_meta->getAllModules()}) {
 }
 
 print $str."\n";
+
+sub genPeripheralHeaders {
+	my ($root) = @_;
+	my $cpu_meta = Sie::CpuMetadata->new("generic");
+	make_path($root);
+
+	for my $peripheral (@{$cpu_meta->getAllPeripherals()}) {
+		my $file = $root."/".$peripheral->{id}.".h";
+		open my $fp, ">", $file or die "open($file): $!";
+		print $fp genPeripheralHeader($peripheral);
+		close $fp;
+	}
+}
+
+sub genPeripheralHeader {
+	my ($peripheral) = @_;
+	my @header;
+	my $prefix = $peripheral->{id}."_";
+	my $addr_width = 2;
+
+	for my $reg (values %{$peripheral->{regs}}) {
+		$addr_width = max($addr_width, length(sprintf("%X", $reg->{end})));
+	}
+
+	push @header, "#pragma once";
+	push @header, "";
+	push @header, "#include \"qemu/bitops.h\"";
+	push @header, "";
+	push @header, "// ".$peripheral->{id};
+	push @header, "// ".$peripheral->{descr} if $peripheral->{descr};
+
+	if (defined $peripheral->{addr}) {
+		push @header, ["#define", $prefix."I2C_ADDR", sprintf("0x%02X", $peripheral->{addr})];
+		push @header, [];
+	}
+
+	for my $reg_name (getSortedKeys($peripheral->{regs}, 'start')) {
+		my $reg = $peripheral->{regs}->{$reg_name};
+		push @header, "/* ".$reg->{descr}." */" if $reg->{descr};
+
+		if ($reg->{start} != $reg->{end}) {
+			push @header, [
+				"#define",
+				$prefix.$reg_name."(n)",
+				sprintf("(0x%0*X + ((n) * 0x%X))", $addr_width, $reg->{start}, $reg->{step})
+			];
+		} else {
+			push @header, ["#define", $prefix.$reg_name, sprintf("0x%0*X", $addr_width, $reg->{start})];
+		}
+
+		for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
+			my $field = $reg->{fields}->{$field_name};
+			my $field_name_prepared = $reg->{field_format};
+			$field_name_prepared =~ s/{reg}/$reg_name/g;
+			$field_name_prepared =~ s/{field}/$field_name/g;
+			my $descr = $field->{descr} ? " // ".$field->{descr} : "";
+
+			if ($field->{size} > 1) {
+				push @header, [
+					"#define",
+					$prefix.$field_name_prepared,
+					"MAKE_64BIT_MASK(".$field->{start}.", ".$field->{size}.")",
+					$descr
+				];
+				push @header, ["#define", $prefix.$field_name_prepared."_SHIFT", $field->{start}];
+			} else {
+				push @header, ["#define", $prefix.$field_name_prepared, "BIT(".$field->{start}.")", $descr];
+			}
+
+			for my $value_name (getSortedKeys($field->{values})) {
+				my $value_name_prepared = $reg->{enum_format};
+				$value_name_prepared =~ s/{reg}/$reg_name/g;
+				$value_name_prepared =~ s/{field}/$field_name/g;
+				$value_name_prepared =~ s/{value}/$value_name/g;
+
+				my $value = $field->{values}->{$value_name} << $field->{start};
+				push @header, ["#define", $prefix.$value_name_prepared, sprintf("0x%X", $value)];
+			}
+		}
+		push @header, [];
+	}
+
+	my $str = printTable(\@header);
+	$str =~ s/\s+\z/\n/;
+	return $str;
+}
 
 sub getCommonRegsHeader {
 	my ($cpu_meta, $regs) = @_;
