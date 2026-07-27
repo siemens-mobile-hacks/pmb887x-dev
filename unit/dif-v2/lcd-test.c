@@ -253,7 +253,7 @@ int main(void) {
 	test_reset_values();
 
 	lcd_transport_init();
-	lcd_board_enable_panel_power();
+	lcd_board_initialize_light();
 
 	test_category("Controller detection and initialization");
 	uint32_t detected_id = UINT32_MAX;
