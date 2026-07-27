@@ -111,6 +111,8 @@ sub genPeripheralHeaders {
 	my $root = dirname(__FILE__).'/../lib/gen/peripheral';
 
 	for my $peripheral (@{$cpu_meta->getAllPeripherals()}) {
+		next if defined $peripheral->{header} && !$peripheral->{header};
+
 		my $relative_path = $peripheral->{relative_path};
 		$relative_path =~ s/\.cfg$/.h/i;
 

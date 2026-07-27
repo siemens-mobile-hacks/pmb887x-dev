@@ -499,7 +499,7 @@ sub parseModule {
 						$module->{$key} = $value;
 					} elsif ($key eq "id") {
 						$module->{ids} = [map { parseAnyInt($_) } split(/\s*,\s*/, $value)];
-					} elsif ($key eq "size" || $key eq "multi" || $key eq "addr") {
+					} elsif ($key eq "size" || $key eq "multi" || $key eq "addr" || $key eq "header") {
 						$module->{$key} = parseAnyInt($value);
 					} else {
 						die("Invalid: '$line'");

@@ -1,11 +1,5 @@
 [
 	{
-		"name":		"zzzzz",
-		"addr":		0x000829B4,
-		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"],
-		"skip":		false
-	},
-	{
 		"name":		"debug2",
 		"addr":		0xA08D5C56,
 		"args":		["cstr", "uint32", "uint32", "uint32", "fmt"],
@@ -33,43 +27,169 @@
 		"addr":		0xa04d3278,
 		"args":		["uint32", "exit", "uint32"]
 	}, {
+		"name":		"PASIC_PowerOff",
+		"addr":		0xA04FD51C,
+		"args":		[]
+	}, {
+		"name":		"PASIC_ReadReg",
+		"addr":		0xA04FCF44,
+		"args":		["uint32"]
+	}, {
+		"name":		"PASIC_AdcControl",
+		"addr":		0xA04FCE14,
+		"args":		["uint8", "uint32"]
+	}, {
+		"name":		"PASIC_ClickControl",
+		"addr":		0xA04FC42C,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	}, {
+		"name":		"PASIC_ConfigureStereoMode",
+		"addr":		0xA04FC9E0,
+		"args":		["uint8", "uint32"]
+	}, {
+		"name":		"PASIC_ControlPushPullAmplifier",
+		"addr":		0xA04FC06C,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	}, {
+		"name":		"PASIC_ControlResource",
+		"addr":		0xA04FD31C,
+		"args":		["uint32", "ptr", "uint32", "uint32"]
+	}, {
+		"name":		"PASIC_DacControl",
+		"addr":		0xA04FCEAC,
+		"args":		["uint8", "uint32"]
+	}, {
+		"name":		"PASIC_DdpsControl",
+		"addr":		0xA04FCFCC,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	}, {
+		"name":		"PASIC_I2sRxControl",
+		"addr":		0xA04FBD48,
+		"args":		["uint8", "uint32"]
+	}, {
+		"name":		"PASIC_I2sTxControl",
+		"addr":		0xA04FBDE0,
+		"args":		["uint8", "uint32"]
+	}, {
+		"name":		"PASIC_MonoControl",
+		"addr":		0xA04FCBA8,
+		"args":		["uint8", "uint32"]
+	}, {
+		"name":		"PASIC_ReadChargeStatus",
+		"addr":		0xA01ABD78,
+		"args":		["uint32"]
+	}, {
+		"name":		"PASIC_ReadIrqStatus",
+		"addr":		0xA04FD6D4,
+		"args":		[]
+	}, {
+		"name":		"PASIC_ReadTurnoffReason",
+		"addr":		0xA04FD4E8,
+		"args":		["uint32"]
+	}, {
+		"name":		"PASIC_SetAdcSampleRate",
+		"addr":		0xA04FC7C0,
+		"args":		["uint32", "uint32"]
+	}, {
+		"name":		"PASIC_SetAmplifierGain",
+		"addr":		0xA04FBE78,
+		"args":		["uint32", "uint8", "uint32"]
+	}, {
+		"name":		"PASIC_SetAuxAudioControl",
+		"addr":		0xA04FCA78,
+		"args":		["uint8", "uint32"]
+	}, {
+		"name":		"PASIC_SetChargeCurrent",
+		"addr":		0xA04FB884,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	}, {
+		"name":		"PASIC_SetChargeEnabled",
+		"addr":		0xA04FB79C,
+		"args":		["uint32", "uint32"]
+	}, {
+		"name":		"PASIC_SetDacSampleRate",
+		"addr":		0xA04FC8D0,
+		"args":		["uint32", "uint32"]
+	}, {
+		"name":		"PASIC_SetMuxInput",
+		"addr":		0xA04FCB10,
+		"args":		["uint8", "uint32"]
+	}, {
+		"name":		"PASIC_SetRegister",
+		"addr":		0xA04FA434,
+		"args":		["uint32", "uint32"]
+	}, {
+		"name":		"PASIC_SetOutportMode",
+		"addr":		0xA04FD084,
+		"args":		["uint32", "uint32"]
+	}, {
+		"name":		"PASIC_SetSupply",
+		"addr":		0xA04F9274,
+		"args":		["uint32"]
+	}, {
+		"name":		"PASIC_SetVoltage",
+		"addr":		0xA04FB3E4,
+		"args":		["uint32", "uint32", "uint32"]
+	}, {
+		"name":		"_thunk_PASIC_SetVoltage",
+		"addr":		0xA0C1BF14,
+		"args":		["uint32", "uint32", "uint32"]
+	}, {
+		"name":		"PASIC_StereoControl",
+		"addr":		0xA04FCCD0,
+		"args":		["uint8", "uint32"]
+	}, {
+		"name":		"PASIC_SwitchMux",
+		"addr":		0xA04FC6B8,
+		"args":		["uint32", "uint8", "uint32"]
+	}, {
+		"name":		"pasic_i2c_completion",
+		"addr":		0xA057CDB4,
+		"args":		["uint32", "uint32", "uint32", "uint32"],
+		"skip":		true
+	}, {
 		"name":		"pasic_i2c_transfer",
 		"addr":		0xA057D920,
 		"args":		["uint8", "uint8", "uint8*", "uint8", "uint8"],
 		"skip":		false
+	}, {
+		"name":		"pasic_init",
+		"addr":		0xA04FA504,
+		"args":		["uint32", "uint32"]
+	}, {
+		"name":		"pasic_init_registers",
+		"addr":		0xA057C960,
+		"args":		["uint32", "uint32"]
+	}, {
+		"name":		"pasic_is_supply_locked",
+		"addr":		0xA04F9898,
+		"args":		[],
+		"skip":		true
+	}, {
+		"name":		"PASIC_SetLight",
+		"addr":		0xA04FBA84,
+		"args":		["uint32", "uint32", "uint32"]
+	}, {
+		"name":		"PASIC_SetLightControl",
+		"addr":		0xA04FB628,
+		"args":		["uint32", "uint32", "uint32", "uint32"]
+	}, {
+		"name":		"PASIC_SetSliMode",
+		"addr":		0xA04FB458,
+		"args":		["uint32"]
+	}, {
+		"name":		"PASIC_SetVibra",
+		"addr":		0xA04FBC84,
+		"args":		["uint32", "uint32"]
+	}, {
+		"name":		"pasic_write_reg",
+		"addr":		0xA057DB0C,
+		"args":		["uint32", "uint8", "uint32"]
 	}, {
 		"name":		"debug_flash_exit",
 		"addr":		0xa05702a8,
 		"args":		["uint32", "uint32", "uint32", "uint32"],
 		"skip":		false,
 		"stop":		1
-	}, {
-		"name":		"acc",
-		"addr":		0xa8e26fcc,
-		"watch":	"w"
-	}, {
-		"name":		"aaaaa",
-		"addr":		0xa0544fd8,
-		"args":		[],
-	},
-	{
-		"name":		"NU_Create_Mailbox",
-		"addr":		0xA009D684,
-		"args":		["ptr","cstr","uint8"]
-	},
-	{
-		"name":		"NU_Delete_Mailbox",
-		"addr":		0xA009D6B0,
-		"args":		["ptr"]
-	},
-	{
-		"name":		"NU_Send_To_Mailbox",
-		"addr":		0xA009D6D0,
-		"args":		["ptr","ptr","int32"]
-	},
-	{
-		"name":		"NU_Receive_From_Mailbox",
-		"addr":		0xA009D734,
-		"args":		["ptr","ptr","int32"]
-	},
+	}
 ]
