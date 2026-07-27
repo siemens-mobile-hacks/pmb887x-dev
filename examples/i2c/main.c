@@ -95,15 +95,9 @@ int main(void) {
 	gpio_init_output(GPIO_LED_FL_EN, GPIO_OS_NONE, GPIO_PS_MANUAL, false, GPIO_PPEN_PUSHPULL, GPIO_PDPU_NONE, false);
 	
 	dump_all_regs();
-//	test_vibra();
-//	test_backlight();
-//	test_pickoff_sound();
-
-	uint32_t v = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_IDENTIFICATION);
-	printf("%02X: %02X\n", 0, v);
-
-	uint32_t v2 = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_IDENTIFICATION);
-	printf("%02X: %02X\n", 0, v2);
+	test_vibra();
+	test_backlight();
+	test_pickoff_sound();
 
 	printf("Done!\n");
 	
