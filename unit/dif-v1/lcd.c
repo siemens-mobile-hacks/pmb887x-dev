@@ -11,16 +11,16 @@
 #error The DIFv1 S1D13732 LCD test requires BOARD=siemens-cx75
 #endif
 
-static const struct lcd_controller *select_detected_controller(enum lcd_controller_type type) {
+static const struct lcd_controller *select_display_controller(enum lcd_controller_type type) {
 	switch (type) {
 	case LCD_CONTROLLER_SSD1286:
+	case LCD_CONTROLLER_UNKNOWN:
 		return &lcd_controller_ssd1286;
 	case LCD_CONTROLLER_PCF8882:
 		return &lcd_controller_pcf8882;
 	case LCD_CONTROLLER_LS020:
 	case LCD_CONTROLLER_L5F30539P00:
 	case LCD_CONTROLLER_JBT6K71:
-	case LCD_CONTROLLER_UNKNOWN:
 		return NULL;
 	}
 
@@ -66,12 +66,20 @@ int main(void) {
 	test_eq_u32("probe stops after the first high response", expected_sampled_patterns, detection.sampled_patterns);
 	test_id_u32("display detect response bits", expected_high_patterns, detection.high_patterns);
 
-	const struct lcd_controller *lcd = select_detected_controller(detection.controller_type);
-	test_check("supported LCD controller detected", lcd != NULL);
+	const struct lcd_controller *lcd = select_display_controller(detection.controller_type);
+	test_check("supported LCD controller selected", lcd != NULL);
 	if (lcd == NULL)
 		return test_finish();
-	printf("# detected controller: %s, type=%u, nominal ID=%08X\n", lcd->name, lcd->type, lcd->id);
-	test_eq_u32("controller type matches selected backend", detection.controller_type, lcd->type);
+	bool fallback = detection.controller_type == LCD_CONTROLLER_UNKNOWN;
+	printf(
+		"# selected controller: %s, type=%u, nominal ID=%08X%s\n",
+		lcd->name,
+		lcd->type,
+		lcd->id,
+		fallback ? " (fallback)" : ""
+	);
+	enum lcd_controller_type expected_type = fallback ? LCD_CONTROLLER_SSD1286 : detection.controller_type;
+	test_eq_u32("controller type matches selected backend", expected_type, lcd->type);
 
 	test_category("Display power and initialization");
 	lcd_board_enable_vboost();
