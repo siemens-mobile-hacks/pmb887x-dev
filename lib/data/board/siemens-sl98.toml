@@ -49,6 +49,18 @@ M_9 = { type = "resistor", value = 15000 }
 [dsp]
 ram0_value = 0x0801
 
+[gpio.aliases]
+DSPOUT0 = "AC_DCD"
+USART0_TXD = "AC_TX"
+USART0_RXD = "AC_RX"
+USART0_CTS = "AC_RTS"
+USART0_RTS = "AC_CTS"
+
+[gpio.inputs]
+# Cable detect
+AC_RTS = 1
+AC_RX = 1
+
 [keyboard]
 # [KP_IN, KP_OUT, ..., KP_OUT]
 NAV_UP		= [0, 3]
