@@ -244,6 +244,106 @@ A startup firmware `0x0800` listing must not be matched with Mask ROM `0x0801`:
 trampolines and built-in handler addresses belong to a matched Mask/startup
 version pair.
 
+## Testing Mask ROM commands
+
+The `dsp-mask-rom-commands` unit exercises the boot dispatcher that is already
+running from Program Mask ROM after DSP reset. It does not load phone DSP
+startup firmware. The boot phase covers five of the six boot opcodes:
+
+- `PLOAD` and `PREAD`: write, overwrite, and verify Program RAM;
+- `DLOAD` and `DREAD`: write, overwrite, and verify Data RAM;
+- `PREAD`: verify fixed Program Mask ROM words at `P:2000`, `P:2779`, and
+  `P:9520`;
+- `DREAD`: verify fixed Data Mask ROM words at `D:8000` and the command table at
+  `D:854E`;
+- `BRANCH`: transfer control to the minimal test startup in Program RAM.
+
+The test startup installs the three command-pipe vectors, enables all three
+pipe interrupt sources, and otherwise waits. Its only custom command is
+`USER_0` (ID 64): the trampoline at `P:1FFA` routes to a four-word handler at
+`P:0180`, which copies one parameter to Shared RAM. Interrupt handling and
+runtime command dispatch remain in Mask ROM.
+
+After `BRANCH`, the test verifies the custom command and these built-in Mask ROM
+commands through the normal command pipe and negative-command ACK protocol:
+
+- `BB_INIT` (1), followed by `READ_DSP` of the initialized state;
+- `READ_DSP` (33) from Data Mask ROM;
+- `WRITE_DSP` (32), followed by `READ_DSP` of Data RAM;
+- `WRITE_PROG` (34), verified after reset with boot `PREAD`;
+- `IQ_SWAP_1` (3), `IQ_SWAP_2` (4), and `DTX_ON` (30), each with states 0 and 1.
+
+The last three handlers use the TEAKLite eight-bit immediate addressing mode.
+The `page` register is the low byte of `st1`; the Mask ROM interrupt wrapper
+sets `st1` to `0x007D`, so `[page:0x7A]`, `[page:0x8B]`, and `[page:0x92]`
+refer to `D:7D7A`, `D:7D8B`, and `D:7D92`. Reading the same low offsets from
+page zero does not observe the command state.
+
+`BRANCH` is last in each boot session because it terminates the Mask ROM boot
+loop. `FAST` is not issued: it requires a valid standby-power-down snapshot in
+`SM_SBPD_*` and is not safe as an isolated reset-state command.
+
+The source image is `unit/dsp/commands.asm`. `commands.inc` contains the entire
+DSP1 file as a byte dump; the test parses the DSP1 header and segment table at
+runtime. Regenerate it with:
+
+```sh
+unit/dsp/build_dsp_rom.sh
+```
+
+Set `MAKEDSP1=/path/to/makedsp1` if the assembler is installed elsewhere.
+
+Run it with:
+
+```sh
+cd bsp/unit
+BOARD=siemens-el71 TEST_COLOR=OFF ./run.sh dsp-mask-rom-commands
+```
+
+The PMB8876 revision 10, Mask ID `0x0801` hardware run passes all 66 checks.
+
+## DSP service-request interrupts
+
+The five consecutive ARM-side service-request registers at `SCU:00CC..00DC`
+are not five DSP sources:
+
+- `SCU_PM_INT_SRC` at `00CC`, VIC input 56, is the external Power ASIC/PMIC
+  interrupt. SL98 registers its handler from `pow_int.c` and configures the
+  corresponding `PM_INT` filter and edge field at `SCU_EXTI_*[17:16]`;
+- `SCU_DSP_SRC(0..3)` at `00D0..00DC`, VIC inputs 57 through 60, are the four
+  TEAKLite DSP-to-MCU interrupt sources.
+
+The primary `scu` unit covers `PM_INT_SRC` as an SCU service-request register.
+The primary `dsp` unit uses `SETR` to verify the software request, VIC route,
+and `SRR` acknowledgement of all four `DSP_SRC` registers. This is
+register-path coverage only; it does not claim that the request originated in
+the PMIC or DSP.
+
+The separate `dsp-irqs` unit loads a minimal Program RAM loop and verifies the
+real DSP-generated path. A TEAKLite store to `D:DE10` raises:
+
+| DSP write | ARM service request | VIC input |
+| --- | --- | --- |
+| bit 0 | `SCU_DSP_SRC(0)` | 57 |
+| bit 1 | `SCU_DSP_SRC(1)` | 58 |
+| bit 2 | `SCU_DSP_SRC(2)` | 59 |
+| bit 3 | `SCU_DSP_SRC(3)` | 60 |
+
+Bit 4 raises none of these sources. The `D:E610` address documented for a
+related TEAKLite integration is not the PMB8876 DSP-to-MCU interrupt register.
+
+The source image is `unit/dsp/irqs.asm`; `unit/dsp/build_dsp_rom.sh` assembles
+it and embeds the complete DSP1 container in `irqs.inc`. The specialized unit
+only enables DSP CLC; module identification and reset-value checks remain in
+the primary `dsp` unit.
+
+Run the hardware test with:
+
+```sh
+cd bsp/unit
+BOARD=siemens-el71 TEST_COLOR=OFF ./run.sh dsp-irqs
+```
+
 ## Dumping Program Mask ROM
 
 The Program Mask ROM layout and `DSP_PAGE` register are described above.

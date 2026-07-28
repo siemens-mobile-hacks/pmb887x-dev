@@ -30,11 +30,11 @@ static const scu_irq_source_t IRQ_SOURCES[] = {
 	{&SCU_EXTI5_SRC, VIC_SCU_EXTI5_IRQ},
 	{&SCU_EXTI6_SRC, VIC_SCU_EXTI6_IRQ},
 	{&SCU_EXTI7_SRC, VIC_SCU_EXTI7_IRQ},
+	{&SCU_PM_INT_SRC, VIC_SCU_PM_INT_IRQ},
 	{&SCU_DSP_SRC(0), VIC_SCU_DSP0_IRQ},
 	{&SCU_DSP_SRC(1), VIC_SCU_DSP1_IRQ},
 	{&SCU_DSP_SRC(2), VIC_SCU_DSP2_IRQ},
 	{&SCU_DSP_SRC(3), VIC_SCU_DSP3_IRQ},
-	{&SCU_DSP_SRC(4), VIC_SCU_DSP4_IRQ},
 	{&SCU_UNK0_SRC, VIC_SCU_UNK0_IRQ},
 	{&SCU_UNK1_SRC, VIC_SCU_UNK1_IRQ},
 	{&SCU_UNK2_SRC, VIC_SCU_UNK2_IRQ},
@@ -46,8 +46,8 @@ static void test_reset_values(void) {
 	uint32_t peripheral_reset_requests = SCU_RST_REQ;
 	uint32_t sleep_request = SCU_SLEEP_REQ;
 	uint32_t dsp_interrupt = SCU_DSP_INT;
-	uint32_t interrupt_filter = SCU_INT_FILTER;
-	uint32_t interrupt_edge = SCU_INT_EDGE;
+	uint32_t interrupt_filter = SCU_EXTI_FILTER;
+	uint32_t interrupt_edge = SCU_EXTI_EDGE;
 	uint32_t rtc_interface = SCU_RTCIF;
 	uint32_t redesign_tracing = SCU_RTID;
 	uint32_t dma_request_select = SCU_DMARS;
@@ -74,7 +74,7 @@ static void test_reset_values(void) {
 		(unsigned int) dsp_interrupt
 	);
 	printf(
-		"# SCU: INT_FILTER=%08X INT_EDGE=%08X RTCIF=%08X RTID=%08X DMARS=%08X EMU_ID=%08X\n",
+		"# SCU: EXTI_FILTER=%08X EXTI_EDGE=%08X RTCIF=%08X RTID=%08X DMARS=%08X EMU_ID=%08X\n",
 		(unsigned int) interrupt_filter,
 		(unsigned int) interrupt_edge,
 		(unsigned int) rtc_interface,

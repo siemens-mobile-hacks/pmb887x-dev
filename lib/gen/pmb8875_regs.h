@@ -129,11 +129,11 @@
 #define	VIC_SCU_EXTI5_IRQ		53
 #define	VIC_SCU_EXTI6_IRQ		54
 #define	VIC_SCU_EXTI7_IRQ		55
-#define	VIC_SCU_DSP0_IRQ		56
-#define	VIC_SCU_DSP1_IRQ		57
-#define	VIC_SCU_DSP2_IRQ		58
-#define	VIC_SCU_DSP3_IRQ		59
-#define	VIC_SCU_DSP4_IRQ		60
+#define	VIC_SCU_PM_INT_IRQ		56
+#define	VIC_SCU_DSP0_IRQ		57
+#define	VIC_SCU_DSP1_IRQ		58
+#define	VIC_SCU_DSP2_IRQ		59
+#define	VIC_SCU_DSP3_IRQ		60
 #define	VIC_SCU_UNK0_IRQ		61
 #define	VIC_SCU_UNK1_IRQ		62
 #define	VIC_SCCU_UNK_IRQ		63
@@ -2260,311 +2260,314 @@
 
 // SCU [MOD_NUM=F040, MOD_REV=00, MOD_32BIT=C0]
 // System Control Unit (see SCU in TC1766 datasheet)
-#define	SCU_BASE					0xF4400000
+#define	SCU_BASE						0xF4400000
 /* Clock Control Register */
-#define	SCU_CLC						MMIO32(SCU_BASE + 0x00)
+#define	SCU_CLC							MMIO32(SCU_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	SCU_ID						MMIO32(SCU_BASE + 0x08)
+#define	SCU_ID							MMIO32(SCU_BASE + 0x08)
 
 /* Reset Status Register */
-#define	SCU_RST_SR					MMIO32(SCU_BASE + 0x10)
-#define	SCU_RST_SR_RSSTM			BIT(0)									 // System Timer Reset Status
-#define	SCU_RST_SR_RSEXT			BIT(1)									 // HDRST Line State during Last Reset
-#define	SCU_RST_SR_HWCFG			GENMASK(18, 16)							 // Boot Configuration Selection Status
-#define	SCU_RST_SR_HWCFG_SHIFT		16
-#define	SCU_RST_SR_HWBRKIN			BIT(21)									 // Latched State of BRKIN Input
-#define	SCU_RST_SR_TMPLS			BIT(22)									 // Latched State of TESTMODE Input
-#define	SCU_RST_SR_PWORST			BIT(27)									 // The last reset was a power-on reset
-#define	SCU_RST_SR_HDRST			BIT(28)									 // The last reset was a hardware reset.
-#define	SCU_RST_SR_SFTRST			BIT(29)									 // The last reset was a software reset.
-#define	SCU_RST_SR_WDTRST			BIT(30)									 // The last reset was a watchdog reset.
-#define	SCU_RST_SR_PWDRST			BIT(31)									 // The last reset was a wake-up from power-down
+#define	SCU_RST_SR						MMIO32(SCU_BASE + 0x10)
+#define	SCU_RST_SR_RSSTM				BIT(0)									 // System Timer Reset Status
+#define	SCU_RST_SR_RSEXT				BIT(1)									 // HDRST Line State during Last Reset
+#define	SCU_RST_SR_HWCFG				GENMASK(18, 16)							 // Boot Configuration Selection Status
+#define	SCU_RST_SR_HWCFG_SHIFT			16
+#define	SCU_RST_SR_HWBRKIN				BIT(21)									 // Latched State of BRKIN Input
+#define	SCU_RST_SR_TMPLS				BIT(22)									 // Latched State of TESTMODE Input
+#define	SCU_RST_SR_PWORST				BIT(27)									 // The last reset was a power-on reset
+#define	SCU_RST_SR_HDRST				BIT(28)									 // The last reset was a hardware reset.
+#define	SCU_RST_SR_SFTRST				BIT(29)									 // The last reset was a software reset.
+#define	SCU_RST_SR_WDTRST				BIT(30)									 // The last reset was a watchdog reset.
+#define	SCU_RST_SR_PWDRST				BIT(31)									 // The last reset was a wake-up from power-down
 
 /* Reset Control Register */
-#define	SCU_RST_CON					MMIO32(SCU_BASE + 0x14)
-#define	SCU_RST_CON_SWCFG			GENMASK(18, 16)							 // Software Boot Configuration
-#define	SCU_RST_CON_SWCFG_SHIFT		16
-#define	SCU_RST_CON_SWBRKIN			BIT(21)									 // Software Break Signal Boot Value
-#define	SCU_RST_CON_SWBOOT			BIT(24)									 // Software Boot Configuration Selection
+#define	SCU_RST_CON						MMIO32(SCU_BASE + 0x14)
+#define	SCU_RST_CON_SWCFG				GENMASK(18, 16)							 // Software Boot Configuration
+#define	SCU_RST_CON_SWCFG_SHIFT			16
+#define	SCU_RST_CON_SWBRKIN				BIT(21)									 // Software Break Signal Boot Value
+#define	SCU_RST_CON_SWBOOT				BIT(24)									 // Software Boot Configuration Selection
 
 /* Peripheral Reset Request Register */
-#define	SCU_RST_REQ					MMIO32(SCU_BASE + 0x18)
-#define	SCU_RST_REQ_DSP				BIT(0)									 // DSP software reset request
-#define	SCU_RST_REQ_RTC				BIT(1)									 // RTC software reset request
-#define	SCU_RST_REQ_USB				BIT(9)									 // USB software reset request
-#define	SCU_RST_REQ_DMAC			BIT(11)									 // DMAC software reset request
-#define	SCU_RST_REQ_I2C				BIT(15)									 // I2C software reset request
+#define	SCU_RST_REQ						MMIO32(SCU_BASE + 0x18)
+#define	SCU_RST_REQ_DSP					BIT(0)									 // DSP software reset request
+#define	SCU_RST_REQ_RTC					BIT(1)									 // RTC software reset request
+#define	SCU_RST_REQ_USB					BIT(9)									 // USB software reset request
+#define	SCU_RST_REQ_DMAC				BIT(11)									 // DMAC software reset request
+#define	SCU_RST_REQ_I2C					BIT(15)									 // I2C software reset request
 
 /* Sleep Request Register */
-#define	SCU_SLEEP_REQ				MMIO32(SCU_BASE + 0x20)
-#define	SCU_SLEEP_REQ_REQ			BIT(0)									 // Sleep request asserted before WFI
+#define	SCU_SLEEP_REQ					MMIO32(SCU_BASE + 0x20)
+#define	SCU_SLEEP_REQ_REQ				BIT(0)									 // Sleep request asserted before WFI
 
-#define	SCU_WDTCON0					MMIO32(SCU_BASE + 0x24)
-#define	SCU_WDTCON0_ENDINIT			BIT(0)									 // End-of-Initialization Control Bit.
-#define	SCU_WDTCON0_WDTLCK			BIT(1)									 // Lock bit to Control Access to WDT_CON0.
-#define	SCU_WDTCON0_WDTHPW0			GENMASK(3, 2)							 // Hardware Password 0.
-#define	SCU_WDTCON0_WDTHPW0_SHIFT	2
-#define	SCU_WDTCON0_WDTHPW1			GENMASK(7, 4)							 // Hardware Password 1.
-#define	SCU_WDTCON0_WDTHPW1_SHIFT	4
-#define	SCU_WDTCON0_WDTPW			GENMASK(15, 8)							 // User-Definable Password Field for Access to WDT_CON0.
-#define	SCU_WDTCON0_WDTPW_SHIFT		8
-#define	SCU_WDTCON0_WDTREL			GENMASK(31, 16)							 // Reload Value for the Watchdog Timer.
-#define	SCU_WDTCON0_WDTREL_SHIFT	16
+#define	SCU_WDTCON0						MMIO32(SCU_BASE + 0x24)
+#define	SCU_WDTCON0_ENDINIT				BIT(0)									 // End-of-Initialization Control Bit.
+#define	SCU_WDTCON0_WDTLCK				BIT(1)									 // Lock bit to Control Access to WDT_CON0.
+#define	SCU_WDTCON0_WDTHPW0				GENMASK(3, 2)							 // Hardware Password 0.
+#define	SCU_WDTCON0_WDTHPW0_SHIFT		2
+#define	SCU_WDTCON0_WDTHPW1				GENMASK(7, 4)							 // Hardware Password 1.
+#define	SCU_WDTCON0_WDTHPW1_SHIFT		4
+#define	SCU_WDTCON0_WDTPW				GENMASK(15, 8)							 // User-Definable Password Field for Access to WDT_CON0.
+#define	SCU_WDTCON0_WDTPW_SHIFT			8
+#define	SCU_WDTCON0_WDTREL				GENMASK(31, 16)							 // Reload Value for the Watchdog Timer.
+#define	SCU_WDTCON0_WDTREL_SHIFT		16
 
-#define	SCU_WDTCON1					MMIO32(SCU_BASE + 0x28)
-#define	SCU_WDTCON1_WDTIR			BIT(2)									 // Watchdog Timer Input Frequency Request Control Bit.
-#define	SCU_WDTCON1_WDTDR			BIT(3)									 // Watchdog Timer Disable Request Control Bit.
+#define	SCU_WDTCON1						MMIO32(SCU_BASE + 0x28)
+#define	SCU_WDTCON1_WDTIR				BIT(2)									 // Watchdog Timer Input Frequency Request Control Bit.
+#define	SCU_WDTCON1_WDTDR				BIT(3)									 // Watchdog Timer Disable Request Control Bit.
 
-#define	SCU_WDT_SR					MMIO32(SCU_BASE + 0x2C)
-#define	SCU_WDT_SR_WDTAE			BIT(0)									 // Watchdog Access Error Status Flag
-#define	SCU_WDT_SR_WDTOE			BIT(1)									 // Watchdog Overflow Error Status Flag
-#define	SCU_WDT_SR_WDTIS			BIT(2)									 // Watchdog Input Clock Status Flag
-#define	SCU_WDT_SR_WDTDS			BIT(3)									 // Watchdog Enable/Disable Status Flag
-#define	SCU_WDT_SR_WDTTO			BIT(4)									 // Watchdog Time-out Mode Flag
-#define	SCU_WDT_SR_WDTPR			BIT(5)									 // Watchdog Prewarning Mode Flag
-#define	SCU_WDT_SR_WDTTIM			GENMASK(31, 16)							 // Watchdog Timer Value
-#define	SCU_WDT_SR_WDTTIM_SHIFT		16
+#define	SCU_WDT_SR						MMIO32(SCU_BASE + 0x2C)
+#define	SCU_WDT_SR_WDTAE				BIT(0)									 // Watchdog Access Error Status Flag
+#define	SCU_WDT_SR_WDTOE				BIT(1)									 // Watchdog Overflow Error Status Flag
+#define	SCU_WDT_SR_WDTIS				BIT(2)									 // Watchdog Input Clock Status Flag
+#define	SCU_WDT_SR_WDTDS				BIT(3)									 // Watchdog Enable/Disable Status Flag
+#define	SCU_WDT_SR_WDTTO				BIT(4)									 // Watchdog Time-out Mode Flag
+#define	SCU_WDT_SR_WDTPR				BIT(5)									 // Watchdog Prewarning Mode Flag
+#define	SCU_WDT_SR_WDTTIM				GENMASK(31, 16)							 // Watchdog Timer Value
+#define	SCU_WDT_SR_WDTTIM_SHIFT			16
 
-/* DSP Interrupt Request Register */
-#define	SCU_DSP_INT					MMIO32(SCU_BASE + 0x30)
-#define	SCU_DSP_INT_REQ				GENMASK(2, 0)							 // DSP interrupt request lines
-#define	SCU_DSP_INT_REQ_SHIFT		0
+/* MCU-to-DSP Interrupt Request Register */
+#define	SCU_DSP_INT						MMIO32(SCU_BASE + 0x30)
+#define	SCU_DSP_INT_REQ					GENMASK(2, 0)							 // MCU interrupt request lines to the DSP
+#define	SCU_DSP_INT_REQ_SHIFT			0
 
-/* Interrupt Filter Select Register */
-#define	SCU_INT_FILTER				MMIO32(SCU_BASE + 0x38)
-#define	SCU_INT_FILTER_EXT0			GENMASK(1, 0)
-#define	SCU_INT_FILTER_EXT0_SHIFT	0
-#define	SCU_INT_FILTER_EXT0_OFF		0x0
-#define	SCU_INT_FILTER_EXT0_CLOCK_1	0x1
-#define	SCU_INT_FILTER_EXT0_CLOCK_2	0x2
-#define	SCU_INT_FILTER_EXT0_CLOCK_3	0x3
-#define	SCU_INT_FILTER_EXT1			GENMASK(3, 2)
-#define	SCU_INT_FILTER_EXT1_SHIFT	2
-#define	SCU_INT_FILTER_EXT1_OFF		0x0
-#define	SCU_INT_FILTER_EXT1_CLOCK_1	0x4
-#define	SCU_INT_FILTER_EXT1_CLOCK_2	0x8
-#define	SCU_INT_FILTER_EXT1_CLOCK_3	0xC
-#define	SCU_INT_FILTER_EXT2			GENMASK(5, 4)
-#define	SCU_INT_FILTER_EXT2_SHIFT	4
-#define	SCU_INT_FILTER_EXT2_OFF		0x0
-#define	SCU_INT_FILTER_EXT2_CLOCK_1	0x10
-#define	SCU_INT_FILTER_EXT2_CLOCK_2	0x20
-#define	SCU_INT_FILTER_EXT2_CLOCK_3	0x30
-#define	SCU_INT_FILTER_EXT3			GENMASK(7, 6)
-#define	SCU_INT_FILTER_EXT3_SHIFT	6
-#define	SCU_INT_FILTER_EXT3_OFF		0x0
-#define	SCU_INT_FILTER_EXT3_CLOCK_1	0x40
-#define	SCU_INT_FILTER_EXT3_CLOCK_2	0x80
-#define	SCU_INT_FILTER_EXT3_CLOCK_3	0xC0
-#define	SCU_INT_FILTER_EXT4			GENMASK(9, 8)
-#define	SCU_INT_FILTER_EXT4_SHIFT	8
-#define	SCU_INT_FILTER_EXT4_OFF		0x0
-#define	SCU_INT_FILTER_EXT4_CLOCK_1	0x100
-#define	SCU_INT_FILTER_EXT4_CLOCK_2	0x200
-#define	SCU_INT_FILTER_EXT4_CLOCK_3	0x300
-#define	SCU_INT_FILTER_EXT5			GENMASK(11, 10)
-#define	SCU_INT_FILTER_EXT5_SHIFT	10
-#define	SCU_INT_FILTER_EXT5_OFF		0x0
-#define	SCU_INT_FILTER_EXT5_CLOCK_1	0x400
-#define	SCU_INT_FILTER_EXT5_CLOCK_2	0x800
-#define	SCU_INT_FILTER_EXT5_CLOCK_3	0xC00
-#define	SCU_INT_FILTER_EXT6			GENMASK(13, 12)
-#define	SCU_INT_FILTER_EXT6_SHIFT	12
-#define	SCU_INT_FILTER_EXT6_OFF		0x0
-#define	SCU_INT_FILTER_EXT6_CLOCK_1	0x1000
-#define	SCU_INT_FILTER_EXT6_CLOCK_2	0x2000
-#define	SCU_INT_FILTER_EXT6_CLOCK_3	0x3000
-#define	SCU_INT_FILTER_EXT7			GENMASK(15, 14)
-#define	SCU_INT_FILTER_EXT7_SHIFT	14
-#define	SCU_INT_FILTER_EXT7_OFF		0x0
-#define	SCU_INT_FILTER_EXT7_CLOCK_1	0x4000
-#define	SCU_INT_FILTER_EXT7_CLOCK_2	0x8000
-#define	SCU_INT_FILTER_EXT7_CLOCK_3	0xC000
-#define	SCU_INT_FILTER_DSP0			GENMASK(17, 16)
-#define	SCU_INT_FILTER_DSP0_SHIFT	16
-#define	SCU_INT_FILTER_DSP0_OFF		0x0
-#define	SCU_INT_FILTER_DSP0_CLOCK_1	0x10000
-#define	SCU_INT_FILTER_DSP0_CLOCK_2	0x20000
-#define	SCU_INT_FILTER_DSP0_CLOCK_3	0x30000
+/* External Interrupt Filter Select Register */
+#define	SCU_EXTI_FILTER					MMIO32(SCU_BASE + 0x38)
+#define	SCU_EXTI_FILTER_EXT0			GENMASK(1, 0)
+#define	SCU_EXTI_FILTER_EXT0_SHIFT		0
+#define	SCU_EXTI_FILTER_EXT0_OFF		0x0
+#define	SCU_EXTI_FILTER_EXT0_CLOCK_1	0x1
+#define	SCU_EXTI_FILTER_EXT0_CLOCK_2	0x2
+#define	SCU_EXTI_FILTER_EXT0_CLOCK_3	0x3
+#define	SCU_EXTI_FILTER_EXT1			GENMASK(3, 2)
+#define	SCU_EXTI_FILTER_EXT1_SHIFT		2
+#define	SCU_EXTI_FILTER_EXT1_OFF		0x0
+#define	SCU_EXTI_FILTER_EXT1_CLOCK_1	0x4
+#define	SCU_EXTI_FILTER_EXT1_CLOCK_2	0x8
+#define	SCU_EXTI_FILTER_EXT1_CLOCK_3	0xC
+#define	SCU_EXTI_FILTER_EXT2			GENMASK(5, 4)
+#define	SCU_EXTI_FILTER_EXT2_SHIFT		4
+#define	SCU_EXTI_FILTER_EXT2_OFF		0x0
+#define	SCU_EXTI_FILTER_EXT2_CLOCK_1	0x10
+#define	SCU_EXTI_FILTER_EXT2_CLOCK_2	0x20
+#define	SCU_EXTI_FILTER_EXT2_CLOCK_3	0x30
+#define	SCU_EXTI_FILTER_EXT3			GENMASK(7, 6)
+#define	SCU_EXTI_FILTER_EXT3_SHIFT		6
+#define	SCU_EXTI_FILTER_EXT3_OFF		0x0
+#define	SCU_EXTI_FILTER_EXT3_CLOCK_1	0x40
+#define	SCU_EXTI_FILTER_EXT3_CLOCK_2	0x80
+#define	SCU_EXTI_FILTER_EXT3_CLOCK_3	0xC0
+#define	SCU_EXTI_FILTER_EXT4			GENMASK(9, 8)
+#define	SCU_EXTI_FILTER_EXT4_SHIFT		8
+#define	SCU_EXTI_FILTER_EXT4_OFF		0x0
+#define	SCU_EXTI_FILTER_EXT4_CLOCK_1	0x100
+#define	SCU_EXTI_FILTER_EXT4_CLOCK_2	0x200
+#define	SCU_EXTI_FILTER_EXT4_CLOCK_3	0x300
+#define	SCU_EXTI_FILTER_EXT5			GENMASK(11, 10)
+#define	SCU_EXTI_FILTER_EXT5_SHIFT		10
+#define	SCU_EXTI_FILTER_EXT5_OFF		0x0
+#define	SCU_EXTI_FILTER_EXT5_CLOCK_1	0x400
+#define	SCU_EXTI_FILTER_EXT5_CLOCK_2	0x800
+#define	SCU_EXTI_FILTER_EXT5_CLOCK_3	0xC00
+#define	SCU_EXTI_FILTER_EXT6			GENMASK(13, 12)
+#define	SCU_EXTI_FILTER_EXT6_SHIFT		12
+#define	SCU_EXTI_FILTER_EXT6_OFF		0x0
+#define	SCU_EXTI_FILTER_EXT6_CLOCK_1	0x1000
+#define	SCU_EXTI_FILTER_EXT6_CLOCK_2	0x2000
+#define	SCU_EXTI_FILTER_EXT6_CLOCK_3	0x3000
+#define	SCU_EXTI_FILTER_EXT7			GENMASK(15, 14)
+#define	SCU_EXTI_FILTER_EXT7_SHIFT		14
+#define	SCU_EXTI_FILTER_EXT7_OFF		0x0
+#define	SCU_EXTI_FILTER_EXT7_CLOCK_1	0x4000
+#define	SCU_EXTI_FILTER_EXT7_CLOCK_2	0x8000
+#define	SCU_EXTI_FILTER_EXT7_CLOCK_3	0xC000
+#define	SCU_EXTI_FILTER_PM_INT			GENMASK(17, 16)
+#define	SCU_EXTI_FILTER_PM_INT_SHIFT	16
+#define	SCU_EXTI_FILTER_PM_INT_OFF		0x0
+#define	SCU_EXTI_FILTER_PM_INT_CLOCK_1	0x10000
+#define	SCU_EXTI_FILTER_PM_INT_CLOCK_2	0x20000
+#define	SCU_EXTI_FILTER_PM_INT_CLOCK_3	0x30000
 
-/* Interrupt Edge Select Register */
-#define	SCU_INT_EDGE				MMIO32(SCU_BASE + 0x3C)
-#define	SCU_INT_EDGE_EXT0			GENMASK(1, 0)
-#define	SCU_INT_EDGE_EXT0_SHIFT		0
-#define	SCU_INT_EDGE_EXT0_OFF		0x0
-#define	SCU_INT_EDGE_EXT0_RISING	0x1
-#define	SCU_INT_EDGE_EXT0_FALLING	0x2
-#define	SCU_INT_EDGE_EXT0_ANY		0x3
-#define	SCU_INT_EDGE_EXT1			GENMASK(3, 2)
-#define	SCU_INT_EDGE_EXT1_SHIFT		2
-#define	SCU_INT_EDGE_EXT1_OFF		0x0
-#define	SCU_INT_EDGE_EXT1_RISING	0x4
-#define	SCU_INT_EDGE_EXT1_FALLING	0x8
-#define	SCU_INT_EDGE_EXT1_ANY		0xC
-#define	SCU_INT_EDGE_EXT2			GENMASK(5, 4)
-#define	SCU_INT_EDGE_EXT2_SHIFT		4
-#define	SCU_INT_EDGE_EXT2_OFF		0x0
-#define	SCU_INT_EDGE_EXT2_RISING	0x10
-#define	SCU_INT_EDGE_EXT2_FALLING	0x20
-#define	SCU_INT_EDGE_EXT2_ANY		0x30
-#define	SCU_INT_EDGE_EXT3			GENMASK(7, 6)
-#define	SCU_INT_EDGE_EXT3_SHIFT		6
-#define	SCU_INT_EDGE_EXT3_OFF		0x0
-#define	SCU_INT_EDGE_EXT3_RISING	0x40
-#define	SCU_INT_EDGE_EXT3_FALLING	0x80
-#define	SCU_INT_EDGE_EXT3_ANY		0xC0
-#define	SCU_INT_EDGE_EXT4			GENMASK(9, 8)
-#define	SCU_INT_EDGE_EXT4_SHIFT		8
-#define	SCU_INT_EDGE_EXT4_OFF		0x0
-#define	SCU_INT_EDGE_EXT4_RISING	0x100
-#define	SCU_INT_EDGE_EXT4_FALLING	0x200
-#define	SCU_INT_EDGE_EXT4_ANY		0x300
-#define	SCU_INT_EDGE_EXT5			GENMASK(11, 10)
-#define	SCU_INT_EDGE_EXT5_SHIFT		10
-#define	SCU_INT_EDGE_EXT5_OFF		0x0
-#define	SCU_INT_EDGE_EXT5_RISING	0x400
-#define	SCU_INT_EDGE_EXT5_FALLING	0x800
-#define	SCU_INT_EDGE_EXT5_ANY		0xC00
-#define	SCU_INT_EDGE_EXT6			GENMASK(13, 12)
-#define	SCU_INT_EDGE_EXT6_SHIFT		12
-#define	SCU_INT_EDGE_EXT6_OFF		0x0
-#define	SCU_INT_EDGE_EXT6_RISING	0x1000
-#define	SCU_INT_EDGE_EXT6_FALLING	0x2000
-#define	SCU_INT_EDGE_EXT6_ANY		0x3000
-#define	SCU_INT_EDGE_EXT7			GENMASK(15, 14)
-#define	SCU_INT_EDGE_EXT7_SHIFT		14
-#define	SCU_INT_EDGE_EXT7_OFF		0x0
-#define	SCU_INT_EDGE_EXT7_RISING	0x4000
-#define	SCU_INT_EDGE_EXT7_FALLING	0x8000
-#define	SCU_INT_EDGE_EXT7_ANY		0xC000
-#define	SCU_INT_EDGE_DSP0			GENMASK(17, 16)
-#define	SCU_INT_EDGE_DSP0_SHIFT		16
-#define	SCU_INT_EDGE_DSP0_OFF		0x0
-#define	SCU_INT_EDGE_DSP0_RISING	0x10000
-#define	SCU_INT_EDGE_DSP0_FALLING	0x20000
-#define	SCU_INT_EDGE_DSP0_ANY		0x30000
+/* External Interrupt Edge Select Register */
+#define	SCU_EXTI_EDGE					MMIO32(SCU_BASE + 0x3C)
+#define	SCU_EXTI_EDGE_EXT0				GENMASK(1, 0)
+#define	SCU_EXTI_EDGE_EXT0_SHIFT		0
+#define	SCU_EXTI_EDGE_EXT0_OFF			0x0
+#define	SCU_EXTI_EDGE_EXT0_RISING		0x1
+#define	SCU_EXTI_EDGE_EXT0_FALLING		0x2
+#define	SCU_EXTI_EDGE_EXT0_ANY			0x3
+#define	SCU_EXTI_EDGE_EXT1				GENMASK(3, 2)
+#define	SCU_EXTI_EDGE_EXT1_SHIFT		2
+#define	SCU_EXTI_EDGE_EXT1_OFF			0x0
+#define	SCU_EXTI_EDGE_EXT1_RISING		0x4
+#define	SCU_EXTI_EDGE_EXT1_FALLING		0x8
+#define	SCU_EXTI_EDGE_EXT1_ANY			0xC
+#define	SCU_EXTI_EDGE_EXT2				GENMASK(5, 4)
+#define	SCU_EXTI_EDGE_EXT2_SHIFT		4
+#define	SCU_EXTI_EDGE_EXT2_OFF			0x0
+#define	SCU_EXTI_EDGE_EXT2_RISING		0x10
+#define	SCU_EXTI_EDGE_EXT2_FALLING		0x20
+#define	SCU_EXTI_EDGE_EXT2_ANY			0x30
+#define	SCU_EXTI_EDGE_EXT3				GENMASK(7, 6)
+#define	SCU_EXTI_EDGE_EXT3_SHIFT		6
+#define	SCU_EXTI_EDGE_EXT3_OFF			0x0
+#define	SCU_EXTI_EDGE_EXT3_RISING		0x40
+#define	SCU_EXTI_EDGE_EXT3_FALLING		0x80
+#define	SCU_EXTI_EDGE_EXT3_ANY			0xC0
+#define	SCU_EXTI_EDGE_EXT4				GENMASK(9, 8)
+#define	SCU_EXTI_EDGE_EXT4_SHIFT		8
+#define	SCU_EXTI_EDGE_EXT4_OFF			0x0
+#define	SCU_EXTI_EDGE_EXT4_RISING		0x100
+#define	SCU_EXTI_EDGE_EXT4_FALLING		0x200
+#define	SCU_EXTI_EDGE_EXT4_ANY			0x300
+#define	SCU_EXTI_EDGE_EXT5				GENMASK(11, 10)
+#define	SCU_EXTI_EDGE_EXT5_SHIFT		10
+#define	SCU_EXTI_EDGE_EXT5_OFF			0x0
+#define	SCU_EXTI_EDGE_EXT5_RISING		0x400
+#define	SCU_EXTI_EDGE_EXT5_FALLING		0x800
+#define	SCU_EXTI_EDGE_EXT5_ANY			0xC00
+#define	SCU_EXTI_EDGE_EXT6				GENMASK(13, 12)
+#define	SCU_EXTI_EDGE_EXT6_SHIFT		12
+#define	SCU_EXTI_EDGE_EXT6_OFF			0x0
+#define	SCU_EXTI_EDGE_EXT6_RISING		0x1000
+#define	SCU_EXTI_EDGE_EXT6_FALLING		0x2000
+#define	SCU_EXTI_EDGE_EXT6_ANY			0x3000
+#define	SCU_EXTI_EDGE_EXT7				GENMASK(15, 14)
+#define	SCU_EXTI_EDGE_EXT7_SHIFT		14
+#define	SCU_EXTI_EDGE_EXT7_OFF			0x0
+#define	SCU_EXTI_EDGE_EXT7_RISING		0x4000
+#define	SCU_EXTI_EDGE_EXT7_FALLING		0x8000
+#define	SCU_EXTI_EDGE_EXT7_ANY			0xC000
+#define	SCU_EXTI_EDGE_PM_INT			GENMASK(17, 16)
+#define	SCU_EXTI_EDGE_PM_INT_SHIFT		16
+#define	SCU_EXTI_EDGE_PM_INT_OFF		0x0
+#define	SCU_EXTI_EDGE_PM_INT_RISING		0x10000
+#define	SCU_EXTI_EDGE_PM_INT_FALLING	0x20000
+#define	SCU_EXTI_EDGE_PM_INT_ANY		0x30000
 
-#define	SCU_EBUCLC1					MMIO32(SCU_BASE + 0x40)
-#define	SCU_EBUCLC1_FLAG1			GENMASK(3, 0)
-#define	SCU_EBUCLC1_FLAG1_SHIFT		0
-#define	SCU_EBUCLC1_READY			GENMASK(7, 4)
-#define	SCU_EBUCLC1_READY_SHIFT		4
+#define	SCU_EBUCLC1						MMIO32(SCU_BASE + 0x40)
+#define	SCU_EBUCLC1_FLAG1				GENMASK(3, 0)
+#define	SCU_EBUCLC1_FLAG1_SHIFT			0
+#define	SCU_EBUCLC1_READY				GENMASK(7, 4)
+#define	SCU_EBUCLC1_READY_SHIFT			4
 
-#define	SCU_EBUCLC2					MMIO32(SCU_BASE + 0x44)
-#define	SCU_EBUCLC2_FLAG1			GENMASK(3, 0)
-#define	SCU_EBUCLC2_FLAG1_SHIFT		0
-#define	SCU_EBUCLC2_READY			GENMASK(7, 4)
-#define	SCU_EBUCLC2_READY_SHIFT		4
+#define	SCU_EBUCLC2						MMIO32(SCU_BASE + 0x44)
+#define	SCU_EBUCLC2_FLAG1				GENMASK(3, 0)
+#define	SCU_EBUCLC2_FLAG1_SHIFT			0
+#define	SCU_EBUCLC2_READY				GENMASK(7, 4)
+#define	SCU_EBUCLC2_READY_SHIFT			4
 
-#define	SCU_EBUCLC					MMIO32(SCU_BASE + 0x48)
-#define	SCU_EBUCLC_LOCK				BIT(0)
-#define	SCU_EBUCLC_VCOBYP			BIT(8)
+#define	SCU_EBUCLC						MMIO32(SCU_BASE + 0x48)
+#define	SCU_EBUCLC_LOCK					BIT(0)
+#define	SCU_EBUCLC_VCOBYP				BIT(8)
 
 /* Emulator identification register */
-#define	SCU_EMU_ID					MMIO32(SCU_BASE + 0x4C)
-#define	SCU_EMU_ID_VALUE			GENMASK(31, 0)
-#define	SCU_EMU_ID_VALUE_SHIFT		0
-#define	SCU_EMU_ID_VALUE_QEMU		0x51454D55
+#define	SCU_EMU_ID						MMIO32(SCU_BASE + 0x4C)
+#define	SCU_EMU_ID_VALUE				GENMASK(31, 0)
+#define	SCU_EMU_ID_VALUE_SHIFT			0
+#define	SCU_EMU_ID_VALUE_QEMU			0x51454D55
 
-#define	SCU_MANID					MMIO32(SCU_BASE + 0x5C)
-#define	SCU_MANID_DEPT				GENMASK(3, 0)
-#define	SCU_MANID_DEPT_SHIFT		0
-#define	SCU_MANID_MANUF				GENMASK(14, 4)
-#define	SCU_MANID_MANUF_SHIFT		4
+#define	SCU_MANID						MMIO32(SCU_BASE + 0x5C)
+#define	SCU_MANID_DEPT					GENMASK(3, 0)
+#define	SCU_MANID_DEPT_SHIFT			0
+#define	SCU_MANID_MANUF					GENMASK(14, 4)
+#define	SCU_MANID_MANUF_SHIFT			4
 
-#define	SCU_CHIPID					MMIO32(SCU_BASE + 0x60)
-#define	SCU_CHIPID_CHREV			GENMASK(7, 0)
-#define	SCU_CHIPID_CHREV_SHIFT		0
-#define	SCU_CHIPID_CHIPD			GENMASK(15, 8)
-#define	SCU_CHIPID_CHIPD_SHIFT		8
+#define	SCU_CHIPID						MMIO32(SCU_BASE + 0x60)
+#define	SCU_CHIPID_CHREV				GENMASK(7, 0)
+#define	SCU_CHIPID_CHREV_SHIFT			0
+#define	SCU_CHIPID_CHIPD				GENMASK(15, 8)
+#define	SCU_CHIPID_CHIPD_SHIFT			8
 
 /* Real Time Clock Interface Enable Register */
-#define	SCU_RTCIF					MMIO32(SCU_BASE + 0x64)
-#define	SCU_RTCIF_RTCIFEN			GENMASK(7, 0)							 // RTC interface enable field; 0xAA enables access
-#define	SCU_RTCIF_RTCIFEN_SHIFT		0
+#define	SCU_RTCIF						MMIO32(SCU_BASE + 0x64)
+#define	SCU_RTCIF_RTCIFEN				GENMASK(7, 0)							 // RTC interface enable field; 0xAA enables access
+#define	SCU_RTCIF_RTCIFEN_SHIFT			0
 
-#define	SCU_UID0					MMIO32(SCU_BASE + 0x6C)
+#define	SCU_UID0						MMIO32(SCU_BASE + 0x6C)
 
-#define	SCU_UID1					MMIO32(SCU_BASE + 0x70)
-#define	SCU_UID1_SECBOOT			BIT(24)									 // Secure boot
-#define	SCU_UID1_PLATFORM			GENMASK(26, 25)
-#define	SCU_UID1_PLATFORM_SHIFT		25
-#define	SCU_UID1_PLATFORM_800		0x0
-#define	SCU_UID1_PLATFORM_801		0x2000000
-#define	SCU_UID1_PLATFORM_802		0x4000000
-#define	SCU_UID1_PLATFORM_803		0x6000000
+#define	SCU_UID1						MMIO32(SCU_BASE + 0x70)
+#define	SCU_UID1_SECBOOT				BIT(24)									 // Secure boot
+#define	SCU_UID1_PLATFORM				GENMASK(26, 25)
+#define	SCU_UID1_PLATFORM_SHIFT			25
+#define	SCU_UID1_PLATFORM_800			0x0
+#define	SCU_UID1_PLATFORM_801			0x2000000
+#define	SCU_UID1_PLATFORM_802			0x4000000
+#define	SCU_UID1_PLATFORM_803			0x6000000
 
-#define	SCU_UID2					MMIO32(SCU_BASE + 0x74)
-#define	SCU_UID2_BOOT_USART1		BIT(28)									 // Allow boot from USART1
-#define	SCU_UID2_BOOT_BSL			BIT(29)									 // Force boot from BSL, bypass firmware
-#define	SCU_UID2_BOOT_USB			BIT(30)									 // Allow boot from USB
+#define	SCU_UID2						MMIO32(SCU_BASE + 0x74)
+#define	SCU_UID2_BOOT_USART1			BIT(28)									 // Allow boot from USART1
+#define	SCU_UID2_BOOT_BSL				BIT(29)									 // Force boot from BSL, bypass firmware
+#define	SCU_UID2_BOOT_USB				BIT(30)									 // Allow boot from USB
 
-#define	SCU_BOOT_FLAG				MMIO32(SCU_BASE + 0x78)
-#define	SCU_BOOT_FLAG_BOOT_OK		BIT(0)
+#define	SCU_BOOT_FLAG					MMIO32(SCU_BASE + 0x78)
+#define	SCU_BOOT_FLAG_BOOT_OK			BIT(0)
 
-#define	SCU_ROMAMCR					MMIO32(SCU_BASE + 0x7C)
-#define	SCU_ROMAMCR_MOUNT_BROM		BIT(0)
+#define	SCU_ROMAMCR						MMIO32(SCU_BASE + 0x7C)
+#define	SCU_ROMAMCR_MOUNT_BROM			BIT(0)
 
 /* Redesign Tracing Identification Register */
-#define	SCU_RTID					MMIO32(SCU_BASE + 0x80)
-#define	SCU_RTID_RT					GENMASK(15, 0)							 // Redesign tracing value
-#define	SCU_RTID_RT_SHIFT			0
+#define	SCU_RTID						MMIO32(SCU_BASE + 0x80)
+#define	SCU_RTID_RT						GENMASK(15, 0)							 // Redesign tracing value
+#define	SCU_RTID_RT_SHIFT				0
 
 /* DMA Request Select */
-#define	SCU_DMARS					MMIO32(SCU_BASE + 0x84)
-#define	SCU_DMARS_SEL0				BIT(0)
-#define	SCU_DMARS_SEL1				BIT(1)
-#define	SCU_DMARS_SEL2				BIT(2)
-#define	SCU_DMARS_SEL3				BIT(3)
-#define	SCU_DMARS_SEL4				BIT(4)
-#define	SCU_DMARS_SEL5				BIT(5)
-#define	SCU_DMARS_SEL6				BIT(6)
-#define	SCU_DMARS_SEL7				BIT(7)
-#define	SCU_DMARS_SEL8				BIT(8)
-#define	SCU_DMARS_SEL9				BIT(9)
-#define	SCU_DMARS_SEL10				BIT(10)
-#define	SCU_DMARS_SEL11				BIT(11)
-#define	SCU_DMARS_SEL12				BIT(12)
-#define	SCU_DMARS_SEL13				BIT(13)
-#define	SCU_DMARS_SEL14				BIT(14)
-#define	SCU_DMARS_SEL15				BIT(15)
+#define	SCU_DMARS						MMIO32(SCU_BASE + 0x84)
+#define	SCU_DMARS_SEL0					BIT(0)
+#define	SCU_DMARS_SEL1					BIT(1)
+#define	SCU_DMARS_SEL2					BIT(2)
+#define	SCU_DMARS_SEL3					BIT(3)
+#define	SCU_DMARS_SEL4					BIT(4)
+#define	SCU_DMARS_SEL5					BIT(5)
+#define	SCU_DMARS_SEL6					BIT(6)
+#define	SCU_DMARS_SEL7					BIT(7)
+#define	SCU_DMARS_SEL8					BIT(8)
+#define	SCU_DMARS_SEL9					BIT(9)
+#define	SCU_DMARS_SEL10					BIT(10)
+#define	SCU_DMARS_SEL11					BIT(11)
+#define	SCU_DMARS_SEL12					BIT(12)
+#define	SCU_DMARS_SEL13					BIT(13)
+#define	SCU_DMARS_SEL14					BIT(14)
+#define	SCU_DMARS_SEL15					BIT(15)
 
 /* Service Routing Control Register */
-#define	SCU_EXTI0_SRC				MMIO32(SCU_BASE + 0xB8)
+#define	SCU_EXTI0_SRC					MMIO32(SCU_BASE + 0xB8)
 
 /* Service Routing Control Register */
-#define	SCU_EXTI1_SRC				MMIO32(SCU_BASE + 0xBC)
+#define	SCU_EXTI1_SRC					MMIO32(SCU_BASE + 0xBC)
 
 /* Service Routing Control Register */
-#define	SCU_EXTI2_SRC				MMIO32(SCU_BASE + 0xC0)
+#define	SCU_EXTI2_SRC					MMIO32(SCU_BASE + 0xC0)
 
 /* Service Routing Control Register */
-#define	SCU_EXTI3_SRC				MMIO32(SCU_BASE + 0xC4)
+#define	SCU_EXTI3_SRC					MMIO32(SCU_BASE + 0xC4)
 
 /* Service Routing Control Register */
-#define	SCU_EXTI4_SRC				MMIO32(SCU_BASE + 0xC8)
+#define	SCU_EXTI4_SRC					MMIO32(SCU_BASE + 0xC8)
+
+/* Power ASIC/PMIC Interrupt Service Request Register */
+#define	SCU_PM_INT_SRC					MMIO32(SCU_BASE + 0xCC)
+
+/* DSP-to-MCU Interrupt Service Request Registers; D:DE10 bits 0..3 */
+#define	SCU_DSP_SRC(n)					MMIO32(SCU_BASE + 0xD0 + ((n) * 0x4))
 
 /* Service Routing Control Register */
-#define	SCU_DSP_SRC(n)				MMIO32(SCU_BASE + 0xCC + ((n) * 0x4))
+#define	SCU_UNK0_SRC					MMIO32(SCU_BASE + 0xE8)
 
 /* Service Routing Control Register */
-#define	SCU_UNK0_SRC				MMIO32(SCU_BASE + 0xE8)
+#define	SCU_UNK1_SRC					MMIO32(SCU_BASE + 0xEC)
 
 /* Service Routing Control Register */
-#define	SCU_UNK1_SRC				MMIO32(SCU_BASE + 0xEC)
+#define	SCU_UNK2_SRC					MMIO32(SCU_BASE + 0xF0)
 
 /* Service Routing Control Register */
-#define	SCU_UNK2_SRC				MMIO32(SCU_BASE + 0xF0)
+#define	SCU_EXTI5_SRC					MMIO32(SCU_BASE + 0xF4)
 
 /* Service Routing Control Register */
-#define	SCU_EXTI5_SRC				MMIO32(SCU_BASE + 0xF4)
+#define	SCU_EXTI6_SRC					MMIO32(SCU_BASE + 0xF8)
 
 /* Service Routing Control Register */
-#define	SCU_EXTI6_SRC				MMIO32(SCU_BASE + 0xF8)
-
-/* Service Routing Control Register */
-#define	SCU_EXTI7_SRC				MMIO32(SCU_BASE + 0xFC)
+#define	SCU_EXTI7_SRC					MMIO32(SCU_BASE + 0xFC)
 
 
 // PLL
