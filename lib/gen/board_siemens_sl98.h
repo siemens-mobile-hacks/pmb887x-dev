@@ -4,6 +4,11 @@
 #define PMB8876
 
 // GPIO numbers
+#define	GPIO_AC_RX	GPIO_USART0_RXD
+#define	GPIO_AC_TX	GPIO_USART0_TXD
+#define	GPIO_AC_CTS	GPIO_USART0_RTS
+#define	GPIO_AC_RTS	GPIO_USART0_CTS
+#define	GPIO_AC_DCD	GPIO_DSPOUT0
 
 
 // Keypad
