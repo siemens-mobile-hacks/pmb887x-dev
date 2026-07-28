@@ -134,6 +134,8 @@ sub loadBoard {
 	
 	if (exists $cfg->{keyboard}) {
 		for my $kp_name (keys %{$cfg->{keyboard}}) {
+			next if $kp_name eq 'gpio';
+
 			my @arr = @{$cfg->{keyboard}->{$kp_name}};
 			my @kp_in_arr = shift @arr;
 			my @kp_out_arr = @arr;
