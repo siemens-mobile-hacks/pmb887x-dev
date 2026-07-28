@@ -123,7 +123,8 @@ as evidence of the complete hardware size.
 
 ### Program Mask ROM dump layout
 
-`/tmp/el71-dsp-mask-rom.bin` linearizes the banked P-space as follows:
+`/tmp/pmb887x-dsp-program-mask-rom.bin` linearizes the banked P-space as
+follows:
 
 | Byte offset | Size | Contents |
 |---:|---:|---|
@@ -254,20 +255,22 @@ The `dsp-rom-dump` test stays in the boot loop and uses only `DLOAD` and
 window. Neither `BRANCH` nor code loaded into PRAM is needed for the dump. The
 output file contains the fixed ROM followed by Program ROM windows 0, 1, and 2.
 
-Run the test on EL71 and save the result with:
+Run the test on any PMB8876-based board supported by the unit harness and save
+the result with:
 
 ```sh
 cd bsp/unit
 BOARD=siemens-el71 TEST_COLOR=OFF ./run.sh dsp-rom-dump \
-  | tee /tmp/el71-dsp-mask-rom.log
-rg -a '^:' /tmp/el71-dsp-mask-rom.log > /tmp/el71-dsp-mask-rom.hex
-objcopy -I ihex -O binary \
-  /tmp/el71-dsp-mask-rom.hex /tmp/el71-dsp-mask-rom.bin
-wc -c /tmp/el71-dsp-mask-rom.bin
-sha256sum /tmp/el71-dsp-mask-rom.bin
+  | tee /tmp/pmb887x-dsp-program-mask-rom.log
+rg -a '^:' /tmp/pmb887x-dsp-program-mask-rom.log \
+  > /tmp/pmb887x-dsp-program-mask-rom.hex
+objcopy -I ihex -O binary /tmp/pmb887x-dsp-program-mask-rom.hex \
+  /tmp/pmb887x-dsp-program-mask-rom.bin
+wc -c /tmp/pmb887x-dsp-program-mask-rom.bin
+sha256sum /tmp/pmb887x-dsp-program-mask-rom.bin
 ```
 
-Verified result for an EL71 with PMB8876 revision 10:
+Verified result for PMB8876 revision 10, DSP Mask ROM ID `0x0801`:
 
 ```text
 size:   212992 bytes
@@ -280,6 +283,63 @@ bank 2: word-wise FNV-1a 436D3807
 
 The 212992-byte size is correct: 104K means 104K 16-bit words, not 104K bytes.
 Thus `104 * 1024 * 2 = 212992` bytes (`0x34000`, or 208 KiB).
+
+The contents are determined by the DSP silicon mask, identified here by CPU
+type/revision and DSP Mask ROM ID. They do not depend on the phone model or on
+the startup firmware loaded into DSP RAM. The board name in the run command
+only selects a transport and hardware configuration known to the test harness.
+
+## Dumping Data Mask ROM
+
+The separate `dsp-data-rom-dump` test remains in the same Mask ROM boot loop.
+It uses `DLOAD` only to select `DSP_PAGE.DATA_PAGE`, then uses `DREAD` to dump
+the fixed range and all four possible views of the banked window. It does not
+issue `BRANCH`, and data loaded by the phone firmware into Data RAM is not part
+of the result.
+
+The linear output layout is:
+
+| Byte offset | Size | Contents |
+|---:|---:|---|
+| `0x00000` | `0x02000` | Fixed ROM `D:8000..8FFF` |
+| `0x02000` | `0x08000` | `DATA_PAGE=0`, window `D:9000..CFFF` |
+| `0x0A000` | `0x08000` | `DATA_PAGE=1`, window `D:9000..CFFF` |
+| `0x12000` | `0x08000` | `DATA_PAGE=2`, window `D:9000..CFFF` |
+| `0x1A000` | `0x08000` | `DATA_PAGE=3`, window `D:9000..CFFF` |
+| | `0x22000` | Total visible dump: 139264 bytes |
+
+Run and convert it with:
+
+```sh
+cd bsp/unit
+BOARD=siemens-el71 TEST_COLOR=OFF ./run.sh dsp-data-rom-dump \
+  | tee /tmp/pmb887x-dsp-data-mask-rom.log
+rg -a '^:' /tmp/pmb887x-dsp-data-mask-rom.log \
+  > /tmp/pmb887x-dsp-data-mask-rom.hex
+objcopy -I ihex -O binary /tmp/pmb887x-dsp-data-mask-rom.hex \
+  /tmp/pmb887x-dsp-data-mask-rom.bin
+wc -c /tmp/pmb887x-dsp-data-mask-rom.bin
+sha256sum /tmp/pmb887x-dsp-data-mask-rom.bin
+```
+
+Verified result for PMB8876 revision 10, DSP Mask ROM ID `0x0801`:
+
+```text
+size:   139264 bytes
+sha256: 48d861f10fb5e2b45bd57de4374911694688a068cf9ff96f86dd008132175971
+fixed:  word-wise FNV-1a 23B7451F
+bank 0: word-wise FNV-1a 12BC63DB
+bank 1: word-wise FNV-1a 44F0F202
+bank 2: word-wise FNV-1a EC3B8991
+bank 3: word-wise FNV-1a 38699DC5
+```
+
+The fourth 16K-word view is entirely zero on this mask. Consequently this
+139264-byte file is a dump of every address selected by the two-bit page
+field, not proof that the complete stated 60K-word physical Data ROM is mapped
+as `4K + 4 * 16K`. The three populated bank views plus the fixed range account
+for 52K words. The location or accessibility of the remaining stated 8K words
+still needs independent confirmation.
 
 ## Emulator implementation
 

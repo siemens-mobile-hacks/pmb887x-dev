@@ -14,6 +14,7 @@ Run a test on real hardware:
 | `dmac` | DMA transfers, requests, linked lists, arbitration, and interrupts |
 | `dsp` | Communication flags, firmware command handshake, shared RAM access widths, interrupt requests, and reset |
 | `dsp-rom-dump` | PMB8876 DSP boot-mode PREAD dump of the 104K-word program mask ROM in Intel HEX format |
+| `dsp-data-rom-dump` | PMB8876 DSP boot-mode DREAD dump of fixed and banked data mask ROM in Intel HEX format |
 | `mod` | Common CLC, SRC, and SRB register blocks |
 | `scu` | CPU identification, watchdog protection, mode transitions, counter, and status |
 | `scu-reset` | Intentional software reset using the firmware reset-control sequence |

@@ -4,6 +4,7 @@
 
 #define DSP_BOOT_DLOAD 1
 #define DSP_BOOT_PREAD 3
+#define DSP_BOOT_DREAD 4
 #define DSP_BOOT_DATA_OFFSET 2
 #define DSP_BOOT_RESULT_OFFSET (DSP_BOOT_DATA_OFFSET + 3)
 #define DSP_BOOT_MAX_WORDS 509
@@ -16,6 +17,11 @@
 #define DSP_PROGRAM_ROM_WINDOW_WORDS 0x6000
 #define DSP_PROGRAM_PAGE_SHIFT 2
 #define DSP_PROGRAM_PAGE_COUNT 3
+#define DSP_DATA_ROM_FIXED_FIRST 0x8000
+#define DSP_DATA_ROM_FIXED_WORDS 0x1000
+#define DSP_DATA_ROM_WINDOW_FIRST 0x9000
+#define DSP_DATA_ROM_WINDOW_WORDS 0x4000
+#define DSP_DATA_PAGE_COUNT 4
 #define DSP_WAIT_ITERATIONS 1000000
 
 static volatile uint16_t *const dsp_shared_memory = (volatile uint16_t *) DSP_RAM_BASE;
@@ -39,10 +45,10 @@ static bool submit_boot_command(void) {
 	return wait_for_boot_ready();
 }
 
-static bool dsp_pread(uint16_t source, uint16_t words) {
+static bool dsp_read(uint16_t command, uint16_t source, uint16_t words) {
 	volatile uint16_t *boot_data = dsp_shared_memory + DSP_BOOT_DATA_OFFSET;
 
-	boot_data[0] = DSP_BOOT_PREAD;
+	boot_data[0] = command;
 	boot_data[1] = source;
 	boot_data[2] = words;
 
@@ -93,8 +99,8 @@ static void print_ihex_data(uint32_t address, const volatile uint16_t *words, un
 	printf("%02X\n", ihex_checksum(sum));
 }
 
-static bool dump_program_region(uint16_t first, uint32_t words, uint32_t output_first, uint32_t *hash,
-	uint16_t *current_upper_address) {
+static bool dump_region(uint16_t command, uint16_t first, uint32_t words, uint32_t output_first,
+	uint32_t *hash, uint16_t *current_upper_address) {
 	volatile uint16_t *result = dsp_shared_memory + DSP_BOOT_RESULT_OFFSET;
 	uint32_t value_hash = 0x811C9DC5U;
 
@@ -102,7 +108,7 @@ static bool dump_program_region(uint16_t first, uint32_t words, uint32_t output_
 		uint32_t remaining = first + words - source;
 		uint16_t block_words = remaining < DSP_BOOT_BLOCK_WORDS ? remaining : DSP_BOOT_BLOCK_WORDS;
 
-		if (!dsp_pread(source, block_words))
+		if (!dsp_read(command, source, block_words))
 			return false;
 		test_watchdog_reset();
 
@@ -124,33 +130,62 @@ static bool dump_program_region(uint16_t first, uint32_t words, uint32_t output_
 	return true;
 }
 
-static bool pulse_dsp_reset(void) {
-	SCU_RST_REQ = SCU_RST_REQ_DSP;
-	bool asserted = (SCU_RST_REQ & SCU_RST_REQ_DSP) != 0;
-	SCU_RST_REQ = 0;
-
-	return asserted;
-}
-
 int main(void) {
-	test_start("DSP mask ROM dump");
-	test_category("Reset values");
-	test_module_id("module ID", 0xF022C000, DSP_ID);
-	test_eq_u32("clock control reset value", MOD_CLC_DISR | MOD_CLC_DISS, DSP_CLC);
+#ifdef DSP_DUMP_DATA_ROM
+	test_start("DSP data mask ROM dump");
+#else
+	test_start("DSP program mask ROM dump");
+#endif
 	if (test_is_qemu()) {
 		test_skip("mask ROM dump", "QEMU does not execute DSP firmware");
 		return test_finish();
 	}
 
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
-	test_module_clock("module clock is enabled", DSP_CLC);
 	SCU_DSP_INT = 0;
-	test_check("DSP reset request asserts", pulse_dsp_reset());
+	SCU_RST_REQ = SCU_RST_REQ_DSP;
+	SCU_RST_REQ = 0;
 	if (!test_check("DSP boot firmware becomes ready", wait_for_boot_ready()))
 		return test_finish();
 
-	printf("# DSP shared memory words 0/1: %04X %04X\n", dsp_shared_memory[0], dsp_shared_memory[1]);
+	printf("# DSP mask ID: %04X\n", dsp_shared_memory[0]);
 
+#ifdef DSP_DUMP_DATA_ROM
+	printf("# Convert: rg -a '^:' /tmp/pmb887x-dsp-data-mask-rom.log > /tmp/pmb887x-dsp-data-mask-rom.hex && "
+		"objcopy -I ihex -O binary /tmp/pmb887x-dsp-data-mask-rom.hex /tmp/pmb887x-dsp-data-mask-rom.bin\n");
+	test_category("Data space dump");
+	uint16_t current_upper_address = UINT16_MAX;
+	uint32_t fixed_hash;
+	uint32_t page_hashes[DSP_DATA_PAGE_COUNT];
+
+	if (!test_check("DLOAD selects data page 0", dsp_dload_word(DSP_PAGE_ADDRESS, 0)))
+		return test_finish();
+	bool fixed_dumped = dump_region(DSP_BOOT_DREAD, DSP_DATA_ROM_FIXED_FIRST, DSP_DATA_ROM_FIXED_WORDS, 0,
+		&fixed_hash, &current_upper_address);
+	if (!test_check("DREAD dumps fixed data ROM", fixed_dumped)) {
+		printf(":00000001FF\n");
+		return test_finish();
+	}
+	printf("# DSP fixed data ROM word-wise FNV-1a: %08X\n", fixed_hash);
+
+	for (unsigned int page = 0; page < DSP_DATA_PAGE_COUNT; page++) {
+		if (!test_check("DLOAD selects data ROM bank", dsp_dload_word(DSP_PAGE_ADDRESS, page))) {
+			printf(":00000001FF\n");
+			return test_finish();
+		}
+		uint32_t output_first = DSP_DATA_ROM_FIXED_WORDS + page * DSP_DATA_ROM_WINDOW_WORDS;
+		bool page_dumped = dump_region(DSP_BOOT_DREAD, DSP_DATA_ROM_WINDOW_FIRST, DSP_DATA_ROM_WINDOW_WORDS,
+			output_first, &page_hashes[page], &current_upper_address);
+		if (!test_check("DREAD dumps banked data ROM", page_dumped)) {
+			printf(":00000001FF\n");
+			return test_finish();
+		}
+		printf("# DSP data ROM bank %u word-wise FNV-1a: %08X\n", page, page_hashes[page]);
+	}
+#else
+	printf("# Convert: rg -a '^:' /tmp/pmb887x-dsp-program-mask-rom.log > /tmp/pmb887x-dsp-program-mask-rom.hex && "
+		"objcopy -I ihex -O binary /tmp/pmb887x-dsp-program-mask-rom.hex "
+		"/tmp/pmb887x-dsp-program-mask-rom.bin\n");
 	test_category("Program space dump");
 	uint16_t current_upper_address = UINT16_MAX;
 	uint32_t fixed_hash;
@@ -158,8 +193,8 @@ int main(void) {
 
 	if (!test_check("DLOAD selects program page 0", dsp_dload_word(DSP_PAGE_ADDRESS, 0)))
 		return test_finish();
-	bool fixed_dumped = dump_program_region(DSP_PROGRAM_ROM_FIXED_FIRST, DSP_PROGRAM_ROM_FIXED_WORDS, 0,
-		&fixed_hash, &current_upper_address);
+	bool fixed_dumped = dump_region(DSP_BOOT_PREAD, DSP_PROGRAM_ROM_FIXED_FIRST, DSP_PROGRAM_ROM_FIXED_WORDS,
+		0, &fixed_hash, &current_upper_address);
 	if (!test_check("PREAD dumps fixed program ROM", fixed_dumped)) {
 		printf(":00000001FF\n");
 		return test_finish();
@@ -173,8 +208,8 @@ int main(void) {
 			return test_finish();
 		}
 		uint32_t output_first = DSP_PROGRAM_ROM_FIXED_WORDS + page * DSP_PROGRAM_ROM_WINDOW_WORDS;
-		bool page_dumped = dump_program_region(DSP_PROGRAM_ROM_WINDOW_FIRST, DSP_PROGRAM_ROM_WINDOW_WORDS,
-			output_first, &page_hashes[page], &current_upper_address);
+		bool page_dumped = dump_region(DSP_BOOT_PREAD, DSP_PROGRAM_ROM_WINDOW_FIRST,
+			DSP_PROGRAM_ROM_WINDOW_WORDS, output_first, &page_hashes[page], &current_upper_address);
 		if (!test_check("PREAD dumps banked program ROM", page_dumped)) {
 			printf(":00000001FF\n");
 			return test_finish();
@@ -184,6 +219,7 @@ int main(void) {
 	bool banks_distinct = page_hashes[0] != page_hashes[1] && page_hashes[0] != page_hashes[2] &&
 		page_hashes[1] != page_hashes[2];
 	test_check("program ROM banks are distinct", banks_distinct);
+#endif
 	printf(":00000001FF\n");
 
 	return test_finish();
