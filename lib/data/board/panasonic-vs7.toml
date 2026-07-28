@@ -33,7 +33,7 @@ bus = "I2C"
 addr = 0x08
 
 [peripheral.GIMMICK]
-type = "s1d13705"
+type = "s1d13732"
 bus = "DIF"
 in.CS = "DIF_CS"
 in.SA0 = "DIF_RS"
