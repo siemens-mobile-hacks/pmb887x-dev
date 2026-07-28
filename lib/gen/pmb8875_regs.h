@@ -127,13 +127,13 @@
 #define	VIC_SCU_EXTI3_IRQ		51
 #define	VIC_SCU_EXTI4_IRQ		52
 #define	VIC_SCU_EXTI5_IRQ		53
+#define	VIC_SCU_DSP0_IRQ		54
 #define	VIC_SCU_EXTI6_IRQ		54
+#define	VIC_SCU_DSP1_IRQ		55
 #define	VIC_SCU_EXTI7_IRQ		55
+#define	VIC_SCU_DSP2_IRQ		56
 #define	VIC_SCU_PM_INT_IRQ		56
-#define	VIC_SCU_DSP0_IRQ		57
-#define	VIC_SCU_DSP1_IRQ		58
-#define	VIC_SCU_DSP2_IRQ		59
-#define	VIC_SCU_DSP3_IRQ		60
+#define	VIC_SCU_DSP3_IRQ		57
 #define	VIC_SCU_UNK0_IRQ		61
 #define	VIC_SCU_UNK1_IRQ		62
 #define	VIC_SCCU_UNK_IRQ		63
@@ -2548,7 +2548,7 @@
 /* Power ASIC/PMIC Interrupt Service Request Register */
 #define	SCU_PM_INT_SRC					MMIO32(SCU_BASE + 0xCC)
 
-/* DSP-to-MCU Interrupt Service Request Registers; D:DE10 bits 0..3 */
+/* DSP-to-MCU Interrupt Service Request Registers; INT_TOMCU[3:0], D:E610 (8875) or D:DE10 (8876) */
 #define	SCU_DSP_SRC(n)					MMIO32(SCU_BASE + 0xD0 + ((n) * 0x4))
 
 /* Service Routing Control Register */

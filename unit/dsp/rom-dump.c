@@ -10,24 +10,62 @@
 #define DSP_BOOT_MAX_WORDS 507
 #define IHEX_RECORD_WORDS 8
 #define DSP_BOOT_BLOCK_WORDS (DSP_BOOT_MAX_WORDS / IHEX_RECORD_WORDS * IHEX_RECORD_WORDS)
-#define DSP_PAGE_ADDRESS 0xDEA3
-#define DSP_PROGRAM_ROM_FIXED_FIRST 0x2000
-#define DSP_PROGRAM_ROM_FIXED_WORDS 0x8000
-#define DSP_PROGRAM_ROM_WINDOW_FIRST 0xA000
-#define DSP_PROGRAM_ROM_WINDOW_WORDS 0x6000
-#define DSP_PROGRAM_PAGE_SHIFT 2
-#define DSP_PROGRAM_PAGE_COUNT 3
-#define DSP_DATA_ROM_FIXED_FIRST 0x8000
-#define DSP_DATA_ROM_FIXED_WORDS 0x1000
-#define DSP_DATA_ROM_WINDOW_FIRST 0x9000
-#define DSP_DATA_ROM_WINDOW_WORDS 0x4000
-#define DSP_DATA_PAGE_COUNT 4
+#define DSP_MASK_ID_FAMILY_MASK 0xFF00
+#define DSP_MASK_ID_FAMILY_06XX 0x0600
+#define DSP_MASK_ID_FAMILY_08XX 0x0800
+#define DSP_MAX_PROGRAM_PAGES 3
+#define DSP_MAX_DATA_PAGES 4
 #define DSP_WAIT_ITERATIONS 1000000
 
 static volatile uint16_t *const dsp_shared_memory = (volatile uint16_t *) DSP_RAM_BASE;
 
+struct dsp_rom_layout {
+	uint16_t page_address;
+	uint16_t program_fixed_first;
+	uint32_t program_fixed_words;
+	uint16_t program_window_first;
+	uint32_t program_window_words;
+	size_t program_page_shift;
+	size_t program_page_count;
+	uint16_t data_fixed_first;
+	uint32_t data_fixed_words;
+	uint16_t data_window_first;
+	uint32_t data_window_words;
+	size_t data_page_count;
+};
+
+static const struct dsp_rom_layout ROM_LAYOUT_06XX = {
+	.page_address = 0xE6A3,
+	.program_fixed_first = 0x1000,
+	.program_fixed_words = 0xA000,
+	.program_window_first = 0xB000,
+	.program_window_words = 0x5000,
+	.program_page_shift = 1,
+	.program_page_count = 2,
+	.data_fixed_first = 0x6000,
+	.data_fixed_words = 0x3000,
+	.data_window_first = 0x9000,
+	.data_window_words = 0x4800,
+	.data_page_count = 2,
+};
+
+static const struct dsp_rom_layout ROM_LAYOUT_08XX = {
+	.page_address = 0xDEA3,
+	.program_fixed_first = 0x2000,
+	.program_fixed_words = 0x8000,
+	.program_window_first = 0xA000,
+	.program_window_words = 0x6000,
+	.program_page_shift = 2,
+	.program_page_count = 3,
+	.data_fixed_first = 0x8000,
+	.data_fixed_words = 0x1000,
+	.data_window_first = 0x9000,
+	.data_window_words = 0x4000,
+	.data_page_count = 4,
+};
+
 static bool wait_for_boot_ready(void) {
-	for (unsigned int i = 0; i < DSP_WAIT_ITERATIONS; i++) {
+	for (size_t i = 0; i < DSP_WAIT_ITERATIONS; i++) {
 		if ((DSP_COM_STATUS & BIT(0)) == 0)
 			return true;
 		if ((i & 0x3FFF) == 0)
@@ -76,11 +114,11 @@ static void print_ihex_extended_address(uint16_t upper_address) {
 	printf(":02000004%04X%02X\n", upper_address, ihex_checksum(sum));
 }
 
-static void print_ihex_data(uint32_t address, const volatile uint16_t *words, unsigned int word_count,
+static void print_ihex_data(uint32_t address, const volatile uint16_t *words, size_t word_count,
 	uint16_t *current_upper_address) {
 	uint16_t upper_address = address >> 16;
 	uint16_t lower_address = address;
-	unsigned int byte_count = word_count * sizeof(uint16_t);
+	uint32_t byte_count = word_count * sizeof(uint16_t);
 	uint32_t sum = byte_count + (lower_address >> 8) + (lower_address & 0xFF);
 
 	if (upper_address != *current_upper_address) {
@@ -89,7 +127,7 @@ static void print_ihex_data(uint32_t address, const volatile uint16_t *words, un
 	}
 
 	printf(":%02X%04X00", byte_count, lower_address);
-	for (unsigned int i = 0; i < word_count; i++) {
+	for (size_t i = 0; i < word_count; i++) {
 		uint8_t low = words[i];
 		uint8_t high = words[i] >> 8;
 
@@ -112,14 +150,14 @@ static bool dump_region(uint16_t command, uint16_t first, uint32_t words, uint32
 			return false;
 		test_watchdog_reset();
 
-		for (unsigned int i = 0; i < block_words; i += IHEX_RECORD_WORDS) {
-			unsigned int record_words = block_words - i;
+		for (size_t i = 0; i < block_words; i += IHEX_RECORD_WORDS) {
+			size_t record_words = block_words - i;
 
 			if (record_words > IHEX_RECORD_WORDS)
 				record_words = IHEX_RECORD_WORDS;
 			print_ihex_data((output_first + source + i - first) * sizeof(uint16_t), result + i, record_words,
 				current_upper_address);
-			for (unsigned int j = 0; j < record_words; j++)
+			for (size_t j = 0; j < record_words; j++)
 				value_hash = (value_hash ^ result[i + j]) * 0x01000193U;
 			test_watchdog_serve();
 		}
@@ -148,19 +186,27 @@ int main(void) {
 	if (!test_check("DSP boot firmware becomes ready", wait_for_boot_ready()))
 		return test_finish();
 
-	printf("# DSP mask ID: %04X\n", dsp_shared_memory[0]);
+	uint16_t mask_id = dsp_shared_memory[0];
+	uint16_t mask_family = mask_id & DSP_MASK_ID_FAMILY_MASK;
+	printf("# DSP mask ID: %04X\n", (uint32_t) mask_id);
+	if (!test_check("DSP Mask ROM ID is supported",
+		mask_family == DSP_MASK_ID_FAMILY_06XX || mask_family == DSP_MASK_ID_FAMILY_08XX))
+		return test_finish();
+	const struct dsp_rom_layout *layout = mask_family == DSP_MASK_ID_FAMILY_06XX ?
+		&ROM_LAYOUT_06XX : &ROM_LAYOUT_08XX;
 
 #ifdef DSP_DUMP_DATA_ROM
-	printf("# Convert: rg -a '^:' /tmp/pmb887x-dsp-data-mask-rom.log > /tmp/pmb887x-dsp-data-mask-rom.hex && "
-		"objcopy -I ihex -O binary /tmp/pmb887x-dsp-data-mask-rom.hex /tmp/pmb887x-dsp-data-mask-rom.bin\n");
+	printf("# Convert: rg -a '^:' /tmp/dsp-%04X-data-rom.log > /tmp/dsp-%04X-data-rom.hex && "
+		"objcopy -I ihex -O binary /tmp/dsp-%04X-data-rom.hex ../rom/dsp/%04X-data-rom.bin\n",
+		(uint32_t) mask_id, (uint32_t) mask_id, (uint32_t) mask_id, (uint32_t) mask_id);
 	test_category("Data space dump");
 	uint16_t current_upper_address = UINT16_MAX;
 	uint32_t fixed_hash;
-	uint32_t page_hashes[DSP_DATA_PAGE_COUNT];
+	uint32_t page_hashes[DSP_MAX_DATA_PAGES];
 
-	if (!test_check("DLOAD selects data page 0", dsp_dload_word(DSP_PAGE_ADDRESS, 0)))
+	if (!test_check("DLOAD selects data page 0", dsp_dload_word(layout->page_address, 0)))
 		return test_finish();
-	bool fixed_dumped = dump_region(DSP_BOOT_DREAD, DSP_DATA_ROM_FIXED_FIRST, DSP_DATA_ROM_FIXED_WORDS, 0,
+	bool fixed_dumped = dump_region(DSP_BOOT_DREAD, layout->data_fixed_first, layout->data_fixed_words, 0,
 		&fixed_hash, &current_upper_address);
 	if (!test_check("DREAD dumps fixed data ROM", fixed_dumped)) {
 		printf(":00000001FF\n");
@@ -168,32 +214,32 @@ int main(void) {
 	}
 	printf("# DSP fixed data ROM word-wise FNV-1a: %08X\n", fixed_hash);
 
-	for (unsigned int page = 0; page < DSP_DATA_PAGE_COUNT; page++) {
-		if (!test_check("DLOAD selects data ROM bank", dsp_dload_word(DSP_PAGE_ADDRESS, page))) {
+	for (size_t page = 0; page < layout->data_page_count; page++) {
+		if (!test_check("DLOAD selects data ROM bank", dsp_dload_word(layout->page_address, page))) {
 			printf(":00000001FF\n");
 			return test_finish();
 		}
-		uint32_t output_first = DSP_DATA_ROM_FIXED_WORDS + page * DSP_DATA_ROM_WINDOW_WORDS;
-		bool page_dumped = dump_region(DSP_BOOT_DREAD, DSP_DATA_ROM_WINDOW_FIRST, DSP_DATA_ROM_WINDOW_WORDS,
+		uint32_t output_first = layout->data_fixed_words + page * layout->data_window_words;
+		bool page_dumped = dump_region(DSP_BOOT_DREAD, layout->data_window_first, layout->data_window_words,
 			output_first, &page_hashes[page], &current_upper_address);
 		if (!test_check("DREAD dumps banked data ROM", page_dumped)) {
 			printf(":00000001FF\n");
 			return test_finish();
 		}
-		printf("# DSP data ROM bank %u word-wise FNV-1a: %08X\n", page, page_hashes[page]);
+		printf("# DSP data ROM bank %u word-wise FNV-1a: %08X\n", (uint32_t) page, page_hashes[page]);
 	}
 #else
-	printf("# Convert: rg -a '^:' /tmp/pmb887x-dsp-program-mask-rom.log > /tmp/pmb887x-dsp-program-mask-rom.hex && "
-		"objcopy -I ihex -O binary /tmp/pmb887x-dsp-program-mask-rom.hex "
-		"/tmp/pmb887x-dsp-program-mask-rom.bin\n");
+	printf("# Convert: rg -a '^:' /tmp/dsp-%04X-program-rom.log > /tmp/dsp-%04X-program-rom.hex && "
+		"objcopy -I ihex -O binary /tmp/dsp-%04X-program-rom.hex ../rom/dsp/%04X-program-rom.bin\n",
+		(uint32_t) mask_id, (uint32_t) mask_id, (uint32_t) mask_id, (uint32_t) mask_id);
 	test_category("Program space dump");
 	uint16_t current_upper_address = UINT16_MAX;
 	uint32_t fixed_hash;
-	uint32_t page_hashes[DSP_PROGRAM_PAGE_COUNT];
+	uint32_t page_hashes[DSP_MAX_PROGRAM_PAGES];
 
-	if (!test_check("DLOAD selects program page 0", dsp_dload_word(DSP_PAGE_ADDRESS, 0)))
+	if (!test_check("DLOAD selects program page 0", dsp_dload_word(layout->page_address, 0)))
 		return test_finish();
-	bool fixed_dumped = dump_region(DSP_BOOT_PREAD, DSP_PROGRAM_ROM_FIXED_FIRST, DSP_PROGRAM_ROM_FIXED_WORDS,
+	bool fixed_dumped = dump_region(DSP_BOOT_PREAD, layout->program_fixed_first, layout->program_fixed_words,
 		0, &fixed_hash, &current_upper_address);
 	if (!test_check("PREAD dumps fixed program ROM", fixed_dumped)) {
 		printf(":00000001FF\n");
@@ -201,23 +247,24 @@ int main(void) {
 	}
 	printf("# DSP fixed program ROM word-wise FNV-1a: %08X\n", fixed_hash);
 
-	for (unsigned int page = 0; page < DSP_PROGRAM_PAGE_COUNT; page++) {
-		if (!test_check("DLOAD selects program ROM bank", dsp_dload_word(DSP_PAGE_ADDRESS,
-			page << DSP_PROGRAM_PAGE_SHIFT))) {
+	for (size_t page = 0; page < layout->program_page_count; page++) {
+		if (!test_check("DLOAD selects program ROM bank", dsp_dload_word(layout->page_address,
+			page << layout->program_page_shift))) {
 			printf(":00000001FF\n");
 			return test_finish();
 		}
-		uint32_t output_first = DSP_PROGRAM_ROM_FIXED_WORDS + page * DSP_PROGRAM_ROM_WINDOW_WORDS;
-		bool page_dumped = dump_region(DSP_BOOT_PREAD, DSP_PROGRAM_ROM_WINDOW_FIRST,
-			DSP_PROGRAM_ROM_WINDOW_WORDS, output_first, &page_hashes[page], &current_upper_address);
+		uint32_t output_first = layout->program_fixed_words + page * layout->program_window_words;
+		bool page_dumped = dump_region(DSP_BOOT_PREAD, layout->program_window_first,
+			layout->program_window_words, output_first, &page_hashes[page], &current_upper_address);
 		if (!test_check("PREAD dumps banked program ROM", page_dumped)) {
 			printf(":00000001FF\n");
 			return test_finish();
 		}
-		printf("# DSP program ROM bank %u word-wise FNV-1a: %08X\n", page, page_hashes[page]);
+		printf("# DSP program ROM bank %u word-wise FNV-1a: %08X\n", (uint32_t) page, page_hashes[page]);
 	}
-	bool banks_distinct = page_hashes[0] != page_hashes[1] && page_hashes[0] != page_hashes[2] &&
-		page_hashes[1] != page_hashes[2];
+	bool banks_distinct = page_hashes[0] != page_hashes[1];
+	if (layout->program_page_count == 3)
+		banks_distinct = banks_distinct && page_hashes[0] != page_hashes[2] && page_hashes[1] != page_hashes[2];
 	test_check("program ROM banks are distinct", banks_distinct);
 #endif
 	printf(":00000001FF\n");

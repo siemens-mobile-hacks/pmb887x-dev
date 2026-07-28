@@ -2212,7 +2212,7 @@
 /* Power ASIC/PMIC Interrupt Service Request Register */
 #define	SCU_PM_INT_SRC					MMIO32(SCU_BASE + 0xCC)
 
-/* DSP-to-MCU Interrupt Service Request Registers; D:DE10 bits 0..3 */
+/* DSP-to-MCU Interrupt Service Request Registers; INT_TOMCU[3:0], D:E610 (8875) or D:DE10 (8876) */
 #define	SCU_DSP_SRC(n)					MMIO32(SCU_BASE + 0xD0 + ((n) * 0x4))
 
 /* Service Routing Control Register */

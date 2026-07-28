@@ -25,4 +25,6 @@ build_image() {
 }
 
 build_image commands DSP_TEST_IMAGE
+build_image commands-8875 DSP_TEST_IMAGE_8875
 build_image irqs DSP_IRQ_IMAGE
+build_image irqs-8875 DSP_IRQ_IMAGE_8875

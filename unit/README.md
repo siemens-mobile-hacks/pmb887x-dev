@@ -13,10 +13,10 @@ Run a test on real hardware:
 | `stm` | System timer registers and counter views |
 | `dmac` | DMA transfers, requests, linked lists, arbitration, and interrupts |
 | `dsp` | Communication flags, firmware command handshake, shared RAM access widths, MCU/DSP interrupt requests, and reset |
-| `dsp-irqs` | Real DSP-generated interrupts through D:DE10, VIC routing, and acknowledgement for all four DSP SRC lines |
-| `dsp-mask-rom-commands` | PMB8876 Mask ROM boot commands, one USER_0 command, and built-in runtime commands |
-| `dsp-rom-dump` | PMB8876 DSP boot-mode PREAD dump of the 104K-word program mask ROM in Intel HEX format |
-| `dsp-data-rom-dump` | PMB8876 DSP boot-mode DREAD dump of fixed and banked data mask ROM in Intel HEX format |
+| `dsp-irqs` | Real DSP-generated INT_TOMCU requests, VIC routing, and acknowledgement for all four DSP SRC lines |
+| `dsp-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
+| `dsp-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |
+| `dsp-data-rom-dump` | PMB8875/PMB8876 DSP boot-mode DREAD dump of fixed and banked Data Mask ROM in Intel HEX format |
 | `mod` | Common CLC, SRC, and SRB register blocks |
 | `scu` | CPU identification, watchdog protection, mode transitions, counter, and status |
 | `scu-reset` | Intentional software reset using the firmware reset-control sequence |
