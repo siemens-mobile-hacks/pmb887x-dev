@@ -433,6 +433,36 @@ static void test_t2_events(const gptu_t *gptu) {
 	));
 	test_eq_u32("early underflow occurs at zero", 0, GPTU_T2(gptu->base));
 
+	GPTU_SRC(gptu->base, 5) = MOD_SRC_CLRR;
+	GPTU_SRC(gptu->base, 6) = MOD_SRC_CLRR;
+	GPTU_SRSEL(gptu->base) = GPTU_SRSEL_SSR5_OUV_T2B | GPTU_SRSEL_SSR6_OUV_T2A;
+	GPTU_SRC(gptu->base, 5) = MOD_SRC_SRE;
+	GPTU_SRC(gptu->base, 6) = MOD_SRC_SRE;
+	GPTU_T2CON(gptu->base) = 0;
+	GPTU_T2(gptu->base) = 0xFFF0;
+	GPTU_T012RUN(gptu->base) = GPTU_T012RUN_T2ASETR;
+	test_check("combined T2 crosses the 16-bit boundary", wait_mask_changed(
+		&GPTU_T2(gptu->base), 0xFFFF0000, 0
+	));
+	gptu_stop(gptu);
+	test_eq_u32("combined T2 boundary does not raise OUV_T2B",
+		0, GPTU_SRC(gptu->base, 5) & MOD_SRC_SRR);
+	test_eq_u32("combined T2 boundary raises OUV_T2A", MOD_SRC_SRR, GPTU_SRC(gptu->base, 6) & MOD_SRC_SRR);
+	GPTU_SRC(gptu->base, 5) = MOD_SRC_CLRR;
+	GPTU_SRC(gptu->base, 6) = MOD_SRC_CLRR;
+	GPTU_T2CON(gptu->base) = GPTU_T2CON_T2ACOS;
+	GPTU_T2(gptu->base) = 0xFFFFFFF0;
+	GPTU_T012RUN(gptu->base) = GPTU_T012RUN_T2ASETR;
+	test_check("combined T2 full overflow stops the timer", wait_mask_equal(
+		&GPTU_T012RUN(gptu->base), GPTU_T012RUN_T2ARUN, 0
+	));
+	test_eq_u32("combined T2 full overflow raises OUV_T2B",
+		MOD_SRC_SRR, GPTU_SRC(gptu->base, 5) & MOD_SRC_SRR);
+	test_eq_u32("combined T2 full overflow raises OUV_T2A",
+		MOD_SRC_SRR, GPTU_SRC(gptu->base, 6) & MOD_SRC_SRR);
+	GPTU_SRC(gptu->base, 5) = MOD_SRC_CLRR;
+	GPTU_SRC(gptu->base, 6) = MOD_SRC_CLRR;
+
 	GPTU_SRC(gptu->base, 0) = MOD_SRC_CLRR;
 	GPTU_SRC(gptu->base, 1) = MOD_SRC_CLRR;
 	GPTU_SRSEL(gptu->base) = GPTU_SRSEL_SSR0_OUV_T2A | GPTU_SRSEL_SSR1_OUV_T2B;
