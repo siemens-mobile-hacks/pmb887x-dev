@@ -11,6 +11,21 @@
 		"args":		["uint32", "cstr", "uint32", "cstr"]
 	},
 	{
+		"name":		"__assert3",
+		"addr":		0xa01c6d0a,
+		"args":		["cstr", "uint32"]
+	},
+	{
+		"name":		"__tpu_assert3",
+		"addr":		0xa01c87bc,
+		"args":		["uint32", "cstr", "uint32"]
+	},
+	{
+		"name":		"__tpu_mon_assert",
+		"addr":		0xa01c87f8,
+		"args":		["uint32", "uint32", "uint32", "uint32", "cstr"]
+	},
+	{
 		"name":		"d",
 		"addr":		0xa01cd8e8,
 		"args":		["cstr"]
