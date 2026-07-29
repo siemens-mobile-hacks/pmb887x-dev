@@ -174,11 +174,6 @@ int main(void) {
 #else
 	test_start("DSP program mask ROM dump");
 #endif
-	if (test_is_qemu()) {
-		test_skip("mask ROM dump", "QEMU does not execute DSP firmware");
-		return test_finish();
-	}
-
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	SCU_DSP_INT = 0;
 	SCU_RST_REQ = SCU_RST_REQ_DSP;

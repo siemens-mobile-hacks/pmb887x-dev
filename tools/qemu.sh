@@ -6,3 +6,4 @@ cd $(dirname $0)
 ./gen_decoder.pl > ../../qemu/hw/arm/pmb887x/gen/cpu_meta.c
 ./gen_qemu_flashes.pl > ../../qemu/hw/arm/pmb887x/gen/flash-info.c
 ./gen_cpu_modules_qemu.pl > ../../qemu/hw/arm/pmb887x/gen/cpu_modules.c
+./gen_dsp_rom_qemu.pl ../../qemu/hw/arm/pmb887x/gen

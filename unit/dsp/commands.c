@@ -706,10 +706,6 @@ static void test_branch_and_runtime_commands(void) {
 
 int main(void) {
 	test_start("DSP Mask ROM command test");
-	if (test_is_qemu()) {
-		test_skip("Mask ROM commands", "QEMU does not execute DSP firmware");
-		return test_finish();
-	}
 
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	if (!test_check("DSP Mask ROM boot dispatcher becomes ready", reset_dsp()))

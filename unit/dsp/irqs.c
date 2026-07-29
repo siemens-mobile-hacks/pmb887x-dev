@@ -214,11 +214,6 @@ static void test_reserved_bit(void) {
 
 int main(void) {
 	test_start("DSP interrupt test");
-	if (test_is_qemu()) {
-		test_skip("DSP-generated interrupts", "QEMU does not execute DSP firmware");
-		return test_finish();
-	}
-
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	if (!test_check("Mask ROM boot dispatcher becomes ready", reset_dsp()))
 		return test_finish();
