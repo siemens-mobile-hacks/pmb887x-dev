@@ -480,10 +480,19 @@ PMB8875 or `D:DE10` on PMB8876, raises:
 
 Bit 4 raises none of these sources.
 
-The source images are `unit/dsp/irqs.asm` and `irqs-8875.asm`;
-`unit/dsp/build_dsp_rom.sh` assembles them and embeds each complete DSP1
-container in its `.inc`. The specialized unit only enables DSP CLC; module
-identification and reset-value checks remain in the primary `dsp` unit.
+Hardware measurements on PMB8875 with Mask ROM 0602 show that `INT_TOMCU` is
+a one-way event register with W1S readback. Writes of bits 0..3 accumulate in
+the readback value, while writing zero and clearing the corresponding ARM-side
+`DSP_SRC.CLRR` do not change it. `CLRR` clears only `DSP_SRC.SRR`; the source
+does not reassert until the DSP writes the request bit again. Rewriting a bit
+that is already present in the `INT_TOMCU` readback generates a new request.
+Reserved bit 4 changes neither the readback nor any `DSP_SRC`.
+
+The source images are `unit/dsp/irqs-0602.asm`, `irqs-0604.asm`, and
+`irqs-0801.asm`; `unit/dsp/build_dsp_rom.sh` assembles them and embeds each
+complete DSP1 container in its `.inc`. The specialized unit only enables DSP
+CLC; module identification and reset-value checks remain in the primary `dsp`
+unit.
 
 Run the hardware test with:
 

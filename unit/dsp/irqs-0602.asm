@@ -1,4 +1,4 @@
-// Forward Shared RAM requests to the PMB8875 Mask ROM 0602 DSP-to-MCU register.
+// Forward Shared RAM requests and expose INT_TOMCU readback around ARM CLRR.
 segment p 0100
 mov 0x$0001 a0l
 mov a0l [0x$E692]
@@ -8,6 +8,21 @@ mov [0x$DB00] a0
 cmp 0x$0000 a0
 br 0x0000$0108 eq
 mov a0l [0x$E610]
+mov [0x$E610] a0
+mov a0l [0x$DB04]
+mov [0x$DB00] a0
+mov a0l [0x$DB02]
+mov [0x$DB03] a0
+cmp 0x$0000 a0
+br 0x0000$0118 eq
+mov [0x$E610] a0
+mov a0l [0x$DB05]
 clr a0 always
+mov a0l [0x$E610]
+mov [0x$E610] a0
+mov a0l [0x$DB06]
+clr a0 always
+mov a0l [0x$DB02]
+mov a0l [0x$DB03]
 mov a0l [0x$DB00]
 br 0x0000$0108 always

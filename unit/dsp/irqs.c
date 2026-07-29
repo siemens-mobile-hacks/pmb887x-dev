@@ -11,6 +11,11 @@
 #define DSP_STARTUP_ADDRESS 0x0100
 #define DSP_IRQ_REQUEST_OFFSET 0x0300
 #define DSP_IRQ_READY_OFFSET 0x0301
+#define DSP_IRQ_PHASE_OFFSET 0x0302
+#define DSP_IRQ_CONTINUE_OFFSET 0x0303
+#define DSP_IRQ_READ_BEFORE_OFFSET 0x0304
+#define DSP_IRQ_READ_AFTER_OFFSET 0x0305
+#define DSP_IRQ_READ_AFTER_ZERO_OFFSET 0x0306
 #define DSP1_HEADER_SIZE 0x300
 #define DSP1_FILE_SIZE_OFFSET 0x104
 #define DSP1_SEGMENT_COUNT_OFFSET 0x10E
@@ -173,6 +178,41 @@ static void prepare_irq(size_t source) {
 	cpu_enable_irq(true);
 }
 
+static void test_latched_source(size_t bit) {
+	char name[80];
+
+	cpu_enable_irq(false);
+	clear_irq_sources();
+	DSP_SHARED_MEMORY[DSP_IRQ_PHASE_OFFSET] = 0;
+	DSP_SHARED_MEMORY[DSP_IRQ_CONTINUE_OFFSET] = 0;
+	DSP_SHARED_MEMORY[DSP_IRQ_READ_BEFORE_OFFSET] = 0;
+	DSP_SHARED_MEMORY[DSP_IRQ_READ_AFTER_OFFSET] = 0;
+	DSP_SHARED_MEMORY[DSP_IRQ_READ_AFTER_ZERO_OFFSET] = 0;
+	DSP_SHARED_MEMORY[DSP_IRQ_REQUEST_OFFSET] = BIT(bit);
+	tfp_sprintf(name, "DSP writes INT_TOMCU bit %u", (uint32_t) bit);
+	test_check(name, wait_for_shared_value(DSP_IRQ_PHASE_OFFSET, BIT(bit)));
+	tfp_sprintf(name, "INT_TOMCU bit %u raises DSP_SRC%u", (uint32_t) bit, (uint32_t) bit);
+	test_eq_u32(name, MOD_SRC_SRR, SCU_DSP_SRC(bit) & MOD_SRC_SRR);
+	SCU_DSP_SRC(bit) = MOD_SRC_CLRR;
+	tfp_sprintf(name, "ARM CLRR clears DSP_SRC%u", (uint32_t) bit);
+	test_eq_u32(name, 0, SCU_DSP_SRC(bit) & MOD_SRC_SRR);
+	stopwatch_usleep_wd(1000);
+	tfp_sprintf(name, "DSP_SRC%u stays clear before DSP writes zero to INT_TOMCU", (uint32_t) bit);
+	test_eq_u32(name, 0, SCU_DSP_SRC(bit) & MOD_SRC_SRR);
+	DSP_SHARED_MEMORY[DSP_IRQ_CONTINUE_OFFSET] = 1;
+	tfp_sprintf(name, "DSP writes zero to INT_TOMCU after bit %u", (uint32_t) bit);
+	test_check(name, wait_for_shared_value(DSP_IRQ_REQUEST_OFFSET, 0));
+	tfp_sprintf(name, "DSP_SRC%u stays clear after DSP writes zero to INT_TOMCU", (uint32_t) bit);
+	test_eq_u32(name, 0, SCU_DSP_SRC(bit) & MOD_SRC_SRR);
+	uint16_t read_before = DSP_SHARED_MEMORY[DSP_IRQ_READ_BEFORE_OFFSET];
+	uint16_t read_after_clrr = DSP_SHARED_MEMORY[DSP_IRQ_READ_AFTER_OFFSET];
+	uint16_t read_after_zero = DSP_SHARED_MEMORY[DSP_IRQ_READ_AFTER_ZERO_OFFSET];
+	test_eq_u32("ARM CLRR leaves INT_TOMCU readback unchanged", read_before, read_after_clrr);
+	test_eq_u32("DSP zero write leaves INT_TOMCU readback unchanged", read_before, read_after_zero);
+	printf("# INT_TOMCU bit %u readback: before CLRR=%04X after CLRR=%04X after zero=%04X\n", (uint32_t) bit,
+		(uint32_t) read_before, (uint32_t) read_after_clrr, (uint32_t) read_after_zero);
+}
+
 static void test_dsp_irq(size_t bit) {
 	size_t source = bit;
 	char request_name[64];
@@ -180,6 +220,7 @@ static void test_dsp_irq(size_t bit) {
 	char consumed_name[64];
 
 	prepare_irq(source);
+	DSP_SHARED_MEMORY[DSP_IRQ_CONTINUE_OFFSET] = 1;
 	DSP_SHARED_MEMORY[DSP_IRQ_REQUEST_OFFSET] = BIT(bit);
 	tfp_sprintf(request_name, "DSP INT_TOMCU bit %u raises DSP_SRC%u", (uint32_t) bit, (uint32_t) source);
 	test_check(request_name, wait_for_irq());
@@ -191,6 +232,8 @@ static void test_dsp_irq(size_t bit) {
 }
 
 static void test_reserved_bit(void) {
+	uint16_t readback_before = DSP_SHARED_MEMORY[DSP_IRQ_READ_AFTER_ZERO_OFFSET];
+
 	clear_irq_sources();
 	irq_count = 0;
 	irq_number = 0;
@@ -199,8 +242,11 @@ static void test_reserved_bit(void) {
 		VIC_CON(DSP_IRQS[i]) = 1;
 	}
 	cpu_enable_irq(true);
+	DSP_SHARED_MEMORY[DSP_IRQ_CONTINUE_OFFSET] = 1;
 	DSP_SHARED_MEMORY[DSP_IRQ_REQUEST_OFFSET] = BIT(4);
 	test_check("DSP consumes INT_TOMCU reserved bit 4 request", wait_for_shared_value(DSP_IRQ_REQUEST_OFFSET, 0));
+	test_eq_u32("INT_TOMCU bit 4 leaves readback unchanged", readback_before,
+		DSP_SHARED_MEMORY[DSP_IRQ_READ_BEFORE_OFFSET]);
 	stopwatch_usleep_wd(1000);
 	cpu_enable_irq(false);
 	test_eq_u32("INT_TOMCU bit 4 raises no MCU IRQ", 0, irq_count);
@@ -229,11 +275,17 @@ int main(void) {
 		return test_finish();
 	DSP_SHARED_MEMORY[DSP_IRQ_REQUEST_OFFSET] = 0;
 	DSP_SHARED_MEMORY[DSP_IRQ_READY_OFFSET] = 0;
+	DSP_SHARED_MEMORY[DSP_IRQ_PHASE_OFFSET] = 0;
+	DSP_SHARED_MEMORY[DSP_IRQ_CONTINUE_OFFSET] = 0;
 	if (!test_check("BRANCH starts DSP interrupt generator", branch_to(DSP_STARTUP_ADDRESS)))
 		return test_finish();
 	if (!test_check("DSP interrupt generator enters request loop",
 		wait_for_shared_value(DSP_IRQ_READY_OFFSET, 0xA55A)))
 		return test_finish();
+
+	test_category("DSP-to-MCU source latching");
+	for (size_t bit = 0; bit < 4; bit++)
+		test_latched_source(bit);
 
 	test_category("DSP-generated interrupt lines");
 	for (size_t bit = 0; bit < 4; bit++)
