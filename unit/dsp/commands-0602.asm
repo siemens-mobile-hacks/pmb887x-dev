@@ -1,4 +1,4 @@
-// Command pipe interrupt vectors in PMB8875 Program Mask ROM.
+// Command pipe interrupt vectors in PMB8875 Program Mask ROM 0602.
 segment p 0006
 br 0x0000$14B0 always
 

@@ -38,6 +38,8 @@ Raw ROM images kept in the repository are:
 
 - `bsp/rom/dsp/0602-program-rom.bin` and `0602-data-rom.bin`: Mask ROM
   `0x0602` from PMB8875;
+- `bsp/rom/dsp/0604-program-rom.bin` and `0604-data-rom.bin`: Mask ROM
+  `0x0604` from PMB8875;
 - `bsp/rom/dsp/0801-program-rom.bin` and `0801-data-rom.bin`: Mask ROM
   `0x0801` from PMB8876;
 - `bsp/rom/dsp/sl98/0800.bin` and `0801.bin`: sparse P-space images assembled from
@@ -58,7 +60,7 @@ ARM addresses and file offsets are measured in bytes.
 Addresses in this table are DSP 16-bit word addresses. The Mask IDs are the
 revisions verified on hardware, not phone or startup-firmware identifiers.
 
-| Property | PMB8875 / Mask ID `0602` | PMB8876 / Mask ID `0801` |
+| Property | PMB8875 / Mask IDs `0602`, `0604` | PMB8876 / Mask ID `0801` |
 |---|---|---|
 | Program Mask ROM | 80K words | 104K words |
 | Program RAM | 4K words | 8K words |
@@ -77,17 +79,27 @@ revisions verified on hardware, not phone or startup-firmware identifiers.
 | Pipe interrupt request | `INT_EINTA0` at `D:E601` | `INT_EINTA0` at `D:DE01` |
 | DSP-to-MCU request | `INT_TOMCU` at `D:E610` | `INT_TOMCU` at `D:DE10` |
 | Command-finished register | `DSP_CFR` at `D:E692` | `DSP_CFR` at `D:DE92` |
-| Runtime command table | `D:64B7`, accepted IDs `1..52` | `D:854E`, accepted IDs `1..67` |
-| Direct built-in handlers | IDs `1..34` and `51`; ID 52 is null | IDs `1..34` and `67` |
-| User/extension slots | IDs `35..50` at `P:0FE0..0FFE` | IDs `35..66` at `P:1FC0..1FFE` |
+| Runtime command table | `0602`: `D:64B7`, IDs `1..52`; `0604`: `D:656D`, IDs `1..62` | `D:854E`, IDs `1..67` |
+| User/extension slots | `0602`: IDs `35..50`; `0604`: IDs `46..61`; both at `P:0FE0..0FFE` | IDs `35..66` at `P:1FC0..1FFE` |
 | Pipe interrupt wrappers | `P:14B0` for pipes 0/1, `P:13C3` for pipe 2 | `P:24B0` for pipes 0/1, `P:23C3` for pipe 2 |
 | Runtime `st1` page | `0x005D` | `0x007D` |
 | ARM-side `DSP_SRC0..3` | `SCU:00D0..00DC`, VIC 54..57 | `SCU:00D0..00DC`, VIC 57..60 |
 
-The PMB8875 runtime dispatcher compares the command against `0x34`, so ID 52
-is within its numeric range even though the table entry is null. Tests reject
-ID 53 rather than calling that null entry. On PMB8876, ID 68 is the first ID
-above the table.
+The `0602` dispatcher compares the command against `0x34`, so ID 52 is within
+its numeric range even though the table entry is null; the test rejects ID 53.
+The `0604` dispatcher compares against `0x3E`, has its null entry at ID 62, and
+the test rejects ID 63. On `0801`, ID 68 is the first ID above the table.
+
+Runtime parameters must be selected by the exact Mask ID, not only by CPU:
+
+| Parameter | `0602` | `0604` | `0801` |
+|---|---:|---:|---:|
+| General callback block | `D:5850` | `D:58A2` | `D:7772` |
+| Interrupt callback block | `D:5894` | `D:58E4` | `D:77BF` |
+| `FC_INIT` state | `D:578E` | `D:574E` | `D:7599` |
+| Extra `MODU_INIT` state | `D:5D84`, `D:5D7E` | `D:5D85`, `D:5D7F` | `D:7D7B`, `D:7D81` |
+| Tone duration | `D:3AE1` | `D:5DAD` | `D:7DA8` |
+| `IQ_SWAP_1`, `IQ_SWAP_2`, `DTX_ON` state | `D:5D7D`, `D:5D8E`, `D:5D95` | `D:5D7E`, `D:5D8F`, `D:5D98` | `D:7D7A`, `D:7D8B`, `D:7D92` |
 
 ### PMB8875 P-space
 
@@ -324,17 +336,19 @@ pages.
 
 `VB_SET_BIQUAD` (16) is isolated in a fresh runtime session so a stalled
 voiceband path cannot invalidate later command checks. It is fully checked on
-PMB8876. Mask ID `0602` requires voiceband initialization not supplied by this
-minimal startup, so that one invocation is skipped on PMB8875 and the DSP is
-reset immediately afterward.
+PMB8876. Mask IDs `0602` and `0604` require voiceband initialization not
+supplied by this minimal startup, so that invocation is skipped on PMB8875 and
+the DSP is reset immediately afterward.
 
 `BRANCH` is last in each boot session because it terminates the Mask ROM boot
 loop. `FAST` is not issued: it requires a valid standby-power-down snapshot in
 `SM_SBPD_*` and is not safe as an isolated reset-state command.
 
-The source images are `unit/dsp/commands.asm` and `commands-8875.asm`. Their
-`.inc` files contain complete DSP1 containers as byte dumps; the test parses
-the DSP1 header and segment table at runtime. Regenerate them with:
+The command and IRQ source images are named for the exact Mask ID:
+`unit/dsp/commands-0602.asm`, `commands-0604.asm`, `commands-0801.asm`, and the
+corresponding `irqs-*.asm` files. Their `.inc` files contain complete DSP1
+containers as byte dumps; the tests select them by Mask ID and parse the DSP1
+header and segment table at runtime. Regenerate them with:
 
 ```sh
 unit/dsp/build_dsp_rom.sh
@@ -348,12 +362,13 @@ Run it with:
 cd bsp/unit
 BOARD=siemens-el71 TEST_COLOR=OFF ./run.sh dsp-mask-rom-commands
 BOARD=siemens-cx75 TEST_COLOR=OFF ./run.sh dsp-mask-rom-commands
+BOARD=panasonic-vs7 TEST_COLOR=OFF ./run.sh dsp-mask-rom-commands
 ```
 
 Mask IDs in the `0x06xx` and `0x08xx` families are accepted. Exact fixed-ROM
-fingerprints are known for `0x0602` and `0x0801`; other accepted revisions
-still exercise ROM reads and compare runtime `READ_DSP` data with the same
-boot-time `DREAD` data.
+parameters and fingerprints are currently known for `0x0602`, `0x0604`, and
+`0x0801`. Unknown family-compatible revisions run the common boot checks but
+skip tests that require version-specific addresses.
 
 The built-in handlers are verified by reading their resulting Data RAM state,
 not merely by observing the command ACK. Command ID 12 appears to be the
@@ -437,6 +452,16 @@ bank 0: word-wise FNV-1a 8CF47EA9
 bank 1: word-wise FNV-1a 91076EF9
 ```
 
+Verified result for PMB8875 revision 05, DSP Mask ROM ID `0x0604`:
+
+```text
+size:   163840 bytes
+sha256: 330f1e3768fc9e197f0ce82fff02a9a2d6c24ddaa3fe8098547eba4438b2005d
+fixed:  word-wise FNV-1a 76AD132F
+bank 0: word-wise FNV-1a 46B514FD
+bank 1: word-wise FNV-1a DA5A5CA6
+```
+
 Verified result for PMB8876 revision 10, DSP Mask ROM ID `0x0801`:
 
 ```text
@@ -491,6 +516,16 @@ sha256: d1043ce1936861f56acc5f097af161b2b8b7f0e6ee23d0c9efb04528c289ac9c
 fixed:  word-wise FNV-1a BE0C6441
 bank 0: word-wise FNV-1a 034D0BCD
 bank 1: word-wise FNV-1a E28E1781
+```
+
+Verified result for PMB8875 revision 05, DSP Mask ROM ID `0x0604`:
+
+```text
+size:   98304 bytes
+sha256: 9ff79255d411c9cd0be4631625332c6e5e1ea1ad93f0d2b9e1da874d474cbe53
+fixed:  word-wise FNV-1a 759B1A54
+bank 0: word-wise FNV-1a 80EF7943
+bank 1: word-wise FNV-1a 8B20DBA6
 ```
 
 Verified result for PMB8876 revision 10, DSP Mask ROM ID `0x0801`:

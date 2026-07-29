@@ -1,5 +1,4 @@
-// Acknowledge BRANCH, then forward Shared RAM requests to the PMB8876
-// DSP-to-MCU interrupt register. Bits 0..3 map to SCU DSP_SRC0..3.
+// Forward Shared RAM requests to the PMB8876 Mask ROM 0801 DSP-to-MCU register.
 segment p 0100
 mov 0x$0001 a0l
 mov a0l [0x$DE92]

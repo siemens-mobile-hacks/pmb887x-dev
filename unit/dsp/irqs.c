@@ -30,8 +30,30 @@ static const uint32_t DSP_IRQS[] = {
 static volatile uint32_t irq_count;
 static volatile uint32_t irq_number;
 
-#include "irqs.inc"
-#include "irqs-8875.inc"
+#include "irqs-0602.inc"
+#include "irqs-0604.inc"
+#include "irqs-0801.inc"
+
+struct dsp_irq_mask_config {
+	uint16_t mask_id;
+	const uint8_t *image;
+	size_t image_size;
+};
+
+static const struct dsp_irq_mask_config DSP_IRQ_MASK_CONFIGS[] = {
+	{ 0x0602, DSP_IRQ_IMAGE_0602, sizeof(DSP_IRQ_IMAGE_0602) },
+	{ 0x0604, DSP_IRQ_IMAGE_0604, sizeof(DSP_IRQ_IMAGE_0604) },
+	{ 0x0801, DSP_IRQ_IMAGE_0801, sizeof(DSP_IRQ_IMAGE_0801) },
+};
+
+static const struct dsp_irq_mask_config *find_dsp_irq_mask_config(uint16_t mask_id) {
+	for (size_t i = 0; i < ARRAY_SIZE(DSP_IRQ_MASK_CONFIGS); i++) {
+		if (DSP_IRQ_MASK_CONFIGS[i].mask_id == mask_id)
+			return &DSP_IRQ_MASK_CONFIGS[i];
+	}
+
+	return NULL;
+}
 
 static bool wait_for_boot_ready(void) {
 	for (size_t i = 0; i < DSP_WAIT_ITERATIONS; i++) {
@@ -200,11 +222,14 @@ int main(void) {
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	if (!test_check("Mask ROM boot dispatcher becomes ready", reset_dsp()))
 		return test_finish();
-#ifdef PMB8875
-	bool loaded = load_dsp1_image(DSP_IRQ_IMAGE_8875, sizeof(DSP_IRQ_IMAGE_8875));
-#else
-	bool loaded = load_dsp1_image(DSP_IRQ_IMAGE, sizeof(DSP_IRQ_IMAGE));
-#endif
+	uint16_t mask_id = DSP_SHARED_MEMORY[0];
+	printf("# DSP mask ID: %04X\n", (uint32_t) mask_id);
+	const struct dsp_irq_mask_config *mask_config = find_dsp_irq_mask_config(mask_id);
+	if (mask_config == NULL) {
+		test_skip("DSP-generated interrupts", "Mask ID parameters are not known");
+		return test_finish();
+	}
+	bool loaded = load_dsp1_image(mask_config->image, mask_config->image_size);
 	if (!test_check("boot commands load DSP interrupt generator", loaded))
 		return test_finish();
 	DSP_SHARED_MEMORY[DSP_IRQ_REQUEST_OFFSET] = 0;

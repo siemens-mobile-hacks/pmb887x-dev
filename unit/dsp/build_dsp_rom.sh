@@ -24,7 +24,9 @@ build_image() {
 	mv -- "$inc_file" "$script_dir/$name.inc"
 }
 
-build_image commands DSP_TEST_IMAGE
-build_image commands-8875 DSP_TEST_IMAGE_8875
-build_image irqs DSP_IRQ_IMAGE
-build_image irqs-8875 DSP_IRQ_IMAGE_8875
+build_image commands-0602 DSP_TEST_IMAGE_0602
+build_image commands-0604 DSP_TEST_IMAGE_0604
+build_image commands-0801 DSP_TEST_IMAGE_0801
+build_image irqs-0602 DSP_IRQ_IMAGE_0602
+build_image irqs-0604 DSP_IRQ_IMAGE_0604
+build_image irqs-0801 DSP_IRQ_IMAGE_0801

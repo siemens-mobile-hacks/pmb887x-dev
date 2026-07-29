@@ -14,8 +14,6 @@
 #define DSP_MASK_ID_FAMILY_MASK 0xFF00
 #define DSP_MASK_ID_FAMILY_06XX 0x0600
 #define DSP_MASK_ID_FAMILY_08XX 0x0800
-#define DSP_MASK_ID_0602 0x0602
-#define DSP_MASK_ID_0801 0x0801
 #define DSP_STARTUP_ADDRESS 0x0100
 #define DSP_USER_RESULT_OFFSET 0x0300
 #define DSP1_HEADER_SIZE 0x300
@@ -30,21 +28,141 @@ static volatile uint16_t *const DSP_SHARED_MEMORY = (volatile uint16_t *) DSP_RA
 static const size_t DSP_RUNTIME_PIPE_OFFSETS[] = { 0x0005, 0x0021, 0x003D };
 
 #ifdef PMB8875
-#define DSP_USER_COMMAND 35
-#define DSP_REJECTED_COMMAND 53
-#define DSP_CALLBACKS_ADDRESS 0x5850
-#define DSP_INTERRUPT_CALLBACKS_ADDRESS 0x5894
 #define DSP_MASK_ID_FAMILY DSP_MASK_ID_FAMILY_06XX
-#include "commands-8875.inc"
-#define DSP_TEST_IMAGE DSP_TEST_IMAGE_8875
 #else
-#define DSP_USER_COMMAND 64
-#define DSP_REJECTED_COMMAND 68
-#define DSP_CALLBACKS_ADDRESS 0x7772
-#define DSP_INTERRUPT_CALLBACKS_ADDRESS 0x77BF
 #define DSP_MASK_ID_FAMILY DSP_MASK_ID_FAMILY_08XX
-#include "commands.inc"
 #endif
+
+#include "commands-0602.inc"
+#include "commands-0604.inc"
+#include "commands-0801.inc"
+
+struct dsp_mask_config {
+	uint16_t mask_id;
+	uint16_t user_command;
+	uint16_t rejected_command;
+	uint16_t callbacks_address;
+	uint16_t interrupt_callbacks_address;
+	uint16_t data_rom_address;
+	uint16_t command_table_address;
+	uint16_t fc_init_state_address;
+	uint16_t modu_main_state_address;
+	uint16_t modu_extra_state_addresses[2];
+	uint16_t loop_state_address;
+	uint16_t loop_parameters_address;
+	uint16_t tone_duration_address;
+	uint16_t tone_result_offset;
+	uint16_t switch_state_addresses[3];
+	bool vb_set_biquad_supported;
+	uint16_t vb_biquad_coefficients_address;
+	uint16_t program_rom_addresses[4];
+	uint16_t program_rom_fingerprints[4][8];
+	size_t program_rom_fingerprint_count;
+	uint16_t data_rom_fingerprint[8];
+	uint16_t command_table_fingerprint[8];
+	const uint8_t *test_image;
+	size_t test_image_size;
+};
+
+static const struct dsp_mask_config DSP_MASK_CONFIGS[] = {
+	{
+		.mask_id = 0x0602,
+		.user_command = 35,
+		.rejected_command = 53,
+		.callbacks_address = 0x5850,
+		.interrupt_callbacks_address = 0x5894,
+		.data_rom_address = 0x6000,
+		.command_table_address = 0x64B7,
+		.fc_init_state_address = 0x578E,
+		.modu_main_state_address = 0xE6B4,
+		.modu_extra_state_addresses = { 0x5D84, 0x5D7E },
+		.loop_parameters_address = 0x5D70,
+		.tone_duration_address = 0x3AE1,
+		.tone_result_offset = 0x00D6,
+		.switch_state_addresses = { 0x5D7D, 0x5D8E, 0x5D95 },
+		.program_rom_addresses = { 0x1000, 0x2000, 0x2779, 0x9520 },
+		.program_rom_fingerprints = {
+			{ 0x0602, 0xFFFF, 0x4180, 0x1010, 0x4180, 0x314B, 0x4180, 0x318B },
+			{ 0x587A, 0x1F40, 0x848B, 0x1B48, 0x1F40, 0x848B, 0x1B48, 0x1F40 },
+			{ 0x5E01, 0x5708, 0x5E02, 0x570E, 0x5E03, 0x5711, 0x5E04, 0x5714 },
+			{ 0x5E03, 0xB48C, 0x5C23, 0x952C, 0x1CEB, 0x1C48, 0x1C30, 0x6760 },
+		},
+		.program_rom_fingerprint_count = 4,
+		.data_rom_fingerprint = { 0x6004, 0x6004, 0x603D, 0x603D, 0x0000, 0x0064, 0x0054, 0x0044 },
+		.command_table_fingerprint = { 0x0000, 0x186E, 0x187D, 0x1896, 0x189E, 0x18A6, 0x1917, 0x1932 },
+		.test_image = DSP_TEST_IMAGE_0602,
+		.test_image_size = sizeof(DSP_TEST_IMAGE_0602),
+	},
+	{
+		.mask_id = 0x0604,
+		.user_command = 46,
+		.rejected_command = 63,
+		.callbacks_address = 0x58A2,
+		.interrupt_callbacks_address = 0x58E4,
+		.data_rom_address = 0x6000,
+		.command_table_address = 0x656D,
+		.fc_init_state_address = 0x574E,
+		.modu_main_state_address = 0xE6B4,
+		.modu_extra_state_addresses = { 0x5D85, 0x5D7F },
+		.loop_parameters_address = 0x5D70,
+		.tone_duration_address = 0x5DAD,
+		.tone_result_offset = 0x00D6,
+		.switch_state_addresses = { 0x5D7E, 0x5D8F, 0x5D98 },
+		.program_rom_addresses = { 0x1000, 0x2000, 0x2779, 0x9520 },
+		.program_rom_fingerprints = {
+			{ 0x0604, 0xFFFF, 0x4180, 0x1010, 0x4180, 0x2B51, 0x4180, 0x2B91 },
+			{ 0xE620, 0x0000, 0x0000, 0x0000, 0x0000, 0x5E18, 0x0F00, 0xD4BC },
+			{ 0x5B9A, 0x0E88, 0x9BEF, 0x3C77, 0x0E88, 0x9BEE, 0x3C79, 0x0E88 },
+			{ 0xD008, 0xD658, 0xD400, 0x6790, 0x1B51, 0x1B91, 0x87E0, 0x0002 },
+		},
+		.program_rom_fingerprint_count = 4,
+		.data_rom_fingerprint = { 0x6004, 0x6004, 0x603D, 0x603D, 0x0000, 0x0064, 0x0054, 0x0044 },
+		.command_table_fingerprint = { 0x0000, 0x16C2, 0x16D1, 0x16EA, 0x16F2, 0x16FA, 0x176B, 0x1786 },
+		.test_image = DSP_TEST_IMAGE_0604,
+		.test_image_size = sizeof(DSP_TEST_IMAGE_0604),
+	},
+	{
+		.mask_id = 0x0801,
+		.user_command = 64,
+		.rejected_command = 68,
+		.callbacks_address = 0x7772,
+		.interrupt_callbacks_address = 0x77BF,
+		.data_rom_address = 0x8000,
+		.command_table_address = 0x854E,
+		.fc_init_state_address = 0x7599,
+		.modu_main_state_address = 0xDEB4,
+		.modu_extra_state_addresses = { 0x7D7B, 0x7D81 },
+		.loop_state_address = 0x7969,
+		.loop_parameters_address = 0x7D6B,
+		.tone_duration_address = 0x7DA8,
+		.tone_result_offset = 0x00EE,
+		.switch_state_addresses = { 0x7D7A, 0x7D8B, 0x7D92 },
+		.vb_set_biquad_supported = true,
+		.vb_biquad_coefficients_address = 0xF71A,
+		.program_rom_addresses = { 0x2000, 0x2779, 0x9520 },
+		.program_rom_fingerprints = {
+			{ 0x0801, 0xFFFF, 0x4180, 0x2010, 0x4180, 0x4DED, 0x4180, 0x4E2D },
+			{ 0xD5BC, 0xDEA3, 0x41C0, 0xC153, 0x5E19, 0x0000, 0xD5BC, 0xDEA3 },
+			{ 0x4E90, 0x60E7, 0x5E18, 0x012B, 0x8688, 0x583A, 0x86C0, 0x012C },
+		},
+		.program_rom_fingerprint_count = 3,
+		.data_rom_fingerprint = { 0x8004, 0x8004, 0x803D, 0x803D, 0x0000, 0x0064, 0x0054, 0x0044 },
+		.command_table_fingerprint = { 0x0000, 0x28DE, 0x28ED, 0x290C, 0x2914, 0x291C, 0x298D, 0x29A8 },
+		.test_image = DSP_TEST_IMAGE_0801,
+		.test_image_size = sizeof(DSP_TEST_IMAGE_0801),
+	},
+};
+
+static const struct dsp_mask_config *dsp_mask_config;
+
+static const struct dsp_mask_config *find_dsp_mask_config(uint16_t mask_id) {
+	for (size_t i = 0; i < ARRAY_SIZE(DSP_MASK_CONFIGS); i++) {
+		if (DSP_MASK_CONFIGS[i].mask_id == mask_id)
+			return &DSP_MASK_CONFIGS[i];
+	}
+
+	return NULL;
+}
 
 static const uint16_t PROGRAM_RAM_PATTERN_1[] = {
 	0x1357, 0x2468, 0xAAAA, 0x5555, 0xDEAD, 0xBEEF, 0x0102, 0x0304,
@@ -61,54 +179,6 @@ static const uint16_t DATA_RAM_PATTERN_1[] = {
 static const uint16_t DATA_RAM_PATTERN_2[] = {
 	0x1357, 0x2468, 0xAAAA, 0x5555, 0xDEAD, 0xBEEF, 0x0102, 0x0304,
 };
-
-#ifdef PMB8875
-static const uint16_t PROGRAM_ROM_1000[] = {
-	0x0602, 0xFFFF, 0x4180, 0x1010, 0x4180, 0x314B, 0x4180, 0x318B,
-};
-
-static const uint16_t PROGRAM_ROM_2000[] = {
-	0x587A, 0x1F40, 0x848B, 0x1B48, 0x1F40, 0x848B, 0x1B48, 0x1F40,
-};
-
-static const uint16_t PROGRAM_ROM_2779[] = {
-	0x5E01, 0x5708, 0x5E02, 0x570E, 0x5E03, 0x5711, 0x5E04, 0x5714,
-};
-
-static const uint16_t PROGRAM_ROM_9520[] = {
-	0x5E03, 0xB48C, 0x5C23, 0x952C, 0x1CEB, 0x1C48, 0x1C30, 0x6760,
-};
-#else
-static const uint16_t PROGRAM_ROM_2000[] = {
-	0x0801, 0xFFFF, 0x4180, 0x2010, 0x4180, 0x4DED, 0x4180, 0x4E2D,
-};
-
-static const uint16_t PROGRAM_ROM_2779[] = {
-	0xD5BC, 0xDEA3, 0x41C0, 0xC153, 0x5E19, 0x0000, 0xD5BC, 0xDEA3,
-};
-
-static const uint16_t PROGRAM_ROM_9520[] = {
-	0x4E90, 0x60E7, 0x5E18, 0x012B, 0x8688, 0x583A, 0x86C0, 0x012C,
-};
-#endif
-
-#ifdef PMB8875
-static const uint16_t DATA_ROM_FIXED[] = {
-	0x6004, 0x6004, 0x603D, 0x603D, 0x0000, 0x0064, 0x0054, 0x0044,
-};
-
-static const uint16_t DATA_ROM_COMMAND_TABLE[] = {
-	0x0000, 0x186E, 0x187D, 0x1896, 0x189E, 0x18A6, 0x1917, 0x1932,
-};
-#else
-static const uint16_t DATA_ROM_FIXED[] = {
-	0x8004, 0x8004, 0x803D, 0x803D, 0x0000, 0x0064, 0x0054, 0x0044,
-};
-
-static const uint16_t DATA_ROM_COMMAND_TABLE[] = {
-	0x0000, 0x28DE, 0x28ED, 0x290C, 0x2914, 0x291C, 0x298D, 0x29A8,
-};
-#endif
 
 static const uint16_t RUNTIME_DATA_PATTERN[] = {
 	0x1020, 0x3040, 0x5060, 0x7080, 0x90A0, 0xB0C0, 0xD0E0, 0xF001,
@@ -166,17 +236,16 @@ static uint32_t read_le32(const uint8_t *data) {
 	return data[0] | (uint32_t) data[1] << 8 | (uint32_t) data[2] << 16 | (uint32_t) data[3] << 24;
 }
 
-static bool load_dsp1_image(void) {
-	if (sizeof(DSP_TEST_IMAGE) < DSP1_HEADER_SIZE || DSP_TEST_IMAGE[0x100] != 'D' ||
-		DSP_TEST_IMAGE[0x101] != 'S' || DSP_TEST_IMAGE[0x102] != 'P' || DSP_TEST_IMAGE[0x103] != '1' ||
-		read_le32(DSP_TEST_IMAGE + DSP1_FILE_SIZE_OFFSET) != sizeof(DSP_TEST_IMAGE) ||
-		DSP_TEST_IMAGE[DSP1_SEGMENT_COUNT_OFFSET] > DSP1_MAX_SEGMENTS)
+static bool load_dsp1_image(const uint8_t *image, size_t image_size) {
+	if (image_size < DSP1_HEADER_SIZE || image[0x100] != 'D' || image[0x101] != 'S' || image[0x102] != 'P' ||
+		image[0x103] != '1' || read_le32(image + DSP1_FILE_SIZE_OFFSET) != image_size ||
+		image[DSP1_SEGMENT_COUNT_OFFSET] > DSP1_MAX_SEGMENTS)
 		return false;
 
 	uint16_t payload[DSP_BOOT_MAX_WORDS];
-	size_t segments = DSP_TEST_IMAGE[DSP1_SEGMENT_COUNT_OFFSET];
+	size_t segments = image[DSP1_SEGMENT_COUNT_OFFSET];
 	for (size_t i = 0; i < segments; i++) {
-		const uint8_t *entry = DSP_TEST_IMAGE + DSP1_SEGMENT_TABLE_OFFSET + i * DSP1_SEGMENT_ENTRY_SIZE;
+		const uint8_t *entry = image + DSP1_SEGMENT_TABLE_OFFSET + i * DSP1_SEGMENT_ENTRY_SIZE;
 		uint32_t offset = read_le32(entry);
 		uint32_t address = read_le32(entry + 4);
 		uint32_t size = read_le32(entry + 8);
@@ -184,10 +253,10 @@ static bool load_dsp1_image(void) {
 		size_t words = size / sizeof(uint16_t);
 
 		if (size == 0 || (size & 1) != 0 || words > DSP_BOOT_MAX_WORDS || address > UINT16_MAX ||
-			offset > sizeof(DSP_TEST_IMAGE) || size > sizeof(DSP_TEST_IMAGE) - offset || memory_type > 2)
+			offset > image_size || size > image_size - offset || memory_type > 2)
 			return false;
 		for (size_t j = 0; j < words; j++)
-			payload[j] = DSP_TEST_IMAGE[offset + j * 2] | (uint16_t) DSP_TEST_IMAGE[offset + j * 2 + 1] << 8;
+			payload[j] = image[offset + j * 2] | (uint16_t) image[offset + j * 2 + 1] << 8;
 		if (!load_words(memory_type == 2 ? DSP_BOOT_DLOAD : DSP_BOOT_PLOAD, (uint16_t) address, payload, words))
 			return false;
 	}
@@ -333,57 +402,45 @@ static bool test_mask_rom_read(const char *name, uint16_t command, uint16_t sour
 	return true;
 }
 
-static void test_program_mask_rom(uint16_t mask_id) {
-#ifdef PMB8875
-	bool verify_fingerprint = mask_id == DSP_MASK_ID_0602;
+static void test_program_mask_rom(void) {
+	if (dsp_mask_config == NULL) {
+		test_skip("Program Mask ROM fingerprints", "Mask ID parameters are not known");
+		return;
+	}
 
-	test_mask_rom_read("PREAD Program Mask ROM P:1000", DSP_BOOT_PREAD, 0x1000, PROGRAM_ROM_1000,
-		ARRAY_SIZE(PROGRAM_ROM_1000), verify_fingerprint);
-	test_mask_rom_read("PREAD Program Mask ROM P:2000", DSP_BOOT_PREAD, 0x2000, PROGRAM_ROM_2000,
-		ARRAY_SIZE(PROGRAM_ROM_2000), verify_fingerprint);
-	test_mask_rom_read("PREAD Program Mask ROM P:2779", DSP_BOOT_PREAD, 0x2779, PROGRAM_ROM_2779,
-		ARRAY_SIZE(PROGRAM_ROM_2779), verify_fingerprint);
-	test_mask_rom_read("PREAD Program Mask ROM P:9520", DSP_BOOT_PREAD, 0x9520, PROGRAM_ROM_9520,
-		ARRAY_SIZE(PROGRAM_ROM_9520), verify_fingerprint);
-#else
-	bool verify_fingerprint = mask_id == DSP_MASK_ID_0801;
+	for (size_t i = 0; i < dsp_mask_config->program_rom_fingerprint_count; i++) {
+		char name[48];
 
-	test_mask_rom_read("PREAD Program Mask ROM P:2000", DSP_BOOT_PREAD, 0x2000, PROGRAM_ROM_2000,
-		ARRAY_SIZE(PROGRAM_ROM_2000), verify_fingerprint);
-	test_mask_rom_read("PREAD Program Mask ROM P:2779", DSP_BOOT_PREAD, 0x2779, PROGRAM_ROM_2779,
-		ARRAY_SIZE(PROGRAM_ROM_2779), verify_fingerprint);
-	test_mask_rom_read("PREAD Program Mask ROM P:9520", DSP_BOOT_PREAD, 0x9520, PROGRAM_ROM_9520,
-		ARRAY_SIZE(PROGRAM_ROM_9520), verify_fingerprint);
-#endif
+		tfp_sprintf(name, "PREAD Program Mask ROM P:%04X",
+			(uint32_t) dsp_mask_config->program_rom_addresses[i]);
+		test_mask_rom_read(name, DSP_BOOT_PREAD, dsp_mask_config->program_rom_addresses[i],
+			dsp_mask_config->program_rom_fingerprints[i], ARRAY_SIZE(dsp_mask_config->program_rom_fingerprints[i]),
+			true);
+	}
 }
 
-static void test_data_mask_rom(uint16_t mask_id) {
-#ifdef PMB8875
-	bool verify_fingerprint = mask_id == DSP_MASK_ID_0602;
-	uint16_t data_rom_address = 0x6000;
-	uint16_t command_table_address = 0x64B7;
-#else
-	bool verify_fingerprint = mask_id == DSP_MASK_ID_0801;
-	uint16_t data_rom_address = 0x8000;
-	uint16_t command_table_address = 0x854E;
-#endif
+static void test_data_mask_rom(void) {
+	if (dsp_mask_config == NULL) {
+		test_skip("Data Mask ROM fingerprints", "Mask ID parameters are not known");
+		return;
+	}
 
-	if (!test_mask_rom_read("DREAD fixed Data Mask ROM", DSP_BOOT_DREAD, data_rom_address, DATA_ROM_FIXED,
-		ARRAY_SIZE(data_rom_probe), verify_fingerprint))
+	if (!test_mask_rom_read("DREAD fixed Data Mask ROM", DSP_BOOT_DREAD, dsp_mask_config->data_rom_address,
+		dsp_mask_config->data_rom_fingerprint, ARRAY_SIZE(dsp_mask_config->data_rom_fingerprint), true))
 		return;
 	for (size_t i = 0; i < ARRAY_SIZE(data_rom_probe); i++)
 		data_rom_probe[i] = DSP_SHARED_MEMORY[DSP_BOOT_RESULT_OFFSET + i];
-	test_mask_rom_read("DREAD runtime command table", DSP_BOOT_DREAD, command_table_address,
-		DATA_ROM_COMMAND_TABLE, ARRAY_SIZE(data_rom_probe), verify_fingerprint);
+	test_mask_rom_read("DREAD runtime command table", DSP_BOOT_DREAD, dsp_mask_config->command_table_address,
+		dsp_mask_config->command_table_fingerprint, ARRAY_SIZE(dsp_mask_config->command_table_fingerprint), true);
 }
 
 static bool load_test_startup(void) {
 	static const uint16_t ZERO_CALLBACKS[] = { 0, 0, 0, 0, 0 };
 	static const uint16_t ZERO_INTERRUPT_CALLBACKS[] = { 0, 0 };
 
-	return load_dsp1_image() &&
-		load_words(DSP_BOOT_DLOAD, DSP_CALLBACKS_ADDRESS, ZERO_CALLBACKS, ARRAY_SIZE(ZERO_CALLBACKS)) &&
-		load_words(DSP_BOOT_DLOAD, DSP_INTERRUPT_CALLBACKS_ADDRESS, ZERO_INTERRUPT_CALLBACKS,
+	return load_dsp1_image(dsp_mask_config->test_image, dsp_mask_config->test_image_size) &&
+		load_words(DSP_BOOT_DLOAD, dsp_mask_config->callbacks_address, ZERO_CALLBACKS, ARRAY_SIZE(ZERO_CALLBACKS)) &&
+		load_words(DSP_BOOT_DLOAD, dsp_mask_config->interrupt_callbacks_address, ZERO_INTERRUPT_CALLBACKS,
 			ARRAY_SIZE(ZERO_INTERRUPT_CALLBACKS));
 }
 
@@ -394,7 +451,7 @@ static bool test_user_command_pipe(size_t pipe_index) {
 
 	DSP_SHARED_MEMORY[DSP_USER_RESULT_OFFSET] = 0;
 	tfp_sprintf(accepted_name, "pipe %u accepts custom user command", (uint32_t) pipe_index);
-	if (!test_check(accepted_name, submit_runtime_command(pipe_index, DSP_USER_COMMAND, parameters,
+	if (!test_check(accepted_name, submit_runtime_command(pipe_index, dsp_mask_config->user_command, parameters,
 		ARRAY_SIZE(parameters))))
 		return false;
 	tfp_sprintf(executed_name, "pipe %u executes custom user handler", (uint32_t) pipe_index);
@@ -446,11 +503,8 @@ static void test_fc_init(void) {
 	if (!test_check("FC_INIT built-in command is accepted", submit_runtime_command(0, 1, PARAMETERS,
 		ARRAY_SIZE(PARAMETERS))))
 		return;
-#ifdef PMB8875
-	test_runtime_read("FC_INIT state", 0x578E, 0x0320, PARAMETERS, ARRAY_SIZE(PARAMETERS));
-#else
-	test_runtime_read("FC_INIT state", 0x7599, 0x0320, PARAMETERS, ARRAY_SIZE(PARAMETERS));
-#endif
+	test_runtime_read("FC_INIT state", dsp_mask_config->fc_init_state_address, 0x0320, PARAMETERS,
+		ARRAY_SIZE(PARAMETERS));
 }
 
 static void test_modu_init(void) {
@@ -462,9 +516,11 @@ static void test_modu_init(void) {
 	if (!test_check("MODU_INIT built-in command is accepted", submit_runtime_command(0, 2, PARAMETERS,
 		ARRAY_SIZE(PARAMETERS))))
 		return;
-	test_runtime_read("MODU_INIT E6B4..E6B8 state", 0xE6B4, 0x0420, PARAMETERS, 5);
-	test_runtime_read("MODU_INIT 5D84 state", 0x5D84, 0x0430, PARAMETERS + 5, 1);
-	test_runtime_read("MODU_INIT 5D7E state", 0x5D7E, 0x0431, PARAMETERS + 6, 1);
+	test_runtime_read("MODU_INIT main state", dsp_mask_config->modu_main_state_address, 0x0420, PARAMETERS, 5);
+	test_runtime_read("MODU_INIT extra state 0", dsp_mask_config->modu_extra_state_addresses[0], 0x0430,
+		PARAMETERS + 5, 1);
+	test_runtime_read("MODU_INIT extra state 1", dsp_mask_config->modu_extra_state_addresses[1], 0x0431,
+		PARAMETERS + 6, 1);
 #else
 	static const uint16_t PARAMETERS[] = {
 		0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0001, 0x0007, 0x0008,
@@ -476,10 +532,12 @@ static void test_modu_init(void) {
 	if (!test_check("MODU_INIT built-in command is accepted", submit_runtime_command(0, 2, PARAMETERS,
 		ARRAY_SIZE(PARAMETERS))))
 		return;
-	test_runtime_read("MODU_INIT DEB4..DEBA state", 0xDEB4, 0x0420, DEB4_EXPECTED,
+	test_runtime_read("MODU_INIT main state", dsp_mask_config->modu_main_state_address, 0x0420, DEB4_EXPECTED,
 		ARRAY_SIZE(DEB4_EXPECTED));
-	test_runtime_read("MODU_INIT 7D7B state", 0x7D7B, 0x0430, PARAMETERS + 6, 1);
-	test_runtime_read("MODU_INIT 7D81 state", 0x7D81, 0x0431, PARAMETERS + 5, 1);
+	test_runtime_read("MODU_INIT extra state 0", dsp_mask_config->modu_extra_state_addresses[0], 0x0430,
+		PARAMETERS + 6, 1);
+	test_runtime_read("MODU_INIT extra state 1", dsp_mask_config->modu_extra_state_addresses[1], 0x0431,
+		PARAMETERS + 5, 1);
 #endif
 }
 
@@ -489,29 +547,29 @@ static void test_loop(void) {
 	if (!test_check("LOOP built-in command is accepted", submit_runtime_command(0, 10, PARAMETERS,
 		ARRAY_SIZE(PARAMETERS))))
 		return;
-	test_runtime_read("LOOP parameters", 0x5D70, 0x0450, PARAMETERS, ARRAY_SIZE(PARAMETERS));
+	test_runtime_read("LOOP parameters", dsp_mask_config->loop_parameters_address, 0x0450, PARAMETERS,
+		ARRAY_SIZE(PARAMETERS));
 #else
 	static const uint16_t STATE_SEED[] = { 0xAAAA, 0xBBBB, 0xCCCC };
-	static const uint16_t WRITE_STATE_PARAMETERS[] = { 0x0410, 0x7969, ARRAY_SIZE(STATE_SEED) };
 	static const uint16_t ZERO_STATE[] = { 0, 0, 0 };
+	uint16_t write_state_parameters[] = { 0x0410, dsp_mask_config->loop_state_address, ARRAY_SIZE(STATE_SEED) };
 
 	for (size_t i = 0; i < ARRAY_SIZE(STATE_SEED); i++)
 		DSP_SHARED_MEMORY[0x0410 + i] = STATE_SEED[i];
-	if (!test_check("WRITE_DSP seeds LOOP state", submit_runtime_command(0, 32, WRITE_STATE_PARAMETERS,
-		ARRAY_SIZE(WRITE_STATE_PARAMETERS))))
+	if (!test_check("WRITE_DSP seeds LOOP state", submit_runtime_command(0, 32, write_state_parameters,
+		ARRAY_SIZE(write_state_parameters))))
 		return;
 	if (!test_check("LOOP built-in command is accepted", submit_runtime_command(0, 10, PARAMETERS,
 		ARRAY_SIZE(PARAMETERS))))
 		return;
-	test_runtime_read("LOOP cleared state", 0x7969, 0x0440, ZERO_STATE, ARRAY_SIZE(ZERO_STATE));
-	test_runtime_read("LOOP parameters", 0x7D6B, 0x0450, PARAMETERS, ARRAY_SIZE(PARAMETERS));
+	test_runtime_read("LOOP cleared state", dsp_mask_config->loop_state_address, 0x0440, ZERO_STATE,
+		ARRAY_SIZE(ZERO_STATE));
+	test_runtime_read("LOOP parameters", dsp_mask_config->loop_parameters_address, 0x0450, PARAMETERS,
+		ARRAY_SIZE(PARAMETERS));
 #endif
 }
 
 static void test_vb_set_biquad(void) {
-#ifdef PMB8875
-	test_skip("VB_SET_BIQUAD built-in command", "Mask ID 0602 requires voiceband initialization");
-#else
 	static const uint16_t PARAMETERS[] = {
 		0x1001, 0x1002, 0x1003, 0x1004, 0x1005,
 		0x2001, 0x2002, 0x2003, 0x2004, 0x2005,
@@ -519,46 +577,39 @@ static void test_vb_set_biquad(void) {
 		0x4001, 0x4002, 0x4003, 0x4004, 0x4005,
 	};
 
+	if (!dsp_mask_config->vb_set_biquad_supported) {
+		test_skip("VB_SET_BIQUAD built-in command", "this Mask ROM requires voiceband initialization");
+		return;
+	}
 	if (!test_check("VB_SET_BIQUAD built-in command is accepted", submit_runtime_command(0, 16, PARAMETERS,
 		ARRAY_SIZE(PARAMETERS))))
 		return;
-	test_runtime_read("VB_SET_BIQUAD coefficients", 0xF71A, 0x0460, PARAMETERS, ARRAY_SIZE(PARAMETERS));
-#endif
+	test_runtime_read("VB_SET_BIQUAD coefficients", dsp_mask_config->vb_biquad_coefficients_address, 0x0460,
+		PARAMETERS, ARRAY_SIZE(PARAMETERS));
 }
 
 static void test_vb_tone_duration(void) {
 	static const uint16_t DURATION[] = { 0x5A5A };
-#ifdef PMB8875
-	static const uint16_t WRITE_DURATION_PARAMETERS[] = { 0x0490, 0x3AE1, ARRAY_SIZE(DURATION) };
-#else
-	static const uint16_t WRITE_DURATION_PARAMETERS[] = { 0x0490, 0x7DA8, ARRAY_SIZE(DURATION) };
-#endif
+	uint16_t write_duration_parameters[] = {
+		0x0490, dsp_mask_config->tone_duration_address, ARRAY_SIZE(DURATION),
+	};
 
 	DSP_SHARED_MEMORY[0x0490] = DURATION[0];
 	if (!test_check("WRITE_DSP seeds voiceband tone duration",
-		submit_runtime_command(0, 32, WRITE_DURATION_PARAMETERS, ARRAY_SIZE(WRITE_DURATION_PARAMETERS))))
+		submit_runtime_command(0, 32, write_duration_parameters, ARRAY_SIZE(write_duration_parameters))))
 		return;
 	if (!test_check("VB_READ_DURATION built-in command is accepted", submit_runtime_command(0, 20, NULL, 0)))
 		return;
-#ifdef PMB8875
-	test_eq_u32("VB_READ_DURATION copies tone duration to Shared RAM", DURATION[0], DSP_SHARED_MEMORY[0x00D6]);
-#else
-	test_eq_u32("VB_READ_DURATION copies tone duration to Shared RAM", DURATION[0], DSP_SHARED_MEMORY[0x00EE]);
-#endif
+	test_eq_u32("VB_READ_DURATION copies tone duration to Shared RAM", DURATION[0],
+		DSP_SHARED_MEMORY[dsp_mask_config->tone_result_offset]);
 
 	if (!test_check("VB_STOP_TONE built-in command is accepted", submit_runtime_command(0, 19, NULL, 0)))
 		return;
-#ifdef PMB8875
-	DSP_SHARED_MEMORY[0x00D6] = UINT16_MAX;
+	DSP_SHARED_MEMORY[dsp_mask_config->tone_result_offset] = UINT16_MAX;
 	if (!test_check("VB_READ_DURATION reads stopped tone", submit_runtime_command(0, 20, NULL, 0)))
 		return;
-	test_eq_u32("VB_STOP_TONE clears tone duration", 0, DSP_SHARED_MEMORY[0x00D6]);
-#else
-	DSP_SHARED_MEMORY[0x00EE] = UINT16_MAX;
-	if (!test_check("VB_READ_DURATION reads stopped tone", submit_runtime_command(0, 20, NULL, 0)))
-		return;
-	test_eq_u32("VB_STOP_TONE clears tone duration", 0, DSP_SHARED_MEMORY[0x00EE]);
-#endif
+	test_eq_u32("VB_STOP_TONE clears tone duration", 0,
+		DSP_SHARED_MEMORY[dsp_mask_config->tone_result_offset]);
 }
 
 #ifndef PMB8875
@@ -576,21 +627,19 @@ static void test_vb_set_cbuf_gain(void) {
 #endif
 
 static void test_runtime_commands(void) {
-#ifdef PMB8875
-	static const uint16_t READ_DATA_ROM_PARAMETERS[] = { 0x6000, 0x0340, ARRAY_SIZE(data_rom_probe) };
-#else
-	static const uint16_t READ_DATA_ROM_PARAMETERS[] = { 0x8000, 0x0340, ARRAY_SIZE(data_rom_probe) };
-#endif
 	static const uint16_t WRITE_DSP_PARAMETERS[] = { 0x0360, 0x0100, ARRAY_SIZE(RUNTIME_DATA_PATTERN) };
 	static const uint16_t READ_DSP_PARAMETERS[] = { 0x0100, 0x0380, ARRAY_SIZE(RUNTIME_DATA_PATTERN) };
 	static const uint16_t WRITE_PROG_PARAMETERS[] = { 0x03A0, 0x01A0, ARRAY_SIZE(RUNTIME_PROGRAM_PATTERN) };
+	uint16_t read_data_rom_parameters[] = {
+		dsp_mask_config->data_rom_address, 0x0340, ARRAY_SIZE(data_rom_probe),
+	};
 
 	for (size_t pipe_index = 0; pipe_index < ARRAY_SIZE(DSP_RUNTIME_PIPE_OFFSETS); pipe_index++) {
 		if (!test_user_command_pipe(pipe_index))
 			return;
 	}
 	if (!test_check("first command above the runtime table is rejected",
-		submit_rejected_runtime_command(0, DSP_REJECTED_COMMAND)))
+		submit_rejected_runtime_command(0, dsp_mask_config->rejected_command)))
 		return;
 
 	test_fc_init();
@@ -602,7 +651,7 @@ static void test_runtime_commands(void) {
 #endif
 
 	if (!test_check("READ_DSP built-in command is accepted",
-		submit_runtime_command(0, 33, READ_DATA_ROM_PARAMETERS, ARRAY_SIZE(READ_DATA_ROM_PARAMETERS))))
+		submit_runtime_command(0, 33, read_data_rom_parameters, ARRAY_SIZE(read_data_rom_parameters))))
 		return;
 	test_eq_memory("READ_DSP returns Data Mask ROM", data_rom_probe, DSP_SHARED_MEMORY + 0x0340,
 		sizeof(data_rom_probe));
@@ -624,17 +673,10 @@ static void test_runtime_commands(void) {
 		submit_runtime_command(0, 34, WRITE_PROG_PARAMETERS, ARRAY_SIZE(WRITE_PROG_PARAMETERS))))
 		return;
 
-#ifdef PMB8875
-	if (!test_switch_command("IQ_SWAP_1", 3, 0x5D7D, 0x03C0) ||
-		!test_switch_command("IQ_SWAP_2", 4, 0x5D8E, 0x03C1) ||
-		!test_switch_command("DTX_ON", 30, 0x5D95, 0x03C2))
+	if (!test_switch_command("IQ_SWAP_1", 3, dsp_mask_config->switch_state_addresses[0], 0x03C0) ||
+		!test_switch_command("IQ_SWAP_2", 4, dsp_mask_config->switch_state_addresses[1], 0x03C1) ||
+		!test_switch_command("DTX_ON", 30, dsp_mask_config->switch_state_addresses[2], 0x03C2))
 		return;
-#else
-	if (!test_switch_command("IQ_SWAP_1", 3, 0x7D7A, 0x03C0) ||
-		!test_switch_command("IQ_SWAP_2", 4, 0x7D8B, 0x03C1) ||
-		!test_switch_command("DTX_ON", 30, 0x7D92, 0x03C2))
-		return;
-#endif
 }
 
 static void test_isolated_vb_set_biquad(void) {
@@ -678,17 +720,21 @@ int main(void) {
 	uint16_t mask_family = mask_id & DSP_MASK_ID_FAMILY_MASK;
 	if (!test_check("DSP Mask ROM family matches the CPU", mask_family == DSP_MASK_ID_FAMILY))
 		return test_finish();
+	dsp_mask_config = find_dsp_mask_config(mask_id);
 
 	test_category("Program RAM boot commands");
 	test_program_ram();
 	test_category("Data RAM boot commands");
 	test_data_ram();
 	test_category("Program Mask ROM boot command");
-	test_program_mask_rom(mask_id);
+	test_program_mask_rom();
 	test_category("Data Mask ROM boot command");
-	test_data_mask_rom(mask_id);
+	test_data_mask_rom();
 	test_category("Branch and runtime commands");
-	test_branch_and_runtime_commands();
+	if (dsp_mask_config != NULL)
+		test_branch_and_runtime_commands();
+	else
+		test_skip("Branch and runtime commands", "Mask ID parameters are not known");
 
 	return test_finish();
 }

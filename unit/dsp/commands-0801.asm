@@ -1,4 +1,4 @@
-// Command pipe interrupt vectors.
+// Command pipe interrupt vectors in PMB8876 Program Mask ROM 0801.
 segment p 0006
 br 0x0000$24B0 always
 
