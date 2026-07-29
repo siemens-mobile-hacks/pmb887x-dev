@@ -18,23 +18,27 @@ SL98 contains two boot streams for different DSP mask firmware versions:
 - `0xA073E502`, mask firmware `0x0800`: 4551 program words, 74 data words,
   entry point `0x0020`.
 
-Extract one container from a raw ARM firmware image with:
+Extract one container from a raw APOXI ARM firmware image with:
 
 ```sh
-perl tools/extract_sl98_dsp.pl \
+perl bsp/tools/dsp/extract_apoxi_dsp.pl \
   --address 0xA073A3C2 \
   --out /tmp/sl98-dsp-fw-0801 \
   /path/to/SL98.bin
+install -m 0644 /tmp/sl98-dsp-fw-0801/firmware.dsp1 \
+  bsp/rom/dsp/sl98/0801.dsp1
 ```
 
-The script writes the original `container.bin`, assembled `pram.bin` and
-`dram.bin` images, separate payload files for all load records, and `map.tsv`.
-It extracts only the code and data loaded by the ARM, not the factory mask ROM.
-This `container.bin` is an ARM-side `PLOAD`/`DLOAD`/`BRANCH` stream, not a DSP1
-file. Output from `makedsp1` must first be parsed as a DSP1 header, segment
-table, and segment payloads; it is not raw instruction bytecode.
+The script writes the original `container.bin`, `firmware.dsp1`, assembled
+`pram.bin` and `dram.bin` images, separate payload files for all load records,
+and `map.tsv`. It extracts only the code and data loaded by the ARM, not the
+factory Mask ROM. `container.bin` remains the ARM-side
+`PLOAD`/`DLOAD`/`BRANCH` stream. `firmware.dsp1` contains the same PLOAD and
+DLOAD payloads as DSP1 program and data segments. Adjacent or overlapping
+records are combined so the result fits the DSP1 limit of ten segments. The
+BRANCH target is retained in `map.tsv`, because DSP1 has no entry-point field.
 
-Raw ROM images kept in the repository are:
+DSP images and listings kept in the repository are:
 
 - `bsp/rom/dsp/0602-program-rom.bin` and `0602-data-rom.bin`: Mask ROM
   `0x0602` from PMB8875;
@@ -42,11 +46,80 @@ Raw ROM images kept in the repository are:
   `0x0604` from PMB8875;
 - `bsp/rom/dsp/0801-program-rom.bin` and `0801-data-rom.bin`: Mask ROM
   `0x0801` from PMB8876;
+- `bsp/rom/dsp/0602.dsp1`, `0604.dsp1`, and `0801.dsp1`: the corresponding
+  Program and Data Mask ROM pairs converted to DSP1;
+- `bsp/rom/dsp/0602.txt`, `0604.txt`, and `0801.txt`: Teakra listings generated
+  from those DSP1 files;
 - `bsp/rom/dsp/sl98/0800.bin` and `0801.bin`: sparse P-space images assembled from
   the two SL98 startup-firmware `PLOAD` streams. They are raw DSP user program
   images and do not include `DLOAD` payloads;
 - `bsp/rom/dsp/sl98/0800-container.bin` and `0801-container.bin`: the corresponding
-  original ARM-side `PLOAD`/`DLOAD`/`BRANCH` streams.
+  original ARM-side `PLOAD`/`DLOAD`/`BRANCH` streams;
+- `bsp/rom/dsp/sl98/0800.dsp1`, `0801.dsp1`, and matching `.txt` files: DSP1
+  conversions and Teakra listings of both startup firmwares.
+
+## DSP tools
+
+All DSP conversion tools are in `bsp/tools/dsp`:
+
+- `extract_apoxi_dsp.pl` extracts one ARM-side DSP boot stream from an APOXI
+  firmware image and writes its raw records, sparse P/D images, map, and DSP1
+  representation;
+- `rom_to_dsp1.pl` combines separate Program and Data Mask ROM dumps into one
+  DSP1 file using the PMB8875 or PMB8876 address-space layout;
+- `Dsp1.pm` is the shared DSP1 writer. It emits the same `0x300`-byte header,
+  per-segment SHA-256 values, and little-endian payload layout as `makedsp1`.
+
+Convert the PMB8876 Mask ROM dumps with:
+
+```sh
+perl bsp/tools/dsp/rom_to_dsp1.pl \
+  --cpu pmb8876 \
+  --program bsp/rom/dsp/0801-program-rom.bin \
+  --data bsp/rom/dsp/0801-data-rom.bin \
+  --out bsp/rom/dsp/0801.dsp1
+```
+
+Use `--cpu pmb8875` with a matching PMB8875 pair. The converter requires the
+exact dump sizes documented below and rejects mismatched inputs. The fixed
+range is followed by bank 0, bank 1, and the remaining banks in page-number
+order. DSP1 does not have an explicit bank-number field, so banked segments
+have the same DSP window address and are distinguished by their order.
+
+Build `dsp1_reader` and `makedsp1` from
+[siemens-mobile-hacks/teakra](https://github.com/siemens-mobile-hacks/teakra).
+With `dsp1_reader` in `PATH`, disassemble a DSP1 file with:
+
+```sh
+dsp1_reader bsp/rom/dsp/sl98/0801.dsp1 bsp/rom/dsp/sl98/0801.txt
+```
+
+The reader prints DSP1 metadata to stdout and writes the program/data listing
+to the second path. A DSP1 file is a container with a header, segment table,
+and payloads; it is not raw DSP bytecode. The current reader expects an
+expansion word to remain inside the same program segment. It may abort when a
+physical Mask ROM boundary ends with an expansion opcode; this is a reader
+limitation, not a malformed DSP1 container.
+
+`bsp/rom/dsp/0801.txt` handles the known `P:FFFF` boundary explicitly: the
+listing preserves opcode `E149` and marks its missing expansion word instead
+of inventing a word outside the dumped Mask ROM bank.
+
+For a raw Mask ROM pair, conversion and disassembly are two explicit steps:
+
+```sh
+perl bsp/tools/dsp/rom_to_dsp1.pl \
+  --cpu pmb8875 \
+  --program bsp/rom/dsp/0604-program-rom.bin \
+  --data bsp/rom/dsp/0604-data-rom.bin \
+  --out bsp/rom/dsp/0604.dsp1
+dsp1_reader bsp/rom/dsp/0604.dsp1 bsp/rom/dsp/0604.txt
+```
+
+Teakra produces an assembly listing, not C-like pseudocode. This listing is the
+input for manual decompilation: identify entry points and tables, assign names,
+then reconstruct higher-level control flow. There is currently no high-level
+Teak decompiler in the inspected toolchain.
 
 ## Address spaces
 
