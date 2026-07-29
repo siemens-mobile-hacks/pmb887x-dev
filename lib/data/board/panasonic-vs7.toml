@@ -46,7 +46,7 @@ M_7 = { type = "resistor", value = 14800 }
 M_9 = { type = "resistor", value = 15000 }
 
 [dsp]
-ram0_value = 0x0603
+ram0_value = 0x0604
 
 [gpio.aliases]
 DSPIN1 = "DIF_MRST"

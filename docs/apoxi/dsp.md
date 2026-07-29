@@ -624,4 +624,8 @@ still needs independent confirmation.
 
 - QEMU memory map: `qemu/hw/arm/pmb887x/gen/cpu_meta.c`.
 - QEMU DSP model: `qemu/hw/arm/pmb887x/dsp.c`.
+- `bsp/tools/gen_dsp_rom_qemu.pl` embeds the raw `*-program-rom.bin` and
+  `*-data-rom.bin` Mask ROM pairs. QEMU derives fixed and banked ranges from its
+  DSP revision config; DSP1 is used only by the external analysis tools and BSP
+  test images.
 - L1 monitor ring parsing and assert `0x4011`: [l1mon.md](l1mon.md).
