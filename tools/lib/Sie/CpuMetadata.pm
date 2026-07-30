@@ -13,6 +13,8 @@ sub new {
 	
 	my $self = bless {
 		modules => {},
+		dsp_memory => [],
+		dsp_modules => {},
 		gpios => {},
 		dma => {},
 	} => $class;
@@ -27,6 +29,16 @@ sub new {
 sub gpios {
 	my ($self) = @_;
 	return $self->{gpios};
+}
+
+sub dspMemory {
+	my ($self) = @_;
+	return $self->{dsp_memory};
+}
+
+sub dspModules {
+	my ($self) = @_;
+	return $self->{dsp_modules};
 }
 
 sub getCpus {
@@ -202,6 +214,7 @@ sub loadCPU {
 	
 	$self->{name} = $cpu;
 	$self->{available_modules} = [];
+	$self->{available_dsp_modules} = [];
 	
 	open my $fp, "<$file" or die("open($file): $!");
 	while (my $line = <$fp>) {
@@ -216,7 +229,26 @@ sub loadCPU {
 		
 		next if !length($line);
 		
-		if ($line =~ /^\.irq_count/) {
+		if ($line =~ /^\.dsp_memory/) {
+			my ($key, $space, $name, $base, $size, $type, $page) = split("\t", $line);
+			die "Invalid DSP memory: $line" if !defined($page);
+			push @{$self->{dsp_memory}}, {
+				space		=> $space,
+				name		=> $name,
+				base		=> parseAnyInt($base),
+				size		=> parseAnyInt($size),
+				type		=> $type,
+				page		=> $page eq '-' ? undef : parseAnyInt($page),
+			};
+		} elsif ($line =~ /^\.dsp_module/) {
+			my ($key, $name, $base, $definition) = split("\t", $line);
+			die "Invalid DSP module: $line" if !defined($definition);
+			push @{$self->{available_dsp_modules}}, {
+				name		=> $name,
+				base		=> parseAnyInt($base),
+				definition	=> $definition,
+			};
+		} elsif ($line =~ /^\.irq_count/) {
 			my ($key, $count) = split("\t", $line);
 			$self->{irq_count} = parseAnyInt($count);
 		} elsif ($line =~ /^\.dma/) {
@@ -266,6 +298,25 @@ sub loadCPU {
 	close $fp;
 	
 	$self->loadModules();
+	$self->loadDspModules();
+}
+
+sub loadDspModules {
+	my ($self) = @_;
+	my $path = getDataDir().'/dsp';
+
+	for my $def (@{$self->{available_dsp_modules}}) {
+		die "Invalid DSP module definition: $def->{definition}"
+			if $def->{definition} !~ /^[A-Z][A-Z0-9_]*$/;
+		die "Duplicate DSP module: $def->{name}" if exists $self->{dsp_modules}->{$def->{name}};
+
+		my $module = $self->parseModule("$path/$def->{definition}.cfg", 0, 1);
+		$module->{base_name} = $module->{name};
+		$module->{base} = $def->{base};
+		$module->{name} = $def->{name};
+		$module->{definition} = $def->{definition};
+		$self->{dsp_modules}->{$def->{name}} = $module;
+	}
 }
 
 sub findModuleDef {
@@ -409,7 +460,8 @@ sub loadCommonRegs {
 }
 
 sub parseModule {
-	my ($self, $file, $is_common_data) = @_;
+	my ($self, $file, $is_common_data, $register_size) = @_;
+	$register_size = 4 if !defined($register_size);
 	
 	my $module = {
 		ids			=> [],
@@ -533,7 +585,7 @@ sub parseModule {
 					field_format	=> $current_field_format
 				};
 				
-				$module->{size} = max($module->{size}, $current_reg->{end} + 4);
+				$module->{size} = max($module->{size}, $current_reg->{end} + $register_size);
 				
 				$module->{regs}->{$name} = $current_reg;
 				
