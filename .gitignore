@@ -10,3 +10,5 @@ build
 gbs.txt
 AGENTS.md
 .codex
+unit/dsp/instructions/generated/
+unit/dsp/opcode-aliases/generated/

@@ -15,6 +15,10 @@ Run a test on real hardware:
 | `dsp` | Communication flags, firmware command handshake, shared RAM access widths, MCU/DSP interrupt requests, and reset |
 | `dsp-irqs` | Real DSP-generated INT_TOMCU requests, VIC routing, and acknowledgement for all four DSP SRC lines |
 | `dsp-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
+| `dsp-instructions` | TeakLite I instruction results, including external-register writes, captured from PMB8876 Mask ROM 0801 hardware |
+| `dsp-opcode-aliases` | Noncanonical variants of every documented TeakLite I don't-care opcode field |
+| `dsp-opcode-probe` | Resumable diagnostic sweep of raw TeakLite first-word opcodes with reset and timeout isolation |
+| `dsp-expansion-probe` | Resumable sweep of expansion words for all documented two-word TeakLite I encoding rows |
 | `dsp-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |
 | `dsp-data-rom-dump` | PMB8875/PMB8876 DSP boot-mode DREAD dump of fixed and banked Data Mask ROM in Intel HEX format |
 | `mod` | Common CLC, SRC, and SRB register blocks |

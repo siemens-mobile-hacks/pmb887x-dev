@@ -28,6 +28,34 @@ endfunction()
 add_peripheral_test(stm stm/test.c)
 add_peripheral_test(dmac dmac/test.c)
 add_peripheral_test(dsp dsp/test.c)
+add_peripheral_test(dsp-handshake dsp/handshake.c)
+add_peripheral_test(dsp-instructions dsp/instructions.c)
+add_peripheral_test(dsp-opcode-aliases dsp/instructions.c)
+target_compile_definitions(dsp-opcode-aliases PRIVATE
+	DSP_INSTRUCTION_CASES_INCLUDE="opcode-aliases/instructions-cases.inc"
+	DSP_INSTRUCTION_GOLDEN_INCLUDE="opcode-aliases/instructions-golden-packed.inc"
+	DSP_INSTRUCTION_IMAGES_INCLUDE="opcode-aliases/instructions-images-packed.inc"
+	DSP_INSTRUCTION_TEST_TITLE="DSP TeakLite I opcode alias test"
+)
+set(DSP_OPCODE_PROBE_FIRST "0x0000" CACHE STRING "First TeakLite opcode included in the raw hardware probe")
+set(DSP_OPCODE_PROBE_LAST "0x00FF" CACHE STRING "Last TeakLite opcode included in the raw hardware probe")
+add_peripheral_test(dsp-opcode-probe dsp/opcode-probe.c)
+target_compile_definitions(dsp-opcode-probe PRIVATE
+	DSP_OPCODE_PROBE_FIRST=${DSP_OPCODE_PROBE_FIRST}
+	DSP_OPCODE_PROBE_LAST=${DSP_OPCODE_PROBE_LAST}
+)
+set(DSP_EXPANSION_PROBE_FAMILY_FIRST "0" CACHE STRING "First TeakLite two-word family included in the expansion probe")
+set(DSP_EXPANSION_PROBE_FAMILY_LAST "0" CACHE STRING "Last TeakLite two-word family included in the expansion probe")
+set(DSP_EXPANSION_PROBE_WORD_FIRST "0x0000" CACHE STRING "First expansion word included in the expansion probe")
+set(DSP_EXPANSION_PROBE_WORD_LAST "0x00FF" CACHE STRING "Last expansion word included in the expansion probe")
+add_peripheral_test(dsp-expansion-probe dsp/opcode-probe.c)
+target_compile_definitions(dsp-expansion-probe PRIVATE
+	DSP_EXPANSION_PROBE=1
+	DSP_EXPANSION_PROBE_FAMILY_FIRST=${DSP_EXPANSION_PROBE_FAMILY_FIRST}
+	DSP_EXPANSION_PROBE_FAMILY_LAST=${DSP_EXPANSION_PROBE_FAMILY_LAST}
+	DSP_EXPANSION_PROBE_WORD_FIRST=${DSP_EXPANSION_PROBE_WORD_FIRST}
+	DSP_EXPANSION_PROBE_WORD_LAST=${DSP_EXPANSION_PROBE_WORD_LAST}
+)
 add_peripheral_test(dsp-irqs dsp/irqs.c)
 add_peripheral_test(dsp-mask-rom-commands dsp/commands.c)
 add_peripheral_test(dsp-rom-dump dsp/rom-dump.c)
