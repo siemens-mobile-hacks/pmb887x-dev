@@ -1,28 +1,28 @@
 // Forward Shared RAM requests and expose INT_TOMCU readback around ARM CLRR.
 segment p 0100
 mov 0x$0001 a0l
-mov a0l [0x$E692]
+mov a0l [0x$TEAK_MCS_CFR]
 mov 0x$A55A a0l
-mov a0l [0x$DB01]
-mov [0x$DB00] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0301)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0300)] a0
 cmp 0x$0000 a0
 br 0x0000$0108 eq
-mov a0l [0x$E610]
-mov [0x$E610] a0
-mov a0l [0x$DB04]
-mov [0x$DB00] a0
-mov a0l [0x$DB02]
-mov [0x$DB03] a0
+mov a0l [0x$TEAK_INT_TOMCU]
+mov [0x$TEAK_INT_TOMCU] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0304)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0300)] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0302)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0303)] a0
 cmp 0x$0000 a0
 br 0x0000$0118 eq
-mov [0x$E610] a0
-mov a0l [0x$DB05]
+mov [0x$TEAK_INT_TOMCU] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0305)]
 clr a0 always
-mov a0l [0x$E610]
-mov [0x$E610] a0
-mov a0l [0x$DB06]
+mov a0l [0x$TEAK_INT_TOMCU]
+mov [0x$TEAK_INT_TOMCU] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0306)]
 clr a0 always
-mov a0l [0x$DB02]
-mov a0l [0x$DB03]
-mov a0l [0x$DB00]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0302)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0303)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0300)]
 br 0x0000$0108 always

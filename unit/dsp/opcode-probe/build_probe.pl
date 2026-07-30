@@ -5,6 +5,8 @@ use Digest::SHA qw(sha256_hex);
 use File::Spec;
 use File::Temp qw(tempdir);
 use FindBin qw($RealBin);
+use lib "$RealBin/..";
+use DspAsm qw(expand_teak_constants);
 
 my $makedsp1 = $ENV{MAKEDSP1} // '/home/azq2/build/teakra/build/src/makedsp1/makedsp1';
 my $dsp1_reader = $ENV{DSP1_READER} // '/home/azq2/build/teakra/build/src/dsp1_reader/dsp1_reader';
@@ -69,9 +71,9 @@ sub expansion_capture {
 		'mov [sp] r0',
 		'mov r0 [page:0x0022u8]',
 		'mov 0x0052u8 a0l',
-		'mov a0l [0x$D303]',
+		'mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0303)]',
 		'mov 0x0053u8 a0l',
-		'mov a0l [0x$D300]',
+		'mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0300)]',
 		'br 0x0000$01c0 always',
 		'segment p 01c0',
 		'br 0x0000$01c0 always',
@@ -124,7 +126,9 @@ sub expand_asm {
 
 die "makedsp1 is not executable: $makedsp1\n" unless -x $makedsp1;
 die "dsp1_reader is not executable: $dsp1_reader\n" unless -x $dsp1_reader;
-my $cache_key = sha256_hex($mode, read_file(__FILE__), read_file($asm_path), read_file($makedsp1), read_file($dsp1_reader));
+my $dsp_asm_path = File::Spec->catfile($RealBin, '..', 'DspAsm.pm');
+my $cache_key = sha256_hex($mode, read_file(__FILE__), read_file($dsp_asm_path), read_file($asm_path),
+	read_file($makedsp1), read_file($dsp1_reader));
 if (-f $output_path && read_file($output_path) =~ m{^// DSP image \Q$array_name\E cache key: \Q$cache_key\E$}m) {
 	print "$array_name: cached\n";
 	exit 0;
@@ -135,7 +139,7 @@ my $expanded_asm_path = File::Spec->catfile($temp_dir, 'probe.asm');
 my $dsp1_path = File::Spec->catfile($temp_dir, 'probe.dsp1');
 my $dis_path = File::Spec->catfile($temp_dir, 'probe.dis');
 open my $expanded_asm, '>', $expanded_asm_path or die "Cannot write $expanded_asm_path: $!\n";
-print {$expanded_asm} expand_asm(read_file($asm_path));
+print {$expanded_asm} expand_teak_constants('pmb8876', expand_asm(read_file($asm_path)));
 close $expanded_asm or die "Cannot close $expanded_asm_path: $!\n";
 run_tool($makedsp1, $expanded_asm_path, $dsp1_path);
 run_tool($dsp1_reader, $dsp1_path, $dis_path);

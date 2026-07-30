@@ -59,6 +59,7 @@ target_compile_definitions(dsp-expansion-probe PRIVATE
 add_peripheral_test(dsp-irqs dsp/irqs.c)
 add_peripheral_test(dsp-mask-rom-commands dsp/commands.c)
 add_peripheral_test(dsp-peripheral-map dsp/peripheral-map.c)
+add_peripheral_test(dsp-peripherals-safe dsp/safe-peripherals.c)
 add_peripheral_test(dsp-rom-dump dsp/rom-dump.c)
 add_peripheral_test(dsp-data-rom-dump dsp/rom-dump.c)
 target_compile_definitions(dsp-data-rom-dump PRIVATE DSP_DUMP_DATA_ROM=1)

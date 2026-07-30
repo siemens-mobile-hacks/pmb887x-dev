@@ -7,12 +7,12 @@ br 0x0000$0162 always
 // Explicit TRAP and any implementation-defined vectoring record entry here.
 segment p 0002
 mov 0x0054u8 a0l
-mov a0l [0x$D301]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0301)]
 reti always
 
 segment p 0100
 mov 0x$0001 a0l
-mov a0l [0x$DE92]
+mov a0l [0x$TEAK_MCS_CFR]
 mov 0x$0000 st0
 mov 0x$0000 st1
 mov 0x$0000 st2
@@ -57,7 +57,7 @@ nop
 rep 0x0000u8
 nop
 mov 0x0051u8 a0l
-mov a0l [0x$D302]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0302)]
 mov 0x$0000 a0l
 mov 0x$0000 a0h
 mov 0x$0000 a1l
@@ -96,9 +96,9 @@ data 0000
 // @post-begin
 segment p 0162
 mov 0x0052u8 a0l
-mov a0l [0x$D303]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0303)]
 mov 0x0053u8 a0l
-mov a0l [0x$D300]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0300)]
 br 0x0000$0168 always
 // @post-end
 
