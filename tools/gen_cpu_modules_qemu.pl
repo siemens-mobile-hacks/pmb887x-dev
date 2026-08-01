@@ -13,6 +13,7 @@ print qq|#include "hw/arm/pmb887x/gen/cpu_modules.h"
 
 #include "hw/arm/pmb887x/gen/cpu_meta.h"
 #include "hw/arm/pmb887x/gen/cpu_regs.h"
+#include "hw/arm/pmb887x/gen/dsp.h"
 
 #include "hw/core/hw-error.h"
 
@@ -23,13 +24,13 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	print genCpuModulesList($cpu_meta);
 }
 
-print qq|const pmb887x_cpu_module_t *pmb887x_cpu_get_modules_list(int cpu_id) {
+print qq|const pmb887x_cpu_t *pmb887x_cpu_get(int cpu_id) {
 	switch (cpu_id) {
 		case CPU_PMB8875:
-			return pmb8875_modules;
+			return &pmb8875_cpu;
 
 		case CPU_PMB8876:
-			return pmb8876_modules;
+			return &pmb8876_cpu;
 
 		default:
 			hw_error("Invalid CPU type: \%d", cpu_id);
@@ -41,7 +42,7 @@ print qq|const pmb887x_cpu_module_t *pmb887x_cpu_get_modules_list(int cpu_id) {
 sub genCpuModulesList {
 	my ($cpu_meta) = @_;
 
-	my $str = "";
+	my $str = genDspConfig($cpu_meta);
 
 	my @modules;
 	for my $module_id (@{$cpu_meta->getModuleNames()}) {
@@ -138,6 +139,108 @@ sub genCpuModulesList {
 	$str .= "static const pmb887x_cpu_module_t ".$cpu_meta->{name}."_modules[] = {\n";
 	$str .= printTable(\@modules, "\t{", "},");
 	$str .= "};\n\n";
+	$str .= "static const pmb887x_cpu_t ".$cpu_meta->{name}."_cpu = {\n";
+	$str .= "\t.modules = ".$cpu_meta->{name}."_modules,\n";
+	$str .= "\t.modules_count = ARRAY_SIZE(".$cpu_meta->{name}."_modules),\n";
+	$str .= "\t.dsp_config = &".$cpu_meta->{name}."_dsp_config,\n";
+	$str .= "};\n\n";
 
+	return $str;
+}
+
+sub getDspMemory {
+	my ($cpu_meta, $space, $name) = @_;
+	my @matches = grep { $_->{space} eq $space && $_->{name} eq $name } @{$cpu_meta->dspMemory()};
+	die "Missing $cpu_meta->{name} DSP $space:$name memory" if @matches != 1;
+	return $matches[0];
+}
+
+sub getDspPages {
+	my ($cpu_meta, $space, $prefix) = @_;
+	my @pages = grep { $_->{space} eq $space && $_->{name} =~ /^\Q$prefix\E\d+$/ } @{$cpu_meta->dspMemory()};
+	@pages = sort { $a->{page} <=> $b->{page} } @pages;
+	for (my $i = 0; $i < @pages; $i++) {
+		die "Invalid $cpu_meta->{name} DSP $space:$prefix page index" if $pages[$i]->{page} != $i;
+	}
+	return @pages;
+}
+
+sub getPageMask {
+	my ($count) = @_;
+	my $mask = 0;
+	$mask = ($mask << 1) | 1 while $mask + 1 < $count;
+	return $mask;
+}
+
+sub genDspConfig {
+	my ($cpu_meta) = @_;
+	my $cpu = $cpu_meta->{name};
+	my $prefix = uc($cpu)."_TEAK_";
+	getDspMemory($cpu_meta, "P", "PROM_FIXED");
+	getDspMemory($cpu_meta, "D", "DROM_FIXED");
+	getDspMemory($cpu_meta, "D", "SHARED_RAM");
+	getDspMemory($cpu_meta, "D", "DEMODULATOR_RAM");
+	getDspMemory($cpu_meta, "D", "YRAM");
+	my @program_pages = getDspPages($cpu_meta, "P", "PROM_PAGE");
+	my @data_pages = getDspPages($cpu_meta, "D", "DROM_PAGE");
+	die "Missing $cpu DSP ROM version" if !defined($cpu_meta->dspRomVersion());
+	die "Missing $cpu DSP ROM pages" if !@program_pages || !@data_pages;
+
+	my $page_mask = getPageMask(max(scalar(@program_pages), scalar(@data_pages)));
+	my $program_page_shift = 0;
+	my $mask = $page_mask;
+	while ($mask != 0) {
+		$program_page_shift++;
+		$mask >>= 1;
+	}
+
+	my @modules = values %{$cpu_meta->dspModules()};
+	die "Missing $cpu DSP modules" if !@modules;
+	my $mmio_base = min(map { $_->{base} } @modules);
+	my $mmio_end = max(map { $_->{base} + $_->{size} } @modules);
+	die "Invalid $cpu DSP interrupt module base" if $cpu_meta->dspModules()->{INT}->{base} != $mmio_base;
+	$mmio_end = ($mmio_end + 0xFF) & ~0xFF;
+
+	my @peripherals;
+	for my $module (sort { $a->{base} <=> $b->{base} } @modules) {
+		my $type = $module->{definition};
+
+		# Numeric suffixes select register layouts, not QEMU peripheral implementations.
+		$type =~ s/_[0-9]+$//;
+		push @peripherals, [
+			'"'.$module->{name}.'",',
+			"PMB887X_DSP_PERIPHERAL_".$type.",",
+			sprintf("0x%04X,", $module->{base}),
+			sprintf("0x%04X", $module->{size}),
+		];
+	}
+	my $str = "static const pmb887x_dsp_peripheral_config_t ${cpu}_dsp_peripherals[] = {\n";
+	$str .= printTable(\@peripherals, "\t{ ", " },");
+	$str .= "};\n\n";
+
+	$str .= sprintf(qq|static const pmb887x_dsp_config_t ${cpu}_dsp_config = {
+	.name = "$cpu",
+	.default_rom_version = 0x%04X,
+	.page_field_mask = 0x%04X,
+	.program_page_shift = %u,
+	.program_rom_address = ${prefix}PROM_FIXED_BASE,
+	.program_bank_address = ${prefix}PROM_PAGE0_BASE,
+	.program_bank_count = %u,
+	.data_rom_address = ${prefix}DROM_FIXED_BASE,
+	.data_bank_address = ${prefix}DROM_PAGE0_BASE,
+	.data_bank_count = %u,
+	.shared_base = ${prefix}SHARED_RAM_BASE,
+	.shared_size = ${prefix}SHARED_RAM_SIZE,
+	.baseband_ram_base = ${prefix}DEMODULATOR_RAM_BASE,
+	.baseband_ram_size = ${prefix}DEMODULATOR_RAM_SIZE,
+	.y_space_base = ${prefix}YRAM_BASE,
+	.mmio_base = ${prefix}INT_BASE,
+	.mmio_size = 0x%04X,
+	.peripherals = ${cpu}_dsp_peripherals,
+	.peripherals_count = ARRAY_SIZE(${cpu}_dsp_peripherals),
+};
+
+|, $cpu_meta->dspRomVersion(), $page_mask, $program_page_shift, scalar(@program_pages), scalar(@data_pages),
+		$mmio_end - $mmio_base);
 	return $str;
 }

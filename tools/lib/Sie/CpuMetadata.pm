@@ -41,6 +41,11 @@ sub dspModules {
 	return $self->{dsp_modules};
 }
 
+sub dspRomVersion {
+	my ($self) = @_;
+	return $self->{dsp_rom_version};
+}
+
 sub getCpus {
 	my $path = getDataDir();
 	opendir my $fp, $path or die "opendir($path): $!";
@@ -229,7 +234,11 @@ sub loadCPU {
 		
 		next if !length($line);
 		
-		if ($line =~ /^\.dsp_memory/) {
+		if ($line =~ /^\.dsp_rom_version/) {
+			my ($key, $version) = split("\t", $line);
+			die "Invalid DSP ROM version: $line" if !defined($version);
+			$self->{dsp_rom_version} = parseAnyInt($version);
+		} elsif ($line =~ /^\.dsp_memory/) {
 			my ($key, $space, $name, $base, $size, $type, $page) = split("\t", $line);
 			die "Invalid DSP memory: $line" if !defined($page);
 			push @{$self->{dsp_memory}}, {

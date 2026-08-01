@@ -187,9 +187,6 @@
 /* I2S2 receive interrupt */
 #define	TEAK_INT_FINTB0_I2S2RX					0x0008
 #define	TEAK_INT_FINTB0_I2S2RX_SHIFT			3
-/* I2S3 transmit interrupt */
-#define	TEAK_INT_FINTB0_I2S3TX					0x0010
-#define	TEAK_INT_FINTB0_I2S3TX_SHIFT			4
 /* Voiceband receive interrupt */
 #define	TEAK_INT_FINTB0_VBRX					0x0020
 #define	TEAK_INT_FINTB0_VBRX_SHIFT				5
@@ -208,6 +205,9 @@
 /* System interface MCU interrupt */
 #define	TEAK_INT_FINTB0_SYSMCU					0x0400
 #define	TEAK_INT_FINTB0_SYSMCU_SHIFT			10
+/* I2S3 transmit interrupt */
+#define	TEAK_INT_FINTB0_I2S3TX					0x0800
+#define	TEAK_INT_FINTB0_I2S3TX_SHIFT			11
 /* Interrupt B0 enable register */
 #define	TEAK_INT_EINTB0							(TEAK_INT_BASE + 0x05)
 /* I2S1 transmit interrupt enable */
@@ -222,9 +222,6 @@
 /* I2S2 receive interrupt enable */
 #define	TEAK_INT_EINTB0_I2S2RX					0x0008
 #define	TEAK_INT_EINTB0_I2S2RX_SHIFT			3
-/* I2S3 transmit interrupt enable */
-#define	TEAK_INT_EINTB0_I2S3TX					0x0010
-#define	TEAK_INT_EINTB0_I2S3TX_SHIFT			4
 /* Voiceband receive interrupt enable */
 #define	TEAK_INT_EINTB0_VBRX					0x0020
 #define	TEAK_INT_EINTB0_VBRX_SHIFT				5
@@ -243,6 +240,9 @@
 /* System interface MCU interrupt enable */
 #define	TEAK_INT_EINTB0_SYSMCU					0x0400
 #define	TEAK_INT_EINTB0_SYSMCU_SHIFT			10
+/* I2S3 transmit interrupt enable */
+#define	TEAK_INT_EINTB0_I2S3TX					0x0800
+#define	TEAK_INT_EINTB0_I2S3TX_SHIFT			11
 /* Interrupt B0 reset register (write-only) */
 #define	TEAK_INT_RINTB0							(TEAK_INT_BASE + 0x06)
 /* I2S1 transmit interrupt reset */
@@ -257,9 +257,6 @@
 /* I2S2 receive interrupt reset */
 #define	TEAK_INT_RINTB0_I2S2RX					0x0008
 #define	TEAK_INT_RINTB0_I2S2RX_SHIFT			3
-/* I2S3 transmit interrupt reset */
-#define	TEAK_INT_RINTB0_I2S3TX					0x0010
-#define	TEAK_INT_RINTB0_I2S3TX_SHIFT			4
 /* Voiceband receive interrupt reset */
 #define	TEAK_INT_RINTB0_VBRX					0x0020
 #define	TEAK_INT_RINTB0_VBRX_SHIFT				5
@@ -278,6 +275,9 @@
 /* System interface MCU interrupt reset */
 #define	TEAK_INT_RINTB0_SYSMCU					0x0400
 #define	TEAK_INT_RINTB0_SYSMCU_SHIFT			10
+/* I2S3 transmit interrupt reset */
+#define	TEAK_INT_RINTB0_I2S3TX					0x0800
+#define	TEAK_INT_RINTB0_I2S3TX_SHIFT			11
 /* Interrupt B0 set register (write-only) */
 #define	TEAK_INT_SINTB0							(TEAK_INT_BASE + 0x07)
 /* I2S1 transmit interrupt set */
@@ -292,9 +292,6 @@
 /* I2S2 receive interrupt set */
 #define	TEAK_INT_SINTB0_I2S2RX					0x0008
 #define	TEAK_INT_SINTB0_I2S2RX_SHIFT			3
-/* I2S3 transmit interrupt set */
-#define	TEAK_INT_SINTB0_I2S3TX					0x0010
-#define	TEAK_INT_SINTB0_I2S3TX_SHIFT			4
 /* Voiceband receive interrupt set */
 #define	TEAK_INT_SINTB0_VBRX					0x0020
 #define	TEAK_INT_SINTB0_VBRX_SHIFT				5
@@ -313,6 +310,9 @@
 /* System interface MCU interrupt set */
 #define	TEAK_INT_SINTB0_SYSMCU					0x0400
 #define	TEAK_INT_SINTB0_SYSMCU_SHIFT			10
+/* I2S3 transmit interrupt set */
+#define	TEAK_INT_SINTB0_I2S3TX					0x0800
+#define	TEAK_INT_SINTB0_I2S3TX_SHIFT			11
 /* Interrupt 1 flag register (read-only, modified by hardware) */
 #define	TEAK_INT_FINT1							(TEAK_INT_BASE + 0x08)
 /* Cipher interrupt */
@@ -949,6 +949,9 @@
 /* Right half-slot equalization select */
 #define	TEAK_EQ_CONF2_EQ_RIGHT					0x4000
 #define	TEAK_EQ_CONF2_EQ_RIGHT_SHIFT			14
+/* EDGE equalization mode enable */
+#define	TEAK_EQ_CONF2_EQ_EDGE					0x8000
+#define	TEAK_EQ_CONF2_EQ_EDGE_SHIFT				15
 /* Status register (read-only) */
 #define	TEAK_EQ_STATUS							(TEAK_EQ_BASE + 0x02)
 /* Equalization in progress */
@@ -1051,7 +1054,7 @@
 #define	TEAK_CHDEC_STAT_CNT_S_DEC				0x00FF
 #define	TEAK_CHDEC_STAT_CNT_S_DEC_SHIFT			0
 /* Butterfly reference register 0 */
-#define	TEAK_CHDEC_REF_BR_BFLY0					(TEAK_CHDEC_BASE + 0x08)
+#define	TEAK_CHDEC_REF_BR_BFLY0					(TEAK_CHDEC_BASE + 0x05)
 /* Branch metric reference 1 */
 #define	TEAK_CHDEC_REF_BR_BFLY0_REF1			0x000F
 #define	TEAK_CHDEC_REF_BR_BFLY0_REF1_SHIFT		0
@@ -1065,7 +1068,7 @@
 #define	TEAK_CHDEC_REF_BR_BFLY0_REF4			0xF000
 #define	TEAK_CHDEC_REF_BR_BFLY0_REF4_SHIFT		12
 /* Butterfly reference register 1 */
-#define	TEAK_CHDEC_REF_BR_BFLY1					(TEAK_CHDEC_BASE + 0x09)
+#define	TEAK_CHDEC_REF_BR_BFLY1					(TEAK_CHDEC_BASE + 0x06)
 /* Branch metric reference 1 */
 #define	TEAK_CHDEC_REF_BR_BFLY1_REF1			0x000F
 #define	TEAK_CHDEC_REF_BR_BFLY1_REF1_SHIFT		0
@@ -1079,7 +1082,7 @@
 #define	TEAK_CHDEC_REF_BR_BFLY1_REF4			0xF000
 #define	TEAK_CHDEC_REF_BR_BFLY1_REF4_SHIFT		12
 /* Butterfly reference register 2 */
-#define	TEAK_CHDEC_REF_BR_BFLY2					(TEAK_CHDEC_BASE + 0x0A)
+#define	TEAK_CHDEC_REF_BR_BFLY2					(TEAK_CHDEC_BASE + 0x07)
 /* Branch metric reference 1 */
 #define	TEAK_CHDEC_REF_BR_BFLY2_REF1			0x000F
 #define	TEAK_CHDEC_REF_BR_BFLY2_REF1_SHIFT		0
@@ -1093,7 +1096,7 @@
 #define	TEAK_CHDEC_REF_BR_BFLY2_REF4			0xF000
 #define	TEAK_CHDEC_REF_BR_BFLY2_REF4_SHIFT		12
 /* Butterfly reference register 3 */
-#define	TEAK_CHDEC_REF_BR_BFLY3					(TEAK_CHDEC_BASE + 0x0B)
+#define	TEAK_CHDEC_REF_BR_BFLY3					(TEAK_CHDEC_BASE + 0x08)
 /* Branch metric reference 1 */
 #define	TEAK_CHDEC_REF_BR_BFLY3_REF1			0x000F
 #define	TEAK_CHDEC_REF_BR_BFLY3_REF1_SHIFT		0
@@ -1107,7 +1110,7 @@
 #define	TEAK_CHDEC_REF_BR_BFLY3_REF4			0xF000
 #define	TEAK_CHDEC_REF_BR_BFLY3_REF4_SHIFT		12
 /* Butterfly reference register 4 */
-#define	TEAK_CHDEC_REF_BR_BFLY4					(TEAK_CHDEC_BASE + 0x0C)
+#define	TEAK_CHDEC_REF_BR_BFLY4					(TEAK_CHDEC_BASE + 0x09)
 /* Branch metric reference 1 */
 #define	TEAK_CHDEC_REF_BR_BFLY4_REF1			0x000F
 #define	TEAK_CHDEC_REF_BR_BFLY4_REF1_SHIFT		0
@@ -1121,7 +1124,7 @@
 #define	TEAK_CHDEC_REF_BR_BFLY4_REF4			0xF000
 #define	TEAK_CHDEC_REF_BR_BFLY4_REF4_SHIFT		12
 /* Butterfly reference register 5 */
-#define	TEAK_CHDEC_REF_BR_BFLY5					(TEAK_CHDEC_BASE + 0x0D)
+#define	TEAK_CHDEC_REF_BR_BFLY5					(TEAK_CHDEC_BASE + 0x0A)
 /* Branch metric reference 1 */
 #define	TEAK_CHDEC_REF_BR_BFLY5_REF1			0x000F
 #define	TEAK_CHDEC_REF_BR_BFLY5_REF1_SHIFT		0
@@ -1135,7 +1138,7 @@
 #define	TEAK_CHDEC_REF_BR_BFLY5_REF4			0xF000
 #define	TEAK_CHDEC_REF_BR_BFLY5_REF4_SHIFT		12
 /* Butterfly reference register 6 */
-#define	TEAK_CHDEC_REF_BR_BFLY6					(TEAK_CHDEC_BASE + 0x0E)
+#define	TEAK_CHDEC_REF_BR_BFLY6					(TEAK_CHDEC_BASE + 0x0B)
 /* Branch metric reference 1 */
 #define	TEAK_CHDEC_REF_BR_BFLY6_REF1			0x000F
 #define	TEAK_CHDEC_REF_BR_BFLY6_REF1_SHIFT		0
@@ -1149,7 +1152,7 @@
 #define	TEAK_CHDEC_REF_BR_BFLY6_REF4			0xF000
 #define	TEAK_CHDEC_REF_BR_BFLY6_REF4_SHIFT		12
 /* Butterfly reference register 7 */
-#define	TEAK_CHDEC_REF_BR_BFLY7					(TEAK_CHDEC_BASE + 0x0F)
+#define	TEAK_CHDEC_REF_BR_BFLY7					(TEAK_CHDEC_BASE + 0x0C)
 /* Branch metric reference 1 */
 #define	TEAK_CHDEC_REF_BR_BFLY7_REF1			0x000F
 #define	TEAK_CHDEC_REF_BR_BFLY7_REF1_SHIFT		0
@@ -1679,37 +1682,6 @@
 /* Release semaphore 15 */
 #define	TEAK_MCS_MCU_SEMR_SEM15					0x8000
 #define	TEAK_MCS_MCU_SEMR_SEM15_SHIFT			15
-/* Control register (write-only) */
-#define	TEAK_XBIU_CTRL							(TEAK_XBIU_BASE + 0x00)
-/* Transfer request and acknowledge */
-#define	TEAK_XBIU_CTRL_RQACK					0x0001
-#define	TEAK_XBIU_CTRL_RQACK_SHIFT				0
-/* Transfer instruction */
-#define	TEAK_XBIU_CTRL_INSTR					0x0006
-#define	TEAK_XBIU_CTRL_INSTR_SHIFT				1
-#define	TEAK_XBIU_CTRL_INSTR_BYTE_WRITE			0x2
-#define	TEAK_XBIU_CTRL_INSTR_WORD_WRITE			0x4
-#define	TEAK_XBIU_CTRL_INSTR_WORD_READ			0x6
-/* Controller-space address low register (write-only) */
-#define	TEAK_XBIU_SD_ADDRL						(TEAK_XBIU_BASE + 0x01)
-/* Controller-space address bits 15:0 */
-#define	TEAK_XBIU_SD_ADDRL_ADDR					0xFFFF
-#define	TEAK_XBIU_SD_ADDRL_ADDR_SHIFT			0
-/* Controller-space address high register (write-only) */
-#define	TEAK_XBIU_SD_ADDRH						(TEAK_XBIU_BASE + 0x02)
-/* Controller-space address bits 23:16 */
-#define	TEAK_XBIU_SD_ADDRH_ADDR					0x00FF
-#define	TEAK_XBIU_SD_ADDRH_ADDR_SHIFT			0
-/* Read data register (read-only) */
-#define	TEAK_XBIU_DATA_R						(TEAK_XBIU_BASE + 0x03)
-/* Data read from controller space */
-#define	TEAK_XBIU_DATA_R_DATA					0xFFFF
-#define	TEAK_XBIU_DATA_R_DATA_SHIFT				0
-/* Write data register (write-only) */
-#define	TEAK_XBIU_DATA_W						(TEAK_XBIU_BASE + 0x03)
-/* Data written to controller space */
-#define	TEAK_XBIU_DATA_W_DATA					0xFFFF
-#define	TEAK_XBIU_DATA_W_DATA_SHIFT				0
 /* DSP identification register (read-only, hard-wired) */
 #define	TEAK_DSP_ID								(TEAK_DSP_BASE + 0x00)
 /* Hardware revision number */
@@ -1727,12 +1699,7 @@
 #define	TEAK_DSP_DEBUG_OCEM_SHIFT				1
 /* Program and data ROM page register */
 #define	TEAK_DSP_PAGE							(TEAK_DSP_BASE + 0x03)
-/* Data ROM page select */
-#define	TEAK_DSP_PAGE_DATA_PAGE					0x0001
 #define	TEAK_DSP_PAGE_DATA_PAGE_SHIFT			0
-/* Program ROM page select */
-#define	TEAK_DSP_PAGE_PROG_PAGE					0x0002
-#define	TEAK_DSP_PAGE_PROG_PAGE_SHIFT			1
 /* Undocumented register used by Mask ROM 0604 and 0801 */
 #define	TEAK_DSP_UNK6							(TEAK_DSP_BASE + 0x06)
 /* DSP output register */
@@ -1870,6 +1837,32 @@
 /* Module enable and programming/operating mode select */
 #define	TEAK_SSC_CON_EN							0x8000
 #define	TEAK_SSC_CON_EN_SHIFT					15
+/* Write hardware-modified control register */
+#define	TEAK_SSC_WHBCON							(TEAK_SSC_BASE + 0x01)
+/* Clear transmit error flag */
+#define	TEAK_SSC_WHBCON_CLRTE					0x0100
+#define	TEAK_SSC_WHBCON_CLRTE_SHIFT				8
+/* Clear receive error flag */
+#define	TEAK_SSC_WHBCON_CLRRE					0x0200
+#define	TEAK_SSC_WHBCON_CLRRE_SHIFT				9
+/* Clear phase error flag */
+#define	TEAK_SSC_WHBCON_CLRPE					0x0400
+#define	TEAK_SSC_WHBCON_CLRPE_SHIFT				10
+/* Clear baud-rate error flag */
+#define	TEAK_SSC_WHBCON_CLRBE					0x0800
+#define	TEAK_SSC_WHBCON_CLRBE_SHIFT				11
+/* Set transmit error flag */
+#define	TEAK_SSC_WHBCON_SETTE					0x1000
+#define	TEAK_SSC_WHBCON_SETTE_SHIFT				12
+/* Set receive error flag */
+#define	TEAK_SSC_WHBCON_SETRE					0x2000
+#define	TEAK_SSC_WHBCON_SETRE_SHIFT				13
+/* Set phase error flag */
+#define	TEAK_SSC_WHBCON_SETPE					0x4000
+#define	TEAK_SSC_WHBCON_SETPE_SHIFT				14
+/* Set baud-rate error flag */
+#define	TEAK_SSC_WHBCON_SETBE					0x8000
+#define	TEAK_SSC_WHBCON_SETBE_SHIFT				15
 /* Transmit buffer */
 #define	TEAK_SSC_TXB							(TEAK_SSC_BASE + 0x02)
 /* Transmit data */

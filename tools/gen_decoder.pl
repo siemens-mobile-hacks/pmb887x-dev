@@ -11,6 +11,14 @@ use Sie::Utils;
 
 my $cpu_meta = Sie::CpuMetadata->new("generic");
 my $peripherals = $cpu_meta->getAllPeripherals();
+my @cpu_metadata = map { Sie::CpuMetadata->new($_) } @{Sie::CpuMetadata::getCpus()};
+my %dsp_definitions;
+
+for my $meta (@cpu_metadata) {
+	for my $module (values %{$meta->dspModules()}) {
+		$dsp_definitions{$module->{definition}} = $module;
+	}
+}
 
 if (@ARGV) {
 	die "Usage: $0 [--header]\n" if @ARGV != 1 || $ARGV[0] ne "--header";
@@ -28,14 +36,17 @@ for my $peripheral (@$peripherals) {
 	$str .= genPeripheralHeader($peripheral);
 }
 
+for my $definition (sort keys %dsp_definitions) {
+	$str .= genDspModuleHeader($dsp_definitions{$definition});
+}
+
 my @cpus;
 my @modules;
 
 my $cpu_to_idx = {};
 my $cpu_idx = 0;
 
-for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
-	my $cpu_meta = Sie::CpuMetadata->new($cpu);
+for my $cpu_meta (@cpu_metadata) {
 	
 	my $irqs_var = lc($cpu_meta->{name})."_irqs";
 	
@@ -103,6 +114,23 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	$str .= "static const pmb887x_cpu_io_t ".lc($cpu_meta->{name})."_modules[] = {\n";
 	$str .= printTable(\@modules_ref, "\t{", "},");
 	$str .= "};\n\n";
+
+	my @dsp_modules_ref;
+	for my $module (sort { $a->{base} <=> $b->{base} } values %{$cpu_meta->dspModules()}) {
+		my $regs_var = dspModuleVar($module)."_regs";
+		push @dsp_modules_ref, [
+			cString($module->{name}).",",
+			sprintf("0x%04X,", $module->{base}),
+			sprintf("0x%X,", $module->{size}),
+			$regs_var.",",
+			"ARRAY_SIZE($regs_var)",
+		];
+	}
+
+	my $dsp_modules_var = lc($cpu_meta->{name})."_dsp_modules";
+	$str .= "static const pmb887x_cpu_io_t ${dsp_modules_var}[] = {\n";
+	$str .= printTable(\@dsp_modules_ref, "\t{", "},");
+	$str .= "};\n\n";
 	
 	my $modules_var = lc($cpu_meta->{name})."_modules";
 	
@@ -115,7 +143,9 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 		"$gpios_var,",
 		"ARRAY_SIZE($gpios_var),",
 		"$modules_var,",
-		"ARRAY_SIZE($modules_var)"
+		"ARRAY_SIZE($modules_var),",
+		"$dsp_modules_var,",
+		"ARRAY_SIZE($dsp_modules_var)"
 	];
 }
 
@@ -143,7 +173,7 @@ const pmb887x_cpu_meta_t *pmb887x_get_cpu_meta(int cpu) {
 }
 
 const pmb887x_io_meta_t *pmb887x_get_io_meta(pmb887x_trace_io_t id) {
-	if (id <= PMB887X_TRACE_IO_CPU || id >= PMB887X_TRACE_IO_COUNT)
+	if (id <= PMB887X_TRACE_IO_DSP || id >= PMB887X_TRACE_IO_COUNT)
 		return NULL;
 	return &io_metadata[id];
 }
@@ -175,6 +205,7 @@ typedef struct pmb887x_io_value_t pmb887x_io_value_t;
 
 typedef enum pmb887x_trace_io_t {
 	PMB887X_TRACE_IO_CPU,
+	PMB887X_TRACE_IO_DSP,
 HEADER
 
 	for my $peripheral (@$peripherals) {
@@ -238,6 +269,9 @@ struct pmb887x_cpu_meta_t {
 
 	const pmb887x_cpu_io_t *modules;
 	int modules_count;
+
+	const pmb887x_cpu_io_t *dsp_modules;
+	int dsp_modules_count;
 };
 
 struct pmb887x_io_meta_t {
@@ -369,10 +403,10 @@ sub genModuleHeader {
 }
 
 sub genPeripheralHeader {
-	my ($peripheral) = @_;
+	my ($peripheral, $var) = @_;
 
 	my $str = "";
-	my $var = peripheralVar($peripheral);
+	$var = peripheralVar($peripheral) if !defined($var);
 	my @regs;
 
 	for my $reg_name (getSortedKeys($peripheral->{regs}, 'start')) {
@@ -430,6 +464,16 @@ sub genPeripheralHeader {
 	$str .= "};\n";
 
 	return $str."\n";
+}
+
+sub genDspModuleHeader {
+	my ($module) = @_;
+	return genPeripheralHeader($module, dspModuleVar($module));
+}
+
+sub dspModuleVar {
+	my ($module) = @_;
+	return "dsp_".lc($module->{definition});
 }
 
 sub peripheralVar {

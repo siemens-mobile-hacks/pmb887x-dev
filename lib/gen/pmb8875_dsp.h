@@ -51,10 +51,16 @@
 #define	TEAK_AFE_BASE				0xE670
 #define	TEAK_BB_BASE				0xE680
 #define	TEAK_MCS_BASE				0xE690
-#define	TEAK_XBIU_BASE				0xE696
 #define	TEAK_DSP_BASE				0xE6A0
 #define	TEAK_MOD_BASE				0xE6B0
 #define	TEAK_SSC_BASE				0xE6C0
 #define	TEAK_I2S1_BASE				0xE6D0
 #define	TEAK_I2S2_BASE				0xE6E0
 #define	TEAK_I2S3_BASE				0xE6F0
+
+// PMB8875-specific TeakLite peripheral registers
+/* Data ROM page select */
+#define	TEAK_DSP_PAGE_DATA_PAGE			0x0001
+/* Program ROM page select */
+#define	TEAK_DSP_PAGE_PROG_PAGE			0x0002
+#define	TEAK_DSP_PAGE_PROG_PAGE_SHIFT	1

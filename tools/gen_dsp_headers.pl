@@ -18,7 +18,7 @@ if (@ARGV) {
 
 my @cpus = sort @{Sie::CpuMetadata::getCpus()};
 my @cpu_metadata = map { Sie::CpuMetadata->new($_) } @cpus;
-my $register_header = genRegisterHeader(\@cpu_metadata, !$qemu);
+my ($register_header, $cpu_register_headers) = genRegisterHeaders(\@cpu_metadata, !$qemu, $qemu);
 
 make_path($output_dir);
 if ($qemu) {
@@ -27,7 +27,7 @@ if ($qemu) {
 	my @selector = ("#pragma once", "");
 	for my $cpu_meta (@cpu_metadata) {
 		my $cpu = $cpu_meta->{name};
-		writeFile("$output_dir/${cpu}_dsp.h", genBspCpuHeader($cpu_meta));
+		writeFile("$output_dir/${cpu}_dsp.h", genBspCpuHeader($cpu_meta, $cpu_register_headers->{$cpu}));
 		push @selector, "#ifdef ".uc($cpu);
 		push @selector, "#include \"${cpu}_dsp.h\" // IWYU pragma: export";
 		push @selector, "#endif";
@@ -66,15 +66,16 @@ sub appendCpuMap {
 }
 
 sub genBspCpuHeader {
-	my ($cpu_meta) = @_;
+	my ($cpu_meta, $register_header) = @_;
 	my @header = (
 		"#pragma once",
 		"// IWYU pragma: private, include \"dsp.h\"",
 		"",
 	);
 	appendCpuMap(\@header, $cpu_meta, "TEAK_");
+	$register_header =~ s/^\n//;
 
-	my $str = printTable(\@header);
+	my $str = printTable(\@header).$register_header;
 	$str =~ s/\s+\z/\n/;
 	return $str;
 }
@@ -151,21 +152,11 @@ sub collectRegisterDefines {
 	}
 }
 
-sub genRegisterHeader {
-	my ($cpu_metadata, $absolute) = @_;
-	my %defines;
-	my @order;
-
-	for my $cpu_meta (@$cpu_metadata) {
-		for my $module (getDspModules($cpu_meta)) {
-			collectRegisterDefines(\%defines, \@order, $module, $absolute);
-		}
-	}
-
-	my $title = $absolute ? "// TeakLite peripheral registers" : "// TeakLite peripheral register offsets";
+sub renderRegisterHeader {
+	my ($defines, $order, $title) = @_;
 	my @header = ("", $title);
-	for my $name (@order) {
-		my $define = $defines{$name};
+	for my $name (@$order) {
+		my $define = $defines->{$name};
 		push @header, "/* ".$define->{descr}." */" if $define->{descr};
 		push @header, ["#define", $name, $define->{value}];
 	}
@@ -173,4 +164,79 @@ sub genRegisterHeader {
 	my $str = printTable(\@header);
 	$str =~ s/\s+\z/\n/;
 	return $str;
+}
+
+sub genRegisterHeaders {
+	my ($cpu_metadata, $absolute, $qemu_output) = @_;
+	my %cpu_defines;
+	my %cpu_order;
+	my %all_names;
+	my @all_order;
+
+	for my $cpu_meta (@$cpu_metadata) {
+		my $cpu = $cpu_meta->{name};
+		my %defines;
+		my @order;
+		for my $module (getDspModules($cpu_meta)) {
+			collectRegisterDefines(\%defines, \@order, $module, $absolute);
+		}
+		$cpu_defines{$cpu} = \%defines;
+		$cpu_order{$cpu} = \@order;
+		for my $name (@order) {
+			push @all_order, $name if !$all_names{$name};
+			$all_names{$name} = 1;
+		}
+	}
+
+	my %common_defines;
+	my @common_order;
+	my %specific_defines;
+	my %specific_order;
+	for my $name (@all_order) {
+		my %values;
+		for my $cpu_meta (@$cpu_metadata) {
+			my $cpu = $cpu_meta->{name};
+			my $define = $cpu_defines{$cpu}->{$name};
+			$values{$define->{value}} = 1 if $define;
+		}
+
+		if (keys(%values) == 1) {
+			for my $cpu_meta (@$cpu_metadata) {
+				my $define = $cpu_defines{$cpu_meta->{name}}->{$name};
+				if ($define) {
+					$common_defines{$name} = $define;
+					last;
+				}
+			}
+			push @common_order, $name;
+			next;
+		}
+
+		for my $cpu_meta (@$cpu_metadata) {
+			my $cpu = $cpu_meta->{name};
+			my $define = $cpu_defines{$cpu}->{$name};
+			next if !$define;
+			my $specific_name = $qemu_output ? uc($cpu)."_".$name : $name;
+			$specific_defines{$cpu}->{$specific_name} = $define;
+			push @{$specific_order{$cpu}}, $specific_name;
+		}
+	}
+
+	my $title = $absolute ? "// TeakLite peripheral registers" : "// TeakLite peripheral register offsets";
+	my $common = renderRegisterHeader(\%common_defines, \@common_order, $title);
+	my %specific;
+	for my $cpu_meta (@$cpu_metadata) {
+		my $cpu = $cpu_meta->{name};
+		my $specific_title = "// ".uc($cpu)."-specific TeakLite peripheral registers";
+		$specific{$cpu} = renderRegisterHeader($specific_defines{$cpu} // {}, $specific_order{$cpu} // [],
+			$specific_title);
+	}
+
+	if ($qemu_output) {
+		for my $cpu_meta (@$cpu_metadata) {
+			$common .= $specific{$cpu_meta->{name}};
+		}
+		%specific = ();
+	}
+	return ($common, \%specific);
 }
