@@ -35,6 +35,21 @@ sub get_constants {
 			die "TeakLite register ranges are not supported in DSP assembly: $reg->{name}\n"
 				if $reg->{start} != $reg->{end};
 			add_constant(\%constants, $prefix.$reg->{name}, $module->{base} + $reg->{start});
+			for my $field (values %{$reg->{fields}}) {
+				my $field_name = $reg->{field_format};
+				$field_name =~ s/{reg}/$reg->{name}/g;
+				$field_name =~ s/{field}/$field->{name}/g;
+				add_constant(\%constants, $prefix.$field_name, $field->{mask});
+				add_constant(\%constants, $prefix.$field_name."_SHIFT", $field->{start});
+				for my $value_name (keys %{$field->{values}}) {
+					my $enum_name = $reg->{enum_format};
+					$enum_name =~ s/{reg}/$reg->{name}/g;
+					$enum_name =~ s/{field}/$field->{name}/g;
+					$enum_name =~ s/{value}/$value_name/g;
+					add_constant(\%constants, $prefix.$enum_name,
+						$field->{values}->{$value_name} << $field->{start});
+				}
+			}
 		}
 	}
 

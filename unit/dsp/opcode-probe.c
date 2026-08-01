@@ -94,6 +94,7 @@ static const struct expansion_family DSP_EXPANSION_FAMILIES[] = {
 	{ "bkrep register r0", 0x5D00, EXPANSION_VALUE },
 	{ "branch absolute always", 0x4180, EXPANSION_PROGRAM_ADDRESS },
 	{ "call absolute always", 0x41C0, EXPANSION_PROGRAM_ADDRESS },
+	{ "movr indirect high b0", 0x8864, EXPANSION_FIXED_SOURCE },
 };
 
 #ifndef DSP_EXPANSION_PROBE_FAMILY_FIRST

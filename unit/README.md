@@ -21,6 +21,7 @@ Run a test on real hardware:
 | `dsp-opcode-aliases` | Noncanonical variants of every documented TeakLite I don't-care opcode field |
 | `dsp-opcode-probe` | Resumable diagnostic sweep of raw TeakLite first-word opcodes with reset and timeout isolation |
 | `dsp-expansion-probe` | Resumable sweep of expansion words for all documented two-word TeakLite I encoding rows |
+| `dsp-tpu-bb-events` | Hardware timing, counts, status, and DSP interrupts for repeating TPU MONON events |
 | `dsp-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |
 | `dsp-data-rom-dump` | PMB8875/PMB8876 DSP boot-mode DREAD dump of fixed and banked Data Mask ROM in Intel HEX format |
 | `mod` | Common CLC, SRC, and SRB register blocks |
