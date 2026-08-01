@@ -14,7 +14,7 @@ sub usage {
 
 	print <<'USAGE';
 Usage:
-  extract_apoxi_dsp.pl --address <number> [options] <APOXI firmware.bin>
+  extract_dsp_firmware.pl --address <number> [options] <firmware.bin>
 
 Options:
   --base <number>          ARM address corresponding to file offset 0
@@ -23,11 +23,21 @@ Options:
   --out <directory>        Output directory (default: dsp-fw)
   --help                   Show this help
 
-The input must be a raw APOXI ARM firmware image. Addresses are converted to file
-offsets as: offset = address - base.
+The input must be a raw ARM firmware image containing the DSP boot stream.
+Addresses are converted to file offsets as: offset = address - base.
 
-Known SL98 container addresses are 0xA073A3C2 for DSP mask firmware 0x0801 and
-0xA073E502 for DSP mask firmware 0x0800. Pass one of them per invocation.
+Known container addresses:
+
+  CX75  0xA0D07080  DSP mask firmware 0x0602
+  CX75  0xA0D0908E  DSP mask firmware 0x0605
+  VS7   0xA06F450C  DSP mask firmware 0x0603
+  VS7   0xA06F342A  DSP mask firmware 0x0604
+  EL71  0xA0C83C18  DSP mask firmware 0x0801
+  EL71  0xA0C82E44  DSP mask firmware 0x0800
+  SL98  0xA073A3C2  DSP mask firmware 0x0801
+  SL98  0xA073E502  DSP mask firmware 0x0800
+
+Pass one address per invocation.
 
 The script writes:
   container.bin  Original ARM-side PLOAD/DLOAD/BRANCH stream

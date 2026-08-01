@@ -18,10 +18,29 @@ SL98 contains two boot streams for different DSP mask firmware versions:
 - `0xA073E502`, mask firmware `0x0800`: 4551 program words, 74 data words,
   entry point `0x0020`.
 
-Extract one container from a raw APOXI ARM firmware image with:
+EL71 contains a different pair:
+
+- `0xA0C83C18`, mask firmware `0x0801`: 6809 program words, 452 data words,
+  entry point `0x0020`;
+- `0xA0C82E44`, mask firmware `0x0800`: 1646 program words, 93 data words,
+  entry point `0x0020`.
+
+CX75 contains startup firmware for Mask IDs `0602` and `0605`:
+
+- `0xA0D07080`, mask firmware `0x0602`: 3598 program words, 441 data words;
+- `0xA0D0908E`, mask firmware `0x0605`: 759 program words, 3 data words.
+
+VS7 contains startup firmware for Mask IDs `0603` and `0604`:
+
+- `0xA06F450C`, mask firmware `0x0603`: 3723 program words, 593 data words;
+- `0xA06F342A`, mask firmware `0x0604`: 1506 program words, 617 data words.
+
+All four streams branch to `P:0020`.
+
+Extract one container from a raw ARM firmware image with:
 
 ```sh
-perl bsp/tools/dsp/extract_apoxi_dsp.pl \
+perl bsp/tools/dsp/extract_dsp_firmware.pl \
   --address 0xA073A3C2 \
   --out /tmp/sl98-dsp-fw-0801 \
   /path/to/SL98.bin
@@ -50,6 +69,8 @@ DSP images and listings kept in the repository are:
   Program and Data Mask ROM pairs converted to DSP1;
 - `bsp/rom/dsp/0602.txt`, `0604.txt`, and `0801.txt`: Teakra listings generated
   from those DSP1 files;
+- `bsp/rom/dsp/0801.md`: boot and runtime command map for PMB8876 Mask ROM
+  `0x0801`;
 - `bsp/rom/dsp/sl98/0800.bin` and `0801.bin`: sparse P-space images assembled from
   the two SL98 startup-firmware `PLOAD` streams. They are raw DSP user program
   images and do not include `DLOAD` payloads;
@@ -57,12 +78,20 @@ DSP images and listings kept in the repository are:
   original ARM-side `PLOAD`/`DLOAD`/`BRANCH` streams;
 - `bsp/rom/dsp/sl98/0800.dsp1`, `0801.dsp1`, and matching `.txt` files: DSP1
   conversions and Teakra listings of both startup firmwares.
+- `bsp/rom/dsp/el71/0800/` and `0801/`: complete EL71 boot streams, DSP1
+  conversions, sparse P/D images, record maps, and Teakra listings;
+- `bsp/rom/dsp/el71/README.md`: EL71 extension-command routes and recovered
+  behavior of its private handlers.
+- `bsp/rom/dsp/cx75/` and `bsp/rom/dsp/vs7/`: complete startup-firmware
+  extractions for both Mask IDs supported by each phone;
+- `bsp/rom/dsp/cx75/README.md` and `bsp/rom/dsp/vs7/README.md`: per-phone
+  extension-command routes and recovered private-handler behavior.
 
 ## DSP tools
 
 All DSP conversion tools are in `bsp/tools/dsp`:
 
-- `extract_apoxi_dsp.pl` extracts one ARM-side DSP boot stream from an APOXI
+- `extract_dsp_firmware.pl` extracts one ARM-side DSP boot stream from a raw ARM
   firmware image and writes its raw records, sparse P/D images, map, and DSP1
   representation;
 - `rom_to_dsp1.pl` combines separate Program and Data Mask ROM dumps into one
@@ -317,10 +346,12 @@ if (command >= 1 && command <= max_command) {
 }
 ```
 
-PMB8875 uses `command_table=D:64B7` and `max_command=0x34`. Its IDs `1..34`
-are built in, IDs `35..50` route through Program RAM slots
-`P:0FE0..P:0FFE`, ID 51 is built in, and ID 52 has a null table entry. The
-unit test places a handler in the first extension slot and invokes ID 35.
+PMB8875 Mask ROM `0602` uses `command_table=D:64B7` and
+`max_command=0x34`. Its IDs `1..34` are built in, IDs `35..50` route through
+Program RAM slots `P:0FE0..P:0FFE`, ID 51 is built in, and ID 52 has a null
+table entry. Mask ROM `0604` uses `command_table=D:656D`: IDs `1..45` are
+built in, IDs `46..61` use the same slots, and ID 62 is null. The `0603` and
+`0605` dispatcher tables have not been dumped independently.
 
 PMB8876 uses `command_table=D:854E` and `max_command=0x43`. Its table was read
 from an EL71 using boot `DREAD` and routes commands as follows:
@@ -353,7 +384,7 @@ SL98 startup firmware `0x0801` installs these routes:
 | 45 | `PCMPLAY` | `P:2EF5` |
 | `46..48` | `DTW`, `TX_DIG`, `I2S_SWAP` | Reject at `P:28D7` |
 | `49..64` | `USER_15..USER_0` | Reject at `P:28D7` |
-| `65..66` | Additional extension slots | Reject at `P:28D7` |
+| `65..66` | Additional user extension slots | Reject at `P:28D7` |
 
 In particular, `USER_15..USER_0` are reserved in advance as IDs `49..64` and
 PRAM addresses `P:1FDC..P:1FFA`. They are not implemented by the inspected
@@ -361,9 +392,9 @@ firmware. Another startup firmware can place jumps to its own handlers in
 these slots without changing the Mask ROM dispatcher.
 
 Command 67 is implemented in Mask ROM. Its parameter count and uses match
-`RF_ADAPT`: four control values, an update flag, and 13 coefficients. This is
-an inference from the handler code; old ID 43 is disabled in startup firmware
-`0x0801`.
+`RF_ADAPT`: four control values, an update flag, and 13 coefficients. The ARM
+writer at `0xA0A74D50` also submits this layout as ID 67. ID 43 is disabled in
+the SL98 startup firmware `0x0801`; EL71 enables its legacy handler as well.
 
 A startup firmware `0x0800` listing must not be matched with Mask ROM `0x0801`:
 trampolines and built-in handler addresses belong to a matched Mask/startup
@@ -444,10 +475,10 @@ parameters and fingerprints are currently known for `0x0602`, `0x0604`, and
 skip tests that require version-specific addresses.
 
 The built-in handlers are verified by reading their resulting Data RAM state,
-not merely by observing the command ACK. Command ID 12 appears to be the
-otherwise undocumented `BB_INIT`: it selects a profile through the Data Mask
-ROM table at `D:80AA`. It is intentionally not exercised until the valid
-profile indices and parameter contract are known.
+not merely by observing the command ACK. Command ID 12 configures one of eight
+L1 baseband timeslot records selected through the table at `D:80AA..D:80B1`.
+It is intentionally not exercised because the handler does not bounds-check
+the profile index and activates scheduler state from caller-supplied fields.
 
 ## DSP service-request interrupts
 

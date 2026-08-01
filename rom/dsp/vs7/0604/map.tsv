@@ -1,0 +1,14 @@
+record	type	file_offset	destination_word	length_words	payload_file
+0	PLOAD	0x6F342A	0x0006	2	records/000-pload-0006-0002.bin
+1	PLOAD	0x6F3434	0x000E	2	records/001-pload-000E-0002.bin
+2	PLOAD	0x6F343E	0x0016	2	records/002-pload-0016-0002.bin
+3	PLOAD	0x6F3448	0x0020	509	records/003-pload-0020-01FD.bin
+4	PLOAD	0x6F3848	0x021D	509	records/004-pload-021D-01FD.bin
+5	PLOAD	0x6F3C48	0x041A	450	records/005-pload-041A-01C2.bin
+6	PLOAD	0x6F3FD2	0x0FE0	32	records/006-pload-0FE0-0020.bin
+7	DLOAD	0x6F4018	0x4EF4	276	records/007-dload-4EF4-0114.bin
+8	DLOAD	0x6F4246	0x500A	286	records/008-dload-500A-011E.bin
+9	DLOAD	0x6F4488	0x5CA6	15	records/009-dload-5CA6-000F.bin
+10	DLOAD	0x6F44AC	0xF534	36	records/010-dload-F534-0024.bin
+11	DLOAD	0x6F44FA	0xFFA8	4	records/011-dload-FFA8-0004.bin
+12	BRANCH	0x6F4508	0x0020	0	-

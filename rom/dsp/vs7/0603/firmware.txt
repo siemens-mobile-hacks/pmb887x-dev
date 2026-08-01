@@ -1,0 +1,4343 @@
+
+>>>>>>>> Segment <<<<<<<<
+
+00000006  4180         br    0x000014b0    always
+00000007  14B0 ^^^
+
+>>>>>>>> Segment <<<<<<<<
+
+0000000E  4180         br    0x000014b0    always
+0000000F  14B0 ^^^
+
+>>>>>>>> Segment <<<<<<<<
+
+00000016  4180         br    0x00000045    always
+00000017  0045 ^^^
+
+>>>>>>>> Segment <<<<<<<<
+
+00000020  5E08         mov    0x0001    st0
+00000021  0001 ^^^
+00000022  5E09         mov    0x005d    st1
+00000023  005D ^^^
+00000024  5E0A         mov    0x0000    st2
+00000025  0000 ^^^
+00000026  4F90         mov    0x0010    icr
+00000027  5E0D         mov    0x5c28    sp
+00000028  5C28 ^^^
+00000029  5E18         mov    0x0000    a0
+0000002A  0000 ^^^
+0000002B  D4BC         mov    a0l    [0xe6a3]
+0000002C  E6A3 ^^^
+0000002D  5E1A         mov    0xffff    a0l
+0000002E  FFFF ^^^
+0000002F  D4BC         mov    a0l    [0xe602]
+00000030  E602 ^^^
+00000031  D4BC         mov    a0l    [0xe606]
+00000032  E606 ^^^
+00000033  D4BC         mov    a0l    [0xe60a]
+00000034  E60A ^^^
+00000035  D4BC         mov    a0l    [0xe60e]
+00000036  E60E ^^^
+00000037  4380         eint
+00000038  81EA         set    0x0040    st2
+00000039  0040 ^^^
+0000003A  5E1A         mov    0x0001    a0l
+0000003B  0001 ^^^
+0000003C  D4BC         mov    a0l    [0xe60d]
+0000003D  E60D ^^^
+0000003E  5E03         mov    0xe6a6    r3
+0000003F  E6A6 ^^^
+00000040  5E01         mov    0xe60f    r1
+00000041  E60F ^^^
+00000042  1B41         mov    a0l    [r1]
+00000043  0C03         rep    0x0003u8
+00000044  1F43         mov    [r3]    a0l
+00000045  5E05         mov    0x0017    r5
+00000046  0017 ^^^
+00000047  5F40         push    0x13c3
+00000048  13C3 ^^^
+00000049  586D         mov    sp    r3
+0000004A  5FAF         mov d->p    [r3++]    [r5++]
+0000004B  5E0D         mov    0x5c28    sp
+0000004C  5C28 ^^^
+0000004D  5E08         mov    0x0001    st0
+0000004E  0001 ^^^
+0000004F  5E0A         mov    0x0000    st2
+00000050  0000 ^^^
+00000051  5E18         mov    0x0011    a0
+00000052  0011 ^^^
+00000053  D4BC         mov    a0l    [0xe620]
+00000054  E620 ^^^
+00000055  0000         nop
+00000056  0000         nop
+00000057  5E18         mov    0x0019    a0
+00000058  0019 ^^^
+00000059  D4BC         mov    a0l    [0xe620]
+0000005A  E620 ^^^
+0000005B  41C0         call    0x000015b9    always
+0000005C  15B9 ^^^
+0000005D  41C0         call    0x000008a7    always
+0000005E  08A7 ^^^
+0000005F  5E00         mov    0xe608    r0
+00000060  E608 ^^^
+00000061  9020         tstb    [r0]    0x0000
+00000062  57E2         brr    0xfffe    neq
+00000063  5E1A         mov    0xffff    a0l
+00000064  FFFF ^^^
+00000065  D4BC         mov    a0l    [0xe602]
+00000066  E602 ^^^
+00000067  D4BC         mov    a0l    [0xe606]
+00000068  E606 ^^^
+00000069  D4BC         mov    a0l    [0xe60a]
+0000006A  E60A ^^^
+0000006B  D4BC         mov    a0l    [0xe60e]
+0000006C  E60E ^^^
+0000006D  5E1A         mov    0x00f9    a0l
+0000006E  00F9 ^^^
+0000006F  D4BC         mov    a0l    [0x584f]
+00000070  584F ^^^
+00000071  5E18         mov    0x0109    a0
+00000072  0109 ^^^
+00000073  D4BC         mov    a0l    [0x5852]
+00000074  5852 ^^^
+00000075  5E18         mov    0x010d    a0
+00000076  010D ^^^
+00000077  D4BC         mov    a0l    [0x5853]
+00000078  5853 ^^^
+00000079  5E18         mov    0x0114    a0
+0000007A  0114 ^^^
+0000007B  D4BC         mov    a0l    [0x5854]
+0000007C  5854 ^^^
+0000007D  5E18         mov    0x012a    a0
+0000007E  012A ^^^
+0000007F  D4BC         mov    a0l    [0x5855]
+00000080  5855 ^^^
+00000081  5E1A         mov    0x051d    a0l
+00000082  051D ^^^
+00000083  D4BC         mov    a0l    [0x585d]
+00000084  585D ^^^
+00000085  5E1A         mov    0x0592    a0l
+00000086  0592 ^^^
+00000087  D4BC         mov    a0l    [0x586b]
+00000088  586B ^^^
+00000089  5E1A         mov    0x0531    a0l
+0000008A  0531 ^^^
+0000008B  D4BC         mov    a0l    [0x586c]
+0000008C  586C ^^^
+0000008D  5E1A         mov    0x0b93    a0l
+0000008E  0B93 ^^^
+0000008F  D4BC         mov    a0l    [0x5873]
+00000090  5873 ^^^
+00000091  5E1A         mov    0x0357    a0l
+00000092  0357 ^^^
+00000093  D4BC         mov    a0l    [0x5889]
+00000094  5889 ^^^
+00000095  5E1A         mov    0x035d    a0l
+00000096  035D ^^^
+00000097  D4BC         mov    a0l    [0x588b]
+00000098  588B ^^^
+00000099  5E18         mov    0x0991    a0
+0000009A  0991 ^^^
+0000009B  D4BC         mov    a0l    [0x588f]
+0000009C  588F ^^^
+0000009D  5E18         mov    0x0901    a0
+0000009E  0901 ^^^
+0000009F  D4BC         mov    a0l    [0x5894]
+000000A0  5894 ^^^
+000000A1  5E1A         mov    0x0760    a0l
+000000A2  0760 ^^^
+000000A3  D4BC         mov    a0l    [0x58a0]
+000000A4  58A0 ^^^
+000000A5  5E1A         mov    0x06c9    a0l
+000000A6  06C9 ^^^
+000000A7  D4BC         mov    a0l    [0x58ac]
+000000A8  58AC ^^^
+000000A9  5E1A         mov    0x06d0    a0l
+000000AA  06D0 ^^^
+000000AB  D4BC         mov    a0l    [0x58ad]
+000000AC  58AD ^^^
+000000AD  5E1A         mov    0x047f    a0l
+000000AE  047F ^^^
+000000AF  D4BC         mov    a0l    [0x58b1]
+000000B0  58B1 ^^^
+000000B1  5E1A         mov    0x0883    a0l
+000000B2  0883 ^^^
+000000B3  D4BC         mov    a0l    [0x58bb]
+000000B4  58BB ^^^
+000000B5  5E1A         mov    0x03e8    a0l
+000000B6  03E8 ^^^
+000000B7  D4BC         mov    a0l    [0x58c7]
+000000B8  58C7 ^^^
+000000B9  5E1A         mov    0x03e3    a0l
+000000BA  03E3 ^^^
+000000BB  D4BC         mov    a0l    [0x58ca]
+000000BC  58CA ^^^
+000000BD  5E1A         mov    0x076b    a0l
+000000BE  076B ^^^
+000000BF  D4BC         mov    a0l    [0x58cb]
+000000C0  58CB ^^^
+000000C1  5E18         mov    0x031f    a0
+000000C2  031F ^^^
+000000C3  D4BC         mov    a0l    [0x58cd]
+000000C4  58CD ^^^
+000000C5  5E18         mov    0x0306    a0
+000000C6  0306 ^^^
+000000C7  D4BC         mov    a0l    [0x58cf]
+000000C8  58CF ^^^
+000000C9  5E18         mov    0x0995    a0
+000000CA  0995 ^^^
+000000CB  D4BC         mov    a0l    [0x58d0]
+000000CC  58D0 ^^^
+000000CD  5E1A         mov    0x0bcd    a0l
+000000CE  0BCD ^^^
+000000CF  D4BC         mov    a0l    [0x58d4]
+000000D0  58D4 ^^^
+000000D1  5E1A         mov    0x0bfe    a0l
+000000D2  0BFE ^^^
+000000D3  D4BC         mov    a0l    [0x58d6]
+000000D4  58D6 ^^^
+000000D5  5E1A         mov    0x1cb7    a0l
+000000D6  1CB7 ^^^
+000000D7  D4BC         mov    a0l    [0xe601]
+000000D8  E601 ^^^
+000000D9  5E1A         mov    0x0040    a0l
+000000DA  0040 ^^^
+000000DB  D4BC         mov    a0l    [0xe605]
+000000DC  E605 ^^^
+000000DD  5E1A         mov    0x0001    a0l
+000000DE  0001 ^^^
+000000DF  D4BC         mov    a0l    [0xe609]
+000000E0  E609 ^^^
+000000E1  81EA         set    0x0040    st2
+000000E2  0040 ^^^
+000000E3  81E8         set    0x000e    st0
+000000E4  000E ^^^
+000000E5  2101         mov    0x0001u8    a0l
+000000E6  D4BC         mov    a0l    [0xe692]
+000000E7  E692 ^^^
+000000E8  0000         nop
+000000E9  0000         nop
+000000EA  0000         nop
+000000EB  0000         nop
+000000EC  0000         nop
+000000ED  0000         nop
+000000EE  0000         nop
+000000EF  43C0         dint
+000000F0  2101         mov    0x0001u8    a0l
+000000F1  D4BC         mov    a0l    [0xe6a1]
+000000F2  E6A1 ^^^
+000000F3  0000         nop
+000000F4  0000         nop
+000000F5  0000         nop
+000000F6  4380         eint
+000000F7  4180         br    0x000000e8    always
+000000F8  00E8 ^^^
+000000F9  CD01         cmp    0x0001u8    a1
+000000FA  4181         br    0x00000103    eq
+000000FB  0103 ^^^
+000000FC  CD02         cmp    0x0002u8    a1
+000000FD  4181         br    0x00000103    eq
+000000FE  0103 ^^^
+000000FF  CD03         cmp    0x0003u8    a1
+00000100  4181         br    0x00000107    eq
+00000101  0107 ^^^
+00000102  4580         ret    always
+00000103  D4B8         mov    [0x596d]    a0
+00000104  596D ^^^
+00000105  5ED8         mov?    a0    b0
+00000106  4580         ret    always
+00000107  6760         clr    a0    always
+00000108  4580         ret    always
+00000109  CD08         cmp    0x0008u8    a1
+0000010A  4181         br    0x00000276    eq
+0000010B  0276 ^^^
+0000010C  4580         ret    always
+0000010D  CD03         cmp    0x0003u8    a1
+0000010E  4181         br    0x0000012e    eq
+0000010F  012E ^^^
+00000110  CD00         cmp    0x0000u8    a1
+00000111  4181         br    0x00000281    eq
+00000112  0281 ^^^
+00000113  4580         ret    always
+00000114  CD0C         cmp    0x000cu8    a1
+00000115  4181         br    0x00000136    eq
+00000116  0136 ^^^
+00000117  CD0B         cmp    0x000bu8    a1
+00000118  4181         br    0x000001c9    eq
+00000119  01C9 ^^^
+0000011A  CD00         cmp    0x0000u8    a1
+0000011B  4181         br    0x000001d8    eq
+0000011C  01D8 ^^^
+0000011D  CD05         cmp    0x0005u8    a1
+0000011E  4181         br    0x000001e7    eq
+0000011F  01E7 ^^^
+00000120  CD0D         cmp    0x000du8    a1
+00000121  4181         br    0x00000214    eq
+00000122  0214 ^^^
+00000123  CD0E         cmp    0x000eu8    a1
+00000124  4181         br    0x0000021c    eq
+00000125  021C ^^^
+00000126  CD11         cmp    0x0011u8    a1
+00000127  4181         br    0x000002fa    eq
+00000128  02FA ^^^
+00000129  4580         ret    always
+0000012A  CD00         cmp    0x0000u8    a1
+0000012B  4181         br    0x00000207    eq
+0000012C  0207 ^^^
+0000012D  4580         ret    always
+0000012E  6760         clr    a0    always
+0000012F  D4BC         mov    a0l    [0x5a1f]
+00000130  5A1F ^^^
+00000131  D4BC         mov    a0l    [0x5a20]
+00000132  5A20 ^^^
+00000133  D4BC         mov    a0l    [0x5a21]
+00000134  5A21 ^^^
+00000135  4580         ret    always
+00000136  5E7A         pop    a0l
+00000137  1F08         mov    [r0++]    a0
+00000138  CC01         cmp    0x0001u8    a0
+00000139  4181         br    0x00000143    eq
+0000013A  0143 ^^^
+0000013B  7760         clr    a1    always
+0000013C  D5BC         mov    a1l    [0xe6d0]
+0000013D  E6D0 ^^^
+0000013E  D5BC         mov    a1l    [0xe672]
+0000013F  E672 ^^^
+00000140  5E19         mov    0xef40    a1
+00000141  EF40 ^^^
+00000142  3CAF         mov    a1l    [page:0x00afu8]
+00000143  1F28         mov    [r0++]    a1
+00000144  D5BC         mov    a1l    [0xe673]
+00000145  E673 ^^^
+00000146  1F28         mov    [r0++]    a1
+00000147  D5BC         mov    a1l    [0xe674]
+00000148  E674 ^^^
+00000149  1F28         mov    [r0++]    a1
+0000014A  D5BC         mov    a1l    [0xe675]
+0000014B  E675 ^^^
+0000014C  CC01         cmp    0x0001u8    a0
+0000014D  4586         ret    le
+0000014E  38F2         mov    a0l    [page:0x00f2u8]
+0000014F  5E18         mov    0x0001    a0
+00000150  0001 ^^^
+00000151  D4BC         mov    a0l    [0xe672]
+00000152  E672 ^^^
+00000153  1F08         mov    [r0++]    a0
+00000154  38CB         mov    a0l    [page:0x00cbu8]
+00000155  5042         brr    0x0004    neq
+00000156  5E1A         mov    0x84d0    a0l
+00000157  84D0 ^^^
+00000158  38CD         mov    a0l    [page:0x00cdu8]
+00000159  5030         brr    0x0003    always
+0000015A  5E1A         mov    0x8581    a0l
+0000015B  8581 ^^^
+0000015C  38CD         mov    a0l    [page:0x00cdu8]
+0000015D  1F08         mov    [r0++]    a0
+0000015E  38CC         mov    a0l    [page:0x00ccu8]
+0000015F  6760         clr    a0    always
+00000160  5E02         mov    0xef40    r2
+00000161  EF40 ^^^
+00000162  0C3F         rep    0x003fu8
+00000163  1B4A         mov    a0l    [r2++]
+00000164  5E02         mov    0xef00    r2
+00000165  EF00 ^^^
+00000166  0C3F         rep    0x003fu8
+00000167  1B4A         mov    a0l    [r2++]
+00000168  5E07         mov    0x003f    y0
+00000169  003F ^^^
+0000016A  D4B8         mov    [0xe671]    a0
+0000016B  E671 ^^^
+0000016C  9BF8         shfi    a0    a1    -0x0008
+0000016D  83A7         and    y0    a1
+0000016E  585B         mov    a1l    r2
+0000016F  82A7         and    y0    a0
+00000170  C614         add    0x0014u8    a0
+00000171  82C0         and    0x003e    a0
+00000172  003E ^^^
+00000173  86C0         add    0xef40    a0
+00000174  EF40 ^^^
+00000175  38AF         mov    a0l    [page:0x00afu8]
+00000176  5B22         mov    r2    a1
+00000177  C701         add    0x0001u8    a1
+00000178  83A7         and    y0    a1
+00000179  D5BC         mov    a1l    [0x2eea]
+0000017A  2EEA ^^^
+0000017B  9FC8         shfi    a1    a1    +0x0008
+0000017C  D5BC         mov    a1l    [0xe670]
+0000017D  E670 ^^^
+0000017E  72CB         mov    [page:0x00cbu8]    a0l
+0000017F  C201         and    0x0001u8    a0
+00000180  9B46         shfi    a0    a0    +0x0006
+00000181  80C0         or    0x0031    a0
+00000182  0031 ^^^
+00000183  EDF2         cmpv    0x0003    [page:0x00f2u8]
+00000184  0003 ^^^
+00000185  5021         brr    0x0002    eq
+00000186  80C0         or    0x0002    a0
+00000187  0002 ^^^
+00000188  D4BC         mov    a0l    [0xe672]
+00000189  E672 ^^^
+0000018A  EDF2         cmpv    0x0002    [page:0x00f2u8]
+0000018B  0002 ^^^
+0000018C  4581         ret    eq
+0000018D  6760         clr    a0    always
+0000018E  38CB         mov    a0l    [page:0x00cbu8]
+0000018F  5E1A         mov    0x84d0    a0l
+00000190  84D0 ^^^
+00000191  38CD         mov    a0l    [page:0x00cdu8]
+00000192  5E18         mov    0x0001    a0
+00000193  0001 ^^^
+00000194  D4BC         mov    a0l    [0xe6d0]
+00000195  E6D0 ^^^
+00000196  1F08         mov    [r0++]    a0
+00000197  D4BC         mov    a0l    [0xe6d1]
+00000198  E6D1 ^^^
+00000199  1F08         mov    [r0++]    a0
+0000019A  D4BC         mov    a0l    [0xe6d3]
+0000019B  E6D3 ^^^
+0000019C  1F08         mov    [r0++]    a0
+0000019D  D4BC         mov    a0l    [0xe6d4]
+0000019E  E6D4 ^^^
+0000019F  1F08         mov    [r0++]    a0
+000001A0  D4BC         mov    a0l    [0xe6d5]
+000001A1  E6D5 ^^^
+000001A2  1F08         mov    [r0++]    a0
+000001A3  D4BC         mov    a0l    [0xe6d6]
+000001A4  E6D6 ^^^
+000001A5  1F08         mov    [r0++]    a0
+000001A6  D4BC         mov    a0l    [0xe6d7]
+000001A7  E6D7 ^^^
+000001A8  1F08         mov    [r0++]    a0
+000001A9  D4BC         mov    a0l    [0xe6d9]
+000001AA  E6D9 ^^^
+000001AB  6760         clr    a0    always
+000001AC  5E00         mov    0xe700    r0
+000001AD  E700 ^^^
+000001AE  0C3F         rep    0x003fu8
+000001AF  1B48         mov    a0l    [r0++]
+000001B0  5E07         mov    0x003f    y0
+000001B1  003F ^^^
+000001B2  D4B8         mov    [0xe6d2]    a0
+000001B3  E6D2 ^^^
+000001B4  9BF8         shfi    a0    a1    -0x0008
+000001B5  CF02         sub    0x0002u8    a1
+000001B6  83A7         and    y0    a1
+000001B7  D5BC         mov    a1l    [0xe6d8]
+000001B8  E6D8 ^^^
+000001B9  CE02         sub    0x0002u8    a0
+000001BA  82A7         and    y0    a0
+000001BB  D4BC         mov    a0l    [0xe6da]
+000001BC  E6DA ^^^
+000001BD  C606         add    0x0006u8    a0
+000001BE  82A7         and    y0    a0
+000001BF  38F3         mov    a0l    [page:0x00f3u8]
+000001C0  3CF4         mov    a1l    [page:0x00f4u8]
+000001C1  5E18         mov    0x0002    a0
+000001C2  0002 ^^^
+000001C3  38F5         mov    a0l    [page:0x00f5u8]
+000001C4  5E18         mov    0x0067    a0
+000001C5  0067 ^^^
+000001C6  D4BC         mov    a0l    [0xe6d0]
+000001C7  E6D0 ^^^
+000001C8  4580         ret    always
+000001C9  5E78         pop    a0
+000001CA  1F08         mov    [r0++]    a0
+000001CB  CC01         cmp    0x0001u8    a0
+000001CC  4183         br    0x00001b22    gt
+000001CD  1B22 ^^^
+000001CE  5E1B         mov    0x0400    a1l
+000001CF  0400 ^^^
+000001D0  D5BC         mov    a1l    [0xe692]
+000001D1  E692 ^^^
+000001D2  CC01         cmp    0x0001u8    a0
+000001D3  4181         br    0x00001b19    eq
+000001D4  1B19 ^^^
+000001D5  6760         clr    a0    always
+000001D6  389D         mov    a0l    [page:0x009du8]
+000001D7  4580         ret    always
+000001D8  5E78         pop    a0
+000001D9  1F08         mov    [r0++]    a0
+000001DA  CC01         cmp    0x0001u8    a0
+000001DB  4183         br    0x00001ad4    gt
+000001DC  1AD4 ^^^
+000001DD  5E1B         mov    0x0200    a1l
+000001DE  0200 ^^^
+000001DF  D5BC         mov    a1l    [0xe692]
+000001E0  E692 ^^^
+000001E1  CC01         cmp    0x0001u8    a0
+000001E2  4181         br    0x00001acb    eq
+000001E3  1ACB ^^^
+000001E4  6760         clr    a0    always
+000001E5  389F         mov    a0l    [page:0x009fu8]
+000001E6  4580         ret    always
+000001E7  5E7A         pop    a0l
+000001E8  5F40         push    0x01ec
+000001E9  01EC ^^^
+000001EA  5E5A         push    a0l
+000001EB  4580         ret    always
+000001EC  D4B8         mov    [0xda2a]    a0
+000001ED  DA2A ^^^
+000001EE  38F6         mov    a0l    [page:0x00f6u8]
+000001EF  D5BC         mov    a1l    [0xda2a]
+000001F0  DA2A ^^^
+000001F1  4580         ret    always
+000001F2  1F08         mov    [r0++]    a0
+000001F3  D4BC         mov    a0l    [0x584c]
+000001F4  584C ^^^
+000001F5  1F08         mov    [r0++]    a0
+000001F6  D4BC         mov    a0l    [0x584b]
+000001F7  584B ^^^
+000001F8  1F08         mov    [r0++]    a0
+000001F9  D4BC         mov    a0l    [0x5aa5]
+000001FA  5AA5 ^^^
+000001FB  1F08         mov    [r0++]    a0
+000001FC  D4BC         mov    a0l    [0xe680]
+000001FD  E680 ^^^
+000001FE  8CE8         cmpv    0x0000    [r0++]
+000001FF  0000 ^^^
+00000200  4581         ret    eq
+00000201  5E01         mov    0x583e    r1
+00000202  583E ^^^
+00000203  370D         mov    +0x000d    r5
+00000204  41C0         call    0x00001c69    always
+00000205  1C69 ^^^
+00000206  4580         ret    always
+00000207  1F00         mov    [r0]    a0
+00000208  AC96         cmp    [page:0x0096u8]    a0
+00000209  4182         br    0x0000020f    neq
+0000020A  020F ^^^
+0000020B  5E78         pop    a0
+0000020C  0088         modr    [r0++]
+0000020D  4180         br    0x000019f0    always
+0000020E  19F0 ^^^
+0000020F  5E1A         mov    0x0100    a0l
+00000210  0100 ^^^
+00000211  D4BC         mov    a0l    [0xe692]
+00000212  E692 ^^^
+00000213  4580         ret    always
+00000214  5E7A         pop    a0l
+00000215  1F48         mov    [r0++]    a0l
+00000216  4182         br    0x000019ba    neq
+00000217  19BA ^^^
+00000218  5E1A         mov    0x06c0    a0l
+00000219  06C0 ^^^
+0000021A  38AD         mov    a0l    [page:0x00adu8]
+0000021B  4580         ret    always
+0000021C  5E7A         pop    a0l
+0000021D  6760         clr    a0    always
+0000021E  D4BC         mov    a0l    [0xe6e0]
+0000021F  E6E0 ^^^
+00000220  38D9         mov    a0l    [page:0x00d9u8]
+00000221  D4B8         mov    [0xe605]    a0
+00000222  E605 ^^^
+00000223  83FA         rst    0x0008    a0l
+00000224  0008 ^^^
+00000225  D4BC         mov    a0l    [0xe605]
+00000226  E605 ^^^
+00000227  1F08         mov    [r0++]    a0
+00000228  CC01         cmp    0x0001u8    a0
+00000229  4181         br    0x00000235    eq
+0000022A  0235 ^^^
+0000022B  CC02         cmp    0x0002u8    a0
+0000022C  4181         br    0x0000023a    eq
+0000022D  023A ^^^
+0000022E  5E1B         mov    0x06c0    a1l
+0000022F  06C0 ^^^
+00000230  3CAD         mov    a1l    [page:0x00adu8]
+00000231  CC03         cmp    0x0003u8    a0
+00000232  4181         br    0x00001be4    eq
+00000233  1BE4 ^^^
+00000234  4580         ret    always
+00000235  5E1A         mov    0x8460    a0l
+00000236  8460 ^^^
+00000237  38AD         mov    a0l    [page:0x00adu8]
+00000238  4180         br    0x00001b5d    always
+00000239  1B5D ^^^
+0000023A  5E18         mov    0x0001    a0
+0000023B  0001 ^^^
+0000023C  D4BC         mov    a0l    [0xe6e0]
+0000023D  E6E0 ^^^
+0000023E  5E18         mov    0x0081    a0
+0000023F  0081 ^^^
+00000240  D4BC         mov    a0l    [0xe6e0]
+00000241  E6E0 ^^^
+00000242  1F08         mov    [r0++]    a0
+00000243  D4BC         mov    a0l    [0xe6e1]
+00000244  E6E1 ^^^
+00000245  1F08         mov    [r0++]    a0
+00000246  D4BC         mov    a0l    [0xe6e3]
+00000247  E6E3 ^^^
+00000248  1F08         mov    [r0++]    a0
+00000249  D4BC         mov    a0l    [0xe6e4]
+0000024A  E6E4 ^^^
+0000024B  1F08         mov    [r0++]    a0
+0000024C  D4BC         mov    a0l    [0xe6e5]
+0000024D  E6E5 ^^^
+0000024E  1F08         mov    [r0++]    a0
+0000024F  D4BC         mov    a0l    [0xe6e6]
+00000250  E6E6 ^^^
+00000251  1F08         mov    [r0++]    a0
+00000252  D4BC         mov    a0l    [0xe6e7]
+00000253  E6E7 ^^^
+00000254  1F08         mov    [r0++]    a0
+00000255  D4BC         mov    a0l    [0xe6e9]
+00000256  E6E9 ^^^
+00000257  6760         clr    a0    always
+00000258  5E00         mov    0xe800    r0
+00000259  E800 ^^^
+0000025A  0C3F         rep    0x003fu8
+0000025B  1B48         mov    a0l    [r0++]
+0000025C  5E07         mov    0x003f    y0
+0000025D  003F ^^^
+0000025E  D4B8         mov    [0xe6e2]    a0
+0000025F  E6E2 ^^^
+00000260  9BF8         shfi    a0    a1    -0x0008
+00000261  CF04         sub    0x0004u8    a1
+00000262  83A7         and    y0    a1
+00000263  D5BC         mov    a1l    [0xe6e8]
+00000264  E6E8 ^^^
+00000265  87C0         add    0xe840    a1
+00000266  E840 ^^^
+00000267  3CB2         mov    a1l    [page:0x00b2u8]
+00000268  C604         add    0x0004u8    a0
+00000269  82A7         and    y0    a0
+0000026A  D4BC         mov    a0l    [0xe6ea]
+0000026B  E6EA ^^^
+0000026C  86C0         add    0xe800    a0
+0000026D  E800 ^^^
+0000026E  38B3         mov    a0l    [page:0x00b3u8]
+0000026F  3102         mov    0x0002u8    a1l
+00000270  3CD9         mov    a1l    [page:0x00d9u8]
+00000271  5E18         mov    0x0087    a0
+00000272  0087 ^^^
+00000273  D4BC         mov    a0l    [0xe6e0]
+00000274  E6E0 ^^^
+00000275  4580         ret    always
+00000276  5E7A         pop    a0l
+00000277  5E18         mov    0x0001    a0
+00000278  0001 ^^^
+00000279  ED73         cmpv    0x0000    [page:0x0073u8]
+0000027A  0000 ^^^
+0000027B  6764         clr    a0    ge
+0000027C  A69F         add    [page:0x009fu8]    a0
+0000027D  A69D         add    [page:0x009du8]    a0
+0000027E  5031         brr    0x0003    eq
+0000027F  3F07         mov    +0x0007    y0
+00000280  50F0         brr    0x000f    always
+00000281  5E7A         pop    a0l
+00000282  41C0         call    0x000003d7    always
+00000283  03D7 ^^^
+00000284  6760         clr    a0    always
+00000285  389D         mov    a0l    [page:0x009du8]
+00000286  389F         mov    a0l    [page:0x009fu8]
+00000287  3896         mov    a0l    [page:0x0096u8]
+00000288  3897         mov    a0l    [page:0x0097u8]
+00000289  D4B8         mov    [0xe605]    a0
+0000028A  E605 ^^^
+0000028B  83FA         rst    0x0008    a0l
+0000028C  0008 ^^^
+0000028D  D4BC         mov    a0l    [0xe605]
+0000028E  E605 ^^^
+0000028F  3F03         mov    +0x0003    y0
+00000290  6760         clr    a0    always
+00000291  3895         mov    a0l    [page:0x0095u8]
+00000292  38B9         mov    a0l    [page:0x00b9u8]
+00000293  38B7         mov    a0l    [page:0x00b7u8]
+00000294  4180         br    0x000017ea    always
+00000295  17EA ^^^
+00000296  1F28         mov    [r0++]    a1
+00000297  D5BC         mov    a1l    [0x5aa7]
+00000298  5AA7 ^^^
+00000299  83C0         and    0x000c    a1
+0000029A  000C ^^^
+0000029B  4581         ret    eq
+0000029C  5E01         mov    0x5aa7    r1
+0000029D  5AA7 ^^^
+0000029E  5E18         mov    0xff68    a0
+0000029F  FF68 ^^^
+000002A0  5E19         mov    0xff6c    a1
+000002A1  FF6C ^^^
+000002A2  9321         tstb    [r1]    0x0003
+000002A3  67F1         copy    a0    eq
+000002A4  583A         mov    a0l    r1
+000002A5  3704         mov    +0x0004    r5
+000002A6  41C0         call    0x00001c69    always
+000002A7  1C69 ^^^
+000002A8  5E01         mov    0x5aa7    r1
+000002A9  5AA7 ^^^
+000002AA  5E18         mov    0xff74    a0
+000002AB  FF74 ^^^
+000002AC  5E19         mov    0xff82    a1
+000002AD  FF82 ^^^
+000002AE  9321         tstb    [r1]    0x0003
+000002AF  67F1         copy    a0    eq
+000002B0  583A         mov    a0l    r1
+000002B1  370A         mov    +0x000a    r5
+000002B2  41C0         call    0x00001c69    always
+000002B3  1C69 ^^^
+000002B4  4580         ret    always
+000002B5  1F08         mov    [r0++]    a0
+000002B6  CC01         cmp    0x0001u8    a0
+000002B7  5163         brr    0x0016    gt
+000002B8  5E1B         mov    0x0800    a1l
+000002B9  0800 ^^^
+000002BA  D5BC         mov    a1l    [0xe692]
+000002BB  E692 ^^^
+000002BC  CC01         cmp    0x0001u8    a0
+000002BD  5041         brr    0x0004    eq
+000002BE  5E18         mov    0x0001    a0
+000002BF  0001 ^^^
+000002C0  38FD         mov    a0l    [page:0x00fdu8]
+000002C1  4580         ret    always
+000002C2  1F08         mov    [r0++]    a0
+000002C3  38F9         mov    a0l    [page:0x00f9u8]
+000002C4  1F08         mov    [r0++]    a0
+000002C5  38FB         mov    a0l    [page:0x00fbu8]
+000002C6  1F08         mov    [r0++]    a0
+000002C7  38FA         mov    a0l    [page:0x00fau8]
+000002C8  2318         mov    +0x0018    r0
+000002C9  5E01         mov    0x4b7e    r1
+000002CA  4B7E ^^^
+000002CB  41C0         call    0x0000131d    always
+000002CC  131D ^^^
+000002CD  4580         ret    always
+000002CE  1F08         mov    [r0++]    a0
+000002CF  D4BC         mov    a0l    [0x2e76]
+000002D0  2E76 ^^^
+000002D1  5E00         mov    0xdb12    r0
+000002D2  DB12 ^^^
+000002D3  71F9         mov    [page:0x00f9u8]    a0
+000002D4  5042         brr    0x0004    neq
+000002D5  5E01         mov    0x2a52    r1
+000002D6  2A52 ^^^
+000002D7  3764         mov    +0x0064    r5
+000002D8  5030         brr    0x0003    always
+000002D9  5E01         mov    0x2caa    r1
+000002DA  2CAA ^^^
+000002DB  371A         mov    +0x001a    r5
+000002DC  1F08         mov    [r0++]    a0
+000002DD  1B49         mov    a0l    [r1++]
+000002DE  1F08         mov    [r0++]    a0
+000002DF  1B49         mov    a0l    [r1++]
+000002E0  1F08         mov    [r0++]    a0
+000002E1  1B49         mov    a0l    [r1++]
+000002E2  1F08         mov    [r0++]    a0
+000002E3  1B49         mov    a0l    [r1++]
+000002E4  1F08         mov    [r0++]    a0
+000002E5  1B49         mov    a0l    [r1++]
+000002E6  1F08         mov    [r0++]    a0
+000002E7  1B49         mov    a0l    [r1++]
+000002E8  0095         modr    [r5--]
+000002E9  572C         brr    0xfff2    nr
+000002EA  5E01         mov    0x4b7b    r1
+000002EB  4B7B ^^^
+000002EC  5801         mov    r1    r0
+000002ED  5E18         mov    0x2a52    a0
+000002EE  2A52 ^^^
+000002EF  1B48         mov    a0l    [r0++]
+000002F0  5E18         mov    0x2caa    a0
+000002F1  2CAA ^^^
+000002F2  1B48         mov    a0l    [r0++]
+000002F3  5E18         mov    0x2d4a    a0
+000002F4  2D4A ^^^
+000002F5  1B48         mov    a0l    [r0++]
+000002F6  2319         mov    +0x0019    r0
+000002F7  41C0         call    0x0000131d    always
+000002F8  131D ^^^
+000002F9  4580         ret    always
+000002FA  5E78         pop    a0
+000002FB  1F08         mov    [r0++]    a0
+000002FC  38E5         mov    a0l    [page:0x00e5u8]
+000002FD  1F08         mov    [r0++]    a0
+000002FE  38E6         mov    a0l    [page:0x00e6u8]
+000002FF  1F08         mov    [r0++]    a0
+00000300  38D1         mov    a0l    [page:0x00d1u8]
+00000301  1F08         mov    [r0++]    a0
+00000302  38D2         mov    a0l    [page:0x00d2u8]
+00000303  1F08         mov    [r0++]    a0
+00000304  38FE         mov    a0l    [page:0x00feu8]
+00000305  4580         ret    always
+00000306  5E20         mov    0x0019    b0
+00000307  0019 ^^^
+00000308  7AD3         mov    [page:0x00d3u8]    a1l
+00000309  5031         brr    0x0003    eq
+0000030A  6F20         shl    b0    always
+0000030B  5E19         mov    0x0001    a1
+0000030C  0001 ^^^
+0000030D  C701         add    0x0001u8    a1
+0000030E  5E18         mov    0x0040    a0
+0000030F  0040 ^^^
+00000310  8EB9         sub    a1    a0
+00000311  9B47         shfi    a0    a0    +0x0007
+00000312  81B8         or    a0    a1
+00000313  59FB         mov    a1l    cfgj
+00000314  81EA         set    0x0030    st2
+00000315  0030 ^^^
+00000316  70D4         mov    [page:0x00d4u8]    r4
+00000317  74D4         mov    [page:0x00d4u8]    r5
+00000318  EDD3         cmpv    0x0002    [page:0x00d3u8]
+00000319  0002 ^^^
+0000031A  4182         br    0x00008258    neq
+0000031B  8258 ^^^
+0000031C  00AD         modr    [r5++]    dmod
+0000031D  4180         br    0x00008258    always
+0000031E  8258 ^^^
+0000031F  5E07         mov    0x003f    y0
+00000320  003F ^^^
+00000321  D4B8         mov    [0x2eea]    a0
+00000322  2EEA ^^^
+00000323  DAF0         mov    a0    a1
+00000324  77E0         dec    a1    always
+00000325  83A7         and    y0    a1
+00000326  87C0         add    0xef00    a1
+00000327  EF00 ^^^
+00000328  3CB1         mov    a1l    [page:0x00b1u8]
+00000329  67D0         inc    a0    always
+0000032A  82A7         and    y0    a0
+0000032B  D4BC         mov    a0l    [0x2eea]
+0000032C  2EEA ^^^
+0000032D  9B48         shfi    a0    a0    +0x0008
+0000032E  D4BC         mov    a0l    [0xe670]
+0000032F  E670 ^^^
+00000330  D4B8         mov    [0xe6d2]    a0
+00000331  E6D2 ^^^
+00000332  9BF8         shfi    a0    a1    -0x0008
+00000333  CF02         sub    0x0002u8    a1
+00000334  83A7         and    y0    a1
+00000335  D5BC         mov    a1l    [0xe6d8]
+00000336  E6D8 ^^^
+00000337  CE02         sub    0x0002u8    a0
+00000338  82A7         and    y0    a0
+00000339  D4BC         mov    a0l    [0xe6da]
+0000033A  E6DA ^^^
+0000033B  2101         mov    0x0001u8    a0l
+0000033C  AFF4         sub    [page:0x00f4u8]    a1
+0000033D  83A7         and    y0    a1
+0000033E  ADF5         cmp    [page:0x00f5u8]    a1
+0000033F  6766         clr    a0    le
+00000340  3102         mov    0x0002u8    a1l
+00000341  8FB8         sub    a0    a1
+00000342  8FB8         sub    a0    a1
+00000343  3CF5         mov    a1l    [page:0x00f5u8]
+00000344  DAF0         mov    a0    a1
+00000345  A7F4         add    [page:0x00f4u8]    a1
+00000346  83A7         and    y0    a1
+00000347  A6F3         add    [page:0x00f3u8]    a0
+00000348  82A7         and    y0    a0
+00000349  38F3         mov    a0l    [page:0x00f3u8]
+0000034A  3CF4         mov    a1l    [page:0x00f4u8]
+0000034B  86C0         add    0xe700    a0
+0000034C  E700 ^^^
+0000034D  38B0         mov    a0l    [page:0x00b0u8]
+0000034E  EDF2         cmpv    0x0002    [page:0x00f2u8]
+0000034F  0002 ^^^
+00000350  5036         brr    0x0003    le
+00000351  87C0         add    0xe740    a1
+00000352  E740 ^^^
+00000353  3CB1         mov    a1l    [page:0x00b1u8]
+00000354  41C0         call    0x000005c2    always
+00000355  05C2 ^^^
+00000356  4580         ret    always
+00000357  CD00         cmp    0x0000u8    a1
+00000358  5081         brr    0x0008    eq
+00000359  CD01         cmp    0x0001u8    a1
+0000035A  4181         br    0x00000381    eq
+0000035B  0381 ^^^
+0000035C  4580         ret    always
+0000035D  CD02         cmp    0x0002u8    a1
+0000035E  4181         br    0x000003b8    eq
+0000035F  03B8 ^^^
+00000360  4580         ret    always
+00000361  5E78         pop    a0
+00000362  7196         mov    [page:0x0096u8]    a0
+00000363  A097         or    [page:0x0097u8]    a0
+00000364  4581         ret    eq
+00000365  7297         mov    [page:0x0097u8]    a0l
+00000366  7A96         mov    [page:0x0096u8]    a1l
+00000367  3896         mov    a0l    [page:0x0096u8]
+00000368  CC00         cmp    0x0000u8    a0
+00000369  5131         brr    0x0013    eq
+0000036A  5B3B         mov    a1l    a1
+0000036B  4182         br    0x00005489    neq
+0000036C  5489 ^^^
+0000036D  E996         tst0    0x0003    [page:0x0096u8]
+0000036E  0003 ^^^
+0000036F  41C2         call    0x000054f1    neq
+00000370  54F1 ^^^
+00000371  E996         tst0    0x0300    [page:0x0096u8]
+00000372  0300 ^^^
+00000373  41C2         call    0x00005560    neq
+00000374  5560 ^^^
+00000375  E996         tst0    0x0400    [page:0x0096u8]
+00000376  0400 ^^^
+00000377  41C2         call    0x000055a5    neq
+00000378  55A5 ^^^
+00000379  E996         tst0    0x0040    [page:0x0096u8]
+0000037A  0040 ^^^
+0000037B  41C2         call    0x00007fba    neq
+0000037C  7FBA ^^^
+0000037D  41C0         call    0x000003d7    always
+0000037E  03D7 ^^^
+0000037F  4180         br    0x00005489    always
+00000380  5489 ^^^
+00000381  5E78         pop    a0
+00000382  F296         tstb    [page:0x0096u8]    0x0002
+00000383  4182         br    0x0000038d    neq
+00000384  038D ^^^
+00000385  5E00         mov    0x2908    r0
+00000386  2908 ^^^
+00000387  5E01         mov    0xda72    r1
+00000388  DA72 ^^^
+00000389  5C9F         bkrep    0x009fu8    0x0000038c
+0000038A  038C ^^^
+0000038B  1F48         mov    [r0++]    a0l
+0000038C  1B49         mov    a0l    [r1++]
+0000038D  F396         tstb    [page:0x0096u8]    0x0003
+0000038E  4182         br    0x00000398    neq
+0000038F  0398 ^^^
+00000390  5E00         mov    0xdb12    r0
+00000391  DB12 ^^^
+00000392  5E01         mov    0x29a8    r1
+00000393  29A8 ^^^
+00000394  5C9F         bkrep    0x009fu8    0x00000397
+00000395  0397 ^^^
+00000396  1F48         mov    [r0++]    a0l
+00000397  1B49         mov    a0l    [r1++]
+00000398  E996         tst0    0x0602    [page:0x0096u8]
+00000399  0602 ^^^
+0000039A  41C2         call    0x000057b3    neq
+0000039B  57B3 ^^^
+0000039C  E996         tst0    0x0003    [page:0x0096u8]
+0000039D  0003 ^^^
+0000039E  41C2         call    0x000054aa    neq
+0000039F  54AA ^^^
+000003A0  E996         tst0    0x0300    [page:0x0096u8]
+000003A1  0300 ^^^
+000003A2  41C2         call    0x000054b6    neq
+000003A3  54B6 ^^^
+000003A4  E996         tst0    0x0040    [page:0x0096u8]
+000003A5  0040 ^^^
+000003A6  41C2         call    0x000003c1    neq
+000003A7  03C1 ^^^
+000003A8  FA96         tstb    [page:0x0096u8]    0x000a
+000003A9  41C1         call    0x000054d4    eq
+000003AA  54D4 ^^^
+000003AB  E996         tst0    0x0501    [page:0x0096u8]
+000003AC  0501 ^^^
+000003AD  41C2         call    0x000057a5    neq
+000003AE  57A5 ^^^
+000003AF  5E1A         mov    0x0100    a0l
+000003B0  0100 ^^^
+000003B1  D4BC         mov    a0l    [0xe691]
+000003B2  E691 ^^^
+000003B3  5E18         mov    0x0004    a0
+000003B4  0004 ^^^
+000003B5  D4BC         mov    a0l    [0xe610]
+000003B6  E610 ^^^
+000003B7  4580         ret    always
+000003B8  D4B8         mov    [0x5e7e]    a0
+000003B9  5E7E ^^^
+000003BA  D5B8         mov    [0x5005]    a1
+000003BB  5005 ^^^
+000003BC  D5BC         mov    a1l    [0x5e7e]
+000003BD  5E7E ^^^
+000003BE  D4BC         mov    a0l    [0x5005]
+000003BF  5005 ^^^
+000003C0  4580         ret    always
+000003C1  D4B8         mov    [0x5889]    a0
+000003C2  5889 ^^^
+000003C3  5021         brr    0x0002    eq
+000003C4  3102         mov    0x0002u8    a1l
+000003C5  D480         calla    a0l
+000003C6  5E00         mov    0x2908    r0
+000003C7  2908 ^^^
+000003C8  5E01         mov    0x4ad5    r1
+000003C9  4AD5 ^^^
+000003CA  5E05         mov    0x00a0    r5
+000003CB  00A0 ^^^
+000003CC  1F08         mov    [r0++]    a0
+000003CD  1B49         mov    a0l    [r1++]
+000003CE  0095         modr    [r5--]
+000003CF  57CC         brr    0xfffc    nr
+000003D0  5E00         mov    0x4ad5    r0
+000003D1  4AD5 ^^^
+000003D2  5E01         mov    0xd8d7    r1
+000003D3  D8D7 ^^^
+000003D4  41C0         call    0x00008034    always
+000003D5  8034 ^^^
+000003D6  4580         ret    always
+000003D7  6760         clr    a0    always
+000003D8  5E19         mov    0x009f    a1
+000003D9  009F ^^^
+000003DA  5E01         mov    0x2908    r1
+000003DB  2908 ^^^
+000003DC  5E02         mov    0x29a8    r2
+000003DD  29A8 ^^^
+000003DE  5D1B         bkrep    a1l    0x000003e1
+000003DF  03E1 ^^^
+000003E0  1B49         mov    a0l    [r1++]
+000003E1  1B4A         mov    a0l    [r2++]
+000003E2  4580         ret    always
+000003E3  7136         mov    [page:0x0036u8]    a0
+000003E4  D4BC         mov    a0l    [0x5004]
+000003E5  5004 ^^^
+000003E6  4180         br    0x00003e70    always
+000003E7  3E70 ^^^
+000003E8  41C0         call    0x000003ec    always
+000003E9  03EC ^^^
+000003EA  4180         br    0x00004b92    always
+000003EB  4B92 ^^^
+000003EC  5E00         mov    0xe646    r0
+000003ED  E646 ^^^
+000003EE  5E01         mov    0xf49b    r1
+000003EF  F49B ^^^
+000003F0  5C0F         bkrep    0x000fu8    0x000003f4
+000003F1  03F4 ^^^
+000003F2  1F00         mov    [r0]    a0
+000003F3  0000         nop
+000003F4  1B51         mov    a0l    [r1--]
+000003F5  2105         mov    0x0005u8    a0l
+000003F6  3107         mov    0x0007u8    a1l
+000003F7  ED0D         cmpv    0x0003    [page:0x000du8]
+000003F8  0003 ^^^
+000003F9  67F2         copy    a0    neq
+000003FA  5E00         mov    0x01f0    r0
+000003FB  01F0 ^^^
+000003FC  5E01         mov    0xf48c    r1
+000003FD  F48C ^^^
+000003FE  5E19         mov    0x000f    a1
+000003FF  000F ^^^
+00000400  5D1A         bkrep    a0l    0x0000040c
+00000401  040C ^^^
+00000402  1F08         mov    [r0++]    a0
+00000403  971A         tstb    a0l    0x0007
+00000404  6791         neg    a0    eq
+00000405  82C0         and    0x00ff    a0
+00000406  00FF ^^^
+00000407  8A60         min_lt    a0    ^    r0
+00000408  86A1         add    r1    a0
+00000409  589A         mov    a0l    r4
+0000040A  0000         nop
+0000040B  8EE4         subv    0x0001    [r4]
+0000040C  0001 ^^^
+0000040D  5E1A         mov    0x178a    a0l
+0000040E  178A ^^^
+0000040F  ED0D         cmpv    0x0003    [page:0x000du8]
+00000410  0003 ^^^
+00000411  5071         brr    0x0007    eq
+00000412  5E1A         mov    0x469f    a0l
+00000413  469F ^^^
+00000414  5E1B         mov    0x6907    a1l
+00000415  6907 ^^^
+00000416  ED15         cmpv    0x0000    [page:0x0015u8]
+00000417  0000 ^^^
+00000418  67F1         copy    a0    eq
+00000419  5EF8         mov?    a0    b1
+0000041A  5E18         mov    0x4f2a    a0
+0000041B  4F2A ^^^
+0000041C  ED0D         cmpv    0x0003    [page:0x000du8]
+0000041D  0003 ^^^
+0000041E  5012         brr    0x0001    neq
+0000041F  C64C         add    0x004cu8    a0
+00000420  ED36         cmpv    0x0001    [page:0x0036u8]
+00000421  0001 ^^^
+00000422  5012         brr    0x0001    neq
+00000423  C626         add    0x0026u8    a0
+00000424  D5B8         mov    [0x5d0d]    a1
+00000425  5D0D ^^^
+00000426  87C0         add    0xda66    a1
+00000427  DA66 ^^^
+00000428  581B         mov    a1l    r0
+00000429  1F20         mov    [r0]    a1
+0000042A  5016         brr    0x0001    le
+0000042B  C613         add    0x0013u8    a0
+0000042C  581A         mov    a0l    r0
+0000042D  1C68         mov    [r0++]    r3
+0000042E  1CA8         mov    [r0++]    r5
+0000042F  1F08         mov    [r0++]    a0
+00000430  583A         mov    a0l    r1
+00000431  87E1         addv    0xfffe    r1
+00000432  FFFE ^^^
+00000433  86C0         add    0xfff2    a0
+00000434  FFF2 ^^^
+00000435  6790         neg    a0    always
+00000436  585A         mov    a0l    r2
+00000437  5E04         mov    0xf48c    r4
+00000438  F48C ^^^
+00000439  6760         clr    a0    always
+0000043A  D028         mpy    [r4++]    [r0++]    a0
+0000043B  0D01         rep    r1
+0000043C  D228         mac    [r4++]    [r0++]    a0
+0000043D  86AB         add    p*    a0
+0000043E  9158         exp    a0    a1
+0000043F  DAC0         shfc    a0    a0    always
+00000440  58FC         mov    a0h    y0
+00000441  8053         mpy    y0    b1l    a0
+00000442  5B0B         mov    p*    a0
+00000443  7790         neg    a1    always
+00000444  C709         add    0x0009u8    a1
+00000445  8FA3         sub    r3    a1
+00000446  5BFB         mov    a1l    sv
+00000447  DAC0         shfc    a0    a0    always
+00000448  5ED8         mov?    a0    b0
+00000449  5B22         mov    r2    a1
+0000044A  77D0         inc    a1    always
+0000044B  5135         brr    0x0013    lt
+0000044C  6760         clr    a0    always
+0000044D  D028         mpy    [r4++]    [r0++]    a0
+0000044E  CD00         cmp    0x0000u8    a1
+0000044F  5021         brr    0x0002    eq
+00000450  0D02         rep    r2
+00000451  D228         mac    [r4++]    [r0++]    a0
+00000452  86AB         add    p*    a0
+00000453  9158         exp    a0    a1
+00000454  DAC0         shfc    a0    a0    always
+00000455  58FC         mov    a0h    y0
+00000456  8053         mpy    y0    b1l    a0
+00000457  5B0B         mov    p*    a0
+00000458  7790         neg    a1    always
+00000459  C709         add    0x0009u8    a1
+0000045A  8FA5         sub    r5    a1
+0000045B  5BFB         mov    a1l    sv
+0000045C  DAC0         shfc    a0    a0    always
+0000045D  D2F0         mov    b0    a1
+0000045E  86B9         add    a1    a0
+0000045F  3812         mov    a0l    [page:0x0012u8]
+00000460  3A13         mov    a0h    [page:0x0013u8]
+00000461  5E01         mov    0xf48d    r1
+00000462  F48D ^^^
+00000463  6760         clr    a0    always
+00000464  3F01         mov    +0x0001    y0
+00000465  8029         mpy    y0    [r1++]    a0
+00000466  87E7         addv    0x0001    y0
+00000467  0001 ^^^
+00000468  5C0E         bkrep    0x000eu8    0x0000046c
+00000469  046C ^^^
+0000046A  8229         mac    y0    [r1++]    a0
+0000046B  87E7         addv    0x0001    y0
+0000046C  0001 ^^^
+0000046D  6700         shr    a0    always
+0000046E  383A         mov    a0l    [page:0x003au8]
+0000046F  4580         ret    always
+00000470  5E78         pop    a0
+00000471  58C0         mov    r0    r7
+00000472  1F00         mov    [r0]    a0
+00000473  4585         ret    lt
+00000474  D4B8         mov    [0x584c]    a0
+00000475  584C ^^^
+00000476  41C6         call    0x00000724    le
+00000477  0724 ^^^
+00000478  D981         mov    [r7+0x0001s7]    a1
+00000479  87C0         add    0xda66    a1
+0000047A  DA66 ^^^
+0000047B  581B         mov    a1l    r0
+0000047C  1B40         mov    a0l    [r0]
+0000047D  4180         br    0x000025a3    always
+0000047E  25A3 ^^^
+0000047F  CD00         cmp    0x0000u8    a1
+00000480  4181         br    0x00000483    eq
+00000481  0483 ^^^
+00000482  4580         ret    always
+00000483  5E7A         pop    a0l
+00000484  5F40         push    0x0489
+00000485  0489 ^^^
+00000486  599A         mov    a0l    pc
+00000487  0000         nop
+00000488  0000         nop
+00000489  600D         mov    [page:0x000du8]    r0
+0000048A  87E0         addv    0xda6a    r0
+0000048B  DA6A ^^^
+0000048C  D5B8         mov    [0x5004]    a1
+0000048D  5004 ^^^
+0000048E  1B60         mov    a1l    [r0]
+0000048F  D4B8         mov    [0x5d7a]    a0
+00000490  5D7A ^^^
+00000491  CC0C         cmp    0x000cu8    a0
+00000492  4182         br    0x0000049e    neq
+00000493  049E ^^^
+00000494  5E00         mov    0x5003    r0
+00000495  5003 ^^^
+00000496  5E01         mov    0x4f26    r1
+00000497  4F26 ^^^
+00000498  5E04         mov    0xda5a    r4
+00000499  DA5A ^^^
+0000049A  5E05         mov    0xda62    r5
+0000049B  DA62 ^^^
+0000049C  41C0         call    0x000004a9    always
+0000049D  04A9 ^^^
+0000049E  5E00         mov    0x5002    r0
+0000049F  5002 ^^^
+000004A0  5E01         mov    0x4f22    r1
+000004A1  4F22 ^^^
+000004A2  5E04         mov    0xda4e    r4
+000004A3  DA4E ^^^
+000004A4  5E05         mov    0xda56    r5
+000004A5  DA56 ^^^
+000004A6  41C0         call    0x000004a9    always
+000004A7  04A9 ^^^
+000004A8  4580         ret    always
+000004A9  1F00         mov    [r0]    a0
+000004AA  790D         mov    [page:0x000du8]    a1
+000004AB  5032         brr    0x0003    neq
+000004AC  C602         add    0x0002u8    a0
+000004AD  C207         and    0x0007u8    a0
+000004AE  1B40         mov    a0l    [r0]
+000004AF  87A1         add    r1    a1
+000004B0  581B         mov    a1l    r0
+000004B1  1C00         mov    [r0]    r0
+000004B2  5860         mov    r0    r3
+000004B3  86A0         add    r0    a0
+000004B4  583A         mov    a0l    r1
+000004B5  5E02         mov    0x01f8    r2
+000004B6  01F8 ^^^
+000004B7  87E2         addv    0x0006    r2
+000004B8  0006 ^^^
+000004B9  1F0A         mov    [r2++]    a0
+000004BA  1B49         mov    a0l    [r1++]
+000004BB  1F0A         mov    [r2++]    a0
+000004BC  1B49         mov    a0l    [r1++]
+000004BD  41C0         call    0x000004cd    always
+000004BE  04CD ^^^
+000004BF  790D         mov    [page:0x000du8]    a1
+000004C0  7720         shl    a1    always
+000004C1  87A4         add    r4    a1
+000004C2  581B         mov    a1l    r0
+000004C3  1B88         mov    a0h    [r0++]
+000004C4  1B40         mov    a0l    [r0]
+000004C5  5803         mov    r3    r0
+000004C6  41C0         call    0x000004d5    always
+000004C7  04D5 ^^^
+000004C8  710D         mov    [page:0x000du8]    a0
+000004C9  86A5         add    r5    a0
+000004CA  581A         mov    a0l    r0
+000004CB  1B60         mov    a1l    [r0]
+000004CC  4580         ret    always
+000004CD  6760         clr    a0    always
+000004CE  5C03         bkrep    0x0003u8    0x000004d2
+000004CF  04D2 ^^^
+000004D0  1C28         mov    [r0++]    r1
+000004D1  9488         addl    [r0++]    a0
+000004D2  92A1         addh    r1    a0
+000004D3  9B7E         shfi    a0    a0    -0x0002
+000004D4  4580         ret    always
+000004D5  DAF0         mov    a0    a1
+000004D6  4581         ret    eq
+000004D7  4D82         load    0x0002    ps
+000004D8  83E8         rst    0x0001    st0
+000004D9  0001 ^^^
+000004DA  5ED8         mov?    a0    b0
+000004DB  5820         mov    r0    r1
+000004DC  5C03         bkrep    0x0003u8    0x000004e0
+000004DD  04E0 ^^^
+000004DE  1FA9         mov    [r1++]    a1h
+000004DF  9589         addl    [r1++]    a1
+000004E0  8660         max_gt    a0    ^    r0
+000004E1  9458         exp    a0
+000004E2  D2D0         mov    b0    a0
+000004E3  DAC0         shfc    a0    a0    always
+000004E4  9DD8         movr    a0    a1
+000004E5  49F0         lim    a1    a1
+000004E6  3EF7         mov    a1h    [page:0x00f7u8]
+000004E7  6F60         clr    b0    always
+000004E8  5C03         bkrep    0x0003u8    0x000004f2
+000004E9  04F2 ^^^
+000004EA  1FA8         mov    [r0++]    a1h
+000004EB  9588         addl    [r0++]    a1
+000004EC  DEE0         shfc    a1    a1    always
+000004ED  8FB8         sub    a0    a1
+000004EE  77A0         rnd    a1    always
+000004EF  9ABD         sqr    a1h    a0
+000004F0  D2F0         mov    b0    a1
+000004F1  87AB         add    p*    a1
+000004F2  5ED9         mov?    a1    b0
+000004F3  9F7E         shfi    a1    a0    -0x0002
+000004F4  5E0E         mov    0x0002    cfgi
+000004F5  0002 ^^^
+000004F6  41C0         call    0x00000502    always
+000004F7  0502 ^^^
+000004F8  5E07         mov    0x49e6    y0
+000004F9  49E6 ^^^
+000004FA  805C         mpy    y0    a0h    a0
+000004FB  5B2B         mov    p*    a1
+000004FC  0C0E         rep    0x000eu8
+000004FD  0FF7         divs    [page:0x00f7u8]    a1
+000004FE  4D80         load    0x0000    ps
+000004FF  81E8         set    0x0001    st0
+00000500  0001 ^^^
+00000501  4580         ret    always
+00000502  9158         exp    a0    a1
+00000503  DAC0         shfc    a0    a0    always
+00000504  58FC         mov    a0h    y0
+00000505  5E01         mov    0x6855    r1
+00000506  6855 ^^^
+00000507  8029         mpy    y0    [r1++]    a0
+00000508  1F89         mov    [r1++]    a0h
+00000509  86AB         add    p*    a0
+0000050A  805C         mpy    y0    a0h    a0
+0000050B  1F89         mov    [r1++]    a0h
+0000050C  86AB         add    p*    a0
+0000050D  5E20         mov    0x7fff    b0
+0000050E  7FFF ^^^
+0000050F  92B2         addh    b0l    a0
+00000510  805C         mpy    y0    a0h    a0
+00000511  1F89         mov    [r1++]    a0h
+00000512  86AB         add    p*    a0
+00000513  901F         tstb    sv    0x0000
+00000514  5032         brr    0x0003    neq
+00000515  58FC         mov    a0h    y0
+00000516  8021         mpy    y0    [r1]    a0
+00000517  5B0B         mov    p*    a0
+00000518  7700         shr    a1    always
+00000519  7790         neg    a1    always
+0000051A  5BFB         mov    a1l    sv
+0000051B  DAC0         shfc    a0    a0    always
+0000051C  4580         ret    always
+0000051D  CD03         cmp    0x0003u8    a1
+0000051E  4181         br    0x00000521    eq
+0000051F  0521 ^^^
+00000520  4580         ret    always
+00000521  5E7A         pop    a0l
+00000522  5F40         push    0x0527
+00000523  0527 ^^^
+00000524  599A         mov    a0l    pc
+00000525  0000         nop
+00000526  0000         nop
+00000527  7180         mov    [page:0x0080u8]    a0
+00000528  D4BC         mov    a0l    [0x57fd]
+00000529  57FD ^^^
+0000052A  4580         ret    always
+0000052B  5E18         mov    0x0001    a0
+0000052C  0001 ^^^
+0000052D  D4BC         mov    a0l    [0x583d]
+0000052E  583D ^^^
+0000052F  4180         br    0x00002e6e    always
+00000530  2E6E ^^^
+00000531  CD01         cmp    0x0001u8    a1
+00000532  4181         br    0x0000053b    eq
+00000533  053B ^^^
+00000534  CD02         cmp    0x0002u8    a1
+00000535  4181         br    0x00000545    eq
+00000536  0545 ^^^
+00000537  CD08         cmp    0x0008u8    a1
+00000538  4181         br    0x00000562    eq
+00000539  0562 ^^^
+0000053A  4580         ret    always
+0000053B  5E78         pop    a0
+0000053C  5E1A         mov    0xb42a    a0l
+0000053D  B42A ^^^
+0000053E  384C         mov    a0l    [page:0x004cu8]
+0000053F  E752         addv    0x5984    [page:0x0052u8]
+00000540  5984 ^^^
+00000541  5E1A         mov    0x33a6    a0l
+00000542  33A6 ^^^
+00000543  384D         mov    a0l    [page:0x004du8]
+00000544  5090         brr    0x0009    always
+00000545  5E78         pop    a0
+00000546  5E1A         mov    0xb414    a0l
+00000547  B414 ^^^
+00000548  384C         mov    a0l    [page:0x004cu8]
+00000549  E752         addv    0x5990    [page:0x0052u8]
+0000054A  5990 ^^^
+0000054B  5E1A         mov    0x3399    a0l
+0000054C  3399 ^^^
+0000054D  384D         mov    a0l    [page:0x004du8]
+0000054E  2315         mov    +0x0015    r0
+0000054F  5E01         mov    0x5aa5    r1
+00000550  5AA5 ^^^
+00000551  41C0         call    0x0000131d    always
+00000552  131D ^^^
+00000553  41C0         call    0x00002c98    always
+00000554  2C98 ^^^
+00000555  41C0         call    0x00002fdf    always
+00000556  2FDF ^^^
+00000557  41C0         call    0x00003070    always
+00000558  3070 ^^^
+00000559  CC00         cmp    0x0000u8    a0
+0000055A  4181         br    0x00002ee3    eq
+0000055B  2EE3 ^^^
+0000055C  5E00         mov    0x04b2    r0
+0000055D  04B2 ^^^
+0000055E  41C0         call    0x0000089f    always
+0000055F  089F ^^^
+00000560  4180         br    0x00002ed8    always
+00000561  2ED8 ^^^
+00000562  5E78         pop    a0
+00000563  E752         addv    0x599c    [page:0x0052u8]
+00000564  599C ^^^
+00000565  2315         mov    +0x0015    r0
+00000566  5E01         mov    0x5aa5    r1
+00000567  5AA5 ^^^
+00000568  41C0         call    0x0000131d    always
+00000569  131D ^^^
+0000056A  41C0         call    0x00002caa    always
+0000056B  2CAA ^^^
+0000056C  2100         mov    0x0000u8    a0l
+0000056D  384E         mov    a0l    [page:0x004eu8]
+0000056E  F14B         tstb    [page:0x004bu8]    0x0001
+0000056F  41C2         call    0x0000305c    neq
+00000570  305C ^^^
+00000571  F14B         tstb    [page:0x004bu8]    0x0001
+00000572  41C1         call    0x00003067    eq
+00000573  3067 ^^^
+00000574  724E         mov    [page:0x004eu8]    a0l
+00000575  4181         br    0x0000057d    eq
+00000576  057D ^^^
+00000577  5E00         mov    0x04b2    r0
+00000578  04B2 ^^^
+00000579  41C0         call    0x00000897    always
+0000057A  0897 ^^^
+0000057B  4180         br    0x00002f8b    always
+0000057C  2F8B ^^^
+0000057D  41C0         call    0x00003005    always
+0000057E  3005 ^^^
+0000057F  41C0         call    0x000030fb    always
+00000580  30FB ^^^
+00000581  5E00         mov    0x04b2    r0
+00000582  04B2 ^^^
+00000583  5E01         mov    0x28a9    r1
+00000584  28A9 ^^^
+00000585  585A         mov    a0l    r2
+00000586  6C52         mov    [page:0x0052u8]    r3
+00000587  41C0         call    0x0000b58a    always
+00000588  B58A ^^^
+00000589  D4BC         mov    a0l    [0xd96f]
+0000058A  D96F ^^^
+0000058B  D5BC         mov    a1l    [0xd970]
+0000058C  D970 ^^^
+0000058D  D5BC         mov    a1l    [0x583d]
+0000058E  583D ^^^
+0000058F  41C0         call    0x000033b3    always
+00000590  33B3 ^^^
+00000591  4580         ret    always
+00000592  CD01         cmp    0x0001u8    a1
+00000593  4181         br    0x0000059c    eq
+00000594  059C ^^^
+00000595  CD02         cmp    0x0002u8    a1
+00000596  4181         br    0x000005a9    eq
+00000597  05A9 ^^^
+00000598  CD08         cmp    0x0008u8    a1
+00000599  4181         br    0x000005b6    eq
+0000059A  05B6 ^^^
+0000059B  4580         ret    always
+0000059C  5E78         pop    a0
+0000059D  ED51         cmpv    0x0006    [page:0x0051u8]
+0000059E  0006 ^^^
+0000059F  4181         br    0x00003415    eq
+000005A0  3415 ^^^
+000005A1  5E1A         mov    0xb543    a0l
+000005A2  B543 ^^^
+000005A3  384C         mov    a0l    [page:0x004cu8]
+000005A4  5E1A         mov    0x3350    a0l
+000005A5  3350 ^^^
+000005A6  384D         mov    a0l    [page:0x004du8]
+000005A7  4180         br    0x00002b7b    always
+000005A8  2B7B ^^^
+000005A9  5E78         pop    a0
+000005AA  ED51         cmpv    0x0006    [page:0x0051u8]
+000005AB  0006 ^^^
+000005AC  4181         br    0x00003415    eq
+000005AD  3415 ^^^
+000005AE  5E1A         mov    0xb510    a0l
+000005AF  B510 ^^^
+000005B0  384C         mov    a0l    [page:0x004cu8]
+000005B1  5E1A         mov    0x3347    a0l
+000005B2  3347 ^^^
+000005B3  384D         mov    a0l    [page:0x004du8]
+000005B4  4180         br    0x00002b7b    always
+000005B5  2B7B ^^^
+000005B6  5E78         pop    a0
+000005B7  ED51         cmpv    0x0006    [page:0x0051u8]
+000005B8  0006 ^^^
+000005B9  4181         br    0x000033e7    eq
+000005BA  33E7 ^^^
+000005BB  41C0         call    0x00002caa    always
+000005BC  2CAA ^^^
+000005BD  7248         mov    [page:0x0048u8]    a0l
+000005BE  41C1         call    0x00002e17    eq
+000005BF  2E17 ^^^
+000005C0  4180         br    0x00002c34    always
+000005C1  2C34 ^^^
+000005C2  4D82         load    0x0002    ps
+000005C3  83E8         rst    0x0001    st0
+000005C4  0001 ^^^
+000005C5  60B1         mov    [page:0x00b1u8]    r0
+000005C6  1F20         mov    [r0]    a1
+000005C7  58FB         mov    a1l    y0
+000005C8  E0A6         mpy    y0    [page:0x00a6u8]    a0
+000005C9  67B0         pacr    a0    always
+000005CA  86AB         add    p*    a0
+000005CB  6720         shl    a0    always
+000005CC  58FC         mov    a0h    y0
+000005CD  E0A8         mpy    y0    [page:0x00a8u8]    a0
+000005CE  67B0         pacr    a0    always
+000005CF  86AB         add    p*    a0
+000005D0  6720         shl    a0    always
+000005D1  5E00         mov    0x2ed4    r0
+000005D2  2ED4 ^^^
+000005D3  5E04         mov    0xf51a    r4
+000005D4  F51A ^^^
+000005D5  41C0         call    0x00008403    always
+000005D6  8403 ^^^
+000005D7  5E00         mov    0x2ed8    r0
+000005D8  2ED8 ^^^
+000005D9  5E04         mov    0xf51f    r4
+000005DA  F51F ^^^
+000005DB  41C0         call    0x00008403    always
+000005DC  8403 ^^^
+000005DD  58FC         mov    a0h    y0
+000005DE  E0AB         mpy    y0    [page:0x00abu8]    a0
+000005DF  77B0         pacr    a1    always
+000005E0  3EAC         mov    a1h    [page:0x00acu8]
+000005E1  7AAD         mov    [page:0x00adu8]    a1l
+000005E2  D580         calla    a1l
+000005E3  7AAE         mov    [page:0x00aeu8]    a1l
+000005E4  41C2         call    0x0000066c    neq
+000005E5  066C ^^^
+000005E6  58FC         mov    a0h    y0
+000005E7  E0AA         mpy    y0    [page:0x00aau8]    a0
+000005E8  5B0B         mov    p*    a0
+000005E9  6720         shl    a0    always
+000005EA  6720         shl    a0    always
+000005EB  B2AC         addh    [page:0x00acu8]    a0
+000005EC  B2AC         addh    [page:0x00acu8]    a0
+000005ED  5E00         mov    0x2edc    r0
+000005EE  2EDC ^^^
+000005EF  5E04         mov    0xf524    r4
+000005F0  F524 ^^^
+000005F1  41C0         call    0x00008403    always
+000005F2  8403 ^^^
+000005F3  5E00         mov    0x2ee0    r0
+000005F4  2EE0 ^^^
+000005F5  5E04         mov    0xf529    r4
+000005F6  F529 ^^^
+000005F7  41C0         call    0x00008403    always
+000005F8  8403 ^^^
+000005F9  58FC         mov    a0h    y0
+000005FA  E0A9         mpy    y0    [page:0x00a9u8]    a0
+000005FB  67B0         pacr    a0    always
+000005FC  86AB         add    p*    a0
+000005FD  6720         shl    a0    always
+000005FE  58FC         mov    a0h    y0
+000005FF  E0A7         mpy    y0    [page:0x00a7u8]    a0
+00000600  67B0         pacr    a0    always
+00000601  86AB         add    p*    a0
+00000602  6720         shl    a0    always
+00000603  3ADB         mov    a0h    [page:0x00dbu8]
+00000604  581C         mov    a0h    r0
+00000605  5E01         mov    0x319c    r1
+00000606  319C ^^^
+00000607  7ACD         mov    [page:0x00cdu8]    a1l
+00000608  D580         calla    a1l
+00000609  38DC         mov    a0l    [page:0x00dcu8]
+0000060A  581A         mov    a0l    r0
+0000060B  5E01         mov    0x31ac    r1
+0000060C  31AC ^^^
+0000060D  41C0         call    0x00000d93    always
+0000060E  0D93 ^^^
+0000060F  0A3F         load    0x003f    modj
+00000610  81EA         set    0x0020    st2
+00000611  0020 ^^^
+00000612  74AF         mov    [page:0x00afu8]    r5
+00000613  5E01         mov    0x319c    r1
+00000614  319C ^^^
+00000615  5E02         mov    0x31ac    r2
+00000616  31AC ^^^
+00000617  60DC         mov    [page:0x00dcu8]    r0
+00000618  7CD1         mov    [page:0x00d1u8]    y0
+00000619  4D83         load    0x0003    ps
+0000061A  DB82         load    +0x0002    stepi
+0000061B  79CC         mov    [page:0x00ccu8]    a1
+0000061C  50B1         brr    0x000b    eq
+0000061D  802A         mpy    y0    [r2++]    a0
+0000061E  67B0         pacr    a0    always
+0000061F  9289         addh    [r1++]    a0
+00000620  1B8D         mov    a0h    [r5++]
+00000621  802A         mpy    y0    [r2++]    a0
+00000622  67B0         pacr    a0    always
+00000623  9289         addh    [r1++]    a0
+00000624  1B8D         mov    a0h    [r5++]
+00000625  0090         modr    [r0--]
+00000626  576C         brr    0xfff6    nr
+00000627  50A0         brr    0x000a    always
+00000628  1F8A         mov    [r2++]    a0h
+00000629  928A         addh    [r2++]    a0
+0000062A  6700         shr    a0    always
+0000062B  805C         mpy    y0    a0h    a0
+0000062C  67B0         pacr    a0    always
+0000062D  9299         addh    [r1++s]    a0
+0000062E  1B8D         mov    a0h    [r5++]
+0000062F  1B8D         mov    a0h    [r5++]
+00000630  0090         modr    [r0--]
+00000631  576C         brr    0xfff6    nr
+00000632  2AAF         mov    r5    [page:0x00afu8]
+00000633  83EA         rst    0x0020    st2
+00000634  0020 ^^^
+00000635  4D82         load    0x0002    ps
+00000636  6760         clr    a0    always
+00000637  7ACB         mov    [page:0x00cbu8]    a1l
+00000638  5082         brr    0x0008    neq
+00000639  5E00         mov    0x31ac    r0
+0000063A  31AC ^^^
+0000063B  41C0         call    0x00008620    always
+0000063C  8620 ^^^
+0000063D  58E0         mov    r0    y0
+0000063E  E0D2         mpy    y0    [page:0x00d2u8]    a0
+0000063F  67B0         pacr    a0    always
+00000640  86AB         add    p*    a0
+00000641  B2DB         addh    [page:0x00dbu8]    a0
+00000642  60B0         mov    [page:0x00b0u8]    r0
+00000643  1B80         mov    a0h    [r0]
+00000644  4D80         load    0x0000    ps
+00000645  81E8         set    0x0001    st0
+00000646  0001 ^^^
+00000647  72BB         mov    [page:0x00bbu8]    a0l
+00000648  C601         add    0x0001u8    a0
+00000649  38BB         mov    a0l    [page:0x00bbu8]
+0000064A  B8BA         subl    [page:0x00bau8]    a0
+0000064B  8CC0         cmp    0x00a0    a0
+0000064C  00A0 ^^^
+0000064D  50A5         brr    0x000a    lt
+0000064E  72BA         mov    [page:0x00bau8]    a0l
+0000064F  7ABC         mov    [page:0x00bcu8]    a1l
+00000650  38BC         mov    a0l    [page:0x00bcu8]
+00000651  3CBA         mov    a1l    [page:0x00bau8]
+00000652  3CBB         mov    a1l    [page:0x00bbu8]
+00000653  2314         mov    +0x0014    r0
+00000654  5E01         mov    0x5aa5    r1
+00000655  5AA5 ^^^
+00000656  41C0         call    0x0000131d    always
+00000657  131D ^^^
+00000658  72BE         mov    [page:0x00beu8]    a0l
+00000659  C601         add    0x0001u8    a0
+0000065A  38BE         mov    a0l    [page:0x00beu8]
+0000065B  B8BD         subl    [page:0x00bdu8]    a0
+0000065C  8CC0         cmp    0x0098    a0
+0000065D  0098 ^^^
+0000065E  4181         br    0x00000669    eq
+0000065F  0669 ^^^
+00000660  8CC0         cmp    0x00a0    a0
+00000661  00A0 ^^^
+00000662  4585         ret    lt
+00000663  72BD         mov    [page:0x00bdu8]    a0l
+00000664  7ABF         mov    [page:0x00bfu8]    a1l
+00000665  38BF         mov    a0l    [page:0x00bfu8]
+00000666  3CBD         mov    a1l    [page:0x00bdu8]
+00000667  3CBE         mov    a1l    [page:0x00beu8]
+00000668  4580         ret    always
+00000669  41C0         call    0x0000534c    always
+0000066A  534C ^^^
+0000066B  4580         ret    always
+0000066C  5E00         mov    0x2ee4    r0
+0000066D  2EE4 ^^^
+0000066E  5E01         mov    0x2ee7    r1
+0000066F  2EE7 ^^^
+00000670  5E04         mov    0xf52e    r4
+00000671  F52E ^^^
+00000672  58FC         mov    a0h    y0
+00000673  8029         mpy    y0    [r1++]    a0
+00000674  67B0         pacr    a0    always
+00000675  D021         mpy    [r4++]    [r1]    a0
+00000676  D248         mac    [r4--]    [r0++]    a0
+00000677  77B0         pacr    a1    always
+00000678  87AB         add    p*    a1
+00000679  9784         subh    [r4]    a1
+0000067A  18EC         mov    y0    [r4++]
+0000067B  1BAC         mov    a1h    [r4++]
+0000067C  D021         mpy    [r4++]    [r1]    a0
+0000067D  D248         mac    [r4--]    [r0++]    a0
+0000067E  77B0         pacr    a1    always
+0000067F  87AB         add    p*    a1
+00000680  9784         subh    [r4]    a1
+00000681  18EC         mov    y0    [r4++]
+00000682  1BAC         mov    a1h    [r4++]
+00000683  D021         mpy    [r4++]    [r1]    a0
+00000684  D248         mac    [r4--]    [r0++]    a0
+00000685  77B0         pacr    a1    always
+00000686  87AB         add    p*    a1
+00000687  9784         subh    [r4]    a1
+00000688  18EC         mov    y0    [r4++]
+00000689  1BAC         mov    a1h    [r4++]
+0000068A  7AAE         mov    [page:0x00aeu8]    a1l
+0000068B  CD01         cmp    0x0001u8    a1
+0000068C  50D1         brr    0x000d    eq
+0000068D  23FF         mov    -0x0001    r0
+0000068E  9FA0         cmpu    r0    a1
+0000068F  77E2         dec    a1    neq
+00000690  3CAE         mov    a1l    [page:0x00aeu8]
+00000691  79F6         mov    [page:0x00f6u8]    a1
+00000692  4581         ret    eq
+00000693  ADAE         cmp    [page:0x00aeu8]    a1
+00000694  4582         ret    neq
+00000695  5E19         mov    0x0008    a1
+00000696  0008 ^^^
+00000697  D5BC         mov    a1l    [0xe610]
+00000698  E610 ^^^
+00000699  4580         ret    always
+0000069A  5E00         mov    0x2ee4    r0
+0000069B  2EE4 ^^^
+0000069C  D5B8         mov    [0xd8cf]    a1
+0000069D  D8CF ^^^
+0000069E  1B68         mov    a1l    [r0++]
+0000069F  D5B8         mov    [0xd8d1]    a1
+000006A0  D8D1 ^^^
+000006A1  1B68         mov    a1l    [r0++]
+000006A2  D5B8         mov    [0xd8d3]    a1
+000006A3  D8D3 ^^^
+000006A4  1B68         mov    a1l    [r0++]
+000006A5  5E00         mov    0xf52e    r0
+000006A6  F52E ^^^
+000006A7  3300         mov    +0x0000    r4
+000006A8  1888         mov    r4    [r0++]
+000006A9  D5B8         mov    [0xd8d0]    a1
+000006AA  D8D0 ^^^
+000006AB  1B68         mov    a1l    [r0++]
+000006AC  1888         mov    r4    [r0++]
+000006AD  D5B8         mov    [0xd8d2]    a1
+000006AE  D8D2 ^^^
+000006AF  1B68         mov    a1l    [r0++]
+000006B0  1888         mov    r4    [r0++]
+000006B1  D5B8         mov    [0xd8d4]    a1
+000006B2  D8D4 ^^^
+000006B3  1B68         mov    a1l    [r0++]
+000006B4  D5B8         mov    [0xd8d5]    a1
+000006B5  D8D5 ^^^
+000006B6  3CAE         mov    a1l    [page:0x00aeu8]
+000006B7  D5B8         mov    [0xda2a]    a1
+000006B8  DA2A ^^^
+000006B9  3CF6         mov    a1l    [page:0x00f6u8]
+000006BA  7760         clr    a1    always
+000006BB  D5BC         mov    a1l    [0xda2a]
+000006BC  DA2A ^^^
+000006BD  D780         retd
+000006BE  D5BC         mov    a1l    [0xd8d5]
+000006BF  D8D5 ^^^
+000006C0  E0C7         mpy    y0    [page:0x00c7u8]    a0
+000006C1  77B0         pacr    a1    always
+000006C2  60BB         mov    [page:0x00bbu8]    r0
+000006C3  64BE         mov    [page:0x00beu8]    r1
+000006C4  1BA0         mov    a1h    [r0]
+000006C5  1CE1         mov    [r1]    y0
+000006C6  E0C5         mpy    y0    [page:0x00c5u8]    a0
+000006C7  67B0         pacr    a0    always
+000006C8  4580         ret    always
+000006C9  CD0B         cmp    0x000bu8    a1
+000006CA  4181         br    0x000006d4    eq
+000006CB  06D4 ^^^
+000006CC  CD07         cmp    0x0007u8    a1
+000006CD  4181         br    0x00000470    eq
+000006CE  0470 ^^^
+000006CF  4580         ret    always
+000006D0  CD01         cmp    0x0001u8    a1
+000006D1  4181         br    0x0000071b    eq
+000006D2  071B ^^^
+000006D3  4580         ret    always
+000006D4  D4B8         mov    [0x5aa5]    a0
+000006D5  5AA5 ^^^
+000006D6  4581         ret    eq
+000006D7  D4B8         mov    [0x5aa6]    a0
+000006D8  5AA6 ^^^
+000006D9  4181         br    0x000006e0    eq
+000006DA  06E0 ^^^
+000006DB  8DE0         cmpv    0xf41b    r0
+000006DC  F41B ^^^
+000006DD  4582         ret    neq
+000006DE  4180         br    0x00000706    always
+000006DF  0706 ^^^
+000006E0  F191         tstb    [page:0x0091u8]    0x0001
+000006E1  5041         brr    0x0004    eq
+000006E2  2F03         mov    +0x0003    r3
+000006E3  8FE0         subv    0x000c    r0
+000006E4  000C ^^^
+000006E5  5010         brr    0x0001    always
+000006E6  2F06         mov    +0x0006    r3
+000006E7  1F08         mov    [r0++]    a0
+000006E8  1F30         mov    [r0--]    a1
+000006E9  5E02         mov    0xf400    r2
+000006EA  F400 ^^^
+000006EB  1B4A         mov    a0l    [r2++]
+000006EC  1B6A         mov    a1l    [r2++]
+000006ED  1B4A         mov    a0l    [r2++]
+000006EE  1B6A         mov    a1l    [r2++]
+000006EF  0093         modr    [r3--]
+000006F0  57AC         brr    0xfffa    nr
+000006F1  F191         tstb    [page:0x0091u8]    0x0001
+000006F2  50B1         brr    0x000b    eq
+000006F3  2F03         mov    +0x0003    r3
+000006F4  1F08         mov    [r0++]    a0
+000006F5  1B4A         mov    a0l    [r2++]
+000006F6  1F08         mov    [r0++]    a0
+000006F7  1B4A         mov    a0l    [r2++]
+000006F8  1F08         mov    [r0++]    a0
+000006F9  1B4A         mov    a0l    [r2++]
+000006FA  1F08         mov    [r0++]    a0
+000006FB  1B4A         mov    a0l    [r2++]
+000006FC  0093         modr    [r3--]
+000006FD  576C         brr    0xfff6    nr
+000006FE  5B02         mov    r2    a0
+000006FF  D4BC         mov    a0l    [0xf41a]
+00000700  F41A ^^^
+00000701  5E18         mov    0x0001    a0
+00000702  0001 ^^^
+00000703  D4BC         mov    a0l    [0x5aa6]
+00000704  5AA6 ^^^
+00000705  4580         ret    always
+00000706  D4B8         mov    [0xf41a]    a0
+00000707  F41A ^^^
+00000708  5E19         mov    0xf41a    a1
+00000709  F41A ^^^
+0000070A  8CC0         cmp    0xf400    a0
+0000070B  F400 ^^^
+0000070C  67F1         copy    a0    eq
+0000070D  CE02         sub    0x0002u8    a0
+0000070E  587A         mov    a0l    r3
+0000070F  1F0B         mov    [r3++]    a0
+00000710  1F33         mov    [r3--]    a1
+00000711  5E04         mov    0xf41b    r4
+00000712  F41B ^^^
+00000713  2F03         mov    +0x0003    r3
+00000714  1B4C         mov    a0l    [r4++]
+00000715  1B6C         mov    a1l    [r4++]
+00000716  1B4C         mov    a0l    [r4++]
+00000717  1B6C         mov    a1l    [r4++]
+00000718  0093         modr    [r3--]
+00000719  57AC         brr    0xfffa    nr
+0000071A  4580         ret    always
+0000071B  5E18         mov    0x0000    a0
+0000071C  0000 ^^^
+0000071D  D4BC         mov    a0l    [0x5aa6]
+0000071E  5AA6 ^^^
+0000071F  5E18         mov    0x0000    a0
+00000720  0000 ^^^
+00000721  D4BC         mov    a0l    [0x5aaa]
+00000722  5AAA ^^^
+00000723  4580         ret    always
+00000724  5E01         mov    0xe68a    r1
+00000725  E68A ^^^
+00000726  5E02         mov    0x5aa8    r2
+00000727  5AA8 ^^^
+00000728  1F09         mov    [r1++]    a0
+00000729  1B4A         mov    a0l    [r2++]
+0000072A  1F01         mov    [r1]    a0
+0000072B  1B42         mov    a0l    [r2]
+0000072C  D4B8         mov    [0x5aaa]    a0
+0000072D  5AAA ^^^
+0000072E  5152         brr    0x0015    neq
+0000072F  67D0         inc    a0    always
+00000730  D4BC         mov    a0l    [0x5aaa]
+00000731  5AAA ^^^
+00000732  5E01         mov    0x5aa9    r1
+00000733  5AA9 ^^^
+00000734  5E04         mov    0xff8c    r4
+00000735  FF8C ^^^
+00000736  43C0         dint
+00000737  D511         macuu    [r4]    [r1--]    a0
+00000738  6760         clr    a0    always
+00000739  D521         macuu    [r4++]    [r1]    a0
+0000073A  5B2B         mov    p*    a1
+0000073B  4380         eint
+0000073C  1FEC         mov    [r4++]    sv
+0000073D  DAC0         shfc    a0    a0    always
+0000073E  1FEC         mov    [r4++]    sv
+0000073F  DEE0         shfc    a1    a1    always
+00000740  86B9         add    a1    a0
+00000741  8684         add    [r4]    a0
+00000742  1B89         mov    a0h    [r1++]
+00000743  1B41         mov    a0l    [r1]
+00000744  D5B8         mov    [0x584b]    a1
+00000745  584B ^^^
+00000746  58FB         mov    a1l    y0
+00000747  5E01         mov    0x5aa8    r1
+00000748  5AA8 ^^^
+00000749  8029         mpy    y0    [r1++]    a0
+0000074A  5B2B         mov    p*    a1
+0000074B  5EC7         mov    y0    b0
+0000074C  1F01         mov    [r1]    a0
+0000074D  6F64         clr    b0    ge
+0000074E  87B2         add    b0l    a1
+0000074F  9FD0         shfi    a1    a1    +0x0010
+00000750  8021         mpy    y0    [r1]    a0
+00000751  87AB         add    p*    a1
+00000752  9FF6         shfi    a1    a1    -0x000a
+00000753  5E01         mov    0xe688    r1
+00000754  E688 ^^^
+00000755  9789         subh    [r1++]    a1
+00000756  5E20         mov    0x0001    b0
+00000757  0001 ^^^
+00000758  1F01         mov    [r1]    a0
+00000759  6F64         clr    b0    ge
+0000075A  5E18         mov    0x0001    a0
+0000075B  0001 ^^^
+0000075C  97B2         subh    b0l    a1
+0000075D  8F81         sub    [r1]    a1
+0000075E  6766         clr    a0    le
+0000075F  4580         ret    always
+00000760  CD0D         cmp    0x000du8    a1
+00000761  4181         br    0x00000764    eq
+00000762  0764 ^^^
+00000763  4580         ret    always
+00000764  6760         clr    a0    always
+00000765  D5B8         mov    [0x5d73]    a1
+00000766  5D73 ^^^
+00000767  CD01         cmp    0x0001u8    a1
+00000768  4582         ret    neq
+00000769  2117         mov    0x0017u8    a0l
+0000076A  4580         ret    always
+0000076B  CD00         cmp    0x0000u8    a1
+0000076C  4181         br    0x00000775    eq
+0000076D  0775 ^^^
+0000076E  CD01         cmp    0x0001u8    a1
+0000076F  4181         br    0x0000077f    eq
+00000770  077F ^^^
+00000771  CD02         cmp    0x0002u8    a1
+00000772  4181         br    0x000007c4    eq
+00000773  07C4 ^^^
+00000774  4580         ret    always
+00000775  5E7A         pop    a0l
+00000776  2102         mov    0x0002u8    a0l
+00000777  1B4C         mov    a0l    [r4++]
+00000778  5E1A         mov    0x9c3e    a0l
+00000779  9C3E ^^^
+0000077A  1B4C         mov    a0l    [r4++]
+0000077B  6760         clr    a0    always
+0000077C  0C43         rep    0x0043u8
+0000077D  1B4C         mov    a0l    [r4++]
+0000077E  4580         ret    always
+0000077F  5E7A         pop    a0l
+00000780  5F40         push    0x07c0
+00000781  07C0 ^^^
+00000782  5E19         mov    0x0001    a1
+00000783  0001 ^^^
+00000784  D5BC         mov    a1l    [0xe6a3]
+00000785  E6A3 ^^^
+00000786  20E7         mov    r0    [page:0x00e7u8]
+00000787  22E8         mov    r1    [page:0x00e8u8]
+00000788  24EA         mov    r2    [page:0x00eau8]
+00000789  28EC         mov    r4    [page:0x00ecu8]
+0000078A  5E1A         mov    0xcad0    a0l
+0000078B  CAD0 ^^^
+0000078C  38ED         mov    a0l    [page:0x00edu8]
+0000078D  5E1A         mov    0x9c40    a0l
+0000078E  9C40 ^^^
+0000078F  38EE         mov    a0l    [page:0x00eeu8]
+00000790  87E3         addv    0x5056    r3
+00000791  5056 ^^^
+00000792  1F63         mov    [r3]    a1l
+00000793  3CEF         mov    a1l    [page:0x00efu8]
+00000794  6760         clr    a0    always
+00000795  BFEE         cmpu    [page:0x00eeu8]    a1
+00000796  5025         brr    0x0002    lt
+00000797  2102         mov    0x0002u8    a0l
+00000798  B9EE         subl    [page:0x00eeu8]    a1
+00000799  38F0         mov    a0l    [page:0x00f0u8]
+0000079A  3CF1         mov    a1l    [page:0x00f1u8]
+0000079B  1E4C         mov    [r4++]    b0l
+0000079C  1E6C         mov    [r4++]    b1l
+0000079D  5804         mov    r4    r0
+0000079E  5E01         mov    0xfccc    r1
+0000079F  FCCC ^^^
+000007A0  2B22         mov    +0x0022    r2
+000007A1  41C0         call    0x000087aa    always
+000007A2  87AA ^^^
+000007A3  5B41         mov    r1    a0l
+000007A4  8EB2         sub    b0l    a0
+000007A5  5A5A         mov    a0l    b0l
+000007A6  60E7         mov    [page:0x00e7u8]    r0
+000007A7  68EA         mov    [page:0x00eau8]    r2
+000007A8  41C0         call    0x000087aa    always
+000007A9  87AA ^^^
+000007AA  22E9         mov    r1    [page:0x00e9u8]
+000007AB  7AEE         mov    [page:0x00eeu8]    a1l
+000007AC  5B41         mov    r1    a0l
+000007AD  98B2         subl    b0l    a0
+000007AE  6700         shr    a0    always
+000007AF  58FA         mov    a0l    y0
+000007B0  815B         mpysu    y0    a1l    a0
+000007B1  5B2B         mov    p*    a1
+000007B2  99B3         subl    b1l    a1
+000007B3  77E0         dec    a1    always
+000007B4  71EF         mov    [page:0x00efu8]    a0
+000007B5  5034         brr    0x0003    ge
+000007B6  82BA         and    a0l    a0
+000007B7  6700         shr    a0    always
+000007B8  7700         shr    a1    always
+000007B9  38F8         mov    a0l    [page:0x00f8u8]
+000007BA  9FC4         shfi    a1    a1    +0x0004
+000007BB  0C0B         rep    0x000bu8
+000007BC  0FF8         divs    [page:0x00f8u8]    a1
+000007BD  3CEB         mov    a1l    [page:0x00ebu8]
+000007BE  4180         br    0x000086d1    always
+000007BF  86D1 ^^^
+000007C0  3100         mov    0x0000u8    a1l
+000007C1  D5BC         mov    a1l    [0xe6a3]
+000007C2  E6A3 ^^^
+000007C3  4580         ret    always
+000007C4  5E7A         pop    a0l
+000007C5  68E8         mov    [page:0x00e8u8]    r2
+000007C6  5E03         mov    0x5061    r3
+000007C7  5061 ^^^
+000007C8  74EB         mov    [page:0x00ebu8]    r5
+000007C9  4984         swap    a<->b
+000007CA  A6F0         add    [page:0x00f0u8]    a0
+000007CB  B5F1         addl    [page:0x00f1u8]    a1
+000007CC  BFEE         cmpu    [page:0x00eeu8]    a1
+000007CD  5025         brr    0x0002    lt
+000007CE  C602         add    0x0002u8    a0
+000007CF  B9EE         subl    [page:0x00eeu8]    a1
+000007D0  4984         swap    a<->b
+000007D1  58F3         mov    b1l    y0
+000007D2  8333         macus    y0    [r3--]    a0
+000007D3  6760         clr    a0    always
+000007D4  832B         macus    y0    [r3++]    a0
+000007D5  9B71         shfi    a0    a0    -0x000f
+000007D6  86AB         add    p*    a0
+000007D7  9B78         shfi    a0    a0    -0x0008
+000007D8  B2ED         addh    [page:0x00edu8]    a0
+000007D9  581C         mov    a0h    r0
+000007DA  583C         mov    a0h    r1
+000007DB  58DA         mov    a0l    r7
+000007DC  5892         mov    b0l    r4
+000007DD  67C0         clrr    a0    always
+000007DE  77C0         clrr    a1    always
+000007DF  D008         mpy    [r4]    [r0++]    a0
+000007E0  D278         mac    [r4++s]    [r0++s]    a0
+000007E1  DA08         mac    [r4]    [r0++]    a1
+000007E2  D278         mac    [r4++s]    [r0++s]    a0
+000007E3  DA08         mac    [r4]    [r0++]    a1
+000007E4  D278         mac    [r4++s]    [r0++s]    a0
+000007E5  DA08         mac    [r4]    [r0++]    a1
+000007E6  D278         mac    [r4++s]    [r0++s]    a0
+000007E7  DA08         mac    [r4]    [r0++]    a1
+000007E8  D278         mac    [r4++s]    [r0++s]    a0
+000007E9  DA08         mac    [r4]    [r0++]    a1
+000007EA  D278         mac    [r4++s]    [r0++s]    a0
+000007EB  DA08         mac    [r4]    [r0++]    a1
+000007EC  D278         mac    [r4++s]    [r0++s]    a0
+000007ED  DA08         mac    [r4]    [r0++]    a1
+000007EE  D278         mac    [r4++s]    [r0++s]    a0
+000007EF  DA08         mac    [r4]    [r0++]    a1
+000007F0  D278         mac    [r4++s]    [r0++s]    a0
+000007F1  DA08         mac    [r4]    [r0++]    a1
+000007F2  D278         mac    [r4++s]    [r0++s]    a0
+000007F3  DA08         mac    [r4]    [r0++]    a1
+000007F4  D278         mac    [r4++s]    [r0++s]    a0
+000007F5  DA08         mac    [r4]    [r0++]    a1
+000007F6  D278         mac    [r4++s]    [r0++s]    a0
+000007F7  DA08         mac    [r4]    [r0++]    a1
+000007F8  D278         mac    [r4++s]    [r0++s]    a0
+000007F9  DA08         mac    [r4]    [r0++]    a1
+000007FA  D278         mac    [r4++s]    [r0++s]    a0
+000007FB  DA08         mac    [r4]    [r0++]    a1
+000007FC  D278         mac    [r4++s]    [r0++s]    a0
+000007FD  DA08         mac    [r4]    [r0++]    a1
+000007FE  D278         mac    [r4++s]    [r0++s]    a0
+000007FF  DA08         mac    [r4]    [r0++]    a1
+00000800  D278         mac    [r4++s]    [r0++s]    a0
+00000801  DA08         mac    [r4]    [r0++]    a1
+00000802  D278         mac    [r4++s]    [r0++s]    a0
+00000803  DA08         mac    [r4]    [r0++]    a1
+00000804  D278         mac    [r4++s]    [r0++s]    a0
+00000805  DA08         mac    [r4]    [r0++]    a1
+00000806  D278         mac    [r4++s]    [r0++s]    a0
+00000807  DA08         mac    [r4]    [r0++]    a1
+00000808  D278         mac    [r4++s]    [r0++s]    a0
+00000809  DA08         mac    [r4]    [r0++]    a1
+0000080A  D278         mac    [r4++s]    [r0++s]    a0
+0000080B  DA08         mac    [r4]    [r0++]    a1
+0000080C  D278         mac    [r4++s]    [r0++s]    a0
+0000080D  DA08         mac    [r4]    [r0++]    a1
+0000080E  D278         mac    [r4++s]    [r0++s]    a0
+0000080F  DA08         mac    [r4]    [r0++]    a1
+00000810  D278         mac    [r4++s]    [r0++s]    a0
+00000811  DA08         mac    [r4]    [r0++]    a1
+00000812  D278         mac    [r4++s]    [r0++s]    a0
+00000813  DA08         mac    [r4]    [r0++]    a1
+00000814  D278         mac    [r4++s]    [r0++s]    a0
+00000815  DA08         mac    [r4]    [r0++]    a1
+00000816  D278         mac    [r4++s]    [r0++s]    a0
+00000817  DA08         mac    [r4]    [r0++]    a1
+00000818  D278         mac    [r4++s]    [r0++s]    a0
+00000819  DA08         mac    [r4]    [r0++]    a1
+0000081A  D278         mac    [r4++s]    [r0++s]    a0
+0000081B  DA08         mac    [r4]    [r0++]    a1
+0000081C  D278         mac    [r4++s]    [r0++s]    a0
+0000081D  DA08         mac    [r4]    [r0++]    a1
+0000081E  D278         mac    [r4++s]    [r0++s]    a0
+0000081F  DA08         mac    [r4]    [r0++]    a1
+00000820  D278         mac    [r4++s]    [r0++s]    a0
+00000821  DA08         mac    [r4]    [r0++]    a1
+00000822  D278         mac    [r4++s]    [r0++s]    a0
+00000823  DA08         mac    [r4]    [r0++]    a1
+00000824  D200         mac    [r4]    [r0]    a0
+00000825  87AB         add    p*    a1
+00000826  8FB8         sub    a0    a1
+00000827  58FD         mov    a1h    y0
+00000828  8146         mpysu    y0    r7    a0
+00000829  5B2B         mov    p*    a1
+0000082A  7700         shr    a1    always
+0000082B  86B9         add    a1    a0
+0000082C  1B8A         mov    a0h    [r2++]
+0000082D  5892         mov    b0l    r4
+0000082E  008C         modr    [r4++]
+0000082F  67C0         clrr    a0    always
+00000830  77C0         clrr    a1    always
+00000831  D009         mpy    [r4]    [r1++]    a0
+00000832  D279         mac    [r4++s]    [r1++s]    a0
+00000833  DA09         mac    [r4]    [r1++]    a1
+00000834  D279         mac    [r4++s]    [r1++s]    a0
+00000835  DA09         mac    [r4]    [r1++]    a1
+00000836  D279         mac    [r4++s]    [r1++s]    a0
+00000837  DA09         mac    [r4]    [r1++]    a1
+00000838  D279         mac    [r4++s]    [r1++s]    a0
+00000839  DA09         mac    [r4]    [r1++]    a1
+0000083A  D279         mac    [r4++s]    [r1++s]    a0
+0000083B  DA09         mac    [r4]    [r1++]    a1
+0000083C  D279         mac    [r4++s]    [r1++s]    a0
+0000083D  DA09         mac    [r4]    [r1++]    a1
+0000083E  D279         mac    [r4++s]    [r1++s]    a0
+0000083F  DA09         mac    [r4]    [r1++]    a1
+00000840  D279         mac    [r4++s]    [r1++s]    a0
+00000841  DA09         mac    [r4]    [r1++]    a1
+00000842  D279         mac    [r4++s]    [r1++s]    a0
+00000843  DA09         mac    [r4]    [r1++]    a1
+00000844  D279         mac    [r4++s]    [r1++s]    a0
+00000845  DA09         mac    [r4]    [r1++]    a1
+00000846  D279         mac    [r4++s]    [r1++s]    a0
+00000847  DA09         mac    [r4]    [r1++]    a1
+00000848  D279         mac    [r4++s]    [r1++s]    a0
+00000849  DA09         mac    [r4]    [r1++]    a1
+0000084A  D279         mac    [r4++s]    [r1++s]    a0
+0000084B  DA09         mac    [r4]    [r1++]    a1
+0000084C  D279         mac    [r4++s]    [r1++s]    a0
+0000084D  DA09         mac    [r4]    [r1++]    a1
+0000084E  D279         mac    [r4++s]    [r1++s]    a0
+0000084F  DA09         mac    [r4]    [r1++]    a1
+00000850  D279         mac    [r4++s]    [r1++s]    a0
+00000851  DA09         mac    [r4]    [r1++]    a1
+00000852  D279         mac    [r4++s]    [r1++s]    a0
+00000853  DA09         mac    [r4]    [r1++]    a1
+00000854  D279         mac    [r4++s]    [r1++s]    a0
+00000855  DA09         mac    [r4]    [r1++]    a1
+00000856  D279         mac    [r4++s]    [r1++s]    a0
+00000857  DA09         mac    [r4]    [r1++]    a1
+00000858  D279         mac    [r4++s]    [r1++s]    a0
+00000859  DA09         mac    [r4]    [r1++]    a1
+0000085A  D279         mac    [r4++s]    [r1++s]    a0
+0000085B  DA09         mac    [r4]    [r1++]    a1
+0000085C  D279         mac    [r4++s]    [r1++s]    a0
+0000085D  DA09         mac    [r4]    [r1++]    a1
+0000085E  D279         mac    [r4++s]    [r1++s]    a0
+0000085F  DA09         mac    [r4]    [r1++]    a1
+00000860  D279         mac    [r4++s]    [r1++s]    a0
+00000861  DA09         mac    [r4]    [r1++]    a1
+00000862  D279         mac    [r4++s]    [r1++s]    a0
+00000863  DA09         mac    [r4]    [r1++]    a1
+00000864  D279         mac    [r4++s]    [r1++s]    a0
+00000865  DA09         mac    [r4]    [r1++]    a1
+00000866  D279         mac    [r4++s]    [r1++s]    a0
+00000867  DA09         mac    [r4]    [r1++]    a1
+00000868  D279         mac    [r4++s]    [r1++s]    a0
+00000869  DA09         mac    [r4]    [r1++]    a1
+0000086A  D279         mac    [r4++s]    [r1++s]    a0
+0000086B  DA09         mac    [r4]    [r1++]    a1
+0000086C  D279         mac    [r4++s]    [r1++s]    a0
+0000086D  DA09         mac    [r4]    [r1++]    a1
+0000086E  D279         mac    [r4++s]    [r1++s]    a0
+0000086F  DA09         mac    [r4]    [r1++]    a1
+00000870  D279         mac    [r4++s]    [r1++s]    a0
+00000871  DA09         mac    [r4]    [r1++]    a1
+00000872  D279         mac    [r4++s]    [r1++s]    a0
+00000873  DA09         mac    [r4]    [r1++]    a1
+00000874  D279         mac    [r4++s]    [r1++s]    a0
+00000875  DA09         mac    [r4]    [r1++]    a1
+00000876  D201         mac    [r4]    [r1]    a0
+00000877  87AB         add    p*    a1
+00000878  8FB8         sub    a0    a1
+00000879  58FD         mov    a1h    y0
+0000087A  8146         mpysu    y0    r7    a0
+0000087B  5B2B         mov    p*    a1
+0000087C  7700         shr    a1    always
+0000087D  86B9         add    a1    a0
+0000087E  1B8A         mov    a0h    [r2++]
+0000087F  0095         modr    [r5--]
+00000880  418C         br    0x000007c9    nr
+00000881  07C9 ^^^
+00000882  4580         ret    always
+00000883  CD00         cmp    0x0000u8    a1
+00000884  4181         br    0x00000887    eq
+00000885  0887 ^^^
+00000886  4580         ret    always
+00000887  5E78         pop    a0
+00000888  5E1A         mov    0x0008    a0l
+00000889  0008 ^^^
+0000088A  D4BC         mov    a0l    [0xe691]
+0000088B  E691 ^^^
+0000088C  2101         mov    0x0001u8    a0l
+0000088D  D4BC         mov    a0l    [0xd869]
+0000088E  D869 ^^^
+0000088F  D4B8         mov    [0x584c]    a0
+00000890  584C ^^^
+00000891  41C6         call    0x00000724    le
+00000892  0724 ^^^
+00000893  D4BC         mov    a0l    [0xda66]
+00000894  DA66 ^^^
+00000895  4180         br    0x000029be    always
+00000896  29BE ^^^
+00000897  201E         mov    r0    [page:0x001eu8]
+00000898  5E00         mov    0x0ada    r0
+00000899  0ADA ^^^
+0000089A  6760         clr    a0    always
+0000089B  1B40         mov    a0l    [r0]
+0000089C  41C0         call    0x0000ceca    always
+0000089D  CECA ^^^
+0000089E  4580         ret    always
+0000089F  201E         mov    r0    [page:0x001eu8]
+000008A0  5E00         mov    0x0ada    r0
+000008A1  0ADA ^^^
+000008A2  6760         clr    a0    always
+000008A3  1B40         mov    a0l    [r0]
+000008A4  41C0         call    0x0000ce99    always
+000008A5  CE99 ^^^
+000008A6  4580         ret    always
+000008A7  5E18         mov    0x052b    a0
+000008A8  052B ^^^
+000008A9  D4BC         mov    a0l    [0x5a4c]
+000008AA  5A4C ^^^
+000008AB  6760         clr    a0    always
+000008AC  D4BC         mov    a0l    [0x5aa6]
+000008AD  5AA6 ^^^
+000008AE  5E18         mov    0x0333    a0
+000008AF  0333 ^^^
+000008B0  D4BC         mov    a0l    [0x584b]
+000008B1  584B ^^^
+000008B2  5E18         mov    0x0001    a0
+000008B3  0001 ^^^
+000008B4  D4BC         mov    a0l    [0x5aa5]
+000008B5  5AA5 ^^^
+000008B6  6760         clr    a0    always
+000008B7  D4BC         mov    a0l    [0x5002]
+000008B8  5002 ^^^
+000008B9  D4BC         mov    a0l    [0x5003]
+000008BA  5003 ^^^
+000008BB  5E19         mov    0x0003    a1
+000008BC  0003 ^^^
+000008BD  D5BC         mov    a1l    [0xe6a3]
+000008BE  E6A3 ^^^
+000008BF  045E         load    0x005eu8    page
+000008C0  5E06         mov    0x2eec    r7
+000008C1  2EEC ^^^
+000008C2  41C0         call    0x00007f0a    always
+000008C3  7F0A ^^^
+000008C4  045D         load    0x005du8    page
+000008C5  5E19         mov    0x0000    a1
+000008C6  0000 ^^^
+000008C7  D5BC         mov    a1l    [0xe6a3]
+000008C8  E6A3 ^^^
+000008C9  5E1A         mov    0x06c0    a0l
+000008CA  06C0 ^^^
+000008CB  38AD         mov    a0l    [page:0x00adu8]
+000008CC  6760         clr    a0    always
+000008CD  38B9         mov    a0l    [page:0x00b9u8]
+000008CE  5E19         mov    0x0003    a1
+000008CF  0003 ^^^
+000008D0  D5BC         mov    a1l    [0x5aa7]
+000008D1  5AA7 ^^^
+000008D2  2300         mov    +0x0000    r0
+000008D3  41C0         call    0x000084bd    always
+000008D4  84BD ^^^
+000008D5  41C0         call    0x00008606    always
+000008D6  8606 ^^^
+000008D7  5E00         mov    0x384e    r0
+000008D8  384E ^^^
+000008D9  5E19         mov    0x0bb7    a1
+000008DA  0BB7 ^^^
+000008DB  6760         clr    a0    always
+000008DC  0D1B         rep    a1l
+000008DD  1B48         mov    a0l    [r0++]
+000008DE  5E18         mov    0x384e    a0
+000008DF  384E ^^^
+000008E0  38DD         mov    a0l    [page:0x00ddu8]
+000008E1  5E18         mov    0x0001    a0
+000008E2  0001 ^^^
+000008E3  38E1         mov    a0l    [page:0x00e1u8]
+000008E4  5E18         mov    0x0033    a0
+000008E5  0033 ^^^
+000008E6  D4BC         mov    a0l    [0x5a34]
+000008E7  5A34 ^^^
+000008E8  5E18         mov    0x0001    a0
+000008E9  0001 ^^^
+000008EA  38FD         mov    a0l    [page:0x00fdu8]
+000008EB  5E18         mov    0x7fff    a0
+000008EC  7FFF ^^^
+000008ED  38FE         mov    a0l    [page:0x00feu8]
+000008EE  5E18         mov    0x0d7b    a0
+000008EF  0D7B ^^^
+000008F0  D4BC         mov    a0l    [0x5a5c]
+000008F1  5A5C ^^^
+000008F2  5E18         mov    0x0033    a0
+000008F3  0033 ^^^
+000008F4  D4BC         mov    a0l    [0x5a3a]
+000008F5  5A3A ^^^
+000008F6  5E18         mov    0x0dda    a0
+000008F7  0DDA ^^^
+000008F8  D4BC         mov    a0l    [0x5a5d]
+000008F9  5A5D ^^^
+000008FA  5E18         mov    0x0033    a0
+000008FB  0033 ^^^
+000008FC  D4BC         mov    a0l    [0x5a3b]
+000008FD  5A3B ^^^
+000008FE  41C0         call    0x000003d7    always
+000008FF  03D7 ^^^
+00000900  4580         ret    always
+00000901  CD00         cmp    0x0000u8    a1
+00000902  4181         br    0x0000090e    eq
+00000903  090E ^^^
+00000904  CD04         cmp    0x0004u8    a1
+00000905  4181         br    0x0000091d    eq
+00000906  091D ^^^
+00000907  CD05         cmp    0x0005u8    a1
+00000908  4181         br    0x00000937    eq
+00000909  0937 ^^^
+0000090A  CD02         cmp    0x0002u8    a1
+0000090B  4181         br    0x00000966    eq
+0000090C  0966 ^^^
+0000090D  4580         ret    always
+0000090E  5E78         pop    a0
+0000090F  7173         mov    [page:0x0073u8]    a0
+00000910  4185         br    0x000096d7    lt
+00000911  96D7 ^^^
+00000912  6760         clr    a0    always
+00000913  3895         mov    a0l    [page:0x0095u8]
+00000914  43C0         dint
+00000915  5E19         mov    0x0001    a1
+00000916  0001 ^^^
+00000917  7175         mov    [page:0x0075u8]    a0
+00000918  67F2         copy    a0    neq
+00000919  3875         mov    a0l    [page:0x0075u8]
+0000091A  4380         eint
+0000091B  4180         br    0x000096d7    always
+0000091C  96D7 ^^^
+0000091D  5E78         pop    a0
+0000091E  EDA1         cmpv    0x0001    [page:0x00a1u8]
+0000091F  0001 ^^^
+00000920  4181         br    0x0000978c    eq
+00000921  978C ^^^
+00000922  5E00         mov    0xf5c8    r0
+00000923  F5C8 ^^^
+00000924  045F         load    0x005fu8    page
+00000925  41C0         call    0x0000885e    always
+00000926  885E ^^^
+00000927  045D         load    0x005du8    page
+00000928  5E03         mov    0xda6e    r3
+00000929  DA6E ^^^
+0000092A  180B         mov    r0    [r3++]
+0000092B  182B         mov    r1    [r3++]
+0000092C  184B         mov    r2    [r3++]
+0000092D  5E1A         mov    0x0200    a0l
+0000092E  0200 ^^^
+0000092F  D4BC         mov    a0l    [0xe691]
+00000930  E691 ^^^
+00000931  5E18         mov    0x0004    a0
+00000932  0004 ^^^
+00000933  D4BC         mov    a0l    [0xe610]
+00000934  E610 ^^^
+00000935  4180         br    0x0000978c    always
+00000936  978C ^^^
+00000937  5E78         pop    a0
+00000938  EDA1         cmpv    0x0000    [page:0x00a1u8]
+00000939  0000 ^^^
+0000093A  5102         brr    0x0010    neq
+0000093B  5E00         mov    0xf609    r0
+0000093C  F609 ^^^
+0000093D  5E01         mov    0xf5c8    r1
+0000093E  F5C8 ^^^
+0000093F  5C40         bkrep    0x0040u8    0x00000942
+00000940  0942 ^^^
+00000941  1F08         mov    [r0++]    a0
+00000942  1B49         mov    a0l    [r1++]
+00000943  5E1A         mov    0x0400    a0l
+00000944  0400 ^^^
+00000945  D4BC         mov    a0l    [0xe691]
+00000946  E691 ^^^
+00000947  5E18         mov    0x0004    a0
+00000948  0004 ^^^
+00000949  D4BC         mov    a0l    [0xe610]
+0000094A  E610 ^^^
+0000094B  3F10         mov    +0x0010    y0
+0000094C  E0A1         mpy    y0    [page:0x00a1u8]    a0
+0000094D  5B0B         mov    p*    a0
+0000094E  86C0         add    0xf5c8    a0
+0000094F  F5C8 ^^^
+00000950  581A         mov    a0l    r0
+00000951  5E01         mov    0x2a54    r1
+00000952  2A54 ^^^
+00000953  41C0         call    0x000097d0    always
+00000954  97D0 ^^^
+00000955  719E         mov    [page:0x009eu8]    a0
+00000956  587A         mov    a0l    r3
+00000957  045F         load    0x005fu8    page
+00000958  41C0         call    0x0000a82a    always
+00000959  A82A ^^^
+0000095A  045D         load    0x005du8    page
+0000095B  79A1         mov    [page:0x00a1u8]    a1
+0000095C  87C0         add    0xda6e    a1
+0000095D  DA6E ^^^
+0000095E  581B         mov    a1l    r0
+0000095F  1B40         mov    a0l    [r0]
+00000960  71A1         mov    [page:0x00a1u8]    a0
+00000961  67D0         inc    a0    always
+00000962  82C0         and    0x0003    a0
+00000963  0003 ^^^
+00000964  38A1         mov    a0l    [page:0x00a1u8]
+00000965  4580         ret    always
+00000966  5E78         pop    a0
+00000967  5E18         mov    0xbd4c    a0
+00000968  BD4C ^^^
+00000969  5E19         mov    0xc471    a1
+0000096A  C471 ^^^
+0000096B  EDA2         cmpv    0x0004    [page:0x00a2u8]
+0000096C  0004 ^^^
+0000096D  67F1         copy    a0    eq
+0000096E  581A         mov    a0l    r0
+0000096F  86C0         add    0x0080    a0
+00000970  0080 ^^^
+00000971  583A         mov    a0l    r1
+00000972  86C0         add    0x002f    a0
+00000973  002F ^^^
+00000974  585A         mov    a0l    r2
+00000975  5E18         mov    0x3e80    a0
+00000976  3E80 ^^^
+00000977  5E19         mov    0x7d00    a1
+00000978  7D00 ^^^
+00000979  EDA2         cmpv    0x0004    [page:0x00a2u8]
+0000097A  0004 ^^^
+0000097B  67F1         copy    a0    eq
+0000097C  587A         mov    a0l    r3
+0000097D  045F         load    0x005fu8    page
+0000097E  41C0         call    0x0000a7c0    always
+0000097F  A7C0 ^^^
+00000980  045D         load    0x005du8    page
+00000981  3F0C         mov    +0x000c    y0
+00000982  E0A2         mpy    y0    [page:0x00a2u8]    a0
+00000983  5B0B         mov    p*    a0
+00000984  86C0         add    0x6302    a0
+00000985  6302 ^^^
+00000986  38A4         mov    a0l    [page:0x00a4u8]
+00000987  6760         clr    a0    always
+00000988  38A1         mov    a0l    [page:0x00a1u8]
+00000989  43C0         dint
+0000098A  5E19         mov    0x0002    a1
+0000098B  0002 ^^^
+0000098C  719D         mov    [page:0x009du8]    a0
+0000098D  7761         clr    a1    eq
+0000098E  3C9D         mov    a1l    [page:0x009du8]
+0000098F  4380         eint
+00000990  4580         ret    always
+00000991  CD03         cmp    0x0003u8    a1
+00000992  4181         br    0x00000999    eq
+00000993  0999 ^^^
+00000994  4580         ret    always
+00000995  CD01         cmp    0x0001u8    a1
+00000996  4181         br    0x000009d9    eq
+00000997  09D9 ^^^
+00000998  4580         ret    always
+00000999  5E78         pop    a0
+0000099A  41C0         call    0x000009a8    always
+0000099B  09A8 ^^^
+0000099C  2700         mov    +0x0000    r1
+0000099D  ED75         cmpv    0x0002    [page:0x0075u8]
+0000099E  0002 ^^^
+0000099F  4585         ret    lt
+000009A0  716F         mov    [page:0x006fu8]    a0
+000009A1  82C0         and    0x0021    a0
+000009A2  0021 ^^^
+000009A3  4581         ret    eq
+000009A4  F1C0         tstb    [page:0x00c0u8]    0x0001
+000009A5  4582         ret    neq
+000009A6  2701         mov    +0x0001    r1
+000009A7  4580         ret    always
+000009A8  7173         mov    [page:0x0073u8]    a0
+000009A9  4585         ret    lt
+000009AA  6720         shl    a0    always
+000009AB  86C0         add    0x09b2    a0
+000009AC  09B2 ^^^
+000009AD  5E01         mov    0x28a9    r1
+000009AE  28A9 ^^^
+000009AF  599A         mov    a0l    pc
+000009B0  0000         nop
+000009B1  0000         nop
+000009B2  4180         br    0x000009ba    always
+000009B3  09BA ^^^
+000009B4  4180         br    0x000009bf    always
+000009B5  09BF ^^^
+000009B6  4180         br    0x000009c4    always
+000009B7  09C4 ^^^
+000009B8  4180         br    0x000009c9    always
+000009B9  09C9 ^^^
+000009BA  5E00         mov    0x60fd    r0
+000009BB  60FD ^^^
+000009BC  5E18         mov    0x004c    a0
+000009BD  004C ^^^
+000009BE  5150         brr    0x0015    always
+000009BF  5E00         mov    0x5062    r0
+000009C0  5062 ^^^
+000009C1  5E18         mov    0x0039    a0
+000009C2  0039 ^^^
+000009C3  5100         brr    0x0010    always
+000009C4  5E00         mov    0x6184    r0
+000009C5  6184 ^^^
+000009C6  5E18         mov    0x0012    a0
+000009C7  0012 ^^^
+000009C8  50B0         brr    0x000b    always
+000009C9  41C0         call    0x000052eb    always
+000009CA  52EB ^^^
+000009CB  1849         mov    r2    [r1++]
+000009CC  6760         clr    a0    always
+000009CD  1B49         mov    a0l    [r1++]
+000009CE  5E18         mov    0x509c    a0
+000009CF  509C ^^^
+000009D0  86A2         add    r2    a0
+000009D1  581A         mov    a0l    r0
+000009D2  1C00         mov    [r0]    r0
+000009D3  1F08         mov    [r0++]    a0
+000009D4  5D1A         bkrep    a0l    0x000009d7
+000009D5  09D7 ^^^
+000009D6  1F48         mov    [r0++]    a0l
+000009D7  1B49         mov    a0l    [r1++]
+000009D8  4580         ret    always
+000009D9  5E7A         pop    a0l
+000009DA  71B9         mov    [page:0x00b9u8]    a0
+000009DB  4181         br    0x00005334    eq
+000009DC  5334 ^^^
+000009DD  CC01         cmp    0x0001u8    a0
+000009DE  4182         br    0x0000532f    neq
+000009DF  532F ^^^
+000009E0  5E00         mov    0x2f0d    r0
+000009E1  2F0D ^^^
+000009E2  5E04         mov    0x2f1b    r4
+000009E3  2F1B ^^^
+000009E4  41C0         call    0x0000d226    always
+000009E5  D226 ^^^
+000009E6  5E00         mov    0x2f0d    r0
+000009E7  2F0D ^^^
+000009E8  5E04         mov    0x2f1b    r4
+000009E9  2F1B ^^^
+000009EA  41C0         call    0x0000d29d    always
+000009EB  D29D ^^^
+000009EC  43C0         dint
+000009ED  5E19         mov    0x0002    a1
+000009EE  0002 ^^^
+000009EF  71B9         mov    [page:0x00b9u8]    a0
+000009F0  67F2         copy    a0    neq
+000009F1  38B9         mov    a0l    [page:0x00b9u8]
+000009F2  4380         eint
+000009F3  4180         br    0x0000532f    always
+000009F4  532F ^^^
+000009F5  D4B8         mov    [0x5d51]    a0
+000009F6  5D51 ^^^
+000009F7  CC01         cmp    0x0001u8    a0
+000009F8  50A1         brr    0x000a    eq
+000009F9  CC02         cmp    0x0002u8    a0
+000009FA  4181         br    0x00000adc    eq
+000009FB  0ADC ^^^
+000009FC  CC06         cmp    0x0006u8    a0
+000009FD  4181         br    0x00000b19    eq
+000009FE  0B19 ^^^
+000009FF  CC07         cmp    0x0007u8    a0
+00000A00  4181         br    0x00000b21    eq
+00000A01  0B21 ^^^
+00000A02  4580         ret    always
+00000A03  5E00         mov    0x28f7    r0
+00000A04  28F7 ^^^
+00000A05  1F40         mov    [r0]    a0l
+00000A06  82C0         and    0x000f    a0
+00000A07  000F ^^^
+00000A08  6720         shl    a0    always
+00000A09  86C0         add    0x0a0e    a0
+00000A0A  0A0E ^^^
+00000A0B  599A         mov    a0l    pc
+00000A0C  0000         nop
+00000A0D  0000         nop
+00000A0E  4180         br    0x00000a1e    always
+00000A0F  0A1E ^^^
+00000A10  4180         br    0x00000a1e    always
+00000A11  0A1E ^^^
+00000A12  0000         nop
+00000A13  4580         ret    always
+00000A14  4180         br    0x00000a2d    always
+00000A15  0A2D ^^^
+00000A16  4180         br    0x00000a31    always
+00000A17  0A31 ^^^
+00000A18  4180         br    0x00000a39    always
+00000A19  0A39 ^^^
+00000A1A  4180         br    0x00000a5b    always
+00000A1B  0A5B ^^^
+00000A1C  4180         br    0x00000a60    always
+00000A1D  0A60 ^^^
+00000A1E  41C0         call    0x00000a9a    always
+00000A1F  0A9A ^^^
+00000A20  5E00         mov    0x28f8    r0
+00000A21  28F8 ^^^
+00000A22  6720         shl    a0    always
+00000A23  86C0         add    0x6283    a0
+00000A24  6283 ^^^
+00000A25  587A         mov    a0l    r3
+00000A26  1C4B         mov    [r3++]    r2
+00000A27  1C63         mov    [r3]    r3
+00000A28  3F00         mov    +0x0000    y0
+00000A29  1F48         mov    [r0++]    a0l
+00000A2A  41C0         call    0x0000586e    always
+00000A2B  586E ^^^
+00000A2C  4580         ret    always
+00000A2D  41C0         call    0x00000a9a    always
+00000A2E  0A9A ^^^
+00000A2F  4180         br    0x00000a33    always
+00000A30  0A33 ^^^
+00000A31  41C0         call    0x00000ab8    always
+00000A32  0AB8 ^^^
+00000A33  5E01         mov    0x28ab    r1
+00000A34  28AB ^^^
+00000A35  6760         clr    a0    always
+00000A36  0C4A         rep    0x004au8
+00000A37  1B49         mov    a0l    [r1++]
+00000A38  4580         ret    always
+00000A39  41C0         call    0x00000ab8    always
+00000A3A  0AB8 ^^^
+00000A3B  41C0         call    0x00000a3e    always
+00000A3C  0A3E ^^^
+00000A3D  4580         ret    always
+00000A3E  41C0         call    0x00000ac7    always
+00000A3F  0AC7 ^^^
+00000A40  5E01         mov    0x28ab    r1
+00000A41  28AB ^^^
+00000A42  0084         modr    [r4]
+00000A43  1F6B         mov    [r3++]    a1l
+00000A44  6760         clr    a0    always
+00000A45  5D1B         bkrep    a1l    0x00000a56
+00000A46  0A56 ^^^
+00000A47  1F22         mov    [r2]    a1
+00000A48  7710         shr4    a1    always
+00000A49  87C0         add    0x28f8    a1
+00000A4A  28F8 ^^^
+00000A4B  581B         mov    a1l    r0
+00000A4C  1F2A         mov    [r2++]    a1
+00000A4D  83C0         and    0x000f    a1
+00000A4E  000F ^^^
+00000A4F  CF0F         sub    0x000fu8    a1
+00000A50  5BFB         mov    a1l    sv
+00000A51  1F20         mov    [r0]    a1
+00000A52  DEE0         shfc    a1    a1    always
+00000A53  83C0         and    0x0001    a1
+00000A54  0001 ^^^
+00000A55  6720         shl    a0    always
+00000A56  80B9         or    a1    a0
+00000A57  1B49         mov    a0l    [r1++]
+00000A58  0094         modr    [r4--]
+00000A59  569C         brr    0xffe9    nr
+00000A5A  4580         ret    always
+00000A5B  41C0         call    0x00000ab8    always
+00000A5C  0AB8 ^^^
+00000A5D  4180         br    0x00000a33    always
+00000A5E  0A33 ^^^
+00000A5F  4580         ret    always
+00000A60  41C0         call    0x00000ab8    always
+00000A61  0AB8 ^^^
+00000A62  5E00         mov    0x28f6    r0
+00000A63  28F6 ^^^
+00000A64  1F60         mov    [r0]    a1l
+00000A65  9FF8         shfi    a1    a1    -0x0008
+00000A66  83C0         and    0x000f    a1
+00000A67  000F ^^^
+00000A68  1F40         mov    [r0]    a0l
+00000A69  82C0         and    0x1000    a0
+00000A6A  1000 ^^^
+00000A6B  5042         brr    0x0004    neq
+00000A6C  CD03         cmp    0x0003u8    a1
+00000A6D  5061         brr    0x0006    eq
+00000A6E  4180         br    0x00000a33    always
+00000A6F  0A33 ^^^
+00000A70  CD07         cmp    0x0007u8    a1
+00000A71  5021         brr    0x0002    eq
+00000A72  4180         br    0x00000a33    always
+00000A73  0A33 ^^^
+00000A74  D4B8         mov    [0x5d51]    a0
+00000A75  5D51 ^^^
+00000A76  CC01         cmp    0x0001u8    a0
+00000A77  4182         br    0x00000a7d    neq
+00000A78  0A7D ^^^
+00000A79  D5B8         mov    [0xd982]    a1
+00000A7A  D982 ^^^
+00000A7B  4182         br    0x00000a33    neq
+00000A7C  0A33 ^^^
+00000A7D  41C0         call    0x00000ac7    always
+00000A7E  0AC7 ^^^
+00000A7F  5E01         mov    0x28ab    r1
+00000A80  28AB ^^^
+00000A81  0084         modr    [r4]
+00000A82  1F6B         mov    [r3++]    a1l
+00000A83  6760         clr    a0    always
+00000A84  5D1B         bkrep    a1l    0x00000a95
+00000A85  0A95 ^^^
+00000A86  1F22         mov    [r2]    a1
+00000A87  7710         shr4    a1    always
+00000A88  87C0         add    0xd983    a1
+00000A89  D983 ^^^
+00000A8A  581B         mov    a1l    r0
+00000A8B  1F2A         mov    [r2++]    a1
+00000A8C  83C0         and    0x000f    a1
+00000A8D  000F ^^^
+00000A8E  CF0F         sub    0x000fu8    a1
+00000A8F  5BFB         mov    a1l    sv
+00000A90  1F20         mov    [r0]    a1
+00000A91  DEE0         shfc    a1    a1    always
+00000A92  83C0         and    0x0001    a1
+00000A93  0001 ^^^
+00000A94  6720         shl    a0    always
+00000A95  80B9         or    a1    a0
+00000A96  1B49         mov    a0l    [r1++]
+00000A97  0094         modr    [r4--]
+00000A98  569C         brr    0xffe9    nr
+00000A99  4580         ret    always
+00000A9A  5E00         mov    0x28f6    r0
+00000A9B  28F6 ^^^
+00000A9C  5E01         mov    0x28a9    r1
+00000A9D  28A9 ^^^
+00000A9E  1F20         mov    [r0]    a1
+00000A9F  83C0         and    0x000c    a1
+00000AA0  000C ^^^
+00000AA1  9FFE         shfi    a1    a1    -0x0002
+00000AA2  D5BC         mov    a1l    [0x5a1f]
+00000AA3  5A1F ^^^
+00000AA4  1F00         mov    [r0]    a0
+00000AA5  82C0         and    0x0003    a0
+00000AA6  0003 ^^^
+00000AA7  D4BC         mov    a0l    [0x5a20]
+00000AA8  5A20 ^^^
+00000AA9  D5BC         mov    a1l    [0x5d64]
+00000AAA  5D64 ^^^
+00000AAB  D5BC         mov    a1l    [0xd975]
+00000AAC  D975 ^^^
+00000AAD  5E00         mov    0x28f7    r0
+00000AAE  28F7 ^^^
+00000AAF  1F00         mov    [r0]    a0
+00000AB0  9B78         shfi    a0    a0    -0x0008
+00000AB1  D4BC         mov    a0l    [0x5a21]
+00000AB2  5A21 ^^^
+00000AB3  1B49         mov    a0l    [r1++]
+00000AB4  5E19         mov    0x0000    a1
+00000AB5  0000 ^^^
+00000AB6  1B69         mov    a1l    [r1++]
+00000AB7  4580         ret    always
+00000AB8  5E01         mov    0x28a9    r1
+00000AB9  28A9 ^^^
+00000ABA  D5B8         mov    [0x5a1f]    a1
+00000ABB  5A1F ^^^
+00000ABC  D5BC         mov    a1l    [0x5d64]
+00000ABD  5D64 ^^^
+00000ABE  D5BC         mov    a1l    [0xd975]
+00000ABF  D975 ^^^
+00000AC0  D4B8         mov    [0x5a21]    a0
+00000AC1  5A21 ^^^
+00000AC2  1B49         mov    a0l    [r1++]
+00000AC3  5E18         mov    0x0000    a0
+00000AC4  0000 ^^^
+00000AC5  1B49         mov    a0l    [r1++]
+00000AC6  4580         ret    always
+00000AC7  5E00         mov    0x28f6    r0
+00000AC8  28F6 ^^^
+00000AC9  1F40         mov    [r0]    a0l
+00000ACA  82C0         and    0x1000    a0
+00000ACB  1000 ^^^
+00000ACC  5032         brr    0x0003    neq
+00000ACD  5E18         mov    0x9b09    a0
+00000ACE  9B09 ^^^
+00000ACF  5020         brr    0x0002    always
+00000AD0  5E18         mov    0x9b11    a0
+00000AD1  9B11 ^^^
+00000AD2  5E01         mov    0x28a9    r1
+00000AD3  28A9 ^^^
+00000AD4  8681         add    [r1]    a0
+00000AD5  583A         mov    a0l    r1
+00000AD6  1F01         mov    [r1]    a0
+00000AD7  583A         mov    a0l    r1
+00000AD8  1C49         mov    [r1++]    r2
+00000AD9  1C69         mov    [r1++]    r3
+00000ADA  1C89         mov    [r1++]    r4
+00000ADB  4580         ret    always
+00000ADC  5E00         mov    0x28f7    r0
+00000ADD  28F7 ^^^
+00000ADE  1F40         mov    [r0]    a0l
+00000ADF  82C0         and    0x000f    a0
+00000AE0  000F ^^^
+00000AE1  6720         shl    a0    always
+00000AE2  86C0         add    0x0ae7    a0
+00000AE3  0AE7 ^^^
+00000AE4  599A         mov    a0l    pc
+00000AE5  0000         nop
+00000AE6  0000         nop
+00000AE7  4180         br    0x00000a1e    always
+00000AE8  0A1E ^^^
+00000AE9  4180         br    0x00000a1e    always
+00000AEA  0A1E ^^^
+00000AEB  0000         nop
+00000AEC  4580         ret    always
+00000AED  4180         br    0x00000a1e    always
+00000AEE  0A1E ^^^
+00000AEF  4180         br    0x00000a31    always
+00000AF0  0A31 ^^^
+00000AF1  4180         br    0x00000a39    always
+00000AF2  0A39 ^^^
+00000AF3  4180         br    0x00000a39    always
+00000AF4  0A39 ^^^
+00000AF5  4180         br    0x00000af7    always
+00000AF6  0AF7 ^^^
+00000AF7  41C0         call    0x00000ab8    always
+00000AF8  0AB8 ^^^
+00000AF9  5E00         mov    0x28f6    r0
+00000AFA  28F6 ^^^
+00000AFB  1F60         mov    [r0]    a1l
+00000AFC  9FF8         shfi    a1    a1    -0x0008
+00000AFD  83C0         and    0x000f    a1
+00000AFE  000F ^^^
+00000AFF  1F40         mov    [r0]    a0l
+00000B00  82C0         and    0x1000    a0
+00000B01  1000 ^^^
+00000B02  50B2         brr    0x000b    neq
+00000B03  CD00         cmp    0x0000u8    a1
+00000B04  4181         br    0x00000a1e    eq
+00000B05  0A1E ^^^
+00000B06  CD02         cmp    0x0002u8    a1
+00000B07  4181         br    0x00000a39    eq
+00000B08  0A39 ^^^
+00000B09  CD03         cmp    0x0003u8    a1
+00000B0A  4181         br    0x00000a74    eq
+00000B0B  0A74 ^^^
+00000B0C  4180         br    0x00000a33    always
+00000B0D  0A33 ^^^
+00000B0E  CD00         cmp    0x0000u8    a1
+00000B0F  4181         br    0x00000a1e    eq
+00000B10  0A1E ^^^
+00000B11  CD04         cmp    0x0004u8    a1
+00000B12  4181         br    0x00000a39    eq
+00000B13  0A39 ^^^
+00000B14  CD07         cmp    0x0007u8    a1
+00000B15  4181         br    0x00000a74    eq
+00000B16  0A74 ^^^
+00000B17  4180         br    0x00000a33    always
+00000B18  0A33 ^^^
+00000B19  5E78         pop    a0
+00000B1A  D4B8         mov    [0x28f6]    a0
+00000B1B  28F6 ^^^
+00000B1C  9C1A         tstb    a0l    0x000c
+00000B1D  4181         br    0x000033e7    eq
+00000B1E  33E7 ^^^
+00000B1F  4180         br    0x00003415    always
+00000B20  3415 ^^^
+00000B21  5E00         mov    0x28f7    r0
+00000B22  28F7 ^^^
+00000B23  1F40         mov    [r0]    a0l
+00000B24  82C0         and    0x000f    a0
+00000B25  000F ^^^
+00000B26  6720         shl    a0    always
+00000B27  86C0         add    0x0b2c    a0
+00000B28  0B2C ^^^
+00000B29  599A         mov    a0l    pc
+00000B2A  0000         nop
+00000B2B  0000         nop
+00000B2C  4180         br    0x00000b3c    always
+00000B2D  0B3C ^^^
+00000B2E  4180         br    0x00000b3c    always
+00000B2F  0B3C ^^^
+00000B30  0000         nop
+00000B31  4580         ret    always
+00000B32  4180         br    0x00000b3c    always
+00000B33  0B3C ^^^
+00000B34  0000         nop
+00000B35  4580         ret    always
+00000B36  4180         br    0x00000b7c    always
+00000B37  0B7C ^^^
+00000B38  0000         nop
+00000B39  4580         ret    always
+00000B3A  4180         br    0x00000b7c    always
+00000B3B  0B7C ^^^
+00000B3C  5E00         mov    0x28f6    r0
+00000B3D  28F6 ^^^
+00000B3E  1F00         mov    [r0]    a0
+00000B3F  82C0         and    0x0003    a0
+00000B40  0003 ^^^
+00000B41  5ED8         mov?    a0    b0
+00000B42  1F20         mov    [r0]    a1
+00000B43  9FFE         shfi    a1    a1    -0x0002
+00000B44  83C0         and    0x0003    a1
+00000B45  0003 ^^^
+00000B46  D5BC         mov    a1l    [0x5a1f]
+00000B47  5A1F ^^^
+00000B48  D5BC         mov    a1l    [0xd975]
+00000B49  D975 ^^^
+00000B4A  1F20         mov    [r0]    a1
+00000B4B  83C0         and    0x1000    a1
+00000B4C  1000 ^^^
+00000B4D  5052         brr    0x0005    neq
+00000B4E  5F20         mov    0x9b09    b1
+00000B4F  9B09 ^^^
+00000B50  F24B         tstb    [page:0x004bu8]    0x0002
+00000B51  5082         brr    0x0008    neq
+00000B52  5040         brr    0x0004    always
+00000B53  5F20         mov    0x9b11    b1
+00000B54  9B11 ^^^
+00000B55  F14B         tstb    [page:0x004bu8]    0x0001
+00000B56  5032         brr    0x0003    neq
+00000B57  D4B8         mov    [0x5a20]    a0
+00000B58  5A20 ^^^
+00000B59  5ED8         mov?    a0    b0
+00000B5A  D2D0         mov    b0    a0
+00000B5B  D4BC         mov    a0l    [0x5a20]
+00000B5C  5A20 ^^^
+00000B5D  3864         mov    a0l    [page:0x0064u8]
+00000B5E  585A         mov    a0l    r2
+00000B5F  87E2         addv    0x59e0    r2
+00000B60  59E0 ^^^
+00000B61  1F42         mov    [r2]    a0l
+00000B62  5E01         mov    0x28a9    r1
+00000B63  28A9 ^^^
+00000B64  1B49         mov    a0l    [r1++]
+00000B65  5E18         mov    0x0000    a0
+00000B66  0000 ^^^
+00000B67  1B41         mov    a0l    [r1]
+00000B68  41C0         call    0x00000ac7    always
+00000B69  0AC7 ^^^
+00000B6A  5E01         mov    0x28ab    r1
+00000B6B  28AB ^^^
+00000B6C  0084         modr    [r4]
+00000B6D  1F6B         mov    [r3++]    a1l
+00000B6E  6760         clr    a0    always
+00000B6F  5D1B         bkrep    a1l    0x00000b77
+00000B70  0B77 ^^^
+00000B71  1F2A         mov    [r2++]    a1
+00000B72  83C0         and    0x0001    a1
+00000B73  0001 ^^^
+00000B74  85C0         xor    0x0001    a1
+00000B75  0001 ^^^
+00000B76  6720         shl    a0    always
+00000B77  80B9         or    a1    a0
+00000B78  1B49         mov    a0l    [r1++]
+00000B79  0094         modr    [r4--]
+00000B7A  572C         brr    0xfff2    nr
+00000B7B  4580         ret    always
+00000B7C  5E01         mov    0x28a9    r1
+00000B7D  28A9 ^^^
+00000B7E  D4B8         mov    [0x5a20]    a0
+00000B7F  5A20 ^^^
+00000B80  585A         mov    a0l    r2
+00000B81  87E2         addv    0x59e0    r2
+00000B82  59E0 ^^^
+00000B83  1F42         mov    [r2]    a0l
+00000B84  1B49         mov    a0l    [r1++]
+00000B85  5E18         mov    0x0000    a0
+00000B86  0000 ^^^
+00000B87  1B41         mov    a0l    [r1]
+00000B88  D4B8         mov    [0x5a1f]    a0
+00000B89  5A1F ^^^
+00000B8A  D4BC         mov    a0l    [0xd975]
+00000B8B  D975 ^^^
+00000B8C  D4B8         mov    [0x5a20]    a0
+00000B8D  5A20 ^^^
+00000B8E  D4BC         mov    a0l    [0x5d64]
+00000B8F  5D64 ^^^
+00000B90  4180         br    0x00000a33    always
+00000B91  0A33 ^^^
+00000B92  4580         ret    always
+00000B93  CD00         cmp    0x0000u8    a1
+00000B94  4181         br    0x00000b9a    eq
+00000B95  0B9A ^^^
+00000B96  CD02         cmp    0x0002u8    a1
+00000B97  4181         br    0x00000ba5    eq
+00000B98  0BA5 ^^^
+00000B99  4580         ret    always
+00000B9A  5E78         pop    a0
+00000B9B  41C0         call    0x00002c98    always
+00000B9C  2C98 ^^^
+00000B9D  7295         mov    [page:0x0095u8]    a0l
+00000B9E  CC02         cmp    0x0002u8    a0
+00000B9F  41C2         call    0x00000bb3    neq
+00000BA0  0BB3 ^^^
+00000BA1  41C0         call    0x000009f5    always
+00000BA2  09F5 ^^^
+00000BA3  4180         br    0x00003569    always
+00000BA4  3569 ^^^
+00000BA5  5E78         pop    a0
+00000BA6  41C0         call    0x00002caa    always
+00000BA7  2CAA ^^^
+00000BA8  7248         mov    [page:0x0048u8]    a0l
+00000BA9  41C1         call    0x00002e17    eq
+00000BAA  2E17 ^^^
+00000BAB  7295         mov    [page:0x0095u8]    a0l
+00000BAC  CC02         cmp    0x0002u8    a0
+00000BAD  41C2         call    0x00000bb3    neq
+00000BAE  0BB3 ^^^
+00000BAF  41C0         call    0x000009f5    always
+00000BB0  09F5 ^^^
+00000BB1  4180         br    0x00003594    always
+00000BB2  3594 ^^^
+00000BB3  D4B8         mov    [0xd974]    a0
+00000BB4  D974 ^^^
+00000BB5  3864         mov    a0l    [page:0x0064u8]
+00000BB6  D4B8         mov    [0xd973]    a0
+00000BB7  D973 ^^^
+00000BB8  5E00         mov    0x59e0    r0
+00000BB9  59E0 ^^^
+00000BBA  41C0         call    0x000053ea    always
+00000BBB  53EA ^^^
+00000BBC  5E01         mov    0x28aa    r1
+00000BBD  28AA ^^^
+00000BBE  2100         mov    0x0000u8    a0l
+00000BBF  1B49         mov    a0l    [r1++]
+00000BC0  6064         mov    [page:0x0064u8]    r0
+00000BC1  87E0         addv    0x59e0    r0
+00000BC2  59E0 ^^^
+00000BC3  1C00         mov    [r0]    r0
+00000BC4  87E0         addv    0x509c    r0
+00000BC5  509C ^^^
+00000BC6  1C00         mov    [r0]    r0
+00000BC7  1F48         mov    [r0++]    a0l
+00000BC8  5D1A         bkrep    a0l    0x00000bcb
+00000BC9  0BCB ^^^
+00000BCA  1F48         mov    [r0++]    a0l
+00000BCB  1B49         mov    a0l    [r1++]
+00000BCC  4580         ret    always
+00000BCD  CD01         cmp    0x0001u8    a1
+00000BCE  4181         br    0x00000bd4    eq
+00000BCF  0BD4 ^^^
+00000BD0  CD05         cmp    0x0005u8    a1
+00000BD1  4181         br    0x00000bde    eq
+00000BD2  0BDE ^^^
+00000BD3  4580         ret    always
+00000BD4  5E18         mov    0x0028    a0
+00000BD5  0028 ^^^
+00000BD6  D4BC         mov    a0l    [0x4bf6]
+00000BD7  4BF6 ^^^
+00000BD8  5E01         mov    0x4bea    r1
+00000BD9  4BEA ^^^
+00000BDA  2100         mov    0x0000u8    a0l
+00000BDB  0C04         rep    0x0004u8
+00000BDC  1B49         mov    a0l    [r1++]
+00000BDD  4580         ret    always
+00000BDE  5E7B         pop    a1l
+00000BDF  5E7D         pop    a1h
+00000BE0  5E7B         pop    a1l
+00000BE1  5E60         pop    r0
+00000BE2  5E6E         pop    cfgi
+00000BE3  4D80         load    0x0000    ps
+00000BE4  81E8         set    0x0001    st0
+00000BE5  0001 ^^^
+00000BE6  CDA0         cmp    0x00a0u8    a1
+00000BE7  5051         brr    0x0005    eq
+00000BE8  5E04         mov    0x5d93    r4
+00000BE9  5D93 ^^^
+00000BEA  80E4         set    0x0001    [r4]
+00000BEB  0001 ^^^
+00000BEC  4580         ret    always
+00000BED  D4B8         mov    [0x4be0]    a0
+00000BEE  4BE0 ^^^
+00000BEF  901A         tstb    a0l    0x0000
+00000BF0  4182         br    0x0000d41f    neq
+00000BF1  D41F ^^^
+00000BF2  D4B8         mov    [0x4bea]    a0
+00000BF3  4BEA ^^^
+00000BF4  D4BC         mov    a0l    [0x4bed]
+00000BF5  4BED ^^^
+00000BF6  D4B8         mov    [0x583d]    a0
+00000BF7  583D ^^^
+00000BF8  D4BC         mov    a0l    [0x4bdf]
+00000BF9  4BDF ^^^
+00000BFA  D4BC         mov    a0l    [0x4bea]
+00000BFB  4BEA ^^^
+00000BFC  4180         br    0x0000d3a1    always
+00000BFD  D3A1 ^^^
+00000BFE  CD12         cmp    0x0012u8    a1
+00000BFF  4181         br    0x00000c08    eq
+00000C00  0C08 ^^^
+00000C01  CD01         cmp    0x0001u8    a1
+00000C02  4181         br    0x00000c87    eq
+00000C03  0C87 ^^^
+00000C04  CD0B         cmp    0x000bu8    a1
+00000C05  4181         br    0x00000d5e    eq
+00000C06  0D5E ^^^
+00000C07  4580         ret    always
+00000C08  5E7A         pop    a0l
+00000C09  5E7B         pop    a1l
+00000C0A  5E7A         pop    a0l
+00000C0B  5E18         mov    0x4b2b    a0
+00000C0C  4B2B ^^^
+00000C0D  8EBE         sub    lc    a0
+00000C0E  583A         mov    a0l    r1
+00000C0F  79D5         mov    [page:0x00d5u8]    a1
+00000C10  87C0         add    0x4600    a1
+00000C11  4600 ^^^
+00000C12  581B         mov    a1l    r0
+00000C13  1F41         mov    [r1]    a0l
+00000C14  1B48         mov    a0l    [r0++]
+00000C15  D4BC         mov    a0l    [0x4e08]
+00000C16  4E08 ^^^
+00000C17  5B20         mov    r0    a1
+00000C18  83C0         and    0x00ff    a1
+00000C19  00FF ^^^
+00000C1A  3CD5         mov    a1l    [page:0x00d5u8]
+00000C1B  5E00         mov    0x48e1    r0
+00000C1C  48E1 ^^^
+00000C1D  5E01         mov    0x4971    r1
+00000C1E  4971 ^^^
+00000C1F  DB82         load    +0x0002    stepi
+00000C20  5C8E         bkrep    0x008eu8    0x00000c25
+00000C21  0C25 ^^^
+00000C22  1F10         mov    [r0--]    a0
+00000C23  1B58         mov    a0l    [r0++s]
+00000C24  1F31         mov    [r1--]    a1
+00000C25  1B79         mov    a1l    [r1++s]
+00000C26  0090         modr    [r0--]
+00000C27  0091         modr    [r1--]
+00000C28  6760         clr    a0    always
+00000C29  1B40         mov    a0l    [r0]
+00000C2A  67D0         inc    a0    always
+00000C2B  1B41         mov    a0l    [r1]
+00000C2C  5E00         mov    0x9021    r0
+00000C2D  9021 ^^^
+00000C2E  5E01         mov    0x9059    r1
+00000C2F  9059 ^^^
+00000C30  D5B8         mov    [0x4e08]    a1
+00000C31  4E08 ^^^
+00000C32  58FB         mov    a1l    y0
+00000C33  5C37         bkrep    0x0037u8    0x00000c43
+00000C34  0C43 ^^^
+00000C35  8028         mpy    y0    [r0++]    a0
+00000C36  1F29         mov    [r1++]    a1
+00000C37  87C0         add    0x48e0    a1
+00000C38  48E0 ^^^
+00000C39  585B         mov    a1l    r2
+00000C3A  5B0B         mov    p*    a0
+00000C3B  1F22         mov    [r2]    a1
+00000C3C  CE64         sub    0x0064u8    a0
+00000C3D  5026         brr    0x0002    le
+00000C3E  77D0         inc    a1    always
+00000C3F  5030         brr    0x0003    always
+00000C40  C6C8         add    0x00c8u8    a0
+00000C41  5014         brr    0x0001    ge
+00000C42  77E0         dec    a1    always
+00000C43  1B62         mov    a1l    [r2]
+00000C44  5E00         mov    0x9091    r0
+00000C45  9091 ^^^
+00000C46  5E01         mov    0x90b1    r1
+00000C47  90B1 ^^^
+00000C48  5C1F         bkrep    0x001fu8    0x00000c58
+00000C49  0C58 ^^^
+00000C4A  8028         mpy    y0    [r0++]    a0
+00000C4B  1F29         mov    [r1++]    a1
+00000C4C  87C0         add    0x4970    a1
+00000C4D  4970 ^^^
+00000C4E  585B         mov    a1l    r2
+00000C4F  5B0B         mov    p*    a0
+00000C50  1F22         mov    [r2]    a1
+00000C51  CE64         sub    0x0064u8    a0
+00000C52  5026         brr    0x0002    le
+00000C53  77D0         inc    a1    always
+00000C54  5030         brr    0x0003    always
+00000C55  C6C8         add    0x00c8u8    a0
+00000C56  5014         brr    0x0001    ge
+00000C57  77E0         dec    a1    always
+00000C58  1B62         mov    a1l    [r2]
+00000C59  D4B8         mov    [0x4a90]    a0
+00000C5A  4A90 ^^^
+00000C5B  D5B8         mov    [0x4bfd]    a1
+00000C5C  4BFD ^^^
+00000C5D  77E0         dec    a1    always
+00000C5E  8EB9         sub    a1    a0
+00000C5F  5054         brr    0x0005    ge
+00000C60  71DA         mov    [page:0x00dau8]    a0
+00000C61  5031         brr    0x0003    eq
+00000C62  D5B8         mov    [0x4bf8]    a1
+00000C63  4BF8 ^^^
+00000C64  5070         brr    0x0007    always
+00000C65  71DC         mov    [page:0x00dcu8]    a0
+00000C66  5031         brr    0x0003    eq
+00000C67  D5B8         mov    [0x4bf7]    a1
+00000C68  4BF7 ^^^
+00000C69  5020         brr    0x0002    always
+00000C6A  D5B8         mov    [0x4bf6]    a1
+00000C6B  4BF6 ^^^
+00000C6C  D5BC         mov    a1l    [0x4e07]
+00000C6D  4E07 ^^^
+00000C6E  6760         clr    a0    always
+00000C6F  5E00         mov    0x48e0    r0
+00000C70  48E0 ^^^
+00000C71  0C8F         rep    0x008fu8
+00000C72  8268         max_gt    a0    [r0]    ++
+00000C73  7760         clr    a1    always
+00000C74  5E00         mov    0x4970    r0
+00000C75  4970 ^^^
+00000C76  0C8F         rep    0x008fu8
+00000C77  8368         max_gt    a1    [r0]    ++
+00000C78  D5FF         sub    [0x4bf5]    a1
+00000C79  4BF5 ^^^
+00000C7A  5073         brr    0x0007    gt
+00000C7B  D4FF         sub    [0x4e07]    a0
+00000C7C  4E07 ^^^
+00000C7D  86C0         add    0x0005    a0
+00000C7E  0005 ^^^
+00000C7F  5023         brr    0x0002    gt
+00000C80  7760         clr    a1    always
+00000C81  5020         brr    0x0002    always
+00000C82  5E19         mov    0x0001    a1
+00000C83  0001 ^^^
+00000C84  3CD7         mov    a1l    [page:0x00d7u8]
+00000C85  4180         br    0x0000d999    always
+00000C86  D999 ^^^
+00000C87  5E78         pop    a0
+00000C88  044B         load    0x004bu8    page
+00000C89  D4B8         mov    [0x4a98]    a0
+00000C8A  4A98 ^^^
+00000C8B  5B7A         mov    a0l    a1l
+00000C8C  86C0         add    0x4780    a0
+00000C8D  4780 ^^^
+00000C8E  581A         mov    a0l    r0
+00000C8F  71D3         mov    [page:0x00d3u8]    a0
+00000C90  1B40         mov    a0l    [r0]
+00000C91  77D0         inc    a1    always
+00000C92  C37F         and    0x007fu8    a1
+00000C93  D5BC         mov    a1l    [0x4a98]
+00000C94  4A98 ^^^
+00000C95  71CF         mov    [page:0x00cfu8]    a0
+00000C96  50B2         brr    0x000b    neq
+00000C97  D5B8         mov    [0x4aa4]    a1
+00000C98  4AA4 ^^^
+00000C99  D5FF         sub    [0x4aa3]    a1
+00000C9A  4AA3 ^^^
+00000C9B  4181         br    0x00000d48    eq
+00000C9C  0D48 ^^^
+00000C9D  72D6         mov    [page:0x00d6u8]    a0l
+00000C9E  8EC0         sub    0x0640    a0
+00000C9F  0640 ^^^
+00000CA0  4186         br    0x00000d48    le
+00000CA1  0D48 ^^^
+00000CA2  71D9         mov    [page:0x00d9u8]    a0
+00000CA3  5101         brr    0x0010    eq
+00000CA4  D4B8         mov    [0x4c71]    a0
+00000CA5  4C71 ^^^
+00000CA6  50D1         brr    0x000d    eq
+00000CA7  6760         clr    a0    always
+00000CA8  38D2         mov    a0l    [page:0x00d2u8]
+00000CA9  5E18         mov    0x007f    a0
+00000CAA  007F ^^^
+00000CAB  38CF         mov    a0l    [page:0x00cfu8]
+00000CAC  5E18         mov    0x0078    a0
+00000CAD  0078 ^^^
+00000CAE  38D1         mov    a0l    [page:0x00d1u8]
+00000CAF  5E18         mov    0x5006    a0
+00000CB0  5006 ^^^
+00000CB1  38D5         mov    a0l    [page:0x00d5u8]
+00000CB2  4180         br    0x00000cfb    always
+00000CB3  0CFB ^^^
+00000CB4  71CF         mov    [page:0x00cfu8]    a0
+00000CB5  4182         br    0x00000cfb    neq
+00000CB6  0CFB ^^^
+00000CB7  71D8         mov    [page:0x00d8u8]    a0
+00000CB8  50A2         brr    0x000a    neq
+00000CB9  D4B8         mov    [0x4aa4]    a0
+00000CBA  4AA4 ^^^
+00000CBB  86C0         add    0x48b0    a0
+00000CBC  48B0 ^^^
+00000CBD  581A         mov    a0l    r0
+00000CBE  0000         nop
+00000CBF  1F00         mov    [r0]    a0
+00000CC0  CE20         sub    0x0020u8    a0
+00000CC1  5044         brr    0x0004    ge
+00000CC2  50B0         brr    0x000b    always
+00000CC3  71D7         mov    [page:0x00d7u8]    a0
+00000CC4  CE48         sub    0x0048u8    a0
+00000CC5  5085         brr    0x0008    lt
+00000CC6  6760         clr    a0    always
+00000CC7  38D7         mov    a0l    [page:0x00d7u8]
+00000CC8  67D0         inc    a0    always
+00000CC9  38D8         mov    a0l    [page:0x00d8u8]
+00000CCA  5E18         mov    0x0076    a0
+00000CCB  0076 ^^^
+00000CCC  38CF         mov    a0l    [page:0x00cfu8]
+00000CCD  5270         brr    0x0027    always
+00000CCE  71D8         mov    [page:0x00d8u8]    a0
+00000CCF  50A1         brr    0x000a    eq
+00000CD0  D4B8         mov    [0x4aa4]    a0
+00000CD1  4AA4 ^^^
+00000CD2  86C0         add    0x48b0    a0
+00000CD3  48B0 ^^^
+00000CD4  581A         mov    a0l    r0
+00000CD5  0000         nop
+00000CD6  1F00         mov    [r0]    a0
+00000CD7  CE20         sub    0x0020u8    a0
+00000CD8  5045         brr    0x0004    lt
+00000CD9  50A0         brr    0x000a    always
+00000CDA  71D7         mov    [page:0x00d7u8]    a0
+00000CDB  CE48         sub    0x0048u8    a0
+00000CDC  5075         brr    0x0007    lt
+00000CDD  6760         clr    a0    always
+00000CDE  38D7         mov    a0l    [page:0x00d7u8]
+00000CDF  38D8         mov    a0l    [page:0x00d8u8]
+00000CE0  5E18         mov    0x007e    a0
+00000CE1  007E ^^^
+00000CE2  38CF         mov    a0l    [page:0x00cfu8]
+00000CE3  5110         brr    0x0011    always
+00000CE4  D4B8         mov    [0x4aa4]    a0
+00000CE5  4AA4 ^^^
+00000CE6  DAF0         mov    a0    a1
+00000CE7  87C0         add    0x48b0    a1
+00000CE8  48B0 ^^^
+00000CE9  581B         mov    a1l    r0
+00000CEA  67D0         inc    a0    always
+00000CEB  1F20         mov    [r0]    a1
+00000CEC  7720         shl    a1    always
+00000CED  C140         or    0x0040u8    a1
+00000CEE  3CCF         mov    a1l    [page:0x00cfu8]
+00000CEF  C20F         and    0x000fu8    a0
+00000CF0  D4BC         mov    a0l    [0x4aa4]
+00000CF1  4AA4 ^^^
+00000CF2  71D7         mov    [page:0x00d7u8]    a0
+00000CF3  67D0         inc    a0    always
+00000CF4  38D7         mov    a0l    [page:0x00d7u8]
+00000CF5  6760         clr    a0    always
+00000CF6  38D1         mov    a0l    [page:0x00d1u8]
+00000CF7  38D2         mov    a0l    [page:0x00d2u8]
+00000CF8  5E18         mov    0x502e    a0
+00000CF9  502E ^^^
+00000CFA  38D5         mov    a0l    [page:0x00d5u8]
+00000CFB  6760         clr    a0    always
+00000CFC  38D9         mov    a0l    [page:0x00d9u8]
+00000CFD  71D1         mov    [page:0x00d1u8]    a0
+00000CFE  5132         brr    0x0013    neq
+00000CFF  79D5         mov    [page:0x00d5u8]    a1
+00000D00  71CF         mov    [page:0x00cfu8]    a0
+00000D01  C201         and    0x0001u8    a0
+00000D02  5081         brr    0x0008    eq
+00000D03  5E18         mov    0x5006    a0
+00000D04  5006 ^^^
+00000D05  8DB8         cmp    a0    a1
+00000D06  50B1         brr    0x000b    eq
+00000D07  38D5         mov    a0l    [page:0x00d5u8]
+00000D08  6760         clr    a0    always
+00000D09  38D2         mov    a0l    [page:0x00d2u8]
+00000D0A  5070         brr    0x0007    always
+00000D0B  5E18         mov    0x502e    a0
+00000D0C  502E ^^^
+00000D0D  8DB8         cmp    a0    a1
+00000D0E  5031         brr    0x0003    eq
+00000D0F  38D5         mov    a0l    [page:0x00d5u8]
+00000D10  6760         clr    a0    always
+00000D11  38D2         mov    a0l    [page:0x00d2u8]
+00000D12  71D2         mov    [page:0x00d2u8]    a0
+00000D13  79D5         mov    [page:0x00d5u8]    a1
+00000D14  87B8         add    a0    a1
+00000D15  581B         mov    a1l    r0
+00000D16  67D0         inc    a0    always
+00000D17  1F20         mov    [r0]    a1
+00000D18  3CD4         mov    a1l    [page:0x00d4u8]
+00000D19  CC28         cmp    0x0028u8    a0
+00000D1A  6761         clr    a0    eq
+00000D1B  38D2         mov    a0l    [page:0x00d2u8]
+00000D1C  71D1         mov    [page:0x00d1u8]    a0
+00000D1D  67D0         inc    a0    always
+00000D1E  38D1         mov    a0l    [page:0x00d1u8]
+00000D1F  79CF         mov    [page:0x00cfu8]    a1
+00000D20  77E0         dec    a1    always
+00000D21  5081         brr    0x0008    eq
+00000D22  CCB0         cmp    0x00b0u8    a0
+00000D23  5062         brr    0x0006    neq
+00000D24  79CF         mov    [page:0x00cfu8]    a1
+00000D25  7700         shr    a1    always
+00000D26  3CCF         mov    a1l    [page:0x00cfu8]
+00000D27  6760         clr    a0    always
+00000D28  38D1         mov    a0l    [page:0x00d1u8]
+00000D29  51D0         brr    0x001d    always
+00000D2A  8CC0         cmp    0x0108    a0
+00000D2B  0108 ^^^
+00000D2C  51A2         brr    0x001a    neq
+00000D2D  6760         clr    a0    always
+00000D2E  38CF         mov    a0l    [page:0x00cfu8]
+00000D2F  38D1         mov    a0l    [page:0x00d1u8]
+00000D30  71D0         mov    [page:0x00d0u8]    a0
+00000D31  50C2         brr    0x000c    neq
+00000D32  D5B8         mov    [0x4aa4]    a1
+00000D33  4AA4 ^^^
+00000D34  D5FE         cmp    [0x4aa3]    a1
+00000D35  4AA3 ^^^
+00000D36  5072         brr    0x0007    neq
+00000D37  5E18         mov    0x0001    a0
+00000D38  0001 ^^^
+00000D39  38D0         mov    a0l    [page:0x00d0u8]
+00000D3A  5E18         mov    0x007f    a0
+00000D3B  007F ^^^
+00000D3C  38CF         mov    a0l    [page:0x00cfu8]
+00000D3D  5090         brr    0x0009    always
+00000D3E  6790         neg    a0    always
+00000D3F  5041         brr    0x0004    eq
+00000D40  6760         clr    a0    always
+00000D41  38D0         mov    a0l    [page:0x00d0u8]
+00000D42  67D0         inc    a0    always
+00000D43  38D9         mov    a0l    [page:0x00d9u8]
+00000D44  71D8         mov    [page:0x00d8u8]    a0
+00000D45  D4BC         mov    a0l    [0x4c6e]
+00000D46  4C6E ^^^
+00000D47  5140         brr    0x0014    always
+00000D48  77F0         copy    a1    always
+00000D49  5052         brr    0x0005    neq
+00000D4A  D4B8         mov    [0x48da]    a0
+00000D4B  48DA ^^^
+00000D4C  D4F8         or    [0x48d7]    a0
+00000D4D  48D7 ^^^
+00000D4E  5091         brr    0x0009    eq
+00000D4F  6760         clr    a0    always
+00000D50  38D4         mov    a0l    [page:0x00d4u8]
+00000D51  71D6         mov    [page:0x00d6u8]    a0
+00000D52  67D0         inc    a0    always
+00000D53  82C0         and    0xffff    a0
+00000D54  FFFF ^^^
+00000D55  5061         brr    0x0006    eq
+00000D56  38D6         mov    a0l    [page:0x00d6u8]
+00000D57  5040         brr    0x0004    always
+00000D58  6760         clr    a0    always
+00000D59  38D6         mov    a0l    [page:0x00d6u8]
+00000D5A  71D3         mov    [page:0x00d3u8]    a0
+00000D5B  38D4         mov    a0l    [page:0x00d4u8]
+00000D5C  5E69         pop    st1
+00000D5D  4580         ret    always
+00000D5E  D4B8         mov    [0x4bea]    a0
+00000D5F  4BEA ^^^
+00000D60  D4BC         mov    a0l    [0x4bdf]
+00000D61  4BDF ^^^
+00000D62  D4B8         mov    [0x4beb]    a0
+00000D63  4BEB ^^^
+00000D64  D4FB         add    [0x4a96]    a0
+00000D65  4A96 ^^^
+00000D66  D4BC         mov    a0l    [0x4beb]
+00000D67  4BEB ^^^
+00000D68  D5B8         mov    [0x4bec]    a1
+00000D69  4BEC ^^^
+00000D6A  77D0         inc    a1    always
+00000D6B  CD04         cmp    0x0004u8    a1
+00000D6C  50B2         brr    0x000b    neq
+00000D6D  5E19         mov    0x0000    a1
+00000D6E  0000 ^^^
+00000D6F  CC00         cmp    0x0000u8    a0
+00000D70  5076         brr    0x0007    le
+00000D71  CC28         cmp    0x0028u8    a0
+00000D72  5054         brr    0x0005    ge
+00000D73  D4B8         mov    [0x4bed]    a0
+00000D74  4BED ^^^
+00000D75  D4BC         mov    a0l    [0x4bdf]
+00000D76  4BDF ^^^
+00000D77  5000         brr    0x0000    always
+00000D78  D5BC         mov    a1l    [0x4bec]
+00000D79  4BEC ^^^
+00000D7A  4580         ret    always
+00000D7B  5E19         mov    0x0bb8    a1
+00000D7C  0BB8 ^^^
+00000D7D  71DD         mov    [page:0x00ddu8]    a0
+00000D7E  CE04         sub    0x0004u8    a0
+00000D7F  8CC0         cmp    0x384e    a0
+00000D80  384E ^^^
+00000D81  7764         clr    a1    ge
+00000D82  86B9         add    a1    a0
+00000D83  38FC         mov    a0l    [page:0x00fcu8]
+00000D84  5E04         mov    0x4a8b    r4
+00000D85  4A8B ^^^
+00000D86  41C0         call    0x0000868e    always
+00000D87  868E ^^^
+00000D88  6760         clr    a0    always
+00000D89  D4BC         mov    a0l    [0x4b75]
+00000D8A  4B75 ^^^
+00000D8B  D4BC         mov    a0l    [0x4b76]
+00000D8C  4B76 ^^^
+00000D8D  D4BC         mov    a0l    [0x4b78]
+00000D8E  4B78 ^^^
+00000D8F  D4BC         mov    a0l    [0x4b79]
+00000D90  4B79 ^^^
+00000D91  38FD         mov    a0l    [page:0x00fdu8]
+00000D92  4580         ret    always
+00000D93  68DD         mov    [page:0x00ddu8]    r2
+00000D94  2F00         mov    +0x0000    r3
+00000D95  5E18         mov    0x4406    a0
+00000D96  4406 ^^^
+00000D97  8EA2         sub    r2    a0
+00000D98  5B20         mov    r0    a1
+00000D99  7720         shl    a1    always
+00000D9A  5EF9         mov?    a1    b1
+00000D9B  8FB8         sub    a0    a1
+00000D9C  50C5         brr    0x000c    lt
+00000D9D  5EF9         mov?    a1    b1
+00000D9E  58BA         mov    a0l    r5
+00000D9F  1F02         mov    [r2]    a0
+00000DA0  186A         mov    r3    [r2++]
+00000DA1  1B49         mov    a0l    [r1++]
+00000DA2  0095         modr    [r5--]
+00000DA3  57BC         brr    0xfffb    nr
+00000DA4  5E18         mov    0x384e    a0
+00000DA5  384E ^^^
+00000DA6  38DD         mov    a0l    [page:0x00ddu8]
+00000DA7  D6F0         mov    b1    a1
+00000DA8  5091         brr    0x0009    eq
+00000DA9  68DD         mov    [page:0x00ddu8]    r2
+00000DAA  D6F0         mov    b1    a1
+00000DAB  58BB         mov    a1l    r5
+00000DAC  1F02         mov    [r2]    a0
+00000DAD  186A         mov    r3    [r2++]
+00000DAE  1B49         mov    a0l    [r1++]
+00000DAF  0095         modr    [r5--]
+00000DB0  57BC         brr    0xfffb    nr
+00000DB1  24DD         mov    r2    [page:0x00ddu8]
+00000DB2  71E1         mov    [page:0x00e1u8]    a0
+00000DB3  4182         br    0x00000dc3    neq
+00000DB4  0DC3 ^^^
+00000DB5  5E19         mov    0x0bb8    a1
+00000DB6  0BB8 ^^^
+00000DB7  71DD         mov    [page:0x00ddu8]    a0
+00000DB8  AEDE         sub    [page:0x00deu8]    a0
+00000DB9  7764         clr    a1    ge
+00000DBA  86B9         add    a1    a0
+00000DBB  8CC0         cmp    0x0140    a0
+00000DBC  0140 ^^^
+00000DBD  5055         brr    0x0005    lt
+00000DBE  41C0         call    0x0000973f    always
+00000DBF  973F ^^^
+00000DC0  5E18         mov    0x0001    a0
+00000DC1  0001 ^^^
+00000DC2  38E1         mov    a0l    [page:0x00e1u8]
+00000DC3  71FD         mov    [page:0x00fdu8]    a0
+00000DC4  4582         ret    neq
+00000DC5  5E19         mov    0x0bb8    a1
+00000DC6  0BB8 ^^^
+00000DC7  71DD         mov    [page:0x00ddu8]    a0
+00000DC8  AEFC         sub    [page:0x00fcu8]    a0
+00000DC9  7764         clr    a1    ge
+00000DCA  86B9         add    a1    a0
+00000DCB  8CC0         cmp    0x0258    a0
+00000DCC  0258 ^^^
+00000DCD  4585         ret    lt
+00000DCE  5E1A         mov    0x0800    a0l
+00000DCF  0800 ^^^
+00000DD0  D4BC         mov    a0l    [0xe691]
+00000DD1  E691 ^^^
+00000DD2  5E18         mov    0x0004    a0
+00000DD3  0004 ^^^
+00000DD4  D4BC         mov    a0l    [0xe610]
+00000DD5  E610 ^^^
+00000DD6  5E18         mov    0x0001    a0
+00000DD7  0001 ^^^
+00000DD8  38FD         mov    a0l    [page:0x00fdu8]
+00000DD9  4580         ret    always
+00000DDA  20FF         mov    r0    [page:0x00ffu8]
+00000DDB  D4B8         mov    [0x2a48]    a0
+00000DDC  2A48 ^^^
+00000DDD  D4BC         mov    a0l    [0x4b77]
+00000DDE  4B77 ^^^
+00000DDF  D4B8         mov    [0x2a49]    a0
+00000DE0  2A49 ^^^
+00000DE1  D4BC         mov    a0l    [0x4b7a]
+00000DE2  4B7A ^^^
+00000DE3  71F9         mov    [page:0x00f9u8]    a0
+00000DE4  4181         br    0x00000e27    eq
+00000DE5  0E27 ^^^
+00000DE6  D4B8         mov    [0x4b75]    a0
+00000DE7  4B75 ^^^
+00000DE8  D4BC         mov    a0l    [0x2a48]
+00000DE9  2A48 ^^^
+00000DEA  D4B8         mov    [0x4b78]    a0
+00000DEB  4B78 ^^^
+00000DEC  D4BC         mov    a0l    [0x2a49]
+00000DED  2A49 ^^^
+00000DEE  60FF         mov    [page:0x00ffu8]    r0
+00000DEF  1C28         mov    [r0++]    r1
+00000DF0  1C00         mov    [r0]    r0
+00000DF1  41C0         call    0x00007f1f    always
+00000DF2  7F1F ^^^
+00000DF3  D4B8         mov    [0x2a48]    a0
+00000DF4  2A48 ^^^
+00000DF5  D4BC         mov    a0l    [0x4b75]
+00000DF6  4B75 ^^^
+00000DF7  D4B8         mov    [0x2a49]    a0
+00000DF8  2A49 ^^^
+00000DF9  D4BC         mov    a0l    [0x4b78]
+00000DFA  4B78 ^^^
+00000DFB  71FA         mov    [page:0x00fau8]    a0
+00000DFC  52C1         brr    0x002c    eq
+00000DFD  D4B8         mov    [0x4b76]    a0
+00000DFE  4B76 ^^^
+00000DFF  D4BC         mov    a0l    [0x2a48]
+00000E00  2A48 ^^^
+00000E01  D4B8         mov    [0x4b79]    a0
+00000E02  4B79 ^^^
+00000E03  D4BC         mov    a0l    [0x2a49]
+00000E04  2A49 ^^^
+00000E05  64FF         mov    [page:0x00ffu8]    r1
+00000E06  0089         modr    [r1++]
+00000E07  1F09         mov    [r1++]    a0
+00000E08  67D0         inc    a0    always
+00000E09  581A         mov    a0l    r0
+00000E0A  67D0         inc    a0    always
+00000E0B  8680         add    [r0]    a0
+00000E0C  581A         mov    a0l    r0
+00000E0D  1C21         mov    [r1]    r1
+00000E0E  41C0         call    0x00007f1f    always
+00000E0F  7F1F ^^^
+00000E10  D4B8         mov    [0x2a48]    a0
+00000E11  2A48 ^^^
+00000E12  D4BC         mov    a0l    [0x4b76]
+00000E13  4B76 ^^^
+00000E14  D4B8         mov    [0x2a49]    a0
+00000E15  2A49 ^^^
+00000E16  D4BC         mov    a0l    [0x4b79]
+00000E17  4B79 ^^^
+00000E18  60FF         mov    [page:0x00ffu8]    r0
+00000E19  5E18         mov    0x012b    a0
+00000E1A  012B ^^^
+00000E1B  8688         add    [r0++]    a0
+00000E1C  583A         mov    a0l    r1
+00000E1D  86C0         add    0x012c    a0
+00000E1E  012C ^^^
+00000E1F  585A         mov    a0l    r2
+00000E20  0088         modr    [r0++]
+00000E21  5E18         mov    0x012b    a0
+00000E22  012B ^^^
+00000E23  8680         add    [r0]    a0
+00000E24  581A         mov    a0l    r0
+00000E25  3764         mov    +0x0064    r5
+00000E26  50C0         brr    0x000c    always
+00000E27  71FA         mov    [page:0x00fau8]    a0
+00000E28  5182         brr    0x0018    neq
+00000E29  60FF         mov    [page:0x00ffu8]    r0
+00000E2A  5E18         mov    0x012b    a0
+00000E2B  012B ^^^
+00000E2C  8680         add    [r0]    a0
+00000E2D  583A         mov    a0l    r1
+00000E2E  5801         mov    r1    r0
+00000E2F  86C0         add    0x012c    a0
+00000E30  012C ^^^
+00000E31  585A         mov    a0l    r2
+00000E32  3764         mov    +0x0064    r5
+00000E33  1F10         mov    [r0--]    a0
+00000E34  1B52         mov    a0l    [r2--]
+00000E35  1F11         mov    [r1--]    a0
+00000E36  1B52         mov    a0l    [r2--]
+00000E37  1F10         mov    [r0--]    a0
+00000E38  1B52         mov    a0l    [r2--]
+00000E39  1F11         mov    [r1--]    a0
+00000E3A  1B52         mov    a0l    [r2--]
+00000E3B  1F10         mov    [r0--]    a0
+00000E3C  1B52         mov    a0l    [r2--]
+00000E3D  1F11         mov    [r1--]    a0
+00000E3E  1B52         mov    a0l    [r2--]
+00000E3F  0095         modr    [r5--]
+00000E40  572C         brr    0xfff2    nr
+00000E41  D4B8         mov    [0x4b77]    a0
+00000E42  4B77 ^^^
+00000E43  D4BC         mov    a0l    [0x2a48]
+00000E44  2A48 ^^^
+00000E45  D4B8         mov    [0x4b7a]    a0
+00000E46  4B7A ^^^
+00000E47  D4BC         mov    a0l    [0x2a49]
+00000E48  2A49 ^^^
+00000E49  D5B8         mov    [0x2e76]    a1
+00000E4A  2E76 ^^^
+00000E4B  71FB         mov    [page:0x00fbu8]    a0
+00000E4C  CC07         cmp    0x0007u8    a0
+00000E4D  50A1         brr    0x000a    eq
+00000E4E  60FF         mov    [page:0x00ffu8]    r0
+00000E4F  1C00         mov    [r0]    r0
+00000E50  5820         mov    r0    r1
+00000E51  585B         mov    a1l    r2
+00000E52  587A         mov    a0l    r3
+00000E53  5E04         mov    0x4a8b    r4
+00000E54  4A8B ^^^
+00000E55  41C0         call    0x0000869c    always
+00000E56  869C ^^^
+00000E57  5010         brr    0x0001    always
+00000E58  58DB         mov    a1l    r7
+00000E59  4D83         load    0x0003    ps
+00000E5A  83E8         rst    0x0001    st0
+00000E5B  0001 ^^^
+00000E5C  60FF         mov    [page:0x00ffu8]    r0
+00000E5D  1C00         mov    [r0]    r0
+00000E5E  5E18         mov    0x4406    a0
+00000E5F  4406 ^^^
+00000E60  64FC         mov    [page:0x00fcu8]    r1
+00000E61  8EA1         sub    r1    a0
+00000E62  5B26         mov    r7    a1
+00000E63  7720         shl    a1    always
+00000E64  5EF9         mov?    a1    b1
+00000E65  7CFE         mov    [page:0x00feu8]    y0
+00000E66  8FB8         sub    a0    a1
+00000E67  50D5         brr    0x000d    lt
+00000E68  5EF9         mov?    a1    b1
+00000E69  58BA         mov    a0l    r5
+00000E6A  8028         mpy    y0    [r0++]    a0
+00000E6B  67B0         pacr    a0    always
+00000E6C  9281         addh    [r1]    a0
+00000E6D  1B89         mov    a0h    [r1++]
+00000E6E  0095         modr    [r5--]
+00000E6F  57AC         brr    0xfffa    nr
+00000E70  5E18         mov    0x384e    a0
+00000E71  384E ^^^
+00000E72  38FC         mov    a0l    [page:0x00fcu8]
+00000E73  D6F0         mov    b1    a1
+00000E74  50A1         brr    0x000a    eq
+00000E75  64FC         mov    [page:0x00fcu8]    r1
+00000E76  D6F0         mov    b1    a1
+00000E77  58BB         mov    a1l    r5
+00000E78  8028         mpy    y0    [r0++]    a0
+00000E79  67B0         pacr    a0    always
+00000E7A  9281         addh    [r1]    a0
+00000E7B  1B89         mov    a0h    [r1++]
+00000E7C  0095         modr    [r5--]
+00000E7D  57AC         brr    0xfffa    nr
+00000E7E  22FC         mov    r1    [page:0x00fcu8]
+00000E7F  4D80         load    0x0000    ps
+00000E80  81E8         set    0x0001    st0
+00000E81  0001 ^^^
+00000E82  6760         clr    a0    always
+00000E83  38FD         mov    a0l    [page:0x00fdu8]
+00000E84  4580         ret    always
+
+>>>>>>>> Segment <<<<<<<<
+
+00000FE0  4180         br    0x000001f2    always
+00000FE1  01F2 ^^^
+00000FE2  4180         br    0x00000296    always
+00000FE3  0296 ^^^
+00000FE4  4180         br    0x000002b5    always
+00000FE5  02B5 ^^^
+00000FE6  4180         br    0x000016c5    always
+00000FE7  16C5 ^^^
+00000FE8  4180         br    0x000016c5    always
+00000FE9  16C5 ^^^
+00000FEA  4180         br    0x000016c5    always
+00000FEB  16C5 ^^^
+00000FEC  4180         br    0x000016c5    always
+00000FED  16C5 ^^^
+00000FEE  4180         br    0x000016c5    always
+00000FEF  16C5 ^^^
+00000FF0  4180         br    0x000016c5    always
+00000FF1  16C5 ^^^
+00000FF2  4180         br    0x000016c5    always
+00000FF3  16C5 ^^^
+00000FF4  4180         br    0x000016c5    always
+00000FF5  16C5 ^^^
+00000FF6  4180         br    0x000016c5    always
+00000FF7  16C5 ^^^
+00000FF8  4180         br    0x000016c5    always
+00000FF9  16C5 ^^^
+00000FFA  4180         br    0x000016c5    always
+00000FFB  16C5 ^^^
+00000FFC  4180         br    0x000016c5    always
+00000FFD  16C5 ^^^
+00000FFE  4180         br    0x000016c5    always
+00000FFF  16C5 ^^^
+
+>>>>>>>> Data Segment <<<<<<<<
+
+00004F22  4FC2
+00004F23  4FCA
+00004F24  4FD2
+00004F25  4FDA
+00004F26  4FE2
+00004F27  4FEA
+00004F28  4FF2
+00004F29  4FFA
+00004F2A  0001
+00004F2B  000E
+00004F2C  0005
+00004F2D  42F7
+00004F2E  7007
+00004F2F  1C78
+00004F30  0001
+00004F31  0006
+00004F32  039E
+00004F33  0038
+00004F34  003F
+00004F35  0002
+00004F36  0003
+00004F37  0063
+00004F38  0002
+00004F39  0002
+00004F3A  0004
+00004F3B  0300
+00004F3C  42BE
+00004F3D  0001
+00004F3E  000D
+00004F3F  0006
+00004F40  54F3
+00004F41  640C
+00004F42  3BA2
+00004F43  07EF
+00004F44  073D
+00004F45  0529
+00004F46  004A
+00004F47  2532
+00004F48  4089
+00004F49  2AA6
+00004F4A  24B7
+00004F4B  2752
+00004F4C  3838
+00004F4D  0313
+00004F4E  04AB
+00004F4F  003C
+00004F50  0001
+00004F51  000C
+00004F52  0004
+00004F53  58B3
+00004F54  58F8
+00004F55  0234
+00004F56  0615
+00004F57  0001
+00004F58  0F8E
+00004F59  4257
+00004F5A  182E
+00004F5B  0024
+00004F5C  0051
+00004F5D  1AE9
+00004F5E  04B5
+00004F5F  010D
+00004F60  09F1
+00004F61  038C
+00004F62  01AF
+00004F63  0001
+00004F64  000A
+00004F65  0007
+00004F66  7FFF
+00004F67  44D9
+00004F68  1E84
+00004F69  0C24
+00004F6A  049B
+00004F6B  01B7
+00004F6C  00A2
+00004F6D  776A
+00004F6E  2BF4
+00004F6F  102C
+00004F70  05F3
+00004F71  0230
+00004F72  00CE
+00004F73  004C
+00004F74  001C
+00004F75  000A
+00004F76  0001
+00004F77  000E
+00004F78  0005
+00004F79  42F7
+00004F7A  7007
+00004F7B  1C78
+00004F7C  0001
+00004F7D  0006
+00004F7E  039E
+00004F7F  0038
+00004F80  003F
+00004F81  0002
+00004F82  0003
+00004F83  0063
+00004F84  0002
+00004F85  0002
+00004F86  0004
+00004F87  0300
+00004F88  42BE
+00004F89  0001
+00004F8A  000D
+00004F8B  0006
+00004F8C  54F3
+00004F8D  640C
+00004F8E  3BA2
+00004F8F  07EF
+00004F90  073D
+00004F91  0529
+00004F92  004A
+00004F93  2532
+00004F94  4089
+00004F95  2AA6
+00004F96  24B7
+00004F97  2752
+00004F98  3838
+00004F99  0313
+00004F9A  04AB
+00004F9B  003C
+00004F9C  0001
+00004F9D  000C
+00004F9E  0004
+00004F9F  58B3
+00004FA0  58F8
+00004FA1  0234
+00004FA2  0615
+00004FA3  0001
+00004FA4  0F8E
+00004FA5  4257
+00004FA6  182E
+00004FA7  0024
+00004FA8  0051
+00004FA9  1AE9
+00004FAA  04B5
+00004FAB  010D
+00004FAC  09F1
+00004FAD  038C
+00004FAE  01AF
+00004FAF  0001
+00004FB0  000A
+00004FB1  0007
+00004FB2  7FFF
+00004FB3  44D9
+00004FB4  1E84
+00004FB5  0C24
+00004FB6  049B
+00004FB7  01B7
+00004FB8  00A2
+00004FB9  776A
+00004FBA  2BF4
+00004FBB  102C
+00004FBC  05F3
+00004FBD  0230
+00004FBE  00CE
+00004FBF  004C
+00004FC0  001C
+00004FC1  000A
+
+>>>>>>>> Data Segment <<<<<<<<
+
+00005006  0000
+00005007  3900
+00005008  33C0
+00005009  F600
+0000500A  C328
+0000500B  D2C8
+0000500C  13C8
+0000500D  3F30
+0000500E  2598
+0000500F  E2F8
+00005010  C008
+00005011  E2F8
+00005012  2598
+00005013  3F30
+00005014  13C8
+00005015  D2C8
+00005016  C328
+00005017  F600
+00005018  33C0
+00005019  3900
+0000501A  0000
+0000501B  C700
+0000501C  CC40
+0000501D  0A00
+0000501E  3CD8
+0000501F  2D38
+00005020  EC38
+00005021  C0D0
+00005022  DA68
+00005023  1D08
+00005024  3FF8
+00005025  1D08
+00005026  DA68
+00005027  C0D0
+00005028  EC38
+00005029  2D38
+0000502A  3CD8
+0000502B  0A00
+0000502C  CC40
+0000502D  C700
+0000502E  0000
+0000502F  3F30
+00005030  13C8
+00005031  C700
+00005032  DA68
+00005033  2D38
+00005034  33C0
+00005035  E2F8
+00005036  C328
+00005037  0A00
+00005038  3FF8
+00005039  0A00
+0000503A  C328
+0000503B  E2F8
+0000503C  33C0
+0000503D  2D38
+0000503E  DA68
+0000503F  C700
+00005040  13C8
+00005041  3F30
+00005042  0000
+00005043  C0D0
+00005044  EC38
+00005045  3900
+00005046  2598
+00005047  D2C8
+00005048  CC40
+00005049  1D08
+0000504A  3CD8
+0000504B  F600
+0000504C  C008
+0000504D  F600
+0000504E  3CD8
+0000504F  1D08
+00005050  CC40
+00005051  D2C8
+00005052  2598
+00005053  3900
+00005054  EC38
+00005055  C0D0
+00005056  1A40
+00005057  3480
+00005058  485A
+00005059  4EC0
+0000505A  6900
+0000505B  90B4
+0000505C  9D80
+0000505D  9C40
+0000505E  242D
+0000505F  2760
+00005060  3126
+00005061  74BC
+00005062  0001
+00005063  0024
+00005064  007A
+00005065  003F
+00005066  0090
+00005067  002B
+00005068  0156
+00005069  0000
+0000506A  0000
+0000506B  0000
+0000506C  0000
+0000506D  0000
+0000506E  0000
+0000506F  0000
+00005070  0000
+00005071  0000
+00005072  0000
+00005073  0000
+00005074  0000
+00005075  0036
+00005076  0000
+00005077  0000
+00005078  0000
+00005079  0000
+0000507A  0000
+0000507B  0000
+0000507C  0000
+0000507D  0000
+0000507E  0000
+0000507F  0000
+00005080  0000
+00005081  0000
+00005082  0156
+00005083  0000
+00005084  0000
+00005085  0000
+00005086  0000
+00005087  0000
+00005088  0000
+00005089  0000
+0000508A  0000
+0000508B  0000
+0000508C  0000
+0000508D  0000
+0000508E  0000
+0000508F  0036
+00005090  0000
+00005091  0000
+00005092  0000
+00005093  0000
+00005094  0000
+00005095  0000
+00005096  0000
+00005097  0000
+00005098  0000
+00005099  0000
+0000509A  0000
+0000509B  0000
+0000509C  50A4
+0000509D  50B6
+0000509E  50CA
+0000509F  50DE
+000050A0  50F2
+000050A1  5106
+000050A2  511E
+000050A3  5146
+000050A4  0010
+000050A5  0036
+000050A6  003C
+000050A7  001D
+000050A8  00C5
+000050A9  0000
+000050AA  0003
+000050AB  0000
+000050AC  000F
+000050AD  0000
+000050AE  0003
+000050AF  000F
+000050B0  0000
+000050B1  0003
+000050B2  0000
+000050B3  000F
+000050B4  0000
+000050B5  0003
+000050B6  0012
+000050B7  0036
+000050B8  003C
+000050B9  001D
+000050BA  00C5
+000050BB  007E
+000050BC  0003
+000050BD  003F
+000050BE  000F
+000050BF  0013
+000050C0  0003
+000050C1  003F
+000050C2  000F
+000050C3  0065
+000050C4  0003
+000050C5  003F
+000050C6  000F
+000050C7  004F
+000050C8  0003
+000050C9  003F
+000050CA  0012
+000050CB  0036
+000050CC  0078
+000050CD  01D1
+000050CE  00BD
+000050CF  01FE
+000050D0  0003
+000050D1  003F
+000050D2  000F
+000050D3  0122
+000050D4  0003
+000050D5  003F
+000050D6  00BD
+000050D7  01FE
+000050D8  0003
+000050D9  003F
+000050DA  000F
+000050DB  0107
+000050DC  0003
+000050DD  003F
+000050DE  0012
+000050DF  0036
+000050E0  0078
+000050E1  01D1
+000050E2  00BD
+000050E3  0002
+000050E4  0007
+000050E5  0000
+000050E6  000F
+000050E7  0002
+000050E8  0007
+000050E9  0000
+000050EA  00BD
+000050EB  0002
+000050EC  0007
+000050ED  0000
+000050EE  000F
+000050EF  0002
+000050F0  0007
+000050F1  0000
+000050F2  0012
+000050F3  0036
+000050F4  0078
+000050F5  01D1
+000050F6  00BD
+000050F7  0006
+000050F8  000F
+000050F9  0000
+000050FA  001B
+000050FB  0006
+000050FC  000F
+000050FD  0000
+000050FE  00BD
+000050FF  0006
+00005100  000F
+00005101  0000
+00005102  001B
+00005103  0006
+00005104  000F
+00005105  0000
+00005106  0016
+00005107  000B
+00005108  0078
+00005109  01D1
+0000510A  00BD
+0000510B  0006
+0000510C  000F
+0000510D  0000
+0000510E  0000
+0000510F  0039
+00005110  0006
+00005111  000F
+00005112  0000
+00005113  0000
+00005114  00BD
+00005115  0006
+00005116  000F
+00005117  0000
+00005118  0000
+00005119  0039
+0000511A  0006
+0000511B  000F
+0000511C  0000
+0000511D  0000
+0000511E  0026
+0000511F  0036
+00005120  0078
+00005121  01D1
+00005122  0012
+00005123  0000
+00005124  0000
+00005125  0000
+00005126  0000
+00005127  0000
+00005128  0000
+00005129  0000
+0000512A  0000
+0000512B  001B
+0000512C  0000
+0000512D  0000
+0000512E  0000
+0000512F  0000
+00005130  0000
+00005131  0000
+00005132  0000
+00005133  0000
+00005134  0012
+00005135  0000
+00005136  0000
+00005137  0000
+00005138  0000
+00005139  0000
+0000513A  0000
+0000513B  0000
+0000513C  0000
+0000513D  001B
+0000513E  0000
+0000513F  0000
+00005140  0000
+00005141  0000
+00005142  0000
+00005143  0000
+00005144  0000
+00005145  0000
+00005146  0038
+00005147  0002
+00005148  007E
+00005149  003F
+0000514A  00B4
+0000514B  003E
+0000514C  0156
+0000514D  0000
+0000514E  0000
+0000514F  0000
+00005150  0000
+00005151  0000
+00005152  0000
+00005153  0000
+00005154  0000
+00005155  0000
+00005156  0000
+00005157  0000
+00005158  0000
+00005159  0036
+0000515A  0000
+0000515B  0000
+0000515C  0000
+0000515D  0000
+0000515E  0000
+0000515F  0000
+00005160  0000
+00005161  0000
+00005162  0000
+00005163  0000
+00005164  0000
+00005165  0000
+00005166  0156
+00005167  0000
+00005168  0000
+00005169  0000
+0000516A  0000
+0000516B  0000
+0000516C  0000
+0000516D  0000
+0000516E  0000
+0000516F  0000
+00005170  0000
+00005171  0000
+00005172  0000
+00005173  0036
+00005174  0000
+00005175  0000
+00005176  0000
+00005177  0000
+00005178  0000
+00005179  0000
+0000517A  0000
+0000517B  0000
+0000517C  0000
+0000517D  0000
+0000517E  0000
+0000517F  0000
+
+>>>>>>>> Data Segment <<<<<<<<
+
+00005CA6  0000
+00005CA7  0006
+00005CA8  0002
+00005CA9  0000
+00005CAA  000E
+00005CAB  0002
+00005CAC  0000
+00005CAD  0016
+00005CAE  0002
+00005CAF  0000
+00005CB0  0020
+00005CB1  0E65
+00005CB2  0000
+00005CB3  0FE0
+00005CB4  0020
+
+>>>>>>>> Data Segment <<<<<<<<
+
+0000FF68  0002
+0000FF69  E19A
+0000FF6A  4B33
+0000FF6B  3333
+0000FF6C  0001
+0000FF6D  AE66
+0000FF6E  7E66
+0000FF6F  D99A
+0000FF70  0000
+0000FF71  0028
+0000FF72  0333
+0000FF73  0006
+0000FF74  50E9
+0000FF75  07C1
+0000FF76  325D
+0000FF77  0329
+0000FF78  E200
+0000FF79  F600
+0000FF7A  0200
+0000FF7B  0100
+0000FF7C  0080
+0000FF7D  0000
+0000FF7E  0000
+0000FF7F  0050
+0000FF80  019A
+0000FF81  0007
+0000FF82  50E9
+0000FF83  07C1
+0000FF84  325D
+0000FF85  0329
+0000FF86  E200
+0000FF87  F600
+0000FF88  0200
+0000FF89  0100
+0000FF8A  0080
+0000FF8B  0000
+0000FF8C  1000
+0000FF8D  FFF4
+0000FF8E  0004
+0000FF8F  FCE0
