@@ -165,6 +165,18 @@ sub getDspPages {
 	return @pages;
 }
 
+sub getDspPeripheralMemory {
+	my ($cpu_meta, $module) = @_;
+	my @names = ($module->{name}."_RAM", $module->{base_name}."_RAM");
+	push @names, "DEMODULATOR_RAM" if $module->{definition} eq "BASEBAND";
+
+	for my $name (@names) {
+		my @matches = grep { $_->{space} eq "D" && $_->{name} eq $name } @{$cpu_meta->dspMemory()};
+		return $matches[0] if @matches == 1;
+	}
+	return undef;
+}
+
 sub getPageMask {
 	my ($count) = @_;
 	my $mask = 0;
@@ -204,18 +216,31 @@ sub genDspConfig {
 	my @peripherals;
 	for my $module (sort { $a->{base} <=> $b->{base} } @modules) {
 		my $type = $module->{definition};
+		my $memory = getDspPeripheralMemory($cpu_meta, $module);
 
 		# Numeric suffixes select register layouts, not QEMU peripheral implementations.
 		$type =~ s/_[0-9]+$//;
-		push @peripherals, [
-			'"'.$module->{name}.'",',
-			"PMB887X_DSP_PERIPHERAL_".$type.",",
-			sprintf("0x%04X,", $module->{base}),
-			sprintf("0x%04X", $module->{size}),
-		];
+		push @peripherals, {
+			name => $module->{name},
+			type => $type,
+			base => $module->{base},
+			size => $module->{size},
+			memory => $memory,
+		};
 	}
 	my $str = "static const pmb887x_dsp_peripheral_config_t ${cpu}_dsp_peripherals[] = {\n";
-	$str .= printTable(\@peripherals, "\t{ ", " },");
+	for my $peripheral (@peripherals) {
+		my $memory = $peripheral->{memory};
+
+		$str .= "\t{\n";
+		$str .= "\t\t.name = \"$peripheral->{name}\",\n";
+		$str .= "\t\t.type = PMB887X_DSP_PERIPHERAL_$peripheral->{type},\n";
+		$str .= sprintf("\t\t.base = 0x%04X,\n", $peripheral->{base});
+		$str .= sprintf("\t\t.size = 0x%04X,\n", $peripheral->{size});
+		$str .= $memory ? "\t\t.ram_base = ${prefix}$memory->{name}_BASE,\n" : "\t\t.ram_base = 0,\n";
+		$str .= $memory ? "\t\t.ram_size = ${prefix}$memory->{name}_SIZE,\n" : "\t\t.ram_size = 0,\n";
+		$str .= "\t},\n";
+	}
 	$str .= "};\n\n";
 
 	$str .= sprintf(qq|static const pmb887x_dsp_config_t ${cpu}_dsp_config = {
@@ -223,21 +248,19 @@ sub genDspConfig {
 	.default_rom_version = 0x%04X,
 	.page_field_mask = 0x%04X,
 	.program_page_shift = %u,
-	.program_rom_address = ${prefix}PROM_FIXED_BASE,
-	.program_bank_address = ${prefix}PROM_PAGE0_BASE,
+	.program_rom_base = ${prefix}PROM_FIXED_BASE,
+	.program_bank_base = ${prefix}PROM_PAGE0_BASE,
 	.program_bank_count = %u,
-	.data_rom_address = ${prefix}DROM_FIXED_BASE,
-	.data_bank_address = ${prefix}DROM_PAGE0_BASE,
+	.data_rom_base = ${prefix}DROM_FIXED_BASE,
+	.data_bank_base = ${prefix}DROM_PAGE0_BASE,
 	.data_bank_count = %u,
 	.shared_base = ${prefix}SHARED_RAM_BASE,
 	.shared_size = ${prefix}SHARED_RAM_SIZE,
-	.baseband_ram_base = ${prefix}DEMODULATOR_RAM_BASE,
-	.baseband_ram_size = ${prefix}DEMODULATOR_RAM_SIZE,
 	.y_space_base = ${prefix}YRAM_BASE,
 	.mmio_base = ${prefix}INT_BASE,
 	.mmio_size = 0x%04X,
 	.peripherals = ${cpu}_dsp_peripherals,
-	.peripherals_count = ARRAY_SIZE(${cpu}_dsp_peripherals),
+	.peripheral_count = ARRAY_SIZE(${cpu}_dsp_peripherals),
 };
 
 |, $cpu_meta->dspRomVersion(), $page_mask, $program_page_shift, scalar(@program_pages), scalar(@data_pages),

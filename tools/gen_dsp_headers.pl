@@ -107,9 +107,10 @@ sub addRegisterDefine {
 }
 
 sub collectRegisterDefines {
-	my ($defines, $order, $module, $absolute) = @_;
-	my $prefix = "TEAK_".$module->{name}."_";
-	my $base = "TEAK_".$module->{name}."_BASE";
+	my ($defines, $order, $module, $absolute, $module_name) = @_;
+	$module_name //= $module->{name};
+	my $prefix = "TEAK_".$module_name."_";
+	my $base = "TEAK_".$module_name."_BASE";
 
 	for my $reg_name (getSortedKeys($module->{regs}, 'start')) {
 		my $reg = $module->{regs}->{$reg_name};
@@ -177,8 +178,17 @@ sub genRegisterHeaders {
 		my $cpu = $cpu_meta->{name};
 		my %defines;
 		my @order;
-		for my $module (getDspModules($cpu_meta)) {
+		my @modules = getDspModules($cpu_meta);
+		for my $module (@modules) {
 			collectRegisterDefines(\%defines, \@order, $module, $absolute);
+		}
+		if ($qemu_output) {
+			my %base_name_count;
+			$base_name_count{$_->{base_name}}++ for @modules;
+			for my $module (@modules) {
+				next if $base_name_count{$module->{base_name}} < 2;
+				collectRegisterDefines(\%defines, \@order, $module, $absolute, $module->{base_name});
+			}
 		}
 		$cpu_defines{$cpu} = \%defines;
 		$cpu_order{$cpu} = \@order;

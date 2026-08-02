@@ -120,6 +120,8 @@ problems in their execution path:
 
 - the Baseband model did not reset `BB_WR_POINTER` at the start of each
   `EQON`, `FCON`, `MONON`, or `SCON` job;
+- `BB_INT_POINTER` values in the coefficient area `0x3C0..0x3FF` were reduced
+  modulo `0x3C0`, causing a false early `BB_FULL` inside the sample ring;
 - the TCG block cache avoided recompilation but still decoded the same DSP
   block before every execution, so the DSP worker did not keep up with ARM;
 - a later threaded model queued TPU transitions and consumed only one before

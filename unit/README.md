@@ -22,6 +22,8 @@ Run a test on real hardware:
 | `dsp-opcode-probe` | Resumable diagnostic sweep of raw TeakLite first-word opcodes with reset and timeout isolation |
 | `dsp-expansion-probe` | Resumable sweep of expansion words for all documented two-word TeakLite I encoding rows |
 | `dsp-tpu-bb-events` | Hardware timing, counts, status, and DSP interrupts for repeating TPU MONON events |
+| `dsp-l1mon-vectors` | PMB8876 Mask ROM monitoring bounds, zero-I/Q result, ring behavior, and TX inactivity |
+| `dsp-l1mon-functional` | RX-only TPU MONON through Baseband, DSP interrupt, Mask ROM, and monitoring result ring |
 | `dsp-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |
 | `dsp-data-rom-dump` | PMB8875/PMB8876 DSP boot-mode DREAD dump of fixed and banked Data Mask ROM in Intel HEX format |
 | `mod` | Common CLC, SRC, and SRB register blocks |

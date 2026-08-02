@@ -1,0 +1,97 @@
+// RX-only TPU MONON to PMB8876 Mask ROM monitoring integration test.
+segment p 0006
+br 0x0000$0800 always
+
+segment p 0100
+mov 0x$0001 a0l
+mov a0l [0x$TEAK_MCS_CFR]
+dint
+data 4F8E // mov #0x0E,icr: context switching for INT0, INT1, and INT2.
+mov 0x$0001 st0
+mov 0x$007D st1
+mov 0x$0000 st2
+mov 0x$7C14 sp
+set 0x$000C st0
+set 0x$0040 st2
+clr a0 always
+mov a0l [0x$77DC]
+mov a0l [0x$77D6]
+mov a0l [0x$7727]
+mov a0l [0x$7728]
+mov a0l [0x$TEAK_INT_EINTA0]
+mov a0l [0x$TEAK_MOD_CTRL]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0000)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0010)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0022)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0023)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0024)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0025)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0026)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0027)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0028)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0029)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x002A)]
+mov 0x$03FF a0l
+mov a0l [0x$TEAK_BB_INT_POINTER]
+mov 0x$FFFF a0l
+mov a0l [0x$TEAK_INT_RINTA0]
+mov 0x$0C00 a0l
+mov a0l [0x$TEAK_INT_EINTA0]
+mov [0x$TEAK_MOD_STAT] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0028)]
+mov 0x$A55A a0l
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x000F)]
+eint
+br 0x0000$0200 always
+
+segment p 0200
+br 0x0000$0200 always
+
+segment p 0800
+mov [0x$TEAK_INT_FINTA0] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0022)]
+and 0x$0C00 a0
+mov a0l [0x$TEAK_INT_RINTA0]
+mov [0x$TEAK_BB_STATUS] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0023)]
+and 0x$TEAK_BB_STATUS_MONON a0
+br 0x0000$0860 eq
+
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)] a0
+inc a0 always
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0022)] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0024)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0023)] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0025)]
+data 45D0 // reti always,context.
+
+segment p 0860
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)] a0
+inc a0 always
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0022)] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0026)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0023)] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0027)]
+mov [0x$TEAK_BB_WR_POINTER] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x002A)]
+mov a0l [0x$6000]
+mov 0x$6000 r0
+call 0x0000$20BF always
+mov [0x$TEAK_MOD_STAT] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0029)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)] a0
+mov a0l r1
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0010)] a0
+cmp r1 a0
+br 0x0000$08A0 neq
+clr a0 always
+mov a0l [0x$TEAK_INT_EINTA0]
+mov 0x$5AA5 a0l
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0000)]
+
+segment p 08A0
+data 45D0 // reti always,context.
