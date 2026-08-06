@@ -9,6 +9,8 @@
 #define MATRIX_SOURCE_ADDR 0x00084000
 #define MATRIX_DESTINATION_ADDR 0x00088000
 #define ENDIAN_BUFFER_SIZE 64
+#define DMA_SOURCE_REQUEST 0
+#define DMA_DESTINATION_REQUEST 1
 
 struct dmac_lli {
 	uint32_t src;
@@ -73,6 +75,11 @@ static struct dmac_lli endian_lli __attribute__((aligned(16)));
 static uint32_t lli_alignment_storage[7] __attribute__((aligned(16)));
 static uint8_t *const matrix_source = (uint8_t *) MATRIX_SOURCE_ADDR;
 static volatile uint8_t *const matrix_destination = (volatile uint8_t *) MATRIX_DESTINATION_ADDR;
+
+static const uint32_t PERIPHERAL_FC_CONTROL =
+	DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_BYTE |
+	DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+	DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I;
 
 static volatile uint32_t irq_count;
 static volatile uint32_t irq_number;
@@ -346,6 +353,30 @@ static void fill_matrix_buffers(void) {
 		matrix_source[i] = (uint8_t) ((i * 29 + 0x53) ^ (i >> 3));
 		matrix_destination[i] = 0xA5;
 	}
+}
+
+static void start_peripheral_fc_transfer(uint32_t flow) {
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		PERIPHERAL_FC_CONTROL,
+		(DMA_SOURCE_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
+		(DMA_DESTINATION_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | flow | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+}
+
+static bool issue_peripheral_fc_bursts(uint32_t requests, uint32_t count) {
+	for (uint32_t i = 0; i < count; i++) {
+		DMAC_SOFT_BREQ = requests;
+		if (!wait_for_value(&DMAC_SOFT_BREQ, requests, 0))
+			return false;
+		test_watchdog_serve();
+	}
+
+	return true;
 }
 
 static void test_bursts_and_widths(void) {
@@ -658,100 +689,6 @@ static void test_software_requests(void) {
 		(uint32_t) matrix_destination,
 		0,
 		(
-			DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 | DMAC_CH_CONTROL_S_WIDTH_BYTE |
-			DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-		),
-		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER
-	);
-	DMAC_SOFT_LSREQ = BIT(0);
-	test_check(
-		"peripheral-controlled MEM2PER completes on LSREQ",
-		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL))
-	);
-	test_check("MEM2PER last single request clears", (DMAC_SOFT_LSREQ & BIT(0)) == 0);
-	test_eq_memory("peripheral-controlled MEM2PER data", matrix_source, matrix_destination, 1);
-	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
-
-	reset_dmac();
-	fill_matrix_buffers();
-	start_transfer(
-		(uint32_t) matrix_source,
-		(uint32_t) matrix_destination,
-		0,
-		(
-			DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 | DMAC_CH_CONTROL_S_WIDTH_BYTE |
-			DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-		),
-		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM_PER
-	);
-	DMAC_SOFT_LSREQ = BIT(0);
-	test_check(
-		"peripheral-controlled PER2MEM completes on LSREQ",
-		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL))
-	);
-	test_check("PER2MEM last single request clears", (DMAC_SOFT_LSREQ & BIT(0)) == 0);
-	test_eq_memory("peripheral-controlled PER2MEM data", matrix_source, matrix_destination, 1);
-	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
-
-	reset_dmac();
-	fill_matrix_buffers();
-	start_transfer(
-		(uint32_t) matrix_source,
-		(uint32_t) matrix_destination,
-		0,
-		(
-			DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_BYTE |
-			DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-		),
-		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER
-	);
-	DMAC_SOFT_BREQ = BIT(0);
-	test_check("peripheral-controlled MEM2PER accepts BREQ", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
-	test_check("MEM2PER BREQ is not terminal", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
-	DMAC_SOFT_LBREQ = BIT(0);
-	test_check(
-		"peripheral-controlled MEM2PER completes on LBREQ",
-		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL))
-	);
-	test_check("MEM2PER last burst request clears", (DMAC_SOFT_LBREQ & BIT(0)) == 0);
-	test_eq_memory("peripheral-controlled MEM2PER burst data", matrix_source, matrix_destination, 8);
-	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
-
-	reset_dmac();
-	fill_matrix_buffers();
-	start_transfer(
-		(uint32_t) matrix_source,
-		(uint32_t) matrix_destination,
-		0,
-		(
-			DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_BYTE |
-			DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-		),
-		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM_PER
-	);
-	DMAC_SOFT_BREQ = BIT(0);
-	test_check("peripheral-controlled PER2MEM accepts BREQ", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
-	test_check("PER2MEM BREQ is not terminal", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
-	DMAC_SOFT_LBREQ = BIT(0);
-	test_check(
-		"peripheral-controlled PER2MEM completes on LBREQ",
-		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL))
-	);
-	test_check("PER2MEM last burst request clears", (DMAC_SOFT_LBREQ & BIT(0)) == 0);
-	test_eq_memory("peripheral-controlled PER2MEM burst data", matrix_source, matrix_destination, 8);
-	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
-
-	reset_dmac();
-	fill_matrix_buffers();
-	start_transfer(
-		(uint32_t) matrix_source,
-		(uint32_t) matrix_destination,
-		0,
-		(
 			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
 			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
@@ -849,60 +786,249 @@ static void test_request_selector_isolation(void) {
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
-static void test_peripheral_controlled_per2per(void) {
-	reset_dmac();
-	fill_matrix_buffers();
-	start_transfer(
-		(uint32_t) matrix_source,
-		(uint32_t) matrix_destination,
-		0,
-		(
-			DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-		),
-		(1 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_DST
-	);
-	DMAC_SOFT_BREQ = BIT(0);
+static void test_memory_peripheral_fc(const char *category, uint32_t flow, uint32_t request) {
+	uint32_t request_mask = BIT(request);
+
+	test_category(category);
+	start_peripheral_fc_transfer(flow);
 	stopwatch_usleep_wd(1000);
-	test_check("source burst waits for destination request", (DMAC_SOFT_BREQ & BIT(0)) != 0);
-	DMAC_SOFT_LBREQ = BIT(1);
-	test_check(
-		"destination-controlled PER2PER completes",
-		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL))
-	);
-	test_eq_memory(
-		"destination-controlled PER2PER data",
-		matrix_source,
-		matrix_destination,
-		4 * sizeof(uint32_t)
-	);
-	test_check("source burst request clears after destination request", (DMAC_SOFT_BREQ & BIT(0)) == 0);
-	test_check("destination last burst request clears", (DMAC_SOFT_LBREQ & BIT(1)) == 0);
+	test_eq_u32("TransferSize starts at zero", 0, DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("channel waits for a peripheral request", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) != 0);
+	test_check("idle channel has no terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	test_eq_u32("idle channel leaves destination unchanged", 0xA5, matrix_destination[0]);
+
+	DMAC_SOFT_SREQ = request_mask;
+	test_check("single request is acknowledged", wait_for_value(&DMAC_SOFT_SREQ, request_mask, 0));
+	test_eq_memory("single request transfers one item", matrix_source, matrix_destination, 1);
+	test_check("single request is not terminal", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	test_eq_u32("single request wraps TransferSize to 0xFFF", 0xFFF,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+
+	DMAC_SOFT_BREQ = request_mask;
+	test_check("burst request is acknowledged", wait_for_value(&DMAC_SOFT_BREQ, request_mask, 0));
+	test_eq_memory("mixed single and burst data", matrix_source, matrix_destination, 5);
+	test_check("ordinary burst request is not terminal", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	test_eq_u32("single and burst requests decrement TransferSize to 0xFFB", 0xFFB,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+
+	DMAC_SOFT_LSREQ = request_mask;
+	test_check("last single request completes transfer", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_check("last single request is acknowledged", (DMAC_SOFT_LSREQ & request_mask) == 0);
+	test_eq_memory("last single request includes its item", matrix_source, matrix_destination, 6);
+	test_eq_u32("six transfers decrement TransferSize to 0xFFA", 0xFFA,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("last single request exposes masked terminal count", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_check("last single request disables channel", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
+	test_check("last single request has no DMA error", (DMAC_RAW_ERR_STATUS & BIT(DMA_CHANNEL)) == 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
-	reset_dmac();
-	fill_matrix_buffers();
-	start_transfer(
-		(uint32_t) matrix_source,
-		(uint32_t) matrix_destination,
-		0,
-		(
-			DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-		),
-		(1 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_SRC
-	);
-	DMAC_SOFT_LBREQ = BIT(0);
+	start_peripheral_fc_transfer(flow);
+	DMAC_SOFT_BREQ = request_mask;
+	test_check("initial burst request is acknowledged", wait_for_value(&DMAC_SOFT_BREQ, request_mask, 0));
+	test_check("initial burst leaves transfer active", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) != 0);
+	DMAC_SOFT_LBREQ = request_mask;
+	test_check("last burst request completes transfer", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_check("last burst request is acknowledged", (DMAC_SOFT_LBREQ & request_mask) == 0);
+	test_eq_memory("last burst transfers a complete burst", matrix_source, matrix_destination, 8);
+	test_eq_u32("eight transfers decrement TransferSize to 0xFF8", 0xFF8,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("last burst request exposes masked terminal count", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_check("last burst request disables channel", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	start_peripheral_fc_transfer(flow);
+	test_check("4096 transfers are acknowledged", issue_peripheral_fc_bursts(request_mask, 1024));
+	test_eq_memory("4096 transfers preserve data", matrix_source, matrix_destination, 4096);
+	test_eq_u32("4096 transfers wrap TransferSize back to zero", 0,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("TransferSize wrap does not raise terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	test_check("TransferSize wrap keeps channel enabled", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) != 0);
+
+	DMAC_SOFT_SREQ = request_mask;
+	test_check("request after TransferSize wrap is acknowledged", wait_for_value(&DMAC_SOFT_SREQ, request_mask, 0));
+	test_eq_u32("request after wrap decrements TransferSize to 0xFFF", 0xFFF,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("request after wrap is not terminal", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	DMAC_SOFT_LSREQ = request_mask;
+	test_check("last request after TransferSize wrap completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("requests after TransferSize wrap preserve data", matrix_source, matrix_destination, 4098);
+	test_eq_u32("last request after wrap decrements TransferSize to 0xFFE", 0xFFE,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("last request after wrap disables channel", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
+static void test_peripheral_fc_per2per_destination(void) {
+	test_category("Peripheral FC: peripheral to peripheral, destination controlled");
+	start_peripheral_fc_transfer(DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_DST);
+
+	DMAC_SOFT_SREQ = BIT(DMA_SOURCE_REQUEST);
+	stopwatch_usleep_wd(1000);
+	test_check("source single waits for destination", (DMAC_SOFT_SREQ & BIT(DMA_SOURCE_REQUEST)) != 0);
+	test_eq_u32("source-only request leaves destination unchanged", 0xA5, matrix_destination[0]);
+	test_check("source-only request has no terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+
+	DMAC_SOFT_SREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("paired source single is acknowledged", wait_for_value(&DMAC_SOFT_SREQ, BIT(DMA_SOURCE_REQUEST), 0));
 	test_check(
-		"source-controlled PER2PER accepts last source burst",
-		wait_for_value(&DMAC_SOFT_LBREQ, BIT(0), 0)
+		"paired destination single is acknowledged",
+		wait_for_value(&DMAC_SOFT_SREQ, BIT(DMA_DESTINATION_REQUEST), 0)
 	);
-	DMAC_SOFT_BREQ = BIT(1);
-	test_check("source-controlled PER2PER completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
-	test_eq_memory("source-controlled PER2PER data", matrix_source, matrix_destination, 4 * sizeof(uint32_t));
-	test_check("destination burst request clears", (DMAC_SOFT_BREQ & BIT(1)) == 0);
+	test_eq_memory("paired single requests transfer one item", matrix_source, matrix_destination, 1);
+	test_check("ordinary destination request is not terminal", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	test_eq_u32("paired single wraps TransferSize to 0xFFF", 0xFFF,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+
+	DMAC_SOFT_LSREQ = BIT(DMA_DESTINATION_REQUEST);
+	stopwatch_usleep_wd(1000);
+	test_check("last destination single waits for source", (DMAC_SOFT_LSREQ & BIT(DMA_DESTINATION_REQUEST)) != 0);
+	test_eq_u32("waiting last request does not invent data", 0xA5, matrix_destination[1]);
+	DMAC_SOFT_SREQ = BIT(DMA_SOURCE_REQUEST);
+	test_check("last destination single completes transfer", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_check("final source single is acknowledged", (DMAC_SOFT_SREQ & BIT(DMA_SOURCE_REQUEST)) == 0);
+	test_check("last destination single is acknowledged", (DMAC_SOFT_LSREQ & BIT(DMA_DESTINATION_REQUEST)) == 0);
+	test_eq_memory("destination-controlled single sequence data", matrix_source, matrix_destination, 2);
+	test_eq_u32("two single transfers decrement TransferSize to 0xFFE", 0xFFE,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("last destination single exposes masked terminal count", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_check("last destination single disables channel", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	start_peripheral_fc_transfer(DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_DST);
+	DMAC_SOFT_BREQ = BIT(DMA_SOURCE_REQUEST) | BIT(DMA_DESTINATION_REQUEST);
+	test_check("paired source burst is acknowledged", wait_for_value(&DMAC_SOFT_BREQ, BIT(DMA_SOURCE_REQUEST), 0));
+	test_check(
+		"paired destination burst is acknowledged",
+		wait_for_value(&DMAC_SOFT_BREQ, BIT(DMA_DESTINATION_REQUEST), 0)
+	);
+	test_eq_memory("paired burst requests transfer one burst", matrix_source, matrix_destination, 4);
+	test_check("ordinary destination burst is not terminal", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+
+	DMAC_SOFT_LBREQ = BIT(DMA_DESTINATION_REQUEST);
+	stopwatch_usleep_wd(1000);
+	test_check("last destination burst waits for source", (DMAC_SOFT_LBREQ & BIT(DMA_DESTINATION_REQUEST)) != 0);
+	DMAC_SOFT_BREQ = BIT(DMA_SOURCE_REQUEST);
+	test_check("last destination burst completes transfer", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_check("final source burst is acknowledged", (DMAC_SOFT_BREQ & BIT(DMA_SOURCE_REQUEST)) == 0);
+	test_check("last destination burst is acknowledged", (DMAC_SOFT_LBREQ & BIT(DMA_DESTINATION_REQUEST)) == 0);
+	test_eq_memory("destination-controlled burst sequence data", matrix_source, matrix_destination, 8);
+	test_eq_u32("two bursts decrement TransferSize to 0xFF8", 0xFF8,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("last destination burst exposes masked terminal count", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_check("last destination burst disables channel", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	start_peripheral_fc_transfer(DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_DST);
+	uint32_t paired_requests = BIT(DMA_SOURCE_REQUEST) | BIT(DMA_DESTINATION_REQUEST);
+	test_check("4096 paired transfers are acknowledged", issue_peripheral_fc_bursts(paired_requests, 1024));
+	test_eq_memory("4096 paired transfers preserve data", matrix_source, matrix_destination, 4096);
+	test_eq_u32("4096 paired transfers wrap TransferSize back to zero", 0,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("paired TransferSize wrap has no terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	test_check("paired TransferSize wrap keeps channel enabled", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) != 0);
+
+	DMAC_SOFT_SREQ = paired_requests;
+	test_check("paired request after wrap is acknowledged", wait_for_value(&DMAC_SOFT_SREQ, paired_requests, 0));
+	test_eq_u32("paired request after wrap decrements TransferSize to 0xFFF", 0xFFF,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	DMAC_SOFT_SREQ = BIT(DMA_SOURCE_REQUEST);
+	DMAC_SOFT_LSREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("last destination request after wrap completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("destination-controlled requests after wrap preserve data", matrix_source, matrix_destination, 4098);
+	test_eq_u32("last destination request after wrap leaves TransferSize at 0xFFE", 0xFFE,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("last destination request after wrap disables channel", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
+static void test_peripheral_fc_per2per_source(void) {
+	test_category("Peripheral FC: peripheral to peripheral, source controlled");
+	start_peripheral_fc_transfer(DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_SRC);
+
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	stopwatch_usleep_wd(1000);
+	test_check("destination burst waits for source", (DMAC_SOFT_BREQ & BIT(DMA_DESTINATION_REQUEST)) != 0);
+	test_eq_u32("destination-only request leaves destination unchanged", 0xA5, matrix_destination[0]);
+	test_check("destination-only request has no terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+
+	DMAC_SOFT_SREQ = BIT(DMA_SOURCE_REQUEST);
+	test_check("paired source single is acknowledged", wait_for_value(&DMAC_SOFT_SREQ, BIT(DMA_SOURCE_REQUEST), 0));
+	test_check(
+		"paired destination burst is acknowledged",
+		wait_for_value(&DMAC_SOFT_BREQ, BIT(DMA_DESTINATION_REQUEST), 0)
+	);
+	test_eq_memory("source single and destination burst transfer one item", matrix_source, matrix_destination, 1);
+	test_check("ordinary source request is not terminal", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	test_eq_u32("source single wraps TransferSize to 0xFFF", 0xFFF,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+
+	DMAC_SOFT_LSREQ = BIT(DMA_SOURCE_REQUEST);
+	test_check("last source single is acknowledged", wait_for_value(&DMAC_SOFT_LSREQ, BIT(DMA_SOURCE_REQUEST), 0));
+	test_eq_u32("last source single waits for destination", 0xA5, matrix_destination[1]);
+	test_check("waiting last source single has no terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("destination burst drains last source item", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_check("final destination burst is acknowledged", (DMAC_SOFT_BREQ & BIT(DMA_DESTINATION_REQUEST)) == 0);
+	test_eq_memory("source-controlled single sequence data", matrix_source, matrix_destination, 2);
+	test_eq_u32("two source singles decrement TransferSize to 0xFFE", 0xFFE,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("last source single exposes masked terminal count", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_check("last source single disables channel", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	start_peripheral_fc_transfer(DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_SRC);
+	DMAC_SOFT_BREQ = BIT(DMA_SOURCE_REQUEST) | BIT(DMA_DESTINATION_REQUEST);
+	test_check("paired source burst is acknowledged", wait_for_value(&DMAC_SOFT_BREQ, BIT(DMA_SOURCE_REQUEST), 0));
+	test_check(
+		"paired destination burst is acknowledged",
+		wait_for_value(&DMAC_SOFT_BREQ, BIT(DMA_DESTINATION_REQUEST), 0)
+	);
+	test_eq_memory("paired burst requests transfer one burst", matrix_source, matrix_destination, 4);
+	test_check("ordinary source burst is not terminal", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+
+	DMAC_SOFT_LBREQ = BIT(DMA_SOURCE_REQUEST);
+	test_check("last source burst is acknowledged", wait_for_value(&DMAC_SOFT_LBREQ, BIT(DMA_SOURCE_REQUEST), 0));
+	test_eq_u32("last source burst waits for destination", 0xA5, matrix_destination[4]);
+	test_check("waiting last source burst has no terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("destination burst drains last source burst", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_check("final destination burst is acknowledged", (DMAC_SOFT_BREQ & BIT(DMA_DESTINATION_REQUEST)) == 0);
+	test_eq_memory("source-controlled burst sequence data", matrix_source, matrix_destination, 8);
+	test_eq_u32("two source bursts decrement TransferSize to 0xFF8", 0xFF8,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("last source burst exposes masked terminal count", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_check("last source burst disables channel", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	start_peripheral_fc_transfer(DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_SRC);
+	uint32_t paired_requests = BIT(DMA_SOURCE_REQUEST) | BIT(DMA_DESTINATION_REQUEST);
+	test_check("4096 paired transfers are acknowledged", issue_peripheral_fc_bursts(paired_requests, 1024));
+	test_eq_memory("4096 paired transfers preserve data", matrix_source, matrix_destination, 4096);
+	test_eq_u32("4096 paired transfers wrap TransferSize back to zero", 0,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("paired TransferSize wrap has no terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	test_check("paired TransferSize wrap keeps channel enabled", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) != 0);
+
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	DMAC_SOFT_SREQ = BIT(DMA_SOURCE_REQUEST);
+	test_check("source request after wrap is acknowledged", wait_for_value(&DMAC_SOFT_SREQ, BIT(DMA_SOURCE_REQUEST), 0));
+	test_check(
+		"destination request after wrap is acknowledged",
+		wait_for_value(&DMAC_SOFT_BREQ, BIT(DMA_DESTINATION_REQUEST), 0)
+	);
+	test_eq_u32("source request after wrap decrements TransferSize to 0xFFF", 0xFFF,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	DMAC_SOFT_LSREQ = BIT(DMA_SOURCE_REQUEST);
+	test_check(
+		"last source request after wrap is acknowledged",
+		wait_for_value(&DMAC_SOFT_LSREQ, BIT(DMA_SOURCE_REQUEST), 0)
+	);
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("last source request after wrap completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("source-controlled requests after wrap preserve data", matrix_source, matrix_destination, 4098);
+	test_eq_u32("last source request after wrap leaves TransferSize at 0xFFE", 0xFFE,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_check("last source request after wrap disables channel", (DMAC_EN_CHAN & BIT(DMA_CHANNEL)) == 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
@@ -1501,7 +1627,15 @@ int main(void) {
 	test_software_requests();
 	test_request_selectors();
 	test_request_selector_isolation();
-	test_peripheral_controlled_per2per();
+
+	test_memory_peripheral_fc(
+		"Peripheral FC: memory to peripheral", DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER, DMA_DESTINATION_REQUEST
+	);
+	test_memory_peripheral_fc(
+		"Peripheral FC: peripheral to memory", DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM_PER, DMA_SOURCE_REQUEST
+	);
+	test_peripheral_fc_per2per_destination();
+	test_peripheral_fc_per2per_source();
 
 	test_category("Channel control and arbitration");
 	test_halt_and_lock();
