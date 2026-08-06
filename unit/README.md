@@ -27,7 +27,7 @@ Run a test on real hardware:
 | `dsp-tpu-events` | PMB8876 TPU Timer RAM decoder values 0–9 and 15–31 observed through Baseband, modulator, and DSP interrupt state |
 | `dsp-tpu-bb-events` | Hardware timing, counts, status, and DSP interrupts for repeating TPU MONON events |
 | `dsp-l1mon-vectors` | PMB8876 Mask ROM monitoring bounds, zero-I/Q result, ring behavior, and TX inactivity |
-| `dsp-l1mon-functional` | RX-only TPU MONON through Baseband, DSP interrupt, Mask ROM, and monitoring result ring |
+| `dsp-l1mon-functional` | Autonomous TPU MONON through the normal Mask ROM interrupt handler and monitoring result ring |
 | `dsp-boot-state` | Autonomous Mask ROM execution after DSP reset and interrupt-gated boot-command dispatch |
 | `dsp-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |
 | `dsp-data-rom-dump` | PMB8875/PMB8876 DSP boot-mode DREAD dump of fixed and banked Data Mask ROM in Intel HEX format |
