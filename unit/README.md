@@ -16,6 +16,7 @@ Run a test on real hardware:
 | `dsp-irqs` | Real DSP-generated INT_TOMCU requests, VIC routing, and acknowledgement for all four DSP SRC lines |
 | `dsp-interrupt-functional` | DSP interrupt masking, acknowledgement, simultaneous priority, nested arbitration, and repeat delivery |
 | `dsp-interrupt-sources` | All documented DSP interrupt-unit source bits, line routing, masking, coalescing, and acknowledgement |
+| `dsp-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
 | `dsp-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
 | `dsp-peripheral-map` | Reset-isolated, read-only PMB8876 DSP data-space capture for the candidate `DE00`-`DEFF` peripheral window |
 | `dsp-peripherals-safe` | Direct TeakLite reads of documented status, counter, pointer, semaphore, and ID registers without peripheral control writes |

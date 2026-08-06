@@ -22,6 +22,7 @@ my @images = (
 	[ 'irqs-0801.asm', 'irqs-0801.inc', 'DSP_IRQ_IMAGE_0801', 'pmb8876' ],
 	[ 'benchmark.asm', 'benchmark-8875.inc', 'DSP_BENCHMARK_8875', 'pmb8875' ],
 	[ 'benchmark.asm', 'benchmark-8876.inc', 'DSP_BENCHMARK_8876', 'pmb8876' ],
+	[ 'irq-shared-benchmark.asm', 'irq-shared-benchmark-8876.inc', 'DSP_IRQ_SHARED_BENCHMARK_8876', 'pmb8876' ],
 	[ 'timers-functional.asm', 'timers-functional-8875.inc', 'DSP_TIMERS_IMAGE_8875', 'pmb8875' ],
 	[ 'timers-functional.asm', 'timers-functional-8876.inc', 'DSP_TIMERS_IMAGE_8876', 'pmb8876' ],
 	[ 'mcs-functional.asm', 'mcs-functional-8875.inc', 'DSP_MCS_IMAGE_8875', 'pmb8875' ],
