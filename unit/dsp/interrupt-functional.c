@@ -4,7 +4,7 @@
 #include "test.h"
 
 #define RESULT_BASE 0x0400
-#define RESULT_LAST 0x0434
+#define RESULT_LAST 0x0440
 #define RESULT_WORDS (RESULT_LAST - RESULT_BASE + 1)
 #define READY_MARKER 0xA55A
 #define COMPLETE_MARKER 0xA55A
@@ -68,9 +68,23 @@ static void validate_priority_and_repeat(void) {
 	test_eq_u32("second acknowledgement clears INT2 source", 0, dsp_hw_shared_memory[0x0429] & BIT(1));
 }
 
+static void validate_nested_priority(void) {
+	test_category("Interrupt controller / Nested line priority");
+	test_eq_u32("INT1 enters before requesting nested interrupts", 0, dsp_hw_shared_memory[0x0437]);
+	test_eq_u32("INT0 source is pending before nested enable", 1, dsp_hw_shared_memory[0x043F] & 1);
+	test_eq_u32("INT2 source is pending before nested enable", 1, dsp_hw_shared_memory[0x0440] & 1);
+	test_eq_u32("INT0 wins nested simultaneous INT0/INT2 arbitration", 1, dsp_hw_shared_memory[0x0438]);
+	test_eq_u32("nested INT2 is serviced after INT0", 2, dsp_hw_shared_memory[0x0439]);
+	test_eq_u32("INT1 resumes after both nested handlers", 3, dsp_hw_shared_memory[0x043A]);
+	test_eq_u32("mainline resumes with four recorded phases", 4, dsp_hw_shared_memory[0x043B]);
+	test_eq_u32("nested INT0 source is acknowledged", 0, dsp_hw_shared_memory[0x043C] & 1);
+	test_eq_u32("outer INT1 source is acknowledged", 0, dsp_hw_shared_memory[0x043D] & 1);
+	test_eq_u32("nested INT2 source is acknowledged", 0, dsp_hw_shared_memory[0x043E] & 1);
+}
+
 static void validate_cleanup(void) {
 	test_category("Interrupt controller / Cleanup");
-	test_eq_u32("test reaches final phase", 7, dsp_hw_shared_memory[0x0402]);
+	test_eq_u32("test reaches final phase", 8, dsp_hw_shared_memory[0x0402]);
 	test_eq_u32("A0 flags are clear", 0, dsp_hw_shared_memory[0x042A]);
 	test_eq_u32("B0 flags are clear", 0, dsp_hw_shared_memory[0x042B]);
 	test_eq_u32("INT1 flags are clear", 0, dsp_hw_shared_memory[0x042C]);
@@ -84,7 +98,8 @@ static void validate_cleanup(void) {
 static bool run_pass(size_t pass) {
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
 		return false;
-	DSP_COM_CLEAR = UINT16_MAX;
+
+	DSP_COM_CLEAR = 0xFFFF;
 	for (size_t address = RESULT_BASE; address <= RESULT_LAST; address++)
 		dsp_hw_shared_memory[address] = 0xDEAD;
 	if (!test_check("boot commands load interrupt-controller test", dsp_hw_load_image(DSP_INTERRUPT_IMAGE,
@@ -96,10 +111,15 @@ static bool run_pass(size_t pass) {
 		return false;
 	if (!test_check("interrupt-controller scenarios complete", dsp_hw_wait_shared(0x0401, COMPLETE_MARKER, 500)))
 		return false;
+	if (!test_check("nested interrupt-priority scenario completes",
+		dsp_hw_wait_shared(0x0435, COMPLETE_MARKER, 500))) {
+		return false;
+	}
 
 	validate_disabled_pending();
 	validate_independent_acknowledgement();
 	validate_priority_and_repeat();
+	validate_nested_priority();
 	validate_cleanup();
 	print_record(pass);
 	if (pass == 1) {
@@ -131,7 +151,7 @@ int main(void) {
 			break;
 	}
 
-	DSP_COM_CLEAR = UINT16_MAX;
+	DSP_COM_CLEAR = 0xFFFF;
 	(void) dsp_hw_reset();
 	return test_finish();
 }
