@@ -24,6 +24,7 @@ Run a test on real hardware:
 | `dsp-opcode-aliases` | Noncanonical variants of every documented TeakLite I don't-care opcode field |
 | `dsp-opcode-probe` | Resumable diagnostic sweep of raw TeakLite first-word opcodes with reset and timeout isolation |
 | `dsp-expansion-probe` | Resumable sweep of expansion words for all documented two-word TeakLite I encoding rows |
+| `dsp-tpu-events` | PMB8876 TPU Timer RAM decoder values 0–9 and 15–31 observed through Baseband, modulator, and DSP interrupt state |
 | `dsp-tpu-bb-events` | Hardware timing, counts, status, and DSP interrupts for repeating TPU MONON events |
 | `dsp-l1mon-vectors` | PMB8876 Mask ROM monitoring bounds, zero-I/Q result, ring behavior, and TX inactivity |
 | `dsp-l1mon-functional` | RX-only TPU MONON through Baseband, DSP interrupt, Mask ROM, and monitoring result ring |

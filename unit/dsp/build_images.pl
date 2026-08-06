@@ -62,6 +62,7 @@ my @images = (
 	[ 'modulator-functional.asm', 'modulator-functional-8875.inc', 'DSP_MODULATOR_FUNCTIONAL_8875', 'pmb8875' ],
 	[ 'modulator-functional.asm', 'modulator-functional-8876.inc', 'DSP_MODULATOR_FUNCTIONAL_8876', 'pmb8876' ],
 	[ 'baseband-functional.asm', 'baseband-functional-8876.inc', 'DSP_BASEBAND_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'tpu-events.asm', 'tpu-events-8876.inc', 'DSP_TPU_EVENTS_8876', 'pmb8876' ],
 	[ 'tpu-bb-events.asm', 'tpu-bb-events-8876.inc', 'DSP_TPU_BB_EVENTS_8876', 'pmb8876' ],
 	[ 'l1mon-vectors.asm', 'l1mon-vectors-8876.inc', 'DSP_L1MON_VECTORS_8876', 'pmb8876' ],
 	[ 'l1mon-functional.asm', 'l1mon-functional-8876.inc', 'DSP_L1MON_FUNCTIONAL_8876', 'pmb8876' ],
