@@ -87,6 +87,14 @@ add_peripheral_test(dsp-tpu-events dsp/tpu-events.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-tpu-bb-events dsp/tpu-bb-events.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-l1mon-vectors dsp/l1mon-vectors.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-l1mon-functional dsp/l1mon-functional.c dsp/dsp-hw.c)
+add_peripheral_test(
+	dsp-gsm-channel-scan
+	dsp/gsm-channel-scan.c
+	dsp/board/siemens-x85.c
+	dsp/board/hd155153np.c
+	dsp/dsp-hw.c
+	eeprom.c
+)
 add_peripheral_test(dsp-boot-state dsp/boot-state.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-control-functional dsp/dsp-control-functional.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-io-functional dsp/dsp-io-functional.c dsp/dsp-hw.c)
