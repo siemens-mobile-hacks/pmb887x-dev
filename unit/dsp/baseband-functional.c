@@ -31,7 +31,14 @@
 #define RAM_SNAPSHOT_BASE 0x0160
 #define RAM_SNAPSHOT_WORDS 16
 #define RAM_SENTINEL 0x5AA5
-#define BASEBAND_IRQ_MASK (TEAK_INT_FINTA0_BBHI | TEAK_INT_FINTA0_BBLO | TEAK_INT_FINTA0_BB_FULL)
+#define NORMAL_JOB_WORDS 600
+#define WRAPPED_JOB_WORDS 40
+#define REPEATED_JOB_WORDS 480
+#define DECIMATED_JOB_WORDS 300
+// Undocumented readback bit that remains set on PMB8876 across every tested Baseband control mode.
+#define BASEBAND_FIXED_CONTROL 0x0100
+#define NORMAL_BBHI_POINTER 2
+#define DECIMATED_BBHI_POINTER 1
 
 struct tpu_event {
 	uint16_t time;
@@ -77,6 +84,13 @@ static const struct tpu_event WRAP_EVENTS[] = {
 	{ 1000, 7 },
 };
 
+static const struct tpu_event REPEAT_EVENTS[] = {
+	{ 100, 6 },
+	{ 400, 1 },
+	{ 1600, 5 },
+	{ 1700, 7 },
+};
+
 static const struct tpu_event CLEANUP_EVENTS[] = {
 	{ 100, 5 },
 	{ 200, 7 },
@@ -96,7 +110,7 @@ static const struct baseband_scenario JOB_SCENARIO = {
 	4,
 	12,
 	0,
-	UINT16_MAX,
+	0xFFFF,
 	0,
 	0,
 };
@@ -108,7 +122,7 @@ static const struct baseband_scenario STOP_SCENARIO = {
 	4,
 	2,
 	TEAK_BB_CTRL_BB_STOP,
-	UINT16_MAX,
+	0xFFFF,
 	0,
 	0,
 };
@@ -120,7 +134,19 @@ static const struct baseband_scenario WRAP_SCENARIO = {
 	959,
 	3,
 	0,
-	UINT16_MAX,
+	0xFFFF,
+	0,
+	0,
+};
+
+static const struct baseband_scenario REPEAT_SCENARIO = {
+	"repeated interrupt-pointer crossing",
+	REPEAT_EVENTS,
+	ARRAY_SIZE(REPEAT_EVENTS),
+	4,
+	5,
+	0,
+	0xFFFF,
 	0,
 	0,
 };
@@ -180,15 +206,19 @@ static void print_record(const struct baseband_scenario *scenario, size_t pass) 
 }
 
 static void validate_common(const struct baseband_scenario *scenario) {
+	uint16_t expected_control = scenario->control_and & TEAK_BB_CTRL_BBADAP_EN;
+	expected_control |= BASEBAND_FIXED_CONTROL;
+
 	test_eq_u32("all expected baseband interrupts enter the real INT0 handler", scenario->expected_irqs,
 		dsp_hw_shared_memory[IRQ_COUNT_OFFSET]);
 	test_eq_u32("RXON and all job signals are inactive at completion", 0,
-		dsp_hw_shared_memory[FINAL_STATUS_OFFSET] & (TEAK_BB_STATUS_RXON | TEAK_BB_STATUS_EQON |
-		TEAK_BB_STATUS_MONON | TEAK_BB_STATUS_SCON | TEAK_BB_STATUS_FCON));
+		dsp_hw_shared_memory[FINAL_STATUS_OFFSET]);
 	test_eq_u32("the handler acknowledges every baseband source", 0,
-		dsp_hw_shared_memory[FINAL_FLAGS_OFFSET] & BASEBAND_IRQ_MASK);
-	test_eq_u32("RXON low clears the BB_STOP hardware override", 0,
-		dsp_hw_shared_memory[FINAL_CTRL_OFFSET] & TEAK_BB_CTRL_BB_STOP);
+		dsp_hw_shared_memory[FINAL_FLAGS_OFFSET]);
+	test_eq_u32("RXON low restores the exact hardware control state", expected_control,
+		dsp_hw_shared_memory[FINAL_CTRL_OFFSET]);
+	test_eq_u32("the broad-filter control register preserves the configured value", scenario->brfilter_ctrl,
+		dsp_hw_shared_memory[FINAL_BRFILTER_CTRL_OFFSET]);
 }
 
 static void validate_job_signals(void) {
@@ -206,31 +236,25 @@ static void validate_job_signals(void) {
 		char name[96];
 
 		tfp_sprintf(name, "job %u rising edge raises BBHI", (uint32_t) job);
-		test_eq_u32(name, TEAK_INT_FINTA0_BBHI, dsp_hw_shared_memory[FLAGS_BASE + high] & BASEBAND_IRQ_MASK);
+		test_eq_u32(name, TEAK_INT_FINTA0_BBHI, dsp_hw_shared_memory[FLAGS_BASE + high]);
 		tfp_sprintf(name, "job %u rising edge exposes its status and RXON", (uint32_t) job);
-		test_eq_u32(name, TEAK_BB_STATUS_RXON | JOB_BITS[job],
-			dsp_hw_shared_memory[STATUS_BASE + high] & (TEAK_BB_STATUS_RXON | TEAK_BB_STATUS_EQON |
-			TEAK_BB_STATUS_MONON | TEAK_BB_STATUS_SCON | TEAK_BB_STATUS_FCON));
-		tfp_sprintf(name, "job %u resets the write pointer below the interrupt position", (uint32_t) job);
-		test_check(name, dsp_hw_shared_memory[POINTER_BASE + high] < 4);
+		test_eq_u32(name, TEAK_BB_STATUS_RXON | JOB_BITS[job], dsp_hw_shared_memory[STATUS_BASE + high]);
+		tfp_sprintf(name, "job %u BBHI observes two words already stored", (uint32_t) job);
+		test_eq_u32(name, NORMAL_BBHI_POINTER, dsp_hw_shared_memory[POINTER_BASE + high]);
 
 		tfp_sprintf(name, "job %u reaches INT_POINTER and raises BB_FULL", (uint32_t) job);
-		test_eq_u32(name, TEAK_INT_FINTA0_BB_FULL,
-			dsp_hw_shared_memory[FLAGS_BASE + full] & BASEBAND_IRQ_MASK);
+		test_eq_u32(name, TEAK_INT_FINTA0_BB_FULL, dsp_hw_shared_memory[FLAGS_BASE + full]);
 		tfp_sprintf(name, "job %u remains active when BB_FULL is delivered", (uint32_t) job);
-		test_eq_u32(name, TEAK_BB_STATUS_RXON | JOB_BITS[job],
-			dsp_hw_shared_memory[STATUS_BASE + full] & (TEAK_BB_STATUS_RXON | TEAK_BB_STATUS_EQON |
-			TEAK_BB_STATUS_MONON | TEAK_BB_STATUS_SCON | TEAK_BB_STATUS_FCON));
+		test_eq_u32(name, TEAK_BB_STATUS_RXON | JOB_BITS[job], dsp_hw_shared_memory[STATUS_BASE + full]);
+		tfp_sprintf(name, "job %u delivers BB_FULL at the programmed write pointer", (uint32_t) job);
+		test_eq_u32(name, JOB_SCENARIO.interrupt_pointer, dsp_hw_shared_memory[POINTER_BASE + full]);
 
 		tfp_sprintf(name, "job %u falling edge raises BBLO", (uint32_t) job);
-		test_eq_u32(name, TEAK_INT_FINTA0_BBLO, dsp_hw_shared_memory[FLAGS_BASE + low] & BASEBAND_IRQ_MASK);
+		test_eq_u32(name, TEAK_INT_FINTA0_BBLO, dsp_hw_shared_memory[FLAGS_BASE + low]);
 		tfp_sprintf(name, "job %u falling edge clears only the job signal", (uint32_t) job);
-		test_eq_u32(name, TEAK_BB_STATUS_RXON,
-			dsp_hw_shared_memory[STATUS_BASE + low] & (TEAK_BB_STATUS_RXON | TEAK_BB_STATUS_EQON |
-			TEAK_BB_STATUS_MONON | TEAK_BB_STATUS_SCON | TEAK_BB_STATUS_FCON));
-		tfp_sprintf(name, "job %u keeps advancing after INT_POINTER until its falling edge", (uint32_t) job);
-		test_check(name, dsp_hw_shared_memory[POINTER_BASE + low] >
-			dsp_hw_shared_memory[POINTER_BASE + full]);
+		test_eq_u32(name, TEAK_BB_STATUS_RXON, dsp_hw_shared_memory[STATUS_BASE + low]);
+		tfp_sprintf(name, "job %u stores exactly two words per active TPU tick", (uint32_t) job);
+		test_eq_u32(name, NORMAL_JOB_WORDS, dsp_hw_shared_memory[POINTER_BASE + low]);
 	}
 
 	test_eq_u32("the final write pointer remains at the last completed job position",
@@ -251,9 +275,9 @@ static void validate_job_signals(void) {
 
 static void validate_stop(void) {
 	test_eq_u32("EQON rising edge still raises BBHI while BB_STOP is set", TEAK_INT_FINTA0_BBHI,
-		dsp_hw_shared_memory[FLAGS_BASE] & BASEBAND_IRQ_MASK);
+		dsp_hw_shared_memory[FLAGS_BASE]);
 	test_eq_u32("EQON falling edge still raises BBLO while BB_STOP is set", TEAK_INT_FINTA0_BBLO,
-		dsp_hw_shared_memory[FLAGS_BASE + 1] & BASEBAND_IRQ_MASK);
+		dsp_hw_shared_memory[FLAGS_BASE + 1]);
 	test_eq_u32("BB_STOP prevents the write pointer from advancing", 0,
 		dsp_hw_shared_memory[POINTER_BASE + 1]);
 	for (size_t i = 0; i < RAM_SNAPSHOT_WORDS; i++) {
@@ -266,28 +290,54 @@ static void validate_stop(void) {
 
 static void validate_wrap(void) {
 	test_eq_u32("long job rising edge raises BBHI", TEAK_INT_FINTA0_BBHI,
-		dsp_hw_shared_memory[FLAGS_BASE] & BASEBAND_IRQ_MASK);
+		dsp_hw_shared_memory[FLAGS_BASE]);
+	test_eq_u32("long job BBHI observes two words already stored", NORMAL_BBHI_POINTER,
+		dsp_hw_shared_memory[POINTER_BASE]);
 	test_eq_u32("long job reaches address 959 and raises BB_FULL", TEAK_INT_FINTA0_BB_FULL,
-		dsp_hw_shared_memory[FLAGS_BASE + 1] & BASEBAND_IRQ_MASK);
+		dsp_hw_shared_memory[FLAGS_BASE + 1]);
+	test_eq_u32("address 959 BB_FULL observes the write pointer wrapped to zero", 0,
+		dsp_hw_shared_memory[POINTER_BASE + 1]);
 	test_eq_u32("long job falling edge raises BBLO", TEAK_INT_FINTA0_BBLO,
-		dsp_hw_shared_memory[FLAGS_BASE + 2] & BASEBAND_IRQ_MASK);
-	test_check("write pointer wraps below 959 before the long job ends",
-		dsp_hw_shared_memory[POINTER_BASE + 2] < 959);
-	test_check("write pointer continues after wrapping to address zero",
-		dsp_hw_shared_memory[POINTER_BASE + 2] != 0);
+		dsp_hw_shared_memory[FLAGS_BASE + 2]);
+	test_eq_u32("500 active TPU ticks store 1000 words and wrap to address 40", WRAPPED_JOB_WORDS,
+		dsp_hw_shared_memory[POINTER_BASE + 2]);
 	test_eq_u32("wrapped pointer remains stable after RXON falls", dsp_hw_shared_memory[POINTER_BASE + 2],
 		dsp_hw_shared_memory[FINAL_POINTER_OFFSET]);
 }
 
+static void validate_repeat(void) {
+	test_eq_u32("repeated-crossing job rising edge raises BBHI", TEAK_INT_FINTA0_BBHI,
+		dsp_hw_shared_memory[FLAGS_BASE]);
+	for (size_t crossing = 0; crossing < 3; crossing++) {
+		char name[96];
+		size_t event = crossing + 1;
+
+		tfp_sprintf(name, "crossing %u raises a fresh BB_FULL", (uint32_t) crossing + 1);
+		test_eq_u32(name, TEAK_INT_FINTA0_BB_FULL, dsp_hw_shared_memory[FLAGS_BASE + event]);
+		tfp_sprintf(name, "crossing %u occurs at the unchanged interrupt pointer", (uint32_t) crossing + 1);
+		test_eq_u32(name, REPEAT_SCENARIO.interrupt_pointer, dsp_hw_shared_memory[POINTER_BASE + event]);
+	}
+	test_eq_u32("repeated-crossing job falling edge raises BBLO", TEAK_INT_FINTA0_BBLO,
+		dsp_hw_shared_memory[FLAGS_BASE + 4]);
+	test_eq_u32("1200 active TPU ticks store 2400 words and wrap to address 480", REPEATED_JOB_WORDS,
+		dsp_hw_shared_memory[POINTER_BASE + 4]);
+}
+
 static void validate_decimation(void) {
 	test_eq_u32("decimation job rising edge raises BBHI", TEAK_INT_FINTA0_BBHI,
-		dsp_hw_shared_memory[FLAGS_BASE] & BASEBAND_IRQ_MASK);
+		dsp_hw_shared_memory[FLAGS_BASE]);
+	test_eq_u32("decimation BBHI observes one word already stored", DECIMATED_BBHI_POINTER,
+		dsp_hw_shared_memory[POINTER_BASE]);
 	test_eq_u32("decimation job reaches INT_POINTER and raises BB_FULL", TEAK_INT_FINTA0_BB_FULL,
-		dsp_hw_shared_memory[FLAGS_BASE + 1] & BASEBAND_IRQ_MASK);
+		dsp_hw_shared_memory[FLAGS_BASE + 1]);
 	test_eq_u32("decimation job falling edge raises BBLO", TEAK_INT_FINTA0_BBLO,
-		dsp_hw_shared_memory[FLAGS_BASE + 2] & BASEBAND_IRQ_MASK);
+		dsp_hw_shared_memory[FLAGS_BASE + 2]);
 	test_eq_u32("decimation job keeps RXON and EQON active at BB_FULL", TEAK_BB_STATUS_RXON | TEAK_BB_STATUS_EQON,
-		dsp_hw_shared_memory[STATUS_BASE + 1] & (TEAK_BB_STATUS_RXON | TEAK_BB_STATUS_EQON));
+		dsp_hw_shared_memory[STATUS_BASE + 1]);
+	test_eq_u32("decimation job delivers BB_FULL at the programmed write pointer", DECIMATION_SCENARIO.interrupt_pointer,
+		dsp_hw_shared_memory[POINTER_BASE + 1]);
+	test_eq_u32("decimation stores one word per active TPU tick", DECIMATED_JOB_WORDS,
+		dsp_hw_shared_memory[POINTER_BASE + 2]);
 	test_eq_u32("decimation mode halves the number of stored samples", normal_job_pointer,
 		(uint32_t) dsp_hw_shared_memory[FINAL_POINTER_OFFSET] * 2);
 	test_eq_u32("decimation mode remains selected after the job", TEAK_BB_BRFILTER_CTRL_DECIMATION,
@@ -305,17 +355,15 @@ static void validate_decimation(void) {
 static bool run_scenario(const struct baseband_scenario *scenario, size_t pass) {
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
 		return false;
-	DSP_COM_CLEAR = UINT16_MAX;
+	DSP_COM_CLEAR = 0xFFFF;
 	if (!test_check("boot commands load the baseband runner",
-		dsp_hw_load_image(DSP_BASEBAND_FUNCTIONAL_8876, sizeof(DSP_BASEBAND_FUNCTIONAL_8876))))
-	{
+		dsp_hw_load_image(DSP_BASEBAND_FUNCTIONAL_8876, sizeof(DSP_BASEBAND_FUNCTIONAL_8876)))) {
 		return false;
 	}
 	if (!test_check("BRANCH starts the baseband runner", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
 		return false;
 	if (!test_check("baseband runner becomes ready",
-		dsp_hw_wait_shared(READY_OFFSET, READY_MARKER, TPU_TIMEOUT_MS)))
-	{
+		dsp_hw_wait_shared(READY_OFFSET, READY_MARKER, TPU_TIMEOUT_MS))) {
 		return false;
 	}
 
@@ -328,8 +376,7 @@ static bool run_scenario(const struct baseband_scenario *scenario, size_t pass) 
 	dsp_hw_shared_memory[COEFFICIENT0_OFFSET] = scenario->coefficient0;
 	dsp_hw_shared_memory[COMMAND_OFFSET] = 1;
 	if (!test_check("baseband runner configures its interrupt and sample buffer",
-		dsp_hw_wait_shared(CONFIGURED_OFFSET, READY_MARKER, TPU_TIMEOUT_MS)))
-	{
+		dsp_hw_wait_shared(CONFIGURED_OFFSET, READY_MARKER, TPU_TIMEOUT_MS))) {
 		return false;
 	}
 
@@ -348,6 +395,8 @@ static bool run_scenario(const struct baseband_scenario *scenario, size_t pass) 
 		validate_stop();
 	} else if (scenario == &WRAP_SCENARIO) {
 		validate_wrap();
+	} else if (scenario == &REPEAT_SCENARIO) {
+		validate_repeat();
 	} else {
 		validate_decimation();
 	}
@@ -363,6 +412,7 @@ int main(void) {
 		&JOB_SCENARIO,
 		&STOP_SCENARIO,
 		&WRAP_SCENARIO,
+		&REPEAT_SCENARIO,
 		&DECIMATION_SCENARIO,
 	};
 	for (size_t i = 0; i < ARRAY_SIZE(scenarios); i++) {
@@ -378,7 +428,7 @@ int main(void) {
 
 finish:
 	TPU_PARAM = 0;
-	DSP_COM_CLEAR = UINT16_MAX;
+	DSP_COM_CLEAR = 0xFFFF;
 	(void) dsp_hw_reset();
 	return test_finish();
 }
