@@ -2583,8 +2583,9 @@
 
 
 // PLL
-// Clock Control Unit
+// Clock Generation Unit
 #define	PLL_BASE						0xF4500000
+/* Clock Generation Unit Control Register 1 (CGU_CTL1) */
 #define	PLL_OSC							MMIO32(PLL_BASE + 0xA0)
 #define	PLL_OSC_PLL_POWER_UP			BIT(0)					 // Power up PLL
 #define	PLL_OSC_PHASE0_POWER_UP			BIT(1)					 // Power up phase-shifter output 0
@@ -2627,9 +2628,11 @@
 #define	PLL_CON0_PLL4_K1				GENMASK(30, 27)			 // Phase 3 divider: fPLL * 12 / (K1 * 6 + K2)
 #define	PLL_CON0_PLL4_K1_SHIFT			27
 
+/* Clock Generation Unit Control Register 4 (CGU_CTL4) */
 #define	PLL_CON1						MMIO32(PLL_BASE + 0xA8)
 #define	PLL_CON1_SYSTEM_OUT_CTRL		GENMASK(1, 0)			 // Clock Manager state for SYSTEM_OUT
 #define	PLL_CON1_SYSTEM_OUT_CTRL_SHIFT	0
+#define	PLL_CON1_SYSTEM_OUT_CTRL_BYPASS	0x0
 #define	PLL_CON1_SYSTEM_OUT_CTRL_ON		0x2
 #define	PLL_CON1_SYSTEM_OUT_CTRL_OFF	0x3
 #define	PLL_CON1_FSYS_CLKSEL			GENMASK(17, 16)			 // Source clock for fSYS (BYPASS: fSYS=fOSC, PLL: fSYS=fPLL / 2)
@@ -2640,6 +2643,7 @@
 #define	PLL_CON1_AHB_CLKSEL				GENMASK(22, 20)			 // Source clock for fAHB
 #define	PLL_CON1_AHB_CLKSEL_SHIFT		20
 #define	PLL_CON1_AHB_CLKSEL_BYPASS		0x0
+#define	PLL_CON1_AHB_CLKSEL_DISABLE		0x100000
 #define	PLL_CON1_AHB_CLKSEL_PLL0		0x200000
 #define	PLL_CON1_AHB_CLKSEL_PLL1		0x300000
 #define	PLL_CON1_AHB_CLKSEL_PLL2		0x400000
@@ -2653,10 +2657,23 @@
 #define	PLL_CON1_FSTM_DIV_16			0x20000000
 #define	PLL_CON1_FSTM_DIV_32			0x30000000
 
+/* Clock Generation Unit Control Register 5 (CGU_CTL5) */
 #define	PLL_CON2						MMIO32(PLL_BASE + 0xAC)
-#define	PLL_CON2_CPU_DIV				GENMASK(9, 8)
+#define	PLL_CON2_EBU_CLKSEL				GENMASK(6, 4)			 // Source clock for asynchronous EBU operation
+#define	PLL_CON2_EBU_CLKSEL_SHIFT		4
+#define	PLL_CON2_EBU_CLKSEL_OSC			0x0
+#define	PLL_CON2_EBU_CLKSEL_DISABLE		0x10
+#define	PLL_CON2_EBU_CLKSEL_PLL0		0x20
+#define	PLL_CON2_EBU_CLKSEL_PLL1		0x30
+#define	PLL_CON2_EBU_CLKSEL_PLL2		0x40
+#define	PLL_CON2_EBU_CLKSEL_PLL3		0x50
+#define	PLL_CON2_EBU_CLKSEL_PLL4		0x60
+#define	PLL_CON2_CPU_DIV				GENMASK(9, 8)			 // ARM clock divider: divide fAHB by N+1
 #define	PLL_CON2_CPU_DIV_SHIFT			8
-#define	PLL_CON2_CPU_DIV_EN				BIT(12)
+#define	PLL_CON2_CPU_DIV_EN				BIT(12)					 // Enable ARM clock divider
+#define	PLL_CON2_PERIPHERAL_CLKSEL		BIT(13)					 // Source clock for peripherals
+#define	PLL_CON2_PERIPHERAL_CLKSEL_OSC	0x0
+#define	PLL_CON2_PERIPHERAL_CLKSEL_FSYS	0x2000
 #define	PLL_CON2_USB_CLKSEL				GENMASK(15, 14)			 // Source clock for USB
 #define	PLL_CON2_USB_CLKSEL_SHIFT		14
 #define	PLL_CON2_USB_CLKSEL_OSC			0x0
@@ -2670,6 +2687,7 @@
 #define	PLL_CON3						MMIO32(PLL_BASE + 0xB4)
 #define	PLL_CON3_USB_CLKDIV				GENMASK(25, 24)			 // USB clock divider (divide by 2^n)
 #define	PLL_CON3_USB_CLKDIV_SHIFT		24
+#define	PLL_CON3_PERIPHERAL_CLK_EN		BIT(28)					 // Enable peripheral clocks
 
 /* Service Routing Control Register */
 #define	PLL_SRC							MMIO32(PLL_BASE + 0xCC)
