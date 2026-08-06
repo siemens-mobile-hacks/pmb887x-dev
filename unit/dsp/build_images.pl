@@ -69,6 +69,9 @@ my @images = (
 	[ 'dsp-control-functional.asm', 'dsp-control-functional-8876.inc', 'DSP_CONTROL_FUNCTIONAL_8876', 'pmb8876' ],
 	[ 'dsp-io-functional.asm', 'dsp-io-functional-8876.inc', 'DSP_IO_FUNCTIONAL_8876', 'pmb8876' ],
 );
+my @embedded_images = (
+	[ '../../rom/dsp/el71/0801/container.bin', 'pmb8876-firmware-0801.inc', 'DSP_PMB8876_FIRMWARE_0801_CONTAINER' ],
+);
 
 sub read_file {
 	my ($path) = @_;
@@ -163,4 +166,12 @@ for my $image (@images) {
 for my $child (@children) {
 	waitpid($child, 0);
 	die "DSP image builder child $child failed\n" if $? != 0;
+}
+for my $image (@embedded_images) {
+	my ($input_name, $output_name, $array_name) = @$image;
+	my $input_path = File::Spec->catfile($RealBin, $input_name);
+	my $output_path = File::Spec->catfile($RealBin, $output_name);
+
+	write_image($output_path, $array_name, read_file($input_path));
+	print "$array_name: embedded\n";
 }

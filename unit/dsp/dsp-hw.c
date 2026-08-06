@@ -73,8 +73,12 @@ static uint32_t read_le32(const uint8_t *data) {
 	return data[0] | (uint32_t) data[1] << 8 | (uint32_t) data[2] << 16 | (uint32_t) data[3] << 24;
 }
 
+static uint16_t read_le16(const uint8_t *data) {
+	return data[0] | (uint16_t) data[1] << 8;
+}
+
 bool dsp_hw_reset(void) {
-	DSP_COM_CLEAR = UINT16_MAX;
+	DSP_COM_CLEAR = 0xFFFF;
 	SCU_DSP_INT = 0;
 	SCU_RST_REQ = SCU_RST_REQ_DSP;
 	uint32_t reset_readback = SCU_RST_REQ;
@@ -120,17 +124,58 @@ bool dsp_hw_load_image(const uint8_t *image, size_t image_size) {
 		uint8_t memory_type = entry[0x0F];
 		size_t words = size / sizeof(uint16_t);
 
-		if (size == 0 || (size & 1) != 0 || words > DSP_HW_BOOT_MAX_WORDS || address > UINT16_MAX)
+		if (size == 0 || (size & 1) != 0 || address > UINT16_MAX)
 			return false;
 		if (offset > image_size || size > image_size - offset || memory_type > 2)
 			return false;
-		for (size_t j = 0; j < words; j++)
-			payload[j] = image[offset + j * 2] | (uint16_t) image[offset + j * 2 + 1] << 8;
-		if (!load_words(memory_type == 2 ? DSP_BOOT_DLOAD : DSP_BOOT_PLOAD, (uint16_t) address, payload, words))
+		if (words > (size_t) UINT16_MAX - address + 1)
 			return false;
+
+		for (size_t first = 0; first < words; first += DSP_HW_BOOT_MAX_WORDS) {
+			size_t count = MIN(words - first, DSP_HW_BOOT_MAX_WORDS);
+
+			for (size_t j = 0; j < count; j++) {
+				size_t source = offset + (first + j) * sizeof(uint16_t);
+				payload[j] = image[source] | (uint16_t) image[source + 1] << 8;
+			}
+			uint16_t destination = (uint16_t) (address + first);
+			uint16_t command = memory_type == 2 ? DSP_BOOT_DLOAD : DSP_BOOT_PLOAD;
+			if (!load_words(command, destination, payload, count))
+				return false;
+		}
 	}
 
 	return true;
+}
+
+bool dsp_hw_load_container(const uint8_t *container, size_t container_size) {
+	uint16_t payload[DSP_HW_BOOT_MAX_WORDS];
+	size_t offset = 0;
+
+	while (container_size - offset >= 4) {
+		uint16_t command = read_le16(container + offset);
+		uint16_t destination = read_le16(container + offset + 2);
+
+		if (command == DSP_BOOT_BRANCH)
+			return offset + 4 == container_size && dsp_hw_branch(destination);
+		if (command != DSP_BOOT_PLOAD && command != DSP_BOOT_DLOAD)
+			return false;
+		if (container_size - offset < 6)
+			return false;
+
+		size_t words = read_le16(container + offset + 4);
+		size_t payload_size = words * sizeof(uint16_t);
+
+		if (words > DSP_HW_BOOT_MAX_WORDS || payload_size > container_size - offset - 6)
+			return false;
+		for (size_t i = 0; i < words; i++)
+			payload[i] = read_le16(container + offset + 6 + i * sizeof(uint16_t));
+		if (!load_words(command, destination, payload, words))
+			return false;
+		offset += 6 + payload_size;
+	}
+
+	return false;
 }
 
 bool dsp_hw_branch(uint16_t destination) {

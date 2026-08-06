@@ -15,5 +15,6 @@ bool dsp_hw_read_program(uint16_t address, uint16_t *values, size_t words);
 bool dsp_hw_read_reg(uint16_t address, uint16_t *value);
 bool dsp_hw_write_reg(uint16_t address, uint16_t value);
 bool dsp_hw_load_image(const uint8_t *image, size_t image_size);
+bool dsp_hw_load_container(const uint8_t *container, size_t container_size);
 bool dsp_hw_branch(uint16_t destination);
 bool dsp_hw_wait_shared(size_t offset, uint16_t expected, uint32_t timeout_ms);
