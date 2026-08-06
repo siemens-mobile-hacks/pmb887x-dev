@@ -40,6 +40,10 @@ type = "pmb6812"
 bus = "I2C"
 addr = 0x08
 
+[peripheral.RF]
+type = "pmb6272"
+bus = "TPU:RFSSC"
+
 [analog]
 M_0 = { type = "resistor", value = 9300 }
 M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }

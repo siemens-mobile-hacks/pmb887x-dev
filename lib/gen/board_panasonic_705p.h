@@ -3,6 +3,12 @@
 
 #define PMB8876
 
+// Peripherals
+#define	BOARD_HAS_FLASH0_CFI_FLASH	1
+#define	BOARD_HAS_PMIC_PMB6812		1
+#define	BOARD_HAS_SDRAM_SDRAM		1
+#define	BOARD_HAS_SIM_CARD_SIM_CARD	1
+
 // GPIO numbers
 
 

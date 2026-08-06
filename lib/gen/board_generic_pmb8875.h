@@ -3,6 +3,9 @@
 
 #define PMB8875
 
+// Peripherals
+#define	BOARD_HAS_SIM_CARD_SIM_CARD	1
+
 // GPIO numbers
 
 

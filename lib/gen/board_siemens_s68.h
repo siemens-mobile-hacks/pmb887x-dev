@@ -3,6 +3,18 @@
 
 #define PMB8876
 
+// Hardware platform
+#define BOARD_PLATFORM_SIEMENS_X85 1
+
+// Peripherals
+#define	BOARD_HAS_FLASH0_CFI_FLASH	1
+#define	BOARD_HAS_FM_TEA5761UK		1
+#define	BOARD_HAS_LCD0_L2F50333T	1
+#define	BOARD_HAS_PMIC_D1094XX		1
+#define	BOARD_HAS_RF_HD155153NP		1
+#define	BOARD_HAS_SDRAM_SDRAM		1
+#define	BOARD_HAS_SIM_CARD_SIM_CARD	1
+
 // GPIO numbers
 #define	GPIO_KP_OUT6			GPIO_KP_IN5
 #define	GPIO_AC_RX				GPIO_USART0_RXD

@@ -84,6 +84,15 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	my $str = "#pragma once\n$pmb887x_private\n\n";
 	
 	$str .= "#define ".uc($board_meta->cpu()->{name})."\n\n";
+
+	if ($board_meta->{hw_platform}) {
+		$str .= "// Hardware platform\n";
+		$str .= "#define BOARD_PLATFORM_".getMacroName($board_meta->{hw_platform})." 1\n\n";
+	}
+
+	$str .= "// Peripherals\n";
+	$str .= getBoardPeripheralsHeader($board_meta->{peripherals});
+	$str .= "\n";
 	
 	$str .= "// GPIO numbers\n";
 	$str .= getGpioHeader($board_meta->gpios(), 0);
@@ -214,6 +223,23 @@ sub getKeysHeader {
 		push @header, ["#define", "KP_".$kp_name, sprintf("0x%08X", $kp->{code})];
 	}
 	return printTable(\@header)."\n";
+}
+
+sub getBoardPeripheralsHeader {
+	my ($peripherals) = @_;
+	my @header;
+	for my $name (sort keys %$peripherals) {
+		my $type = $peripherals->{$name}->{type};
+		push @header, ["#define", "BOARD_HAS_".getMacroName($name)."_".getMacroName($type), 1];
+	}
+	return printTable(\@header);
+}
+
+sub getMacroName {
+	my ($value) = @_;
+	$value = uc($value);
+	$value =~ s/[^A-Z0-9]+/_/g;
+	return $value;
 }
 
 sub getGpioHeader {

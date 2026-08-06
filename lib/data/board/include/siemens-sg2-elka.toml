@@ -1,4 +1,5 @@
 [board]
+hw_platform = "siemens-x85"
 cpu.type = "pmb8876"
 cpu.rev = 0x10
 
@@ -18,6 +19,10 @@ type = "sdram"
 bus = "EBU"
 ebu.cs = 1
 ram.size = 0x1000000 # 16 Mb
+
+[peripheral.RF]
+type = "hd155153np"
+bus = "TPU:RFSSC"
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }
