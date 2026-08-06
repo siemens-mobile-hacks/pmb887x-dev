@@ -2,15 +2,32 @@
 use warnings;
 use strict;
 use File::Basename;
+use Getopt::Long;
 use lib dirname(__FILE__).'/../lib';
-use Data::Dumper;
 use Sie::BinaryReader;
 use Sie::Utils;
 
 my $BASE = 0xA0000000;
 my $BLOCK_SIZE = 0x10000;
 
-my $file = $ARGV[0];
+my @type_filters;
+my @id_filters;
+my $dump_data;
+my $help;
+
+GetOptions(
+	'type=s@' => \@type_filters,
+	'id=i@' => \@id_filters,
+	'data' => \$dump_data,
+	'help' => \$help,
+) or usage();
+
+usage() if $help;
+my $file = shift @ARGV;
+usage() if !defined($file) || @ARGV;
+
+my %type_filters = map { uc($_) => 1 } @type_filters;
+my %id_filters = map { $_ => 1 } @id_filters;
 
 my $reader = Sie::BinaryReader->new->open($file);
 
@@ -32,24 +49,40 @@ for my $blk_name (sort { $parts->{$a}->[0]->{start} <=> $parts->{$b}->[0]->{star
 	printf("%8s %08X ... %08X [%d blocks, %.02f Mb]\n", $blk_name, $BASE + $first->{start}, $BASE + $last->{start} + $last->{size} - 1, $blks_n, $total_size);
 }
 
-print "EELITE:\n";
-parseEeprom("EELITE", $reader, $parts->{EELITE}, $is_nsg);
+for my $type (qw(EELITE EEFULL)) {
+	next if %type_filters && !$type_filters{$type};
+	next if !defined($parts->{$type});
 
-print "EEFULL:\n";
-parseEeprom("EEFULL", $reader, $parts->{EEFULL}, $is_nsg);
+	print "$type:\n";
+	my @items = parseEeprom($type, $reader, $parts->{$type}, $is_nsg);
+	for my $item (sort { $a->{id} <=> $b->{id} } @items) {
+		next if %id_filters && !$id_filters{$item->{id}};
+
+		printf("%08X %08X | #%04d [ver: %d, size: %d]\n",
+			$BASE + $item->{eit}, $BASE + $item->{offset}, $item->{id}, $item->{ver}, $item->{size});
+		print bin2hex($item->{value})."\n" if $dump_data;
+	}
+}
+
+sub usage {
+	print STDERR "Usage: $0 [--type EELITE|EEFULL] [--id ID] [--data] FULLFLASH\n";
+	exit 2;
+}
 
 sub parseEeprom {
 	my ($type, $reader, $blocks, $is_nsg) = @_;
 	
 	my @items;
+	my %seen;
 	
 	for my $blk (@$blocks) {
-		my $total_items = $type eq "EEFULL" ? 0x2000 : 512;
+		my $entry_size = $is_nsg ? 32 : 16;
+		my $total_items = int($blk->{size} / $entry_size) - 1;
 		for (my $i = 1; $i <= $total_items; $i++) {
 			my ($eit, $flags, $block_id, $ver, $size, $offset, $value_offset);
 			
 			if ($is_nsg) {
-				$eit = $blk->{start} + $blk->{size} - 32 - (32 * $i);
+				$eit = $blk->{start} + $blk->{size} - $entry_size - ($entry_size * $i);
 				$reader->seek($eit);
 				
 				if ($type eq "EEFULL") {
@@ -64,10 +97,10 @@ sub parseEeprom {
 					$ver = $reader->readUInt8();
 					$size = $reader->readUInt16();
 					$reader->readUInt16(); # unk
-					$offset = $reader->readUInt16();
+					$offset = $reader->readUInt32();
 				}
 			} else {
-				$eit = $blk->{start} + $blk->{size} - (16 * $i);
+				$eit = $blk->{start} + $blk->{size} - ($entry_size * $i);
 				$reader->seek($eit);
 				
 				$flags = $reader->readUInt32();
@@ -76,14 +109,14 @@ sub parseEeprom {
 				$offset = $reader->readUInt32();
 			}
 			
-			$reader->seek($eit);
-			print "BLK: ".sprintf("%08X ", $eit).bin2hex($reader->readBytes(32))." | $offset\n";
-			
-			# skip free or invalid blocks
-			next if $flags != 0xFFFFFFC0 || $block_id == 0xFFFFFFFF;
+			next if $flags == 0xFFFFFFFF;
+			next if $block_id == 0xFFFFFFFF;
+
+			$block_id += 5000 if $type eq "EEFULL";
+			next if $flags != 0xFFFFFFC0;
+			next if $seen{$block_id}++;
 			
 			if ($type eq "EEFULL") {
-				$block_id += 5000;
 				$value_offset = $blk->{start} + $offset + 1;
 				$reader->seek($value_offset - 1);
 				$ver = $reader->readUInt8();
@@ -94,8 +127,6 @@ sub parseEeprom {
 					$ver = $reader->readUInt8();
 				}
 			}
-			
-			print sprintf("%08X %08X | #%03d [ver: %d, size: %d]\n", $BASE + $eit, $BASE + $value_offset, $block_id, $ver, $size);
 			
 			$reader->seek($value_offset);
 			my $value = $reader->readBytes($size);
@@ -112,6 +143,8 @@ sub parseEeprom {
 			};
 		}
 	}
+
+	return @items;
 }
 
 sub getPartitions {
