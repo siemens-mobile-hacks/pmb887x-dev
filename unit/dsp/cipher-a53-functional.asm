@@ -14,6 +14,9 @@ mov a0l [0x$TEAK_INT_EINT1]
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0902)]
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0903)]
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0904)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0905)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0906)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0907)]
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_INT_RINT1]
 mov a0l [0x$TEAK_INT_EINT1]
@@ -27,15 +30,21 @@ br 0x0000$0A00 always
 segment p 0900
 mov [0x$TEAK_INT_FINT1] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0903)]
+mov [0x$TEAK_CIPH_CSTAT] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0905)]
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0902)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0902)]
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_INT_RINT1]
+mov [0x$TEAK_INT_FINT1] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0906)]
 data 45D0 // reti always,context.
 
 // Execute requests supplied through shared RAM by the MCU side.
 segment p 0A00
+mov [0x$TEAK_INT_FINT1] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0907)]
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0904)] a0
 cmp 0x0000u8 a0
 br 0x0000$0A00 eq

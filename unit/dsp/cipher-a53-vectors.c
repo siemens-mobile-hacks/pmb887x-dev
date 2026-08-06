@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <gen/dsp.h>
 
 #include "dsp-hw.h"
 #include "test.h"
@@ -13,6 +14,19 @@
 #define A53_RESULT_WORDS 16
 #define A53_WORDS_PER_STREAM 8
 #define A53_TAIL_MASK 0x0003
+#define A53_IRQ_COUNT 0x0902
+#define A53_IRQ_FLAGS 0x0903
+#define A53_IRQ_CSTAT 0x0905
+#define A53_IRQ_FLAGS_AFTER_ACK 0x0906
+#define A53_IRQ_FLAGS_IDLE 0x0907
+#define CIPHER_IRQ BIT(0)
+#define IRQ_TIMEOUT_MS 100
+// Hardware command-to-ISR latency is 92-101 us; allow over twice that latency
+// and spread while still rejecting coarse or phase-dependent periodic delivery.
+#define IRQ_LATENCY_MAX_US 250
+#define IRQ_LATENCY_SPREAD_MAX_US 20
+#define INITIAL_IDLE_US 100000
+#define FINAL_IDLE_US 500000
 
 #ifdef PMB8875
 #include "cipher-a53-functional-8875.inc"
@@ -28,6 +42,8 @@ struct a53_vector {
 	uint16_t counters[A53_COUNTER_WORDS];
 	uint16_t expected[A53_RESULT_WORDS];
 };
+
+static const uint32_t IRQ_IDLE_INTERVALS_US[] = { 0, 37, 333, 7777, 54321 };
 
 // A5/3 vectors from 3GPP TS 55.217 and TS 55.218. The key and counter words use
 // the MCU CIPH_KEY command layout; each expected 114-bit stream is reversed by
@@ -130,7 +146,7 @@ static bool result_matches(const uint16_t expected[A53_RESULT_WORDS]) {
 	for (size_t stream = 0; stream < 2; stream++) {
 		for (size_t word = 0; word < A53_WORDS_PER_STREAM; word++) {
 			size_t index = stream * A53_WORDS_PER_STREAM + word;
-			uint16_t mask = word + 1 == A53_WORDS_PER_STREAM ? A53_TAIL_MASK : UINT16_MAX;
+			uint16_t mask = word + 1 == A53_WORDS_PER_STREAM ? A53_TAIL_MASK : 0xFFFF;
 
 			if ((dsp_hw_shared_memory[A53_RESULT_BASE + index] & mask) != expected[index])
 				return false;
@@ -139,23 +155,28 @@ static bool result_matches(const uint16_t expected[A53_RESULT_WORDS]) {
 	return true;
 }
 
-static bool run_request(const struct a53_vector *vector, uint16_t request) {
+static void prepare_request(const struct a53_vector *vector) {
 	for (size_t i = 0; i < A53_KEY_WORDS; i++)
 		dsp_hw_shared_memory[A53_PARAMETER_BASE + i] = vector->key[i];
 	for (size_t i = 0; i < A53_COUNTER_WORDS; i++)
 		dsp_hw_shared_memory[A53_PARAMETER_BASE + A53_KEY_WORDS + i] = vector->counters[i];
-	dsp_hw_shared_memory[A53_COMMAND] = request;
-	return dsp_hw_wait_shared(A53_COMMAND, 0, 100);
+}
+
+static bool wait_irq_count(uint16_t count) {
+	stopwatch_t start = stopwatch_get();
+
+	while (dsp_hw_shared_memory[A53_IRQ_COUNT] < count && stopwatch_elapsed_ms(start) < IRQ_TIMEOUT_MS)
+		test_watchdog_serve();
+
+	return dsp_hw_shared_memory[A53_IRQ_COUNT] >= count;
 }
 
 int main(void) {
-	uint16_t request = 1;
-
 	test_start("DSP cipher A5/3 standard vectors");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
 		return test_finish();
-	DSP_COM_CLEAR = UINT16_MAX;
+	DSP_COM_CLEAR = 0xFFFF;
 	if (!test_check("boot commands load A5/3 vector server",
 		dsp_hw_load_image(DSP_CIPHER_A53_IMAGE, sizeof(DSP_CIPHER_A53_IMAGE))))
 		return test_finish();
@@ -165,17 +186,75 @@ int main(void) {
 		return test_finish();
 	if (!test_check("A5/3 vector scenarios become available", dsp_hw_wait_shared(0x0901, COMPLETE_MARKER, 3000)))
 		return test_finish();
+	test_eq_u32("cipher IRQ count starts at zero", 0, dsp_hw_shared_memory[A53_IRQ_COUNT]);
+	stopwatch_usleep_wd(INITIAL_IDLE_US);
+	test_eq_u32("idle cipher generates no interrupt before the first operation", 0,
+		dsp_hw_shared_memory[A53_IRQ_COUNT]);
+	test_eq_u32("idle cipher leaves CIPH pending clear before the first operation", 0,
+		dsp_hw_shared_memory[A53_IRQ_FLAGS_IDLE] & CIPHER_IRQ);
 
+	uint16_t request = 1;
+	uint16_t latency_samples = 0;
+	uint32_t min_irq_latency_us = UINT32_MAX;
+	uint32_t max_irq_latency_us = 0;
 	for (size_t i = 0; i < ARRAY_SIZE(vectors); i++) {
+		uint16_t expected_irq_count = i + 1;
+		uint32_t idle_us = IRQ_IDLE_INTERVALS_US[i % ARRAY_SIZE(IRQ_IDLE_INTERVALS_US)];
+
 		test_category(vectors[i].name);
-		if (!test_check("hardware vector completes", run_request(&vectors[i], request++)))
+		prepare_request(&vectors[i]);
+		stopwatch_t start = stopwatch_get();
+		dsp_hw_shared_memory[A53_COMMAND] = request++;
+		bool irq_seen = wait_irq_count(expected_irq_count);
+		uint32_t irq_latency_us = stopwatch_elapsed_us(start);
+		bool completed = dsp_hw_wait_shared(A53_COMMAND, 0, IRQ_TIMEOUT_MS);
+
+		if (irq_seen) {
+			min_irq_latency_us = MIN(min_irq_latency_us, irq_latency_us);
+			max_irq_latency_us = MAX(max_irq_latency_us, irq_latency_us);
+			latency_samples++;
+		}
+		test_check("cipher completion delivers CIPH interrupt", irq_seen);
+		if (irq_seen)
+			test_check("CIPH interrupt is not delayed to a periodic interval", irq_latency_us <= IRQ_LATENCY_MAX_US);
+		test_eq_u32("exactly one CIPH interrupt is delivered per operation", expected_irq_count,
+			dsp_hw_shared_memory[A53_IRQ_COUNT]);
+		test_eq_u32("CIPH interrupt is raised only after CACT clears", 0,
+			dsp_hw_shared_memory[A53_IRQ_CSTAT] & TEAK_CIPH_CSTAT_CACT);
+		test_eq_u32("INT1 handler observes the CIPH source", CIPHER_IRQ,
+			dsp_hw_shared_memory[A53_IRQ_FLAGS] & CIPHER_IRQ);
+		test_eq_u32("RINT1 acknowledgement clears CIPH pending", 0,
+			dsp_hw_shared_memory[A53_IRQ_FLAGS_AFTER_ACK] & CIPHER_IRQ);
+		test_check("hardware vector completes", completed);
+		printf("# CIPHER_IRQ,index=%u,latency_us=%u,idle_us=%u,count=%u\n", (uint32_t) i,
+			irq_latency_us, idle_us, (uint32_t) dsp_hw_shared_memory[A53_IRQ_COUNT]);
+		if (!completed)
 			continue;
 		test_check("both 114-bit streams match the 3GPP vector", result_matches(vectors[i].expected));
-	}
-	test_eq_u32("each vector delivers one cipher interrupt", ARRAY_SIZE(vectors), dsp_hw_shared_memory[0x0902]);
-	test_eq_u32("INT1 handler observes the CIPH source", BIT(0), dsp_hw_shared_memory[0x0903] & BIT(0));
 
-	DSP_COM_CLEAR = UINT16_MAX;
+		stopwatch_usleep_wd(idle_us);
+		test_eq_u32("idle period does not generate another CIPH interrupt", expected_irq_count,
+			dsp_hw_shared_memory[A53_IRQ_COUNT]);
+		test_eq_u32("acknowledged CIPH pending stays clear while cipher is idle", 0,
+			dsp_hw_shared_memory[A53_IRQ_FLAGS_IDLE] & CIPHER_IRQ);
+	}
+
+	stopwatch_usleep_wd(FINAL_IDLE_US);
+	test_eq_u32("long final idle period generates no periodic CIPH interrupts", ARRAY_SIZE(vectors),
+		dsp_hw_shared_memory[A53_IRQ_COUNT]);
+	test_eq_u32("CIPH pending remains clear throughout the long final idle period", 0,
+		dsp_hw_shared_memory[A53_IRQ_FLAGS_IDLE] & CIPHER_IRQ);
+	test_eq_u32("every cipher operation produces an IRQ latency sample", ARRAY_SIZE(vectors), latency_samples);
+	if (latency_samples == ARRAY_SIZE(vectors)) {
+		uint32_t spread_us = max_irq_latency_us - min_irq_latency_us;
+
+		printf("# CIPHER_IRQ_LATENCY,min_us=%u,max_us=%u,spread_us=%u\n",
+			min_irq_latency_us, max_irq_latency_us, spread_us);
+		test_check("CIPH interrupt latency does not depend on a periodic phase",
+			spread_us <= IRQ_LATENCY_SPREAD_MAX_US);
+	}
+
+	DSP_COM_CLEAR = 0xFFFF;
 	(void) dsp_hw_reset();
 	return test_finish();
 }
