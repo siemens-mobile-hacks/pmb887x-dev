@@ -298,6 +298,17 @@ accepts only boot commands:
 | Before `BRANCH` | Boot loop in Mask ROM | `PLOAD`, `DLOAD`, `PREAD`, `DREAD`, `FAST`, `BRANCH` |
 | After `BRANCH` | Mask ROM and startup firmware in Program RAM | Normal DSP firmware runtime commands |
 
+The PMB8876 `dsp-boot-state` hardware test confirms that this execution starts
+autonomously after DSP reset. With all MCU-to-DSP interrupt lines held low, the
+Mask ROM raises communication flag 0, publishes `0801` and `E101` in Shared
+RAM, and clears the flag after initialization. A prepared `PREAD` then remains
+pending and leaves its result canaries intact until the MCU asserts interrupt
+0. Two independent reset passes reproduced the complete sequence. Together
+with the `P:204F..2050` polling loop in Mask ROM 0801, this distinguishes the
+running boot dispatcher from `DSP_CTRL` core idle. At SoC reset the separate
+`DSP_CLC` gate is disabled; the autonomous sequence starts only after the MCU
+enables the DSP subsystem clock and releases DSP reset.
+
 Several `PLOAD` and `DLOAD` commands may be issued. The last command in a
 normal boot is always `BRANCH`: it leaves the boot loop and moves the program
 counter to the loaded entry point, `P:0020` on SL98. Boot commands belong to

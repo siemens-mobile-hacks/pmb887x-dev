@@ -84,6 +84,7 @@ add_peripheral_test(dsp-baseband-functional dsp/baseband-functional.c dsp/dsp-hw
 add_peripheral_test(dsp-tpu-bb-events dsp/tpu-bb-events.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-l1mon-vectors dsp/l1mon-vectors.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-l1mon-functional dsp/l1mon-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-boot-state dsp/boot-state.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-control-functional dsp/dsp-control-functional.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-io-functional dsp/dsp-io-functional.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-rom-dump dsp/rom-dump.c)
