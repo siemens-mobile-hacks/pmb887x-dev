@@ -1,5 +1,10 @@
 [
 	{
+		"name":		"GBS_SendMessage",
+		"addr":		0xA0091EAB,
+		"args":		["uint32", "uint32", "uint32", "uint32", "uint32"]
+	},
+	{
 		"name":		"debug2",
 		"addr":		0xA08D5C56,
 		"args":		["cstr", "uint32", "uint32", "uint32", "fmt"],
