@@ -38,7 +38,7 @@ Run a test on real hardware:
 | `scu-wdt-reset` | Intentional watchdog reset; reaching the failure message means the reset did not occur |
 | `adc` | ADC registers, conversion, interrupts, and battery voltage measurement |
 | `afc` | AFC reference value, output enable, write mask, and firmware-safe nominal value |
-| `pll` | PLL output branches, USB clock source and divider, lock state, and register layout |
+| `cgu` | Functional timing of CGU clock sources and dividers, PLL lock state, and interrupt routing |
 | `rtc` | RTC registers, synchronous/asynchronous operation, timer chain, and interrupt sub-node |
 | `vic` | VIC pending state, arbitration, priority masking, acknowledge, IRQ, and FIQ routing |
 | `gptu` | Both GPTU instances, T0/T1 concatenation, T2 split mode, reload, and service requests |

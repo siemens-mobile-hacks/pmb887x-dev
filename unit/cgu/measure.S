@@ -2,9 +2,9 @@
 .text
 .align 2
 
-.global pll_execute_itcm
-.type pll_execute_itcm, %function
-pll_execute_itcm:
+.global cgu_execute_itcm
+.type cgu_execute_itcm, %function
+cgu_execute_itcm:
 	push {r4, lr}
 	mov r2, r0
 	mov r0, r1
@@ -13,9 +13,9 @@ pll_execute_itcm:
 .Lresume:
 	pop {r4, pc}
 
-.global pll_execute_itcm_source
-.type pll_execute_itcm_source, %function
-pll_execute_itcm_source:
+.global cgu_execute_itcm_source
+.type cgu_execute_itcm_source, %function
+cgu_execute_itcm_source:
 	push {r4, lr}
 	mov r12, r0
 	mov r0, r1
@@ -27,9 +27,9 @@ pll_execute_itcm_source:
 .Lsource_resume:
 	pop {r4, pc}
 
-.global pll_execute_itcm_cpu_div
-.type pll_execute_itcm_cpu_div, %function
-pll_execute_itcm_cpu_div:
+.global cgu_execute_itcm_cpu_div
+.type cgu_execute_itcm_cpu_div, %function
+cgu_execute_itcm_cpu_div:
 	push {r4-r6, lr}
 	mov r5, r0
 	mov r0, r1
@@ -44,9 +44,9 @@ pll_execute_itcm_cpu_div:
 	.ltorg
 
 .align 2
-.global pll_cpu_div_itcm_template_start
-.global pll_cpu_div_itcm_template_end
-pll_cpu_div_itcm_template_start:
+.global cgu_cpu_div_itcm_template_start
+.global cgu_cpu_div_itcm_template_end
+cgu_cpu_div_itcm_template_start:
 	ldr r6, [r12]
 	bic r5, r6, #1
 	str r5, [r12]
@@ -70,4 +70,4 @@ pll_cpu_div_itcm_template_start:
 	tst r5, #0x10
 	beq .Lebu_restore_wait
 	bx r4
-pll_cpu_div_itcm_template_end:
+cgu_cpu_div_itcm_template_end:

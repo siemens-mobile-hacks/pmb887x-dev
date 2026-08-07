@@ -157,14 +157,14 @@ void s1d13732_init(void) {
 	DIF_CON |= DIF_CON_EN;
 
 	/* FUN_a0a8af8c(): reset S1D13732 while CLK32 is supplied. */
-	PLL_CON2 |= PLL_CON2_CLK32_EN;
+	CGU_CON2 |= CGU_CON2_CLK32K_EN;
 	stopwatch_usleep_wd(255);
 	gpio_set(GPIO_CIF_RESET, true);
 	stopwatch_usleep_wd(15);
 	gpio_set(GPIO_CIF_RESET, false);
 	stopwatch_usleep_wd(255);
 	gpio_set(GPIO_CIF_RESET, true);
-	PLL_CON2 &= ~PLL_CON2_CLK32_EN;
+	CGU_CON2 &= ~CGU_CON2_CLK32K_EN;
 
 	s1d13732_write_register(0x0004, 0x00C0);
 }
@@ -195,7 +195,7 @@ struct s1d13732_display_detect_result s1d13732_detect_display(void) {
 		GPIO_DIR_IN | GPIO_PDPU_NONE | GPIO_ENAQ_OFF;
 
 	/* gimmick_begin_display_detection(): run the S1D PLL from the external 32.768 kHz clock. */
-	PLL_CON2 |= PLL_CON2_CLK32_EN;
+	CGU_CON2 |= CGU_CON2_CLK32K_EN;
 	s1d13732_write_register(0x000C, 0x1027);
 	s1d13732_write_register(0x000E, 0x2840);
 	s1d13732_write_register(0x0010, 0x0103);
@@ -232,14 +232,14 @@ struct s1d13732_display_detect_result s1d13732_detect_display(void) {
 	s1d13732_write_register(0x0202, saved_display_detect_config);
 	s1d13732_write_register(0x0014, saved_interface_config);
 	s1d13732_write_register(0x0012, 0x0101);
-	PLL_CON2 &= ~PLL_CON2_CLK32_EN;
+	CGU_CON2 &= ~CGU_CON2_CLK32K_EN;
 
 	return result;
 }
 
 void s1d13732_enable_memory_interface(void) {
 	/* gimmick_enable_runtime_blocks() from the CX75 firmware. */
-	PLL_CON2 |= PLL_CON2_CLK32_EN;
+	CGU_CON2 |= CGU_CON2_CLK32K_EN;
 	s1d13732_write_register(0x0004, 0x00C0);
 	s1d13732_write_register(0x0014, 0x1211);
 	s1d13732_write_register(0x0014, s1d13732_read_register(0x0014) & ~BIT(12));

@@ -171,7 +171,7 @@ static void test_reset_requests(void) {
 	USB_CLC = MOD_CLC_DISR;
 
 	DMAC_CH_SRC_ADDR(7) = 0x12345678;
-	pulse_reset_request("DMAC reset request asserts", SCU_RST_REQ_DMAC);
+	pulse_reset_request("DMA1 reset request asserts", SCU_RST_REQ_DMA1);
 	test_eq_u32("DMAC channel returns to reset value", 0, DMAC_CH_SRC_ADDR(7));
 
 	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;

@@ -17,6 +17,7 @@ sub new {
 		dsp_modules => {},
 		gpios => {},
 		dma => {},
+		monitor_signals => [],
 	} => $class;
 	
 	$self->{common} = $self->loadCommonRegs();
@@ -44,6 +45,11 @@ sub dspModules {
 sub dspRomVersion {
 	my ($self) = @_;
 	return $self->{dsp_rom_version};
+}
+
+sub monitorSignals {
+	my ($self) = @_;
+	return $self->{monitor_signals};
 }
 
 sub getCpus {
@@ -267,6 +273,15 @@ sub loadCPU {
 				bus		=> $bus,
 				request	=> parseAnyInt($request),
 				sel	=> parseAnyInt($sel)
+			};
+		} elsif ($line =~ /^\.signal/) {
+			my ($key, $block, $subgroup, $name, $value) = split(/\t+/, $line);
+			die "Invalid monitor signal: $line" if !defined($value);
+			push @{$self->{monitor_signals}}, {
+				block		=> $block,
+				subgroup	=> $subgroup,
+				name		=> $name,
+				value		=> parseAnyInt($value),
 			};
 		} elsif ($line =~ /^\.gpio/) {
 			my ($key, $name, $id, $alt_list) = split("\t", $line);

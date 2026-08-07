@@ -25,7 +25,7 @@
 #define	GPIO_USART1_CTS		19
 #define	GPIO_USB_DPLUS		20
 #define	GPIO_USB_DMINUS		21
-#define	GPIO_PIN22			22
+#define	GPIO_SSC1_MRST		22
 #define	GPIO_DIF_D2			23
 #define	GPIO_DIF_D0			24
 #define	GPIO_DIF_CD			25
@@ -41,10 +41,10 @@
 #define	GPIO_PIN35			35
 #define	GPIO_PIN36			36
 #define	GPIO_PIN37			37
-#define	GPIO_PIN38			38
+#define	GPIO_I2S1_WA0		38
 #define	GPIO_DIF_HD			39
-#define	GPIO_PIN40			40
-#define	GPIO_PIN41			41
+#define	GPIO_MMCI_DAT2		40
+#define	GPIO_MMCI_DAT3		41
 #define	GPIO_PIN42			42
 #define	GPIO_T_OUT0			43
 #define	GPIO_T_OUT1			44
@@ -172,7 +172,7 @@
 #define	VIC_SCCU_UNK_IRQ		63
 #define	VIC_SCU_UNK2_IRQ		63
 #define	VIC_SCCU_WAKE_IRQ		64
-#define	VIC_PLL_IRQ				65
+#define	VIC_CGU_IRQ				65
 #define	VIC_ADC_INT0_IRQ		70
 #define	VIC_ADC_INT1_IRQ		71
 #define	VIC_CAPCOM0_T0_IRQ		72
@@ -1453,20 +1453,28 @@
 #define	DMAC_CH_CONFIG_ACTIVE					BIT(17)										 // Active.
 #define	DMAC_CH_CONFIG_HALT						BIT(18)										 // Halt.
 
+/* Peripheral identification register 0 */
 #define	DMAC_PERIPH_ID0							MMIO32(DMAC_BASE + 0xFE0)
 
+/* Peripheral identification register 1 */
 #define	DMAC_PERIPH_ID1							MMIO32(DMAC_BASE + 0xFE4)
 
+/* Peripheral identification register 2 */
 #define	DMAC_PERIPH_ID2							MMIO32(DMAC_BASE + 0xFE8)
 
+/* Peripheral identification register 3 */
 #define	DMAC_PERIPH_ID3							MMIO32(DMAC_BASE + 0xFEC)
 
+/* PrimeCell identification register 0 */
 #define	DMAC_PCELL_ID0							MMIO32(DMAC_BASE + 0xFF0)
 
+/* PrimeCell identification register 1 */
 #define	DMAC_PCELL_ID1							MMIO32(DMAC_BASE + 0xFF4)
 
+/* PrimeCell identification register 2 */
 #define	DMAC_PCELL_ID2							MMIO32(DMAC_BASE + 0xFF8)
 
+/* PrimeCell identification register 3 */
 #define	DMAC_PCELL_ID3							MMIO32(DMAC_BASE + 0xFFC)
 
 
@@ -1968,8 +1976,18 @@
 #define	SCU_RST_REQ						MMIO32(SCU_BASE + 0x18)
 #define	SCU_RST_REQ_DSP					BIT(0)									 // DSP software reset request
 #define	SCU_RST_REQ_RTC					BIT(1)									 // RTC software reset request
+#define	SCU_RST_REQ_USART0				BIT(2)									 // USART0 software reset request
+#define	SCU_RST_REQ_SSC0				BIT(3)									 // SSC0 software reset request
+#define	SCU_RST_REQ_SIM					BIT(4)									 // SIM software reset request
+#define	SCU_RST_REQ_USART1				BIT(5)									 // USART1 software reset request
+#define	SCU_RST_REQ_SSC1				BIT(6)									 // SSC1 software reset request
+#define	SCU_RST_REQ_MMCI				BIT(7)									 // MMCI software reset request
+#define	SCU_RST_REQ_DISP				BIT(8)									 // Display software reset request
 #define	SCU_RST_REQ_USB					BIT(9)									 // USB software reset request
-#define	SCU_RST_REQ_DMAC				BIT(11)									 // DMAC software reset request
+#define	SCU_RST_REQ_DMA1				BIT(11)									 // DMA1 software reset request
+#define	SCU_RST_REQ_DMA2				BIT(12)									 // DMA2 software reset request
+#define	SCU_RST_REQ_DMA3				BIT(13)									 // DMA3 software reset request
+#define	SCU_RST_REQ_FIRDA				BIT(14)									 // FIRDA software reset request
 #define	SCU_RST_REQ_I2C					BIT(15)									 // I2C software reset request
 
 /* Sleep Request Register */
@@ -2246,115 +2264,183 @@
 #define	SCU_EXTI7_SRC					MMIO32(SCU_BASE + 0xFC)
 
 
-// PLL
+// CGU
 // Clock Generation Unit
-#define	PLL_BASE						0xF4500000
+#define	CGU_BASE							0xF4500000
 /* Clock Generation Unit Control Register 1 (CGU_CTL1) */
-#define	PLL_OSC							MMIO32(PLL_BASE + 0xA0)
-#define	PLL_OSC_PLL_POWER_UP			BIT(0)					 // Power up PLL
-#define	PLL_OSC_PHASE0_POWER_UP			BIT(1)					 // Power up phase-shifter output 0
-#define	PLL_OSC_PHASE1_POWER_UP			BIT(2)					 // Power up phase-shifter output 1
-#define	PLL_OSC_PHASE2_POWER_UP			BIT(3)					 // Power up phase-shifter output 2
-#define	PLL_OSC_PHASE3_POWER_UP			BIT(4)					 // Power up phase-shifter output 3
-#define	PLL_OSC_PLL_BYPASS_N			BIT(8)					 // Disable PLL bypass
-#define	PLL_OSC_PHASE0_BYPASS_N			BIT(9)					 // Disable bypass for phase-shifter output 0
-#define	PLL_OSC_PHASE1_BYPASS_N			BIT(10)					 // Disable bypass for phase-shifter output 1
-#define	PLL_OSC_PHASE2_BYPASS_N			BIT(11)					 // Disable bypass for phase-shifter output 2
-#define	PLL_OSC_PHASE3_BYPASS_N			BIT(12)					 // Disable bypass for phase-shifter output 3
-#define	PLL_OSC_NDIV					GENMASK(21, 16)			 // PLL feedback divider (multiply by N+1)
-#define	PLL_OSC_NDIV_SHIFT				16
-#define	PLL_OSC_MDIV					GENMASK(27, 24)			 // PLL input divider (divide by M+1)
-#define	PLL_OSC_MDIV_SHIFT				24
+#define	CGU_OSC								MMIO32(CGU_BASE + 0xA0)
+#define	CGU_OSC_PLL_POWER_UP				BIT(0)					 // Power up PLL
+#define	CGU_OSC_PHASE1_POWER_UP				BIT(1)					 // Power up phase-shifter output 1
+#define	CGU_OSC_PHASE2_POWER_UP				BIT(2)					 // Power up phase-shifter output 2
+#define	CGU_OSC_PHASE3_POWER_UP				BIT(3)					 // Power up phase-shifter output 3
+#define	CGU_OSC_PHASE4_POWER_UP				BIT(4)					 // Power up phase-shifter output 4
+#define	CGU_OSC_PLL_BYPASS_N				BIT(8)					 // Disable PLL bypass
+#define	CGU_OSC_PHASE1_BYPASS_N				BIT(9)					 // Disable bypass for phase-shifter output 1
+#define	CGU_OSC_PHASE2_BYPASS_N				BIT(10)					 // Disable bypass for phase-shifter output 2
+#define	CGU_OSC_PHASE3_BYPASS_N				BIT(11)					 // Disable bypass for phase-shifter output 3
+#define	CGU_OSC_PHASE4_BYPASS_N				BIT(12)					 // Disable bypass for phase-shifter output 4
+#define	CGU_OSC_NDIV						GENMASK(21, 16)			 // PLL feedback divider (multiply by N+1)
+#define	CGU_OSC_NDIV_SHIFT					16
+#define	CGU_OSC_MDIV						GENMASK(27, 24)			 // PLL input divider (divide by M+1)
+#define	CGU_OSC_MDIV_SHIFT					24
 
-#define	PLL_CON0						MMIO32(PLL_BASE + 0xA4)
-#define	PLL_CON0_PHASE0_CONFIG			GENMASK(7, 0)			 // Complete K1/K2 configuration byte for phase-shifter output 0
-#define	PLL_CON0_PHASE0_CONFIG_SHIFT	0
-#define	PLL_CON0_PLL1_K2				GENMASK(2, 0)			 // Phase 0 divider denominator term, valid values 0..5
-#define	PLL_CON0_PLL1_K2_SHIFT			0
-#define	PLL_CON0_PLL1_K1				GENMASK(6, 3)			 // Phase 0 divider: fPLL * 12 / (K1 * 6 + K2)
-#define	PLL_CON0_PLL1_K1_SHIFT			3
-#define	PLL_CON0_PHASE1_CONFIG			GENMASK(15, 8)			 // Complete K1/K2 configuration byte for phase-shifter output 1
-#define	PLL_CON0_PHASE1_CONFIG_SHIFT	8
-#define	PLL_CON0_PLL2_K2				GENMASK(10, 8)			 // Phase 1 divider denominator term, valid values 0..5
-#define	PLL_CON0_PLL2_K2_SHIFT			8
-#define	PLL_CON0_PLL2_K1				GENMASK(14, 11)			 // Phase 1 divider: fPLL * 12 / (K1 * 6 + K2)
-#define	PLL_CON0_PLL2_K1_SHIFT			11
-#define	PLL_CON0_PHASE2_CONFIG			GENMASK(23, 16)			 // Complete K1/K2 configuration byte for phase-shifter output 2
-#define	PLL_CON0_PHASE2_CONFIG_SHIFT	16
-#define	PLL_CON0_PLL3_K2				GENMASK(18, 16)			 // Phase 2 divider denominator term, valid values 0..5
-#define	PLL_CON0_PLL3_K2_SHIFT			16
-#define	PLL_CON0_PLL3_K1				GENMASK(22, 19)			 // Phase 2 divider: fPLL * 12 / (K1 * 6 + K2)
-#define	PLL_CON0_PLL3_K1_SHIFT			19
-#define	PLL_CON0_PHASE3_CONFIG			GENMASK(31, 24)			 // Complete K1/K2 configuration byte for phase-shifter output 3
-#define	PLL_CON0_PHASE3_CONFIG_SHIFT	24
-#define	PLL_CON0_PLL4_K2				GENMASK(26, 24)			 // Phase 3 divider denominator term, valid values 0..5
-#define	PLL_CON0_PLL4_K2_SHIFT			24
-#define	PLL_CON0_PLL4_K1				GENMASK(30, 27)			 // Phase 3 divider: fPLL * 12 / (K1 * 6 + K2)
-#define	PLL_CON0_PLL4_K1_SHIFT			27
+/* Clock Generation Unit Control Register 3 (CGU_CTL3) */
+#define	CGU_CON0							MMIO32(CGU_BASE + 0xA4)
+#define	CGU_CON0_PHASE1_CONFIG				GENMASK(7, 0)			 // Complete K1/K2 configuration byte for phase-shifter output 1
+#define	CGU_CON0_PHASE1_CONFIG_SHIFT		0
+#define	CGU_CON0_PHASE1_K2					GENMASK(2, 0)			 // Phase 1 divider denominator term, valid values 0..5
+#define	CGU_CON0_PHASE1_K2_SHIFT			0
+#define	CGU_CON0_PHASE1_K1					GENMASK(6, 3)			 // Phase 1 divider: fPLL * 12 / (K1 * 6 + K2)
+#define	CGU_CON0_PHASE1_K1_SHIFT			3
+#define	CGU_CON0_PHASE2_CONFIG				GENMASK(15, 8)			 // Complete K1/K2 configuration byte for phase-shifter output 2
+#define	CGU_CON0_PHASE2_CONFIG_SHIFT		8
+#define	CGU_CON0_PHASE2_K2					GENMASK(10, 8)			 // Phase 2 divider denominator term, valid values 0..5
+#define	CGU_CON0_PHASE2_K2_SHIFT			8
+#define	CGU_CON0_PHASE2_K1					GENMASK(14, 11)			 // Phase 2 divider: fPLL * 12 / (K1 * 6 + K2)
+#define	CGU_CON0_PHASE2_K1_SHIFT			11
+#define	CGU_CON0_PHASE3_CONFIG				GENMASK(23, 16)			 // Complete K1/K2 configuration byte for phase-shifter output 3
+#define	CGU_CON0_PHASE3_CONFIG_SHIFT		16
+#define	CGU_CON0_PHASE3_K2					GENMASK(18, 16)			 // Phase 3 divider denominator term, valid values 0..5
+#define	CGU_CON0_PHASE3_K2_SHIFT			16
+#define	CGU_CON0_PHASE3_K1					GENMASK(22, 19)			 // Phase 3 divider: fPLL * 12 / (K1 * 6 + K2)
+#define	CGU_CON0_PHASE3_K1_SHIFT			19
+#define	CGU_CON0_PHASE4_CONFIG				GENMASK(31, 24)			 // Complete K1/K2 configuration byte for phase-shifter output 4
+#define	CGU_CON0_PHASE4_CONFIG_SHIFT		24
+#define	CGU_CON0_PHASE4_K2					GENMASK(26, 24)			 // Phase 4 divider denominator term, valid values 0..5
+#define	CGU_CON0_PHASE4_K2_SHIFT			24
+#define	CGU_CON0_PHASE4_K1					GENMASK(30, 27)			 // Phase 4 divider: fPLL * 12 / (K1 * 6 + K2)
+#define	CGU_CON0_PHASE4_K1_SHIFT			27
 
 /* Clock Generation Unit Control Register 4 (CGU_CTL4) */
-#define	PLL_CON1						MMIO32(PLL_BASE + 0xA8)
-#define	PLL_CON1_SYSTEM_OUT_CTRL		GENMASK(1, 0)			 // Clock Manager state for SYSTEM_OUT
-#define	PLL_CON1_SYSTEM_OUT_CTRL_SHIFT	0
-#define	PLL_CON1_SYSTEM_OUT_CTRL_BYPASS	0x0
-#define	PLL_CON1_SYSTEM_OUT_CTRL_ON		0x2
-#define	PLL_CON1_SYSTEM_OUT_CTRL_OFF	0x3
-#define	PLL_CON1_FSYS_CLKSEL			GENMASK(17, 16)			 // Source clock for fSYS (BYPASS: fSYS=fOSC, PLL: fSYS=fPLL / 2)
-#define	PLL_CON1_FSYS_CLKSEL_SHIFT		16
-#define	PLL_CON1_FSYS_CLKSEL_BYPASS		0x0
-#define	PLL_CON1_FSYS_CLKSEL_PLL		0x20000
-#define	PLL_CON1_FSYS_CLKSEL_DISABLE	0x30000
-#define	PLL_CON1_AHB_CLKSEL				GENMASK(22, 20)			 // Source clock for fAHB
-#define	PLL_CON1_AHB_CLKSEL_SHIFT		20
-#define	PLL_CON1_AHB_CLKSEL_BYPASS		0x0
-#define	PLL_CON1_AHB_CLKSEL_DISABLE		0x100000
-#define	PLL_CON1_AHB_CLKSEL_PLL0		0x200000
-#define	PLL_CON1_AHB_CLKSEL_PLL1		0x300000
-#define	PLL_CON1_AHB_CLKSEL_PLL2		0x400000
-#define	PLL_CON1_AHB_CLKSEL_PLL3		0x500000
-#define	PLL_CON1_AHB_CLKSEL_PLL4		0x600000
-#define	PLL_CON1_FSTM_DIV_EN			BIT(25)					 // Enable fSTM divider
-#define	PLL_CON1_FSTM_DIV				GENMASK(29, 28)			 // fSTM divider: divide fOSC by 4 * 2^n
-#define	PLL_CON1_FSTM_DIV_SHIFT			28
-#define	PLL_CON1_FSTM_DIV_4				0x0
-#define	PLL_CON1_FSTM_DIV_8				0x10000000
-#define	PLL_CON1_FSTM_DIV_16			0x20000000
-#define	PLL_CON1_FSTM_DIV_32			0x30000000
+#define	CGU_CON1							MMIO32(CGU_BASE + 0xA8)
+#define	CGU_CON1_FPI1_CLKSEL				GENMASK(1, 0)			 // Source clock for FPI1
+#define	CGU_CON1_FPI1_CLKSEL_SHIFT			0
+#define	CGU_CON1_FPI1_CLKSEL_OSC			0x0
+#define	CGU_CON1_FPI1_CLKSEL_CLK32K			0x1
+#define	CGU_CON1_FPI1_CLKSEL_PLL_DIV_2		0x2
+#define	CGU_CON1_FPI1_CLKSEL_DISABLE		0x3
+#define	CGU_CON1_FPI1_CLKDIV				GENMASK(5, 4)			 // FPI1 clock divider; bypassed for CLK32K
+#define	CGU_CON1_FPI1_CLKDIV_SHIFT			4
+#define	CGU_CON1_FPI1_CLKDIV_DIV1			0x0
+#define	CGU_CON1_FPI1_CLKDIV_DIV2			0x10
+#define	CGU_CON1_FPI1_CLKDIV_DIV4			0x20
+#define	CGU_CON1_FPI1_CLKDIV_DIV8			0x30
+#define	CGU_CON1_FSYS_CLKSEL				GENMASK(17, 16)			 // Source clock for fSYS (BYPASS: fSYS=fOSC, PLL: fSYS=fPLL / 2)
+#define	CGU_CON1_FSYS_CLKSEL_SHIFT			16
+#define	CGU_CON1_FSYS_CLKSEL_BYPASS			0x0
+#define	CGU_CON1_FSYS_CLKSEL_PLL			0x20000
+#define	CGU_CON1_FSYS_CLKSEL_DISABLE		0x30000
+#define	CGU_CON1_AHB_CLKSEL					GENMASK(22, 20)			 // Source clock for fAHB
+#define	CGU_CON1_AHB_CLKSEL_SHIFT			20
+#define	CGU_CON1_AHB_CLKSEL_BYPASS			0x0
+#define	CGU_CON1_AHB_CLKSEL_DISABLE			0x100000
+#define	CGU_CON1_AHB_CLKSEL_PLL				0x200000
+#define	CGU_CON1_AHB_CLKSEL_PHASE1			0x300000
+#define	CGU_CON1_AHB_CLKSEL_PHASE2			0x400000
+#define	CGU_CON1_AHB_CLKSEL_PHASE3			0x500000
+#define	CGU_CON1_AHB_CLKSEL_PHASE4			0x600000
+#define	CGU_CON1_FSTM_DIV_EN				BIT(25)					 // Enable fSTM divider
+#define	CGU_CON1_FSTM_DIV					GENMASK(29, 28)			 // fSTM divider: divide fOSC by 4 * 2^n
+#define	CGU_CON1_FSTM_DIV_SHIFT				28
+#define	CGU_CON1_FSTM_DIV_4					0x0
+#define	CGU_CON1_FSTM_DIV_8					0x10000000
+#define	CGU_CON1_FSTM_DIV_16				0x20000000
+#define	CGU_CON1_FSTM_DIV_32				0x30000000
 
 /* Clock Generation Unit Control Register 5 (CGU_CTL5) */
-#define	PLL_CON2						MMIO32(PLL_BASE + 0xAC)
-#define	PLL_CON2_EBU_CLKSEL				GENMASK(6, 4)			 // Source clock for asynchronous EBU operation
-#define	PLL_CON2_EBU_CLKSEL_SHIFT		4
-#define	PLL_CON2_EBU_CLKSEL_OSC			0x0
-#define	PLL_CON2_EBU_CLKSEL_DISABLE		0x10
-#define	PLL_CON2_EBU_CLKSEL_PLL0		0x20
-#define	PLL_CON2_EBU_CLKSEL_PLL1		0x30
-#define	PLL_CON2_EBU_CLKSEL_PLL2		0x40
-#define	PLL_CON2_EBU_CLKSEL_PLL3		0x50
-#define	PLL_CON2_EBU_CLKSEL_PLL4		0x60
-#define	PLL_CON2_CPU_DIV				GENMASK(9, 8)			 // ARM clock divider: divide fAHB by N+1
-#define	PLL_CON2_CPU_DIV_SHIFT			8
-#define	PLL_CON2_CPU_DIV_EN				BIT(12)					 // Enable ARM clock divider
-#define	PLL_CON2_PERIPHERAL_CLKSEL		BIT(13)					 // Source clock for peripherals
-#define	PLL_CON2_PERIPHERAL_CLKSEL_OSC	0x0
-#define	PLL_CON2_PERIPHERAL_CLKSEL_FSYS	0x2000
-#define	PLL_CON2_USB_CLKSEL				GENMASK(15, 14)			 // Source clock for USB
-#define	PLL_CON2_USB_CLKSEL_SHIFT		14
-#define	PLL_CON2_USB_CLKSEL_OSC			0x0
-#define	PLL_CON2_USB_CLKSEL_PHASE3		0x8000
-#define	PLL_CON2_USB_CLKSEL_DISABLE		0xC000
-#define	PLL_CON2_CLK32_EN				BIT(24)
+#define	CGU_CON2							MMIO32(CGU_BASE + 0xAC)
+#define	CGU_CON2_DSP_CLKSEL					GENMASK(2, 0)			 // Source clock for DSP
+#define	CGU_CON2_DSP_CLKSEL_SHIFT			0
+#define	CGU_CON2_DSP_CLKSEL_PHASE1			0x3
+#define	CGU_CON2_DSP_CLKSEL_DISABLE			0x7
+#define	CGU_CON2_EBU_CLKSEL					GENMASK(6, 4)			 // Source clock for EBU
+#define	CGU_CON2_EBU_CLKSEL_SHIFT			4
+#define	CGU_CON2_EBU_CLKSEL_OSC				0x0
+#define	CGU_CON2_EBU_CLKSEL_DISABLE			0x10
+#define	CGU_CON2_EBU_CLKSEL_PLL				0x20
+#define	CGU_CON2_EBU_CLKSEL_PHASE1			0x30
+#define	CGU_CON2_EBU_CLKSEL_PHASE2			0x40
+#define	CGU_CON2_EBU_CLKSEL_PHASE3			0x50
+#define	CGU_CON2_EBU_CLKSEL_PHASE4			0x60
+#define	CGU_CON2_EBU_CLKSEL_AHB				0x70
+#define	CGU_CON2_CPU_DIV					GENMASK(9, 8)			 // ARM clock divider: divide fAHB by N+1
+#define	CGU_CON2_CPU_DIV_SHIFT				8
+#define	CGU_CON2_CPU_DIV_EN					BIT(12)					 // Enable ARM clock divider
+#define	CGU_CON2_AFC32K_EN					BIT(13)					 // Enable the 32 kHz standby clock for AFC
+#define	CGU_CON2_CLK48M_CLKSEL				GENMASK(15, 14)			 // Source clock for CLK48M
+#define	CGU_CON2_CLK48M_CLKSEL_SHIFT		14
+#define	CGU_CON2_CLK48M_CLKSEL_OSC			0x0
+#define	CGU_CON2_CLK48M_CLKSEL_PHASE4		0x8000
+#define	CGU_CON2_CLK48M_CLKSEL_DISABLE		0xC000
+#define	CGU_CON2_CLKOUT0_EN					BIT(16)					 // Enable CLKOUT0
+#define	CGU_CON2_CLKOUT0_CLKDIV				GENMASK(18, 17)			 // CLKOUT0 divider from the oscillator
+#define	CGU_CON2_CLKOUT0_CLKDIV_SHIFT		17
+#define	CGU_CON2_CLKOUT0_CLKDIV_DIV1		0x0
+#define	CGU_CON2_CLKOUT0_CLKDIV_DIV2		0x20000
+#define	CGU_CON2_CLKOUT0_CLKDIV_DIV4		0x40000
+#define	CGU_CON2_CLKOUT0_CLKDIV_DIV8		0x60000
+#define	CGU_CON2_CLKOUT1_EN					BIT(20)					 // Enable CLKOUT1
+#define	CGU_CON2_CLKOUT1_CLKDIV				GENMASK(22, 21)			 // CLKOUT1 divider from the oscillator
+#define	CGU_CON2_CLKOUT1_CLKDIV_SHIFT		21
+#define	CGU_CON2_CLKOUT1_CLKDIV_DIV1		0x0
+#define	CGU_CON2_CLKOUT1_CLKDIV_DIV2		0x200000
+#define	CGU_CON2_CLKOUT1_CLKDIV_DIV4		0x400000
+#define	CGU_CON2_CLKOUT1_CLKDIV_DIV8		0x600000
+#define	CGU_CON2_CLK32K_EN					BIT(24)					 // Enable external 32 kHz clock output
+#define	CGU_CON2_MS_CLKSEL					GENMASK(29, 28)			 // Source clock for the mixed-signal domain (CLK_MS_O)
+#define	CGU_CON2_MS_CLKSEL_SHIFT			28
+#define	CGU_CON2_MS_CLKSEL_OSC				0x0
+#define	CGU_CON2_MS_CLKSEL_CLK32K			0x10000000
+#define	CGU_CON2_MS_CLKSEL_OSC_DIV_64		0x20000000
+#define	CGU_CON2_MS_CLKSEL_DISABLE			0x30000000
 
-#define	PLL_STAT						MMIO32(PLL_BASE + 0xB0)
-#define	PLL_STAT_LOCK					BIT(13)
+/* PLL Status Register */
+#define	CGU_STAT							MMIO32(CGU_BASE + 0xB0)
+#define	CGU_STAT_LOCK						BIT(13)					 // PLL lock status
 
-#define	PLL_CON3						MMIO32(PLL_BASE + 0xB4)
-#define	PLL_CON3_USB_CLKDIV				GENMASK(25, 24)			 // USB clock divider (divide by 2^n)
-#define	PLL_CON3_USB_CLKDIV_SHIFT		24
-#define	PLL_CON3_PERIPHERAL_CLK_EN		BIT(28)					 // Enable peripheral clocks
+/* Clock Generation Unit Control Register 6 (CGU_CTL6) */
+#define	CGU_CON3							MMIO32(CGU_BASE + 0xB4)
+#define	CGU_CON3_AHB_PER_CLKSEL				GENMASK(1, 0)			 // Source clock for AHB_PER
+#define	CGU_CON3_AHB_PER_CLKSEL_SHIFT		0
+#define	CGU_CON3_AHB_PER_CLKSEL_OSC			0x0
+#define	CGU_CON3_AHB_PER_CLKSEL_CLK32K		0x1
+#define	CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2	0x2
+#define	CGU_CON3_AHB_PER_CLKSEL_DISABLE		0x3
+#define	CGU_CON3_AHB_PER_CLKDIV				GENMASK(5, 4)			 // AHB_PER clock divider; bypassed for CLK32K
+#define	CGU_CON3_AHB_PER_CLKDIV_SHIFT		4
+#define	CGU_CON3_AHB_PER_CLKDIV_DIV1		0x0
+#define	CGU_CON3_AHB_PER_CLKDIV_DIV2		0x10
+#define	CGU_CON3_AHB_PER_CLKDIV_DIV4		0x20
+#define	CGU_CON3_AHB_PER_CLKDIV_DIV8		0x30
+#define	CGU_CON3_MMCI_CLKSEL				GENMASK(9, 8)			 // Source clock for MMCI
+#define	CGU_CON3_MMCI_CLKSEL_SHIFT			8
+#define	CGU_CON3_MMCI_CLKSEL_OSC			0x0
+#define	CGU_CON3_MMCI_CLKSEL_CLK32K			0x100
+#define	CGU_CON3_MMCI_CLKSEL_PHASE4			0x200
+#define	CGU_CON3_MMCI_CLKSEL_DISABLE		0x300
+#define	CGU_CON3_MMCI_CLKDIV				GENMASK(13, 12)			 // MMCI clock divider
+#define	CGU_CON3_MMCI_CLKDIV_SHIFT			12
+#define	CGU_CON3_MMCI_CLKDIV_DIV1			0x0
+#define	CGU_CON3_MMCI_CLKDIV_DIV2			0x1000
+#define	CGU_CON3_MMCI_CLKDIV_DIV4			0x2000
+#define	CGU_CON3_MMCI_CLKDIV_DIV8			0x3000
+#define	CGU_CON3_CLKOUT2_EN					BIT(16)					 // Enable CLKOUT2
+#define	CGU_CON3_CLKOUT2_CLKDIV				GENMASK(21, 20)			 // CLKOUT2 divider from phase 4
+#define	CGU_CON3_CLKOUT2_CLKDIV_SHIFT		20
+#define	CGU_CON3_CLKOUT2_CLKDIV_DIV1		0x0
+#define	CGU_CON3_CLKOUT2_CLKDIV_DIV2		0x100000
+#define	CGU_CON3_CLKOUT2_CLKDIV_DIV4		0x200000
+#define	CGU_CON3_CLKOUT2_CLKDIV_DIV8		0x300000
+#define	CGU_CON3_CLK48M_CLKDIV				GENMASK(25, 24)			 // CLK48M divider
+#define	CGU_CON3_CLK48M_CLKDIV_SHIFT		24
+#define	CGU_CON3_CLK48M_CLKDIV_DIV1			0x0
+#define	CGU_CON3_CLK48M_CLKDIV_DIV2			0x1000000
+#define	CGU_CON3_CLK48M_CLKDIV_DIV4			0x2000000
+#define	CGU_CON3_CLK48M_CLKDIV_DIV8			0x3000000
+#define	CGU_CON3_DMA_CLK_DISABLE			BIT(28)					 // Disable the 104 MHz DMA clock when set
 
-/* Service Routing Control Register */
-#define	PLL_SRC							MMIO32(PLL_BASE + 0xCC)
+/* Service Request Control Register */
+#define	CGU_SRC								MMIO32(CGU_BASE + 0xCC)
 
 
 // SCCU
@@ -4292,184 +4378,253 @@
 // MCI [AMBA PL180]
 // ARM PrimeCell Multimedia Card Interface (PL180)
 #define	MCI_BASE						0xF7301000
+/* Power control register */
 #define	MCI_POWER						MMIO32(MCI_BASE + 0x00)
-#define	MCI_POWER_CTRL					GENMASK(1, 0)
+#define	MCI_POWER_CTRL					GENMASK(1, 0)							 // Power supply control
 #define	MCI_POWER_CTRL_SHIFT			0
 #define	MCI_POWER_CTRL_POWER_OFF		0x0
 #define	MCI_POWER_CTRL_RESERVED			0x1
 #define	MCI_POWER_CTRL_POWER_UP			0x2
 #define	MCI_POWER_CTRL_POWER_ON			0x3
-#define	MCI_POWER_VOLTAGE				GENMASK(5, 2)
+#define	MCI_POWER_VOLTAGE				GENMASK(5, 2)							 // Application-specific output voltage
 #define	MCI_POWER_VOLTAGE_SHIFT			2
-#define	MCI_POWER_OPENDRAIN				BIT(6)
-#define	MCI_POWER_ROD					BIT(7)
+#define	MCI_POWER_OPENDRAIN				BIT(6)									 // MCICMD output control
+#define	MCI_POWER_ROD					BIT(7)									 // Rod control
 
+/* Clock control register */
 #define	MCI_CLOCK						MMIO32(MCI_BASE + 0x04)
-#define	MCI_CLOCK_CLKDIV				GENMASK(7, 0)							 // MCLCLK frequency = MCLK / [2x(ClkDiv+1)].
+#define	MCI_CLOCK_CLKDIV				GENMASK(7, 0)							 // Card bus clock divisor: MCICLK frequency = MCLK / [2 * (CLKDIV + 1)]
 #define	MCI_CLOCK_CLKDIV_SHIFT			0
-#define	MCI_CLOCK_ENABLE				BIT(8)
-#define	MCI_CLOCK_PWRSAVE				BIT(9)
-#define	MCI_CLOCK_BYPASS				BIT(10)
-#define	MCI_CLOCK_WIDEBUS				BIT(11)
+#define	MCI_CLOCK_ENABLE				BIT(8)									 // Card bus clock enable
+#define	MCI_CLOCK_PWRSAVE				BIT(9)									 // Disable the card bus clock while the bus is idle
+#define	MCI_CLOCK_BYPASS				BIT(10)									 // Bypass the clock divider and drive MCICLK from MCLK
+#define	MCI_CLOCK_WIDEBUS				BIT(11)									 // Use MCIDAT[3:0] instead of MCIDAT0 only
 
+/* Command argument register */
 #define	MCI_ARGUMENT					MMIO32(MCI_BASE + 0x08)
-#define	MCI_ARGUMENT_CMDARG				GENMASK(31, 0)
+#define	MCI_ARGUMENT_CMDARG				GENMASK(31, 0)							 // Command argument sent to the card
 #define	MCI_ARGUMENT_CMDARG_SHIFT		0
 
+/* Command control register */
 #define	MCI_COMMAND						MMIO32(MCI_BASE + 0x0C)
-#define	MCI_COMMAND_CMDINDEX			GENMASK(5, 0)
+#define	MCI_COMMAND_CMDINDEX			GENMASK(5, 0)							 // Command index sent to the card
 #define	MCI_COMMAND_CMDINDEX_SHIFT		0
-#define	MCI_COMMAND_RESPONSE			BIT(6)
-#define	MCI_COMMAND_LONGRSP				BIT(7)
-#define	MCI_COMMAND_INTERRUPT			BIT(8)
-#define	MCI_COMMAND_PENDING				BIT(9)
-#define	MCI_COMMAND_ENABLE				BIT(10)
+#define	MCI_COMMAND_RESPONSE			BIT(6)									 // Wait for a response
+#define	MCI_COMMAND_LONGRSP				BIT(7)									 // Receive a 136-bit response
+#define	MCI_COMMAND_INTERRUPT			BIT(8)									 // Disable the command timer and wait for an interrupt request
+#define	MCI_COMMAND_PENDING				BIT(9)									 // Wait for CmdPend before sending the command
+#define	MCI_COMMAND_ENABLE				BIT(10)									 // Command path state machine enable
 
+/* Response command register */
 #define	MCI_RESPCMD						MMIO32(MCI_BASE + 0x10)
-#define	MCI_RESPCMD_CMDINDEX			GENMASK(5, 0)
+#define	MCI_RESPCMD_CMDINDEX			GENMASK(5, 0)							 // Command index from the last received response
 #define	MCI_RESPCMD_CMDINDEX_SHIFT		0
 
+/* Card status bits [31:0] for a short response or [127:96] for a long response */
 #define	MCI_RESPONSE0					MMIO32(MCI_BASE + 0x14)
+#define	MCI_RESPONSE0_STATUS			GENMASK(31, 0)							 // Card status
+#define	MCI_RESPONSE0_STATUS_SHIFT		0
 
+/* Card status bits [95:64] for a long response */
 #define	MCI_RESPONSE1					MMIO32(MCI_BASE + 0x18)
+#define	MCI_RESPONSE1_STATUS			GENMASK(31, 0)							 // Card status
+#define	MCI_RESPONSE1_STATUS_SHIFT		0
 
+/* Card status bits [63:32] for a long response */
 #define	MCI_RESPONSE2					MMIO32(MCI_BASE + 0x1C)
+#define	MCI_RESPONSE2_STATUS			GENMASK(31, 0)							 // Card status
+#define	MCI_RESPONSE2_STATUS_SHIFT		0
 
+/* Card status bits [31:1] for a long response; bit 0 is always zero */
 #define	MCI_RESPONSE3					MMIO32(MCI_BASE + 0x20)
+#define	MCI_RESPONSE3_STATUS			GENMASK(31, 0)							 // Card status
+#define	MCI_RESPONSE3_STATUS_SHIFT		0
 
+/* Data timeout register */
 #define	MCI_DATATIMER					MMIO32(MCI_BASE + 0x24)
-#define	MCI_DATATIMER_TIMER				GENMASK(31, 0)
+#define	MCI_DATATIMER_TIMER				GENMASK(31, 0)							 // Data timeout in card bus clock periods
 #define	MCI_DATATIMER_TIMER_SHIFT		0
 
+/* Data length register */
 #define	MCI_DATALENGTH					MMIO32(MCI_BASE + 0x28)
-#define	MCI_DATALENGTH_LENGTH			GENMASK(15, 0)
+#define	MCI_DATALENGTH_LENGTH			GENMASK(15, 0)							 // Number of data bytes to transfer
 #define	MCI_DATALENGTH_LENGTH_SHIFT		0
 
+/* Data path state machine control register */
 #define	MCI_DATACTRL					MMIO32(MCI_BASE + 0x2C)
-#define	MCI_DATACTRL_EMABLE				BIT(0)
-#define	MCI_DATACTRL_DIRECTION			BIT(1)									 // 0 = From controller to card, 1 = From card to controller
+#define	MCI_DATACTRL_ENABLE				BIT(0)									 // Data transfer enable
+#define	MCI_DATACTRL_DIRECTION			BIT(1)									 // Data transfer direction
 #define	MCI_DATACTRL_DIRECTION_WRITE	0x0
 #define	MCI_DATACTRL_DIRECTION_READ		0x2
-#define	MCI_DATACTRL_MODE				BIT(2)
-#define	MCI_DATACTRL_MODE_BLCOK			0x0
+#define	MCI_DATACTRL_MODE				BIT(2)									 // Data transfer mode
+#define	MCI_DATACTRL_MODE_BLOCK			0x0
 #define	MCI_DATACTRL_MODE_STREAM		0x4
-#define	MCI_DATACTRL_DMAENABLE			BIT(3)
-#define	MCI_DATACTRL_BLOCKSIZE			GENMASK(7, 4)
+#define	MCI_DATACTRL_DMAENABLE			BIT(3)									 // DMA enable
+#define	MCI_DATACTRL_BLOCKSIZE			GENMASK(7, 4)							 // Block length as a power of two in bytes; values 12-15 are reserved
 #define	MCI_DATACTRL_BLOCKSIZE_SHIFT	4
 
+/* Remaining data counter register */
 #define	MCI_DATACNT						MMIO32(MCI_BASE + 0x30)
-#define	MCI_DATACNT_COUNT				GENMASK(15, 0)
+#define	MCI_DATACNT_COUNT				GENMASK(15, 0)							 // Number of data bytes remaining
 #define	MCI_DATACNT_COUNT_SHIFT			0
 
+/* Status register */
 #define	MCI_STATUS						MMIO32(MCI_BASE + 0x34)
-#define	MCI_STATUS_CMDCRCFAIL			BIT(0)									 // Command response received (CRC check failed)
-#define	MCI_STATUS_DATACRCFAIL			BIT(1)									 // Data block sent/received (CRC check failed)
+#define	MCI_STATUS_CMDCRCFAIL			BIT(0)									 // Command response received with a CRC failure
+#define	MCI_STATUS_DATACRCFAIL			BIT(1)									 // Data block sent or received with a CRC failure
 #define	MCI_STATUS_CMDTIMEOUT			BIT(2)									 // Command response timeout
 #define	MCI_STATUS_DATATIMEOUT			BIT(3)									 // Data timeout
 #define	MCI_STATUS_TXUNDERRUN			BIT(4)									 // Transmit FIFO underrun error
 #define	MCI_STATUS_RXOVERRUN			BIT(5)									 // Receive FIFO overrun error
-#define	MCI_STATUS_CMDRESPEND			BIT(6)									 // Command response received (CRC check passed)
-#define	MCI_STATUS_CMDSENT				BIT(7)									 // Command sent (no response required)
-#define	MCI_STATUS_DATAEND				BIT(8)									 // Data end (data counter is zero)
-#define	MCI_STATUS_STARTBITERR			BIT(9)									 // Start bit not detected on all data signals in wide bus mode
-#define	MCI_STATUS_DATABLOCKEND			BIT(10)									 // Data block sent/received (CRC check passed)
-#define	MCI_STATUS_CMDACTIVE			BIT(11)									 // Command transfer in progress
-#define	MCI_STATUS_TXACTIVE				BIT(12)									 // Data transmit in progress
-#define	MCI_STATUS_RXACTIVE				BIT(13)									 // Data receive in progress
-#define	MCI_STATUS_TXFIFOHALFEMPTY		BIT(14)									 // Transmit FIFO half empty
-#define	MCI_STATUS_RXFIFOHALFFULL		BIT(15)									 // Receive FIFO half full
-#define	MCI_STATUS_TXFIFOFULL			BIT(16)									 // Transmit FIFO full
-#define	MCI_STATUS_RXFIFOFULL			BIT(17)									 // Receive FIFO full
-#define	MCI_STATUS_TXFIFOEMPTY			BIT(18)									 // Transmit FIFO empty
-#define	MCI_STATUS_RXFIFOEMPTY			BIT(19)									 // Receive FIFO empty
-#define	MCI_STATUS_TXDATAAVLBL			BIT(20)									 // Data available in transmit FIFO
-#define	MCI_STATUS_RXDATAAVLBL			BIT(21)									 // Data available in receive FIFO
+#define	MCI_STATUS_CMDRESPEND			BIT(6)									 // Command response received with a valid CRC
+#define	MCI_STATUS_CMDSENT				BIT(7)									 // Command sent when no response was required
+#define	MCI_STATUS_DATAEND				BIT(8)									 // Data counter reached zero
+#define	MCI_STATUS_STARTBITERR			BIT(9)									 // Start bit was not detected on all data signals in wide bus mode
+#define	MCI_STATUS_DATABLOCKEND			BIT(10)									 // Data block sent or received with a valid CRC
+#define	MCI_STATUS_CMDACTIVE			BIT(11)									 // Command transfer is in progress
+#define	MCI_STATUS_TXACTIVE				BIT(12)									 // Data transmission is in progress
+#define	MCI_STATUS_RXACTIVE				BIT(13)									 // Data reception is in progress
+#define	MCI_STATUS_TXFIFOHALFEMPTY		BIT(14)									 // Transmit FIFO is half empty
+#define	MCI_STATUS_RXFIFOHALFFULL		BIT(15)									 // Receive FIFO is half full
+#define	MCI_STATUS_TXFIFOFULL			BIT(16)									 // Transmit FIFO is full
+#define	MCI_STATUS_RXFIFOFULL			BIT(17)									 // Receive FIFO is full
+#define	MCI_STATUS_TXFIFOEMPTY			BIT(18)									 // Transmit FIFO is empty
+#define	MCI_STATUS_RXFIFOEMPTY			BIT(19)									 // Receive FIFO is empty
+#define	MCI_STATUS_TXDATAAVLBL			BIT(20)									 // Data is available in the transmit FIFO
+#define	MCI_STATUS_RXDATAAVLBL			BIT(21)									 // Data is available in the receive FIFO
 
+/* Static status flag clear register */
 #define	MCI_CLEAR						MMIO32(MCI_BASE + 0x38)
-#define	MCI_CLEAR_CMDCRCFAILCLR			BIT(0)
-#define	MCI_CLEAR_DATACRCFAILCLR		BIT(1)
-#define	MCI_CLEAR_CMDTIMEOUTCLR			BIT(2)
-#define	MCI_CLEAR_DATATIMEOUTCLR		BIT(3)
-#define	MCI_CLEAR_TXUNDERRUNCLR			BIT(4)
-#define	MCI_CLEAR_RXOVERRUNCLR			BIT(5)
-#define	MCI_CLEAR_CMDRESPENDCLR			BIT(6)
-#define	MCI_CLEAR_CMDSENTCLR			BIT(7)
-#define	MCI_CLEAR_DATAENDCLR			BIT(8)
-#define	MCI_CLEAR_STARTBITERRCLR		BIT(9)
-#define	MCI_CLEAR_DATABLOCKENDCLR		BIT(10)
+#define	MCI_CLEAR_CMDCRCFAILCLR			BIT(0)									 // Clear CMDCRCFAIL
+#define	MCI_CLEAR_DATACRCFAILCLR		BIT(1)									 // Clear DATACRCFAIL
+#define	MCI_CLEAR_CMDTIMEOUTCLR			BIT(2)									 // Clear CMDTIMEOUT
+#define	MCI_CLEAR_DATATIMEOUTCLR		BIT(3)									 // Clear DATATIMEOUT
+#define	MCI_CLEAR_TXUNDERRUNCLR			BIT(4)									 // Clear TXUNDERRUN
+#define	MCI_CLEAR_RXOVERRUNCLR			BIT(5)									 // Clear RXOVERRUN
+#define	MCI_CLEAR_CMDRESPENDCLR			BIT(6)									 // Clear CMDRESPEND
+#define	MCI_CLEAR_CMDSENTCLR			BIT(7)									 // Clear CMDSENT
+#define	MCI_CLEAR_DATAENDCLR			BIT(8)									 // Clear DATAEND
+#define	MCI_CLEAR_STARTBITERRCLR		BIT(9)									 // Clear STARTBITERR
+#define	MCI_CLEAR_DATABLOCKENDCLR		BIT(10)									 // Clear DATABLOCKEND
 
+/* Interrupt 0 mask register */
 #define	MCI_MASK0						MMIO32(MCI_BASE + 0x3C)
-#define	MCI_MASK0_CMDCRCFAILMASK		BIT(0)
-#define	MCI_MASK0_DATACRCFAILMASK		BIT(1)
-#define	MCI_MASK0_CMDTIMEOUTMASK		BIT(2)
-#define	MCI_MASK0_DATATIMEOUTMASK		BIT(3)
-#define	MCI_MASK0_TXUNDERRUNMASK		BIT(4)
-#define	MCI_MASK0_RXOVERRUNMASK			BIT(5)
-#define	MCI_MASK0_CMDRESPENDMASK		BIT(6)
-#define	MCI_MASK0_CMDSENTMASK			BIT(7)
-#define	MCI_MASK0_DATAENDMASK			BIT(8)
-#define	MCI_MASK0_STARTBITERRMASK		BIT(9)
-#define	MCI_MASK0_DATABLOCKENDMASK		BIT(10)
-#define	MCI_MASK0_CMDACTIVEMASK			BIT(11)
-#define	MCI_MASK0_TXACTIVEMASK			BIT(12)
-#define	MCI_MASK0_RXACTIVEMASK			BIT(13)
-#define	MCI_MASK0_TXFIFOHALFEMPTYMASK	BIT(14)
-#define	MCI_MASK0_RXFIFOHALFFULLMASK	BIT(15)
-#define	MCI_MASK0_TXFIFOFULLMASK		BIT(16)
-#define	MCI_MASK0_RXFIFOFULLMASK		BIT(17)
-#define	MCI_MASK0_TXFIFOEMPTYMASK		BIT(18)
-#define	MCI_MASK0_RXFIFOEMPTYMASK		BIT(19)
-#define	MCI_MASK0_TXDATAAVLBLMASK		BIT(20)
-#define	MCI_MASK0_RXDATAAVLBLMASK		BIT(21)
+#define	MCI_MASK0_CMDCRCFAIL			BIT(0)									 // Enable CMDCRCFAIL interrupt
+#define	MCI_MASK0_DATACRCFAIL			BIT(1)									 // Enable DATACRCFAIL interrupt
+#define	MCI_MASK0_CMDTIMEOUT			BIT(2)									 // Enable CMDTIMEOUT interrupt
+#define	MCI_MASK0_DATATIMEOUT			BIT(3)									 // Enable DATATIMEOUT interrupt
+#define	MCI_MASK0_TXUNDERRUN			BIT(4)									 // Enable TXUNDERRUN interrupt
+#define	MCI_MASK0_RXOVERRUN				BIT(5)									 // Enable RXOVERRUN interrupt
+#define	MCI_MASK0_CMDRESPEND			BIT(6)									 // Enable CMDRESPEND interrupt
+#define	MCI_MASK0_CMDSENT				BIT(7)									 // Enable CMDSENT interrupt
+#define	MCI_MASK0_DATAEND				BIT(8)									 // Enable DATAEND interrupt
+#define	MCI_MASK0_STARTBITERR			BIT(9)									 // Enable STARTBITERR interrupt
+#define	MCI_MASK0_DATABLOCKEND			BIT(10)									 // Enable DATABLOCKEND interrupt
+#define	MCI_MASK0_CMDACTIVE				BIT(11)									 // Enable CMDACTIVE interrupt
+#define	MCI_MASK0_TXACTIVE				BIT(12)									 // Enable TXACTIVE interrupt
+#define	MCI_MASK0_RXACTIVE				BIT(13)									 // Enable RXACTIVE interrupt
+#define	MCI_MASK0_TXFIFOHALFEMPTY		BIT(14)									 // Enable TXFIFOHALFEMPTY interrupt
+#define	MCI_MASK0_RXFIFOHALFFULL		BIT(15)									 // Enable RXFIFOHALFFULL interrupt
+#define	MCI_MASK0_TXFIFOFULL			BIT(16)									 // Enable TXFIFOFULL interrupt
+#define	MCI_MASK0_RXFIFOFULL			BIT(17)									 // Enable RXFIFOFULL interrupt
+#define	MCI_MASK0_TXFIFOEMPTY			BIT(18)									 // Enable TXFIFOEMPTY interrupt
+#define	MCI_MASK0_RXFIFOEMPTY			BIT(19)									 // Enable RXFIFOEMPTY interrupt
+#define	MCI_MASK0_TXDATAAVLBL			BIT(20)									 // Enable TXDATAAVLBL interrupt
+#define	MCI_MASK0_RXDATAAVLBL			BIT(21)									 // Enable RXDATAAVLBL interrupt
 
+/* Interrupt 1 mask register */
 #define	MCI_MASK1						MMIO32(MCI_BASE + 0x40)
-#define	MCI_MASK1_CMDCRCFAILMASK		BIT(0)
-#define	MCI_MASK1_DATACRCFAILMASK		BIT(1)
-#define	MCI_MASK1_CMDTIMEOUTMASK		BIT(2)
-#define	MCI_MASK1_DATATIMEOUTMASK		BIT(3)
-#define	MCI_MASK1_TXUNDERRUNMASK		BIT(4)
-#define	MCI_MASK1_RXOVERRUNMASK			BIT(5)
-#define	MCI_MASK1_CMDRESPENDMASK		BIT(6)
-#define	MCI_MASK1_CMDSENTMASK			BIT(7)
-#define	MCI_MASK1_DATAENDMASK			BIT(8)
-#define	MCI_MASK1_STARTBITERRMASK		BIT(9)
-#define	MCI_MASK1_DATABLOCKENDMASK		BIT(10)
-#define	MCI_MASK1_CMDACTIVEMASK			BIT(11)
-#define	MCI_MASK1_TXACTIVEMASK			BIT(12)
-#define	MCI_MASK1_RXACTIVEMASK			BIT(13)
-#define	MCI_MASK1_TXFIFOHALFEMPTYMASK	BIT(14)
-#define	MCI_MASK1_RXFIFOHALFFULLMASK	BIT(15)
-#define	MCI_MASK1_TXFIFOFULLMASK		BIT(16)
-#define	MCI_MASK1_RXFIFOFULLMASK		BIT(17)
-#define	MCI_MASK1_TXFIFOEMPTYMASK		BIT(18)
-#define	MCI_MASK1_RXFIFOEMPTYMASK		BIT(19)
-#define	MCI_MASK1_TXDATAAVLBLMASK		BIT(20)
-#define	MCI_MASK1_RXDATAAVLBLMASK		BIT(21)
+#define	MCI_MASK1_CMDCRCFAIL			BIT(0)									 // Enable CMDCRCFAIL interrupt
+#define	MCI_MASK1_DATACRCFAIL			BIT(1)									 // Enable DATACRCFAIL interrupt
+#define	MCI_MASK1_CMDTIMEOUT			BIT(2)									 // Enable CMDTIMEOUT interrupt
+#define	MCI_MASK1_DATATIMEOUT			BIT(3)									 // Enable DATATIMEOUT interrupt
+#define	MCI_MASK1_TXUNDERRUN			BIT(4)									 // Enable TXUNDERRUN interrupt
+#define	MCI_MASK1_RXOVERRUN				BIT(5)									 // Enable RXOVERRUN interrupt
+#define	MCI_MASK1_CMDRESPEND			BIT(6)									 // Enable CMDRESPEND interrupt
+#define	MCI_MASK1_CMDSENT				BIT(7)									 // Enable CMDSENT interrupt
+#define	MCI_MASK1_DATAEND				BIT(8)									 // Enable DATAEND interrupt
+#define	MCI_MASK1_STARTBITERR			BIT(9)									 // Enable STARTBITERR interrupt
+#define	MCI_MASK1_DATABLOCKEND			BIT(10)									 // Enable DATABLOCKEND interrupt
+#define	MCI_MASK1_CMDACTIVE				BIT(11)									 // Enable CMDACTIVE interrupt
+#define	MCI_MASK1_TXACTIVE				BIT(12)									 // Enable TXACTIVE interrupt
+#define	MCI_MASK1_RXACTIVE				BIT(13)									 // Enable RXACTIVE interrupt
+#define	MCI_MASK1_TXFIFOHALFEMPTY		BIT(14)									 // Enable TXFIFOHALFEMPTY interrupt
+#define	MCI_MASK1_RXFIFOHALFFULL		BIT(15)									 // Enable RXFIFOHALFFULL interrupt
+#define	MCI_MASK1_TXFIFOFULL			BIT(16)									 // Enable TXFIFOFULL interrupt
+#define	MCI_MASK1_RXFIFOFULL			BIT(17)									 // Enable RXFIFOFULL interrupt
+#define	MCI_MASK1_TXFIFOEMPTY			BIT(18)									 // Enable TXFIFOEMPTY interrupt
+#define	MCI_MASK1_RXFIFOEMPTY			BIT(19)									 // Enable RXFIFOEMPTY interrupt
+#define	MCI_MASK1_TXDATAAVLBL			BIT(20)									 // Enable TXDATAAVLBL interrupt
+#define	MCI_MASK1_RXDATAAVLBL			BIT(21)									 // Enable RXDATAAVLBL interrupt
 
+/* Secure Digital memory card select register */
 #define	MCI_SELECT						MMIO32(MCI_BASE + 0x44)
-#define	MCI_SELECT_SDCARD				GENMASK(3, 0)
+#define	MCI_SELECT_SDCARD				GENMASK(3, 0)							 // Secure Digital memory card address
 #define	MCI_SELECT_SDCARD_SHIFT			0
 
+/* FIFO counter register */
 #define	MCI_FIFOCNT						MMIO32(MCI_BASE + 0x48)
-#define	MCI_FIFOCNT_COUNT				GENMASK(15, 0)
+#define	MCI_FIFOCNT_COUNT				GENMASK(14, 0)							 // Number of FIFO words remaining
 #define	MCI_FIFOCNT_COUNT_SHIFT			0
 
+/* Data FIFO register */
 #define	MCI_FIFO(n)						MMIO32(MCI_BASE + 0x80 + ((n) * 0x4))
+#define	MCI_FIFO_DATA					GENMASK(31, 0)							 // FIFO data
+#define	MCI_FIFO_DATA_SHIFT				0
 
+/* Test control register */
+#define	MCI_TCR							MMIO32(MCI_BASE + 0x100)
+#define	MCI_TCR_ITEN					BIT(0)									 // Integration test enable
+#define	MCI_TCR_FIFOTEST				GENMASK(2, 1)							 // FIFO test mode
+#define	MCI_TCR_FIFOTEST_SHIFT			1
+#define	MCI_TCR_FIFOTEST_NORMAL			0x0
+#define	MCI_TCR_FIFOTEST_DIRECT			0x2
+#define	MCI_TCR_FIFOTEST_RESERVED		0x4
+#define	MCI_TCR_FIFOTEST_LOOPBACK		0x6
+#define	MCI_TCR_REGTEST					BIT(3)									 // Bypass register hardware protection
+
+/* Integration test input register */
+#define	MCI_ITIP						MMIO32(MCI_BASE + 0x104)
+#define	MCI_ITIP_DMACLR					BIT(0)									 // DMA clear input test value
+#define	MCI_ITIP_DATIN					GENMASK(4, 1)							 // Card data input values
+#define	MCI_ITIP_DATIN_SHIFT			1
+#define	MCI_ITIP_CMDIN					BIT(5)									 // Card command input value
+
+/* Integration test output register */
+#define	MCI_ITOP						MMIO32(MCI_BASE + 0x108)
+#define	MCI_ITOP_INTR0					BIT(0)									 // Interrupt 0 output test value
+#define	MCI_ITOP_INTR1					BIT(1)									 // Interrupt 1 output test value
+#define	MCI_ITOP_DMASREQ				BIT(2)									 // DMA single request output test value
+#define	MCI_ITOP_DMABREQ				BIT(3)									 // DMA burst request output test value
+#define	MCI_ITOP_DMALSREQ				BIT(4)									 // DMA last single request output test value
+#define	MCI_ITOP_DMALBREQ				BIT(5)									 // DMA last burst request output test value
+#define	MCI_ITOP_DATOUT					GENMASK(9, 6)							 // Card data output test values
+#define	MCI_ITOP_DATOUT_SHIFT			6
+#define	MCI_ITOP_CMDOUT					BIT(10)									 // Card command output test value
+#define	MCI_ITOP_POWER					BIT(11)									 // Card power output test value
+
+/* Peripheral identification register 0 */
 #define	MCI_PERIPH_ID0					MMIO32(MCI_BASE + 0xFE0)
 
+/* Peripheral identification register 1 */
 #define	MCI_PERIPH_ID1					MMIO32(MCI_BASE + 0xFE4)
 
+/* Peripheral identification register 2 */
 #define	MCI_PERIPH_ID2					MMIO32(MCI_BASE + 0xFE8)
 
+/* Peripheral identification register 3 */
 #define	MCI_PERIPH_ID3					MMIO32(MCI_BASE + 0xFEC)
 
+/* PrimeCell identification register 0 */
 #define	MCI_PCELL_ID0					MMIO32(MCI_BASE + 0xFF0)
 
+/* PrimeCell identification register 1 */
 #define	MCI_PCELL_ID1					MMIO32(MCI_BASE + 0xFF4)
 
+/* PrimeCell identification register 2 */
 #define	MCI_PCELL_ID2					MMIO32(MCI_BASE + 0xFF8)
 
+/* PrimeCell identification register 3 */
 #define	MCI_PCELL_ID3					MMIO32(MCI_BASE + 0xFFC)
 
 

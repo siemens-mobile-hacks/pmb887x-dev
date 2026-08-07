@@ -1,10 +1,10 @@
 .arm
-.section .pll_loader, "ax"
+.section .cgu_loader, "ax"
 .align 2
 
-.global pll_loader
-.type pll_loader, %function
-pll_loader:
+.global cgu_loader
+.type cgu_loader, %function
+cgu_loader:
 	ldr r0, =_intram_loadaddr
 	ldr r1, =_intram_start
 	ldr r2, =_intram_loadend

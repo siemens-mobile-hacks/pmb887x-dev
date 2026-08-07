@@ -1,4 +1,4 @@
-ENTRY(pll_loader)
+ENTRY(cgu_loader)
 
 MEMORY {
 	extram (rwx) : ORIGIN = 0xA8000000, LENGTH = 8M
@@ -6,8 +6,8 @@ MEMORY {
 }
 
 SECTIONS {
-	.pll_loader : {
-		KEEP(*(.pll_loader))
+	.cgu_loader : {
+		KEEP(*(.cgu_loader))
 		. = ALIGN(4);
 	} >extram
 

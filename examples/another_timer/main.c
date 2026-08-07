@@ -15,22 +15,22 @@
 #define MIN_DELTA			( 10 )
 
 
-#define IOPLL_CON0()		PLL_CON0
-#define IOPLL_CON0_SET(x)	(PLL_CON0 = x)
+#define IOPLL_CON0()		CGU_CON0
+#define IOPLL_CON0_SET(x)	(CGU_CON0 = x)
 
-#define IOPLL_CON1()		PLL_CON1
-#define IOPLL_CON1_SET(x)	(PLL_CON1 = x)
+#define IOPLL_CON1()		CGU_CON1
+#define IOPLL_CON1_SET(x)	(CGU_CON1 = x)
 
-#define IOPLL_CON2()		PLL_CON2
-#define IOPLL_CON2_SET(x)	(PLL_CON2 = x)
+#define IOPLL_CON2()		CGU_CON2
+#define IOPLL_CON2_SET(x)	(CGU_CON2 = x)
 
-#define IOPLL_ICR()			PLL_SRC
-#define IOPLL_ICR_SET(x)	(PLL_SRC = x)
+#define IOPLL_ICR()			CGU_SRC
+#define IOPLL_ICR_SET(x)	(CGU_SRC = x)
 
-#define IOPLL_OSC()			PLL_OSC
-#define IOPLL_OSC_SET(x)	(PLL_OSC = x)
+#define IOPLL_OSC()			CGU_OSC
+#define IOPLL_OSC_SET(x)	(CGU_OSC = x)
 
-#define IOPLL_STAT()		PLL_STAT
+#define IOPLL_STAT()		CGU_STAT
 
 #define IOSCU_PLLCLC()		SCU_PLLCLC
 #define IOSCU_PLLCLC_SET(x)	(SCU_PLLCLC = x)
@@ -84,11 +84,11 @@ static void EBU_wtf_finish(void) {
 
 
 /*
-F45000A0: 00030505 (PLL_OSC)
-F45000A4: 1120080B (PLL_CON0)
-F45000A8: 00420002 (PLL_CON1)
-F45000AC: 0x1000E127 (PLL_CON2)
-F45000B0: 00002000 (PLL_STAT)
+F45000A0: 00030505 (CGU_OSC)
+F45000A4: 1120080B (CGU_CON0)
+F45000A8: 00420002 (CGU_CON1)
+F45000AC: 0x1000E127 (CGU_CON2)
+F45000B0: 00002000 (CGU_STAT)
 F45000B4: 10000303 (PLL_*)
 */
 
@@ -102,11 +102,11 @@ F45000B4: 10000303 (PLL_*)
 // 2590256
 
 /*
-F45000A0: 00030505 (PLL_OSC)
-F45000A4: 1120080B (PLL_CON0)
-F45000A8: 00420002 (PLL_CON1)
-F45000AC: 1000E127 (PLL_CON2)
-F45000B0: 00002000 (PLL_STAT)
+F45000A0: 00030505 (CGU_OSC)
+F45000A4: 1120080B (CGU_CON0)
+F45000A8: 00420002 (CGU_CON1)
+F45000AC: 1000E127 (CGU_CON2)
+F45000B0: 00002000 (CGU_STAT)
 F45000B4: 10000303 (PLL_*)
 F45000B8: FFFFFFFF (PLL_*)
 F45000BC: FFFFFFFF (PLL_*)
@@ -144,22 +144,22 @@ static unsigned int _pll_reclock(char mul1, char mul2, char div1, char div2) {
     
     // (5 << 16) - множитель 1 - 5
     // (5 << 8) - тоже какая-то хуитка, похожая на множитель
-    PLL_OSC = ((mul1 << 16) | (0 << 12) | (5 << 8) | 5);
+    CGU_OSC = ((mul1 << 16) | (0 << 12) | (5 << 8) | 5);
     
-    printf(" -> osc: %X\n", PLL_OSC);
+    printf(" -> osc: %X\n", CGU_OSC);
 
     // (1 << 5) - PLL_CONNECT
     // (1 << 8) - делитель, очень стрёмный, при увеличении вроде тупее работает, но богомипсов одинаково
-    PLL_CON2 = (0x10 << 24) | (7 << 13) | (0 << 12) | (div1 << 8) | (1 << 5) | 0x7;
-    printf(" -> con2: %X\n", PLL_CON2);
+    CGU_CON2 = (0x10 << 24) | (7 << 13) | (0 << 12) | (div1 << 8) | (1 << 5) | 0x7;
+    printf(" -> con2: %X\n", CGU_CON2);
     
     EBU_wtf_clock_reinit_2();
     
     // (1 << (20+0)) - иножитель
     // (1 << (16+0)) - хрень какая-то
     // (1 << 1) - если установлен, нужно пересчитывать CLC периферии
-    PLL_CON1 = ((1 << (20+mul2)) | (0 << 16) | 0);
-    printf(" -> con1: %X\n", PLL_CON1);
+    CGU_CON1 = ((1 << (20+mul2)) | (0 << 16) | 0);
+    printf(" -> con1: %X\n", CGU_CON1);
     
     writel(readl((void *)0xF45000B4) | 0x310000, (void *)0xF45000B4);
     printf(" -> b4: %X\n", readl((void *)0xF45000B4));
@@ -324,10 +324,10 @@ int main(void) {
 	printf("Xuj!\n");
 	printf("Xuj!\n");
 	
-	printf(" ->  osc: %X\n", PLL_OSC);
-	printf(" -> con0: %X\n", PLL_CON0);
-	printf(" -> con1: %X\n", PLL_CON1);
-	printf(" -> con2: %X\n", PLL_CON2);
+	printf(" ->  osc: %X\n", CGU_OSC);
+	printf(" -> con0: %X\n", CGU_CON0);
+	printf(" -> con1: %X\n", CGU_CON1);
+	printf(" -> con2: %X\n", CGU_CON2);
 	printf(" -> 00b4: %X\n", REG(0xF45000B4));
 	
 	int mhz = cpu_rate();

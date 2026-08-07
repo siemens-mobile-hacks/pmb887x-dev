@@ -80,7 +80,7 @@ static int command_handler(int irq) {
 				}
 			}
 			
-			if (addr == (uint32_t) &PLL_STAT) {
+			if (addr == (uint32_t) &CGU_STAT) {
 				value = 0x2000;
 			}
 			

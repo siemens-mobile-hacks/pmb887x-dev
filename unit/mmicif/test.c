@@ -40,7 +40,7 @@ static void enable_ati_endpoint(void) {
 	GPIO_CLC = 1U << MOD_CLC_RMC_SHIFT;
 	i2c_init();
 	GPIO_PIN(GPIO_CLK32) = GPIO_OS_ALT1 | GPIO_PS_ALT;
-	PLL_CON2 |= PLL_CON2_CLK32_EN;
+	CGU_CON2 |= CGU_CON2_CLK32K_EN;
 	gpio_init_output(
 		GPIO_MM_EN,
 		GPIO_OS_NONE,

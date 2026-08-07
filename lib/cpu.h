@@ -18,6 +18,20 @@ static inline bool cpu_enable_fiq(bool flag) {
 }
 
 uint32_t cpu_get_freq(void);
+uint32_t cpu_get_pll_freq(void);
+uint32_t cpu_get_phase_freq(uint32_t phase);
 uint32_t cpu_get_ahb_freq(void);
+uint32_t cpu_get_ebu_freq(void);
+uint32_t cpu_get_dsp_freq(void);
+uint32_t cpu_get_fpi1_freq(void);
+uint32_t cpu_get_ahb_per_freq(void);
 uint32_t cpu_get_sys_freq(void);
 uint32_t cpu_get_stm_freq(void);
+uint32_t cpu_get_clk48m_freq(void);
+uint32_t cpu_get_mmci_freq(void);
+uint32_t cpu_get_clkout0_freq(void);
+uint32_t cpu_get_clkout1_freq(void);
+uint32_t cpu_get_clkout2_freq(void);
+uint32_t cpu_get_clk32k_freq(void);
+uint32_t cpu_get_ms_freq(void);
+uint32_t cpu_get_dma_freq(void);

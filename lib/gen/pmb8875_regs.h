@@ -139,7 +139,7 @@
 #define	VIC_SCCU_UNK_IRQ		63
 #define	VIC_SCU_UNK2_IRQ		63
 #define	VIC_SCCU_WAKE_IRQ		64
-#define	VIC_PLL_IRQ				65
+#define	VIC_CGU_IRQ				65
 #define	VIC_I2C_DATA_IRQ		66
 #define	VIC_I2C_PROTO_IRQ		67
 #define	VIC_I2C_END_IRQ			68
@@ -1789,20 +1789,28 @@
 #define	DMAC_CH_CONFIG_ACTIVE					BIT(17)										 // Active.
 #define	DMAC_CH_CONFIG_HALT						BIT(18)										 // Halt.
 
+/* Peripheral identification register 0 */
 #define	DMAC_PERIPH_ID0							MMIO32(DMAC_BASE + 0xFE0)
 
+/* Peripheral identification register 1 */
 #define	DMAC_PERIPH_ID1							MMIO32(DMAC_BASE + 0xFE4)
 
+/* Peripheral identification register 2 */
 #define	DMAC_PERIPH_ID2							MMIO32(DMAC_BASE + 0xFE8)
 
+/* Peripheral identification register 3 */
 #define	DMAC_PERIPH_ID3							MMIO32(DMAC_BASE + 0xFEC)
 
+/* PrimeCell identification register 0 */
 #define	DMAC_PCELL_ID0							MMIO32(DMAC_BASE + 0xFF0)
 
+/* PrimeCell identification register 1 */
 #define	DMAC_PCELL_ID1							MMIO32(DMAC_BASE + 0xFF4)
 
+/* PrimeCell identification register 2 */
 #define	DMAC_PCELL_ID2							MMIO32(DMAC_BASE + 0xFF8)
 
+/* PrimeCell identification register 3 */
 #define	DMAC_PCELL_ID3							MMIO32(DMAC_BASE + 0xFFC)
 
 
@@ -2304,8 +2312,18 @@
 #define	SCU_RST_REQ						MMIO32(SCU_BASE + 0x18)
 #define	SCU_RST_REQ_DSP					BIT(0)									 // DSP software reset request
 #define	SCU_RST_REQ_RTC					BIT(1)									 // RTC software reset request
+#define	SCU_RST_REQ_USART0				BIT(2)									 // USART0 software reset request
+#define	SCU_RST_REQ_SSC0				BIT(3)									 // SSC0 software reset request
+#define	SCU_RST_REQ_SIM					BIT(4)									 // SIM software reset request
+#define	SCU_RST_REQ_USART1				BIT(5)									 // USART1 software reset request
+#define	SCU_RST_REQ_SSC1				BIT(6)									 // SSC1 software reset request
+#define	SCU_RST_REQ_MMCI				BIT(7)									 // MMCI software reset request
+#define	SCU_RST_REQ_DISP				BIT(8)									 // Display software reset request
 #define	SCU_RST_REQ_USB					BIT(9)									 // USB software reset request
-#define	SCU_RST_REQ_DMAC				BIT(11)									 // DMAC software reset request
+#define	SCU_RST_REQ_DMA1				BIT(11)									 // DMA1 software reset request
+#define	SCU_RST_REQ_DMA2				BIT(12)									 // DMA2 software reset request
+#define	SCU_RST_REQ_DMA3				BIT(13)									 // DMA3 software reset request
+#define	SCU_RST_REQ_FIRDA				BIT(14)									 // FIRDA software reset request
 #define	SCU_RST_REQ_I2C					BIT(15)									 // I2C software reset request
 
 /* Sleep Request Register */
@@ -2582,115 +2600,183 @@
 #define	SCU_EXTI7_SRC					MMIO32(SCU_BASE + 0xFC)
 
 
-// PLL
+// CGU
 // Clock Generation Unit
-#define	PLL_BASE						0xF4500000
+#define	CGU_BASE							0xF4500000
 /* Clock Generation Unit Control Register 1 (CGU_CTL1) */
-#define	PLL_OSC							MMIO32(PLL_BASE + 0xA0)
-#define	PLL_OSC_PLL_POWER_UP			BIT(0)					 // Power up PLL
-#define	PLL_OSC_PHASE0_POWER_UP			BIT(1)					 // Power up phase-shifter output 0
-#define	PLL_OSC_PHASE1_POWER_UP			BIT(2)					 // Power up phase-shifter output 1
-#define	PLL_OSC_PHASE2_POWER_UP			BIT(3)					 // Power up phase-shifter output 2
-#define	PLL_OSC_PHASE3_POWER_UP			BIT(4)					 // Power up phase-shifter output 3
-#define	PLL_OSC_PLL_BYPASS_N			BIT(8)					 // Disable PLL bypass
-#define	PLL_OSC_PHASE0_BYPASS_N			BIT(9)					 // Disable bypass for phase-shifter output 0
-#define	PLL_OSC_PHASE1_BYPASS_N			BIT(10)					 // Disable bypass for phase-shifter output 1
-#define	PLL_OSC_PHASE2_BYPASS_N			BIT(11)					 // Disable bypass for phase-shifter output 2
-#define	PLL_OSC_PHASE3_BYPASS_N			BIT(12)					 // Disable bypass for phase-shifter output 3
-#define	PLL_OSC_NDIV					GENMASK(21, 16)			 // PLL feedback divider (multiply by N+1)
-#define	PLL_OSC_NDIV_SHIFT				16
-#define	PLL_OSC_MDIV					GENMASK(27, 24)			 // PLL input divider (divide by M+1)
-#define	PLL_OSC_MDIV_SHIFT				24
+#define	CGU_OSC								MMIO32(CGU_BASE + 0xA0)
+#define	CGU_OSC_PLL_POWER_UP				BIT(0)					 // Power up PLL
+#define	CGU_OSC_PHASE1_POWER_UP				BIT(1)					 // Power up phase-shifter output 1
+#define	CGU_OSC_PHASE2_POWER_UP				BIT(2)					 // Power up phase-shifter output 2
+#define	CGU_OSC_PHASE3_POWER_UP				BIT(3)					 // Power up phase-shifter output 3
+#define	CGU_OSC_PHASE4_POWER_UP				BIT(4)					 // Power up phase-shifter output 4
+#define	CGU_OSC_PLL_BYPASS_N				BIT(8)					 // Disable PLL bypass
+#define	CGU_OSC_PHASE1_BYPASS_N				BIT(9)					 // Disable bypass for phase-shifter output 1
+#define	CGU_OSC_PHASE2_BYPASS_N				BIT(10)					 // Disable bypass for phase-shifter output 2
+#define	CGU_OSC_PHASE3_BYPASS_N				BIT(11)					 // Disable bypass for phase-shifter output 3
+#define	CGU_OSC_PHASE4_BYPASS_N				BIT(12)					 // Disable bypass for phase-shifter output 4
+#define	CGU_OSC_NDIV						GENMASK(21, 16)			 // PLL feedback divider (multiply by N+1)
+#define	CGU_OSC_NDIV_SHIFT					16
+#define	CGU_OSC_MDIV						GENMASK(27, 24)			 // PLL input divider (divide by M+1)
+#define	CGU_OSC_MDIV_SHIFT					24
 
-#define	PLL_CON0						MMIO32(PLL_BASE + 0xA4)
-#define	PLL_CON0_PHASE0_CONFIG			GENMASK(7, 0)			 // Complete K1/K2 configuration byte for phase-shifter output 0
-#define	PLL_CON0_PHASE0_CONFIG_SHIFT	0
-#define	PLL_CON0_PLL1_K2				GENMASK(2, 0)			 // Phase 0 divider denominator term, valid values 0..5
-#define	PLL_CON0_PLL1_K2_SHIFT			0
-#define	PLL_CON0_PLL1_K1				GENMASK(6, 3)			 // Phase 0 divider: fPLL * 12 / (K1 * 6 + K2)
-#define	PLL_CON0_PLL1_K1_SHIFT			3
-#define	PLL_CON0_PHASE1_CONFIG			GENMASK(15, 8)			 // Complete K1/K2 configuration byte for phase-shifter output 1
-#define	PLL_CON0_PHASE1_CONFIG_SHIFT	8
-#define	PLL_CON0_PLL2_K2				GENMASK(10, 8)			 // Phase 1 divider denominator term, valid values 0..5
-#define	PLL_CON0_PLL2_K2_SHIFT			8
-#define	PLL_CON0_PLL2_K1				GENMASK(14, 11)			 // Phase 1 divider: fPLL * 12 / (K1 * 6 + K2)
-#define	PLL_CON0_PLL2_K1_SHIFT			11
-#define	PLL_CON0_PHASE2_CONFIG			GENMASK(23, 16)			 // Complete K1/K2 configuration byte for phase-shifter output 2
-#define	PLL_CON0_PHASE2_CONFIG_SHIFT	16
-#define	PLL_CON0_PLL3_K2				GENMASK(18, 16)			 // Phase 2 divider denominator term, valid values 0..5
-#define	PLL_CON0_PLL3_K2_SHIFT			16
-#define	PLL_CON0_PLL3_K1				GENMASK(22, 19)			 // Phase 2 divider: fPLL * 12 / (K1 * 6 + K2)
-#define	PLL_CON0_PLL3_K1_SHIFT			19
-#define	PLL_CON0_PHASE3_CONFIG			GENMASK(31, 24)			 // Complete K1/K2 configuration byte for phase-shifter output 3
-#define	PLL_CON0_PHASE3_CONFIG_SHIFT	24
-#define	PLL_CON0_PLL4_K2				GENMASK(26, 24)			 // Phase 3 divider denominator term, valid values 0..5
-#define	PLL_CON0_PLL4_K2_SHIFT			24
-#define	PLL_CON0_PLL4_K1				GENMASK(30, 27)			 // Phase 3 divider: fPLL * 12 / (K1 * 6 + K2)
-#define	PLL_CON0_PLL4_K1_SHIFT			27
+/* Clock Generation Unit Control Register 3 (CGU_CTL3) */
+#define	CGU_CON0							MMIO32(CGU_BASE + 0xA4)
+#define	CGU_CON0_PHASE1_CONFIG				GENMASK(7, 0)			 // Complete K1/K2 configuration byte for phase-shifter output 1
+#define	CGU_CON0_PHASE1_CONFIG_SHIFT		0
+#define	CGU_CON0_PHASE1_K2					GENMASK(2, 0)			 // Phase 1 divider denominator term, valid values 0..5
+#define	CGU_CON0_PHASE1_K2_SHIFT			0
+#define	CGU_CON0_PHASE1_K1					GENMASK(6, 3)			 // Phase 1 divider: fPLL * 12 / (K1 * 6 + K2)
+#define	CGU_CON0_PHASE1_K1_SHIFT			3
+#define	CGU_CON0_PHASE2_CONFIG				GENMASK(15, 8)			 // Complete K1/K2 configuration byte for phase-shifter output 2
+#define	CGU_CON0_PHASE2_CONFIG_SHIFT		8
+#define	CGU_CON0_PHASE2_K2					GENMASK(10, 8)			 // Phase 2 divider denominator term, valid values 0..5
+#define	CGU_CON0_PHASE2_K2_SHIFT			8
+#define	CGU_CON0_PHASE2_K1					GENMASK(14, 11)			 // Phase 2 divider: fPLL * 12 / (K1 * 6 + K2)
+#define	CGU_CON0_PHASE2_K1_SHIFT			11
+#define	CGU_CON0_PHASE3_CONFIG				GENMASK(23, 16)			 // Complete K1/K2 configuration byte for phase-shifter output 3
+#define	CGU_CON0_PHASE3_CONFIG_SHIFT		16
+#define	CGU_CON0_PHASE3_K2					GENMASK(18, 16)			 // Phase 3 divider denominator term, valid values 0..5
+#define	CGU_CON0_PHASE3_K2_SHIFT			16
+#define	CGU_CON0_PHASE3_K1					GENMASK(22, 19)			 // Phase 3 divider: fPLL * 12 / (K1 * 6 + K2)
+#define	CGU_CON0_PHASE3_K1_SHIFT			19
+#define	CGU_CON0_PHASE4_CONFIG				GENMASK(31, 24)			 // Complete K1/K2 configuration byte for phase-shifter output 4
+#define	CGU_CON0_PHASE4_CONFIG_SHIFT		24
+#define	CGU_CON0_PHASE4_K2					GENMASK(26, 24)			 // Phase 4 divider denominator term, valid values 0..5
+#define	CGU_CON0_PHASE4_K2_SHIFT			24
+#define	CGU_CON0_PHASE4_K1					GENMASK(30, 27)			 // Phase 4 divider: fPLL * 12 / (K1 * 6 + K2)
+#define	CGU_CON0_PHASE4_K1_SHIFT			27
 
 /* Clock Generation Unit Control Register 4 (CGU_CTL4) */
-#define	PLL_CON1						MMIO32(PLL_BASE + 0xA8)
-#define	PLL_CON1_SYSTEM_OUT_CTRL		GENMASK(1, 0)			 // Clock Manager state for SYSTEM_OUT
-#define	PLL_CON1_SYSTEM_OUT_CTRL_SHIFT	0
-#define	PLL_CON1_SYSTEM_OUT_CTRL_BYPASS	0x0
-#define	PLL_CON1_SYSTEM_OUT_CTRL_ON		0x2
-#define	PLL_CON1_SYSTEM_OUT_CTRL_OFF	0x3
-#define	PLL_CON1_FSYS_CLKSEL			GENMASK(17, 16)			 // Source clock for fSYS (BYPASS: fSYS=fOSC, PLL: fSYS=fPLL / 2)
-#define	PLL_CON1_FSYS_CLKSEL_SHIFT		16
-#define	PLL_CON1_FSYS_CLKSEL_BYPASS		0x0
-#define	PLL_CON1_FSYS_CLKSEL_PLL		0x20000
-#define	PLL_CON1_FSYS_CLKSEL_DISABLE	0x30000
-#define	PLL_CON1_AHB_CLKSEL				GENMASK(22, 20)			 // Source clock for fAHB
-#define	PLL_CON1_AHB_CLKSEL_SHIFT		20
-#define	PLL_CON1_AHB_CLKSEL_BYPASS		0x0
-#define	PLL_CON1_AHB_CLKSEL_DISABLE		0x100000
-#define	PLL_CON1_AHB_CLKSEL_PLL0		0x200000
-#define	PLL_CON1_AHB_CLKSEL_PLL1		0x300000
-#define	PLL_CON1_AHB_CLKSEL_PLL2		0x400000
-#define	PLL_CON1_AHB_CLKSEL_PLL3		0x500000
-#define	PLL_CON1_AHB_CLKSEL_PLL4		0x600000
-#define	PLL_CON1_FSTM_DIV_EN			BIT(25)					 // Enable fSTM divider
-#define	PLL_CON1_FSTM_DIV				GENMASK(29, 28)			 // fSTM divider: divide fOSC by 4 * 2^n
-#define	PLL_CON1_FSTM_DIV_SHIFT			28
-#define	PLL_CON1_FSTM_DIV_4				0x0
-#define	PLL_CON1_FSTM_DIV_8				0x10000000
-#define	PLL_CON1_FSTM_DIV_16			0x20000000
-#define	PLL_CON1_FSTM_DIV_32			0x30000000
+#define	CGU_CON1							MMIO32(CGU_BASE + 0xA8)
+#define	CGU_CON1_FPI1_CLKSEL				GENMASK(1, 0)			 // Source clock for FPI1
+#define	CGU_CON1_FPI1_CLKSEL_SHIFT			0
+#define	CGU_CON1_FPI1_CLKSEL_OSC			0x0
+#define	CGU_CON1_FPI1_CLKSEL_CLK32K			0x1
+#define	CGU_CON1_FPI1_CLKSEL_PLL_DIV_2		0x2
+#define	CGU_CON1_FPI1_CLKSEL_DISABLE		0x3
+#define	CGU_CON1_FPI1_CLKDIV				GENMASK(5, 4)			 // FPI1 clock divider; bypassed for CLK32K
+#define	CGU_CON1_FPI1_CLKDIV_SHIFT			4
+#define	CGU_CON1_FPI1_CLKDIV_DIV1			0x0
+#define	CGU_CON1_FPI1_CLKDIV_DIV2			0x10
+#define	CGU_CON1_FPI1_CLKDIV_DIV4			0x20
+#define	CGU_CON1_FPI1_CLKDIV_DIV8			0x30
+#define	CGU_CON1_FSYS_CLKSEL				GENMASK(17, 16)			 // Source clock for fSYS (BYPASS: fSYS=fOSC, PLL: fSYS=fPLL / 2)
+#define	CGU_CON1_FSYS_CLKSEL_SHIFT			16
+#define	CGU_CON1_FSYS_CLKSEL_BYPASS			0x0
+#define	CGU_CON1_FSYS_CLKSEL_PLL			0x20000
+#define	CGU_CON1_FSYS_CLKSEL_DISABLE		0x30000
+#define	CGU_CON1_AHB_CLKSEL					GENMASK(22, 20)			 // Source clock for fAHB
+#define	CGU_CON1_AHB_CLKSEL_SHIFT			20
+#define	CGU_CON1_AHB_CLKSEL_BYPASS			0x0
+#define	CGU_CON1_AHB_CLKSEL_DISABLE			0x100000
+#define	CGU_CON1_AHB_CLKSEL_PLL				0x200000
+#define	CGU_CON1_AHB_CLKSEL_PHASE1			0x300000
+#define	CGU_CON1_AHB_CLKSEL_PHASE2			0x400000
+#define	CGU_CON1_AHB_CLKSEL_PHASE3			0x500000
+#define	CGU_CON1_AHB_CLKSEL_PHASE4			0x600000
+#define	CGU_CON1_FSTM_DIV_EN				BIT(25)					 // Enable fSTM divider
+#define	CGU_CON1_FSTM_DIV					GENMASK(29, 28)			 // fSTM divider: divide fOSC by 4 * 2^n
+#define	CGU_CON1_FSTM_DIV_SHIFT				28
+#define	CGU_CON1_FSTM_DIV_4					0x0
+#define	CGU_CON1_FSTM_DIV_8					0x10000000
+#define	CGU_CON1_FSTM_DIV_16				0x20000000
+#define	CGU_CON1_FSTM_DIV_32				0x30000000
 
 /* Clock Generation Unit Control Register 5 (CGU_CTL5) */
-#define	PLL_CON2						MMIO32(PLL_BASE + 0xAC)
-#define	PLL_CON2_EBU_CLKSEL				GENMASK(6, 4)			 // Source clock for asynchronous EBU operation
-#define	PLL_CON2_EBU_CLKSEL_SHIFT		4
-#define	PLL_CON2_EBU_CLKSEL_OSC			0x0
-#define	PLL_CON2_EBU_CLKSEL_DISABLE		0x10
-#define	PLL_CON2_EBU_CLKSEL_PLL0		0x20
-#define	PLL_CON2_EBU_CLKSEL_PLL1		0x30
-#define	PLL_CON2_EBU_CLKSEL_PLL2		0x40
-#define	PLL_CON2_EBU_CLKSEL_PLL3		0x50
-#define	PLL_CON2_EBU_CLKSEL_PLL4		0x60
-#define	PLL_CON2_CPU_DIV				GENMASK(9, 8)			 // ARM clock divider: divide fAHB by N+1
-#define	PLL_CON2_CPU_DIV_SHIFT			8
-#define	PLL_CON2_CPU_DIV_EN				BIT(12)					 // Enable ARM clock divider
-#define	PLL_CON2_PERIPHERAL_CLKSEL		BIT(13)					 // Source clock for peripherals
-#define	PLL_CON2_PERIPHERAL_CLKSEL_OSC	0x0
-#define	PLL_CON2_PERIPHERAL_CLKSEL_FSYS	0x2000
-#define	PLL_CON2_USB_CLKSEL				GENMASK(15, 14)			 // Source clock for USB
-#define	PLL_CON2_USB_CLKSEL_SHIFT		14
-#define	PLL_CON2_USB_CLKSEL_OSC			0x0
-#define	PLL_CON2_USB_CLKSEL_PHASE3		0x8000
-#define	PLL_CON2_USB_CLKSEL_DISABLE		0xC000
-#define	PLL_CON2_CLK32_EN				BIT(24)
+#define	CGU_CON2							MMIO32(CGU_BASE + 0xAC)
+#define	CGU_CON2_DSP_CLKSEL					GENMASK(2, 0)			 // Source clock for DSP
+#define	CGU_CON2_DSP_CLKSEL_SHIFT			0
+#define	CGU_CON2_DSP_CLKSEL_PHASE1			0x3
+#define	CGU_CON2_DSP_CLKSEL_DISABLE			0x7
+#define	CGU_CON2_EBU_CLKSEL					GENMASK(6, 4)			 // Source clock for EBU
+#define	CGU_CON2_EBU_CLKSEL_SHIFT			4
+#define	CGU_CON2_EBU_CLKSEL_OSC				0x0
+#define	CGU_CON2_EBU_CLKSEL_DISABLE			0x10
+#define	CGU_CON2_EBU_CLKSEL_PLL				0x20
+#define	CGU_CON2_EBU_CLKSEL_PHASE1			0x30
+#define	CGU_CON2_EBU_CLKSEL_PHASE2			0x40
+#define	CGU_CON2_EBU_CLKSEL_PHASE3			0x50
+#define	CGU_CON2_EBU_CLKSEL_PHASE4			0x60
+#define	CGU_CON2_EBU_CLKSEL_AHB				0x70
+#define	CGU_CON2_CPU_DIV					GENMASK(9, 8)			 // ARM clock divider: divide fAHB by N+1
+#define	CGU_CON2_CPU_DIV_SHIFT				8
+#define	CGU_CON2_CPU_DIV_EN					BIT(12)					 // Enable ARM clock divider
+#define	CGU_CON2_AFC32K_EN					BIT(13)					 // Enable the 32 kHz standby clock for AFC
+#define	CGU_CON2_CLK48M_CLKSEL				GENMASK(15, 14)			 // Source clock for CLK48M
+#define	CGU_CON2_CLK48M_CLKSEL_SHIFT		14
+#define	CGU_CON2_CLK48M_CLKSEL_OSC			0x0
+#define	CGU_CON2_CLK48M_CLKSEL_PHASE4		0x8000
+#define	CGU_CON2_CLK48M_CLKSEL_DISABLE		0xC000
+#define	CGU_CON2_CLKOUT0_EN					BIT(16)					 // Enable CLKOUT0
+#define	CGU_CON2_CLKOUT0_CLKDIV				GENMASK(18, 17)			 // CLKOUT0 divider from the oscillator
+#define	CGU_CON2_CLKOUT0_CLKDIV_SHIFT		17
+#define	CGU_CON2_CLKOUT0_CLKDIV_DIV1		0x0
+#define	CGU_CON2_CLKOUT0_CLKDIV_DIV2		0x20000
+#define	CGU_CON2_CLKOUT0_CLKDIV_DIV4		0x40000
+#define	CGU_CON2_CLKOUT0_CLKDIV_DIV8		0x60000
+#define	CGU_CON2_CLKOUT1_EN					BIT(20)					 // Enable CLKOUT1
+#define	CGU_CON2_CLKOUT1_CLKDIV				GENMASK(22, 21)			 // CLKOUT1 divider from the oscillator
+#define	CGU_CON2_CLKOUT1_CLKDIV_SHIFT		21
+#define	CGU_CON2_CLKOUT1_CLKDIV_DIV1		0x0
+#define	CGU_CON2_CLKOUT1_CLKDIV_DIV2		0x200000
+#define	CGU_CON2_CLKOUT1_CLKDIV_DIV4		0x400000
+#define	CGU_CON2_CLKOUT1_CLKDIV_DIV8		0x600000
+#define	CGU_CON2_CLK32K_EN					BIT(24)					 // Enable external 32 kHz clock output
+#define	CGU_CON2_MS_CLKSEL					GENMASK(29, 28)			 // Source clock for the mixed-signal domain (CLK_MS_O)
+#define	CGU_CON2_MS_CLKSEL_SHIFT			28
+#define	CGU_CON2_MS_CLKSEL_OSC				0x0
+#define	CGU_CON2_MS_CLKSEL_CLK32K			0x10000000
+#define	CGU_CON2_MS_CLKSEL_OSC_DIV_64		0x20000000
+#define	CGU_CON2_MS_CLKSEL_DISABLE			0x30000000
 
-#define	PLL_STAT						MMIO32(PLL_BASE + 0xB0)
-#define	PLL_STAT_LOCK					BIT(13)
+/* PLL Status Register */
+#define	CGU_STAT							MMIO32(CGU_BASE + 0xB0)
+#define	CGU_STAT_LOCK						BIT(13)					 // PLL lock status
 
-#define	PLL_CON3						MMIO32(PLL_BASE + 0xB4)
-#define	PLL_CON3_USB_CLKDIV				GENMASK(25, 24)			 // USB clock divider (divide by 2^n)
-#define	PLL_CON3_USB_CLKDIV_SHIFT		24
-#define	PLL_CON3_PERIPHERAL_CLK_EN		BIT(28)					 // Enable peripheral clocks
+/* Clock Generation Unit Control Register 6 (CGU_CTL6) */
+#define	CGU_CON3							MMIO32(CGU_BASE + 0xB4)
+#define	CGU_CON3_AHB_PER_CLKSEL				GENMASK(1, 0)			 // Source clock for AHB_PER
+#define	CGU_CON3_AHB_PER_CLKSEL_SHIFT		0
+#define	CGU_CON3_AHB_PER_CLKSEL_OSC			0x0
+#define	CGU_CON3_AHB_PER_CLKSEL_CLK32K		0x1
+#define	CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2	0x2
+#define	CGU_CON3_AHB_PER_CLKSEL_DISABLE		0x3
+#define	CGU_CON3_AHB_PER_CLKDIV				GENMASK(5, 4)			 // AHB_PER clock divider; bypassed for CLK32K
+#define	CGU_CON3_AHB_PER_CLKDIV_SHIFT		4
+#define	CGU_CON3_AHB_PER_CLKDIV_DIV1		0x0
+#define	CGU_CON3_AHB_PER_CLKDIV_DIV2		0x10
+#define	CGU_CON3_AHB_PER_CLKDIV_DIV4		0x20
+#define	CGU_CON3_AHB_PER_CLKDIV_DIV8		0x30
+#define	CGU_CON3_MMCI_CLKSEL				GENMASK(9, 8)			 // Source clock for MMCI
+#define	CGU_CON3_MMCI_CLKSEL_SHIFT			8
+#define	CGU_CON3_MMCI_CLKSEL_OSC			0x0
+#define	CGU_CON3_MMCI_CLKSEL_CLK32K			0x100
+#define	CGU_CON3_MMCI_CLKSEL_PHASE4			0x200
+#define	CGU_CON3_MMCI_CLKSEL_DISABLE		0x300
+#define	CGU_CON3_MMCI_CLKDIV				GENMASK(13, 12)			 // MMCI clock divider
+#define	CGU_CON3_MMCI_CLKDIV_SHIFT			12
+#define	CGU_CON3_MMCI_CLKDIV_DIV1			0x0
+#define	CGU_CON3_MMCI_CLKDIV_DIV2			0x1000
+#define	CGU_CON3_MMCI_CLKDIV_DIV4			0x2000
+#define	CGU_CON3_MMCI_CLKDIV_DIV8			0x3000
+#define	CGU_CON3_CLKOUT2_EN					BIT(16)					 // Enable CLKOUT2
+#define	CGU_CON3_CLKOUT2_CLKDIV				GENMASK(21, 20)			 // CLKOUT2 divider from phase 4
+#define	CGU_CON3_CLKOUT2_CLKDIV_SHIFT		20
+#define	CGU_CON3_CLKOUT2_CLKDIV_DIV1		0x0
+#define	CGU_CON3_CLKOUT2_CLKDIV_DIV2		0x100000
+#define	CGU_CON3_CLKOUT2_CLKDIV_DIV4		0x200000
+#define	CGU_CON3_CLKOUT2_CLKDIV_DIV8		0x300000
+#define	CGU_CON3_CLK48M_CLKDIV				GENMASK(25, 24)			 // CLK48M divider
+#define	CGU_CON3_CLK48M_CLKDIV_SHIFT		24
+#define	CGU_CON3_CLK48M_CLKDIV_DIV1			0x0
+#define	CGU_CON3_CLK48M_CLKDIV_DIV2			0x1000000
+#define	CGU_CON3_CLK48M_CLKDIV_DIV4			0x2000000
+#define	CGU_CON3_CLK48M_CLKDIV_DIV8			0x3000000
+#define	CGU_CON3_DMA_CLK_DISABLE			BIT(28)					 // Disable the 104 MHz DMA clock when set
 
-/* Service Routing Control Register */
-#define	PLL_SRC							MMIO32(PLL_BASE + 0xCC)
+/* Service Request Control Register */
+#define	CGU_SRC								MMIO32(CGU_BASE + 0xCC)
 
 
 // SCCU

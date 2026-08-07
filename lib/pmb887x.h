@@ -9,6 +9,8 @@
 #define CPU_OSC_FREQ	26000000
 #endif
 
+#define CPU_CLK32K_FREQ	32768
+
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))

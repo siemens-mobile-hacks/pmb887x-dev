@@ -10,7 +10,7 @@
 #ifdef BOARD_SIEMENS_E71
 static void enable_fm_radio(void) {
 	GPIO_PIN(GPIO_CLK32) = GPIO_OS_ALT1 | GPIO_PS_ALT;
-	PLL_CON2 |= PLL_CON2_CLK32_EN;
+	CGU_CON2 |= CGU_CON2_CLK32K_EN;
 	gpio_init_output(
 		GPIO_A_FM_STANDBY,
 		GPIO_OS_NONE,

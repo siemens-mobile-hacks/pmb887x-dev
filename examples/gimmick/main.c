@@ -122,7 +122,7 @@ int main(void) {
 	wdt_init();
 	stopwatch_init();
 
-	PLL_CON2 &= ~PLL_CON2_CLK32_EN;
+	CGU_CON2 &= ~CGU_CON2_CLK32K_EN;
 
 	// ACC codec
 	/*
@@ -149,7 +149,7 @@ int main(void) {
 	gpio_set(DIF_RESET_PIN, true);
 	stopwatch_msleep(1);
 
-	PLL_CON2 |= PLL_CON2_CLK32_EN;
+	CGU_CON2 |= CGU_CON2_CLK32K_EN;
 
 	printf("REG: %04X = %04X\n", 0x0000, gimmick_read_reg(0x0000));
 	printf("REG: %04X = %04X\n", 0x0014, gimmick_read_reg(0x0014));
