@@ -3,10 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "dsp/gsm.h"
+#include "dsp/gsm-l1/gsm.h"
 
 bool gsm_board_init(void);
-void gsm_board_configure_transceiver_clocks(void);
 void gsm_board_enable_transceiver_power(void);
 uint16_t gsm_board_get_initial_gain_state(void);
 uint16_t gsm_board_calculate_next_gain_state(enum gsm_band band, uint16_t channel_index, uint16_t gain_state, uint16_t raw);

@@ -90,8 +90,9 @@ add_peripheral_test(dsp-l1mon-functional dsp/l1mon-functional.c dsp/dsp-hw.c)
 add_peripheral_test(
 	dsp-gsm-channel-scan
 	dsp/gsm-channel-scan.c
-	dsp/board/siemens-x85.c
-	dsp/board/hd155153np.c
+	dsp/gsm-l1/gsm-l1.c
+	dsp/gsm-l1/board/siemens-x85.c
+	dsp/gsm-l1/board/hd155153np.c
 	dsp/dsp-hw.c
 	eeprom.c
 )

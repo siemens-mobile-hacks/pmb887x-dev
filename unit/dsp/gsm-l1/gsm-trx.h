@@ -14,7 +14,7 @@ void gsm_trx_init(void);
 void gsm_trx_reset_telegram_table(void);
 void gsm_trx_write_telegram_table(uint32_t bank);
 void gsm_trx_configure_monitoring(uint32_t bank, const uint16_t *channel_indices, const uint16_t *gain_states);
-void gsm_trx_configure_fcch(uint32_t bank, uint16_t channel_index, uint16_t gain_state);
+void gsm_trx_configure_acquisition(uint32_t bank, uint16_t channel_index, uint16_t gain_state);
 bool gsm_trx_is_idle(void);
 uint32_t gsm_trx_get_gain_state_range(uint16_t gain_state);
 uint32_t gsm_trx_get_gain_state_step(uint16_t gain_state);

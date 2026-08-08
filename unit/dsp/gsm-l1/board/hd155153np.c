@@ -1,7 +1,7 @@
 #include <pmb887x.h>
 #include <gen/peripheral/rf/HD155153NP.h>
 
-#include "dsp/gsm-trx.h"
+#include "dsp/gsm-l1/gsm-trx.h"
 
 #if defined(BOARD_HAS_RF_HD155153NP)
 
@@ -32,7 +32,7 @@ enum telegram_slot {
 	TELEGRAM_SLOT_RX_CONTROL = 13,
 };
 
-/* Firmware 0801 RF telegram work-table defaults. */
+/* EL71 v45 RF telegram work-table defaults. */
 static const struct trx_telegram INITIAL_TELEGRAMS[GSM_TRX_TELEGRAM_COUNT] = {
 	[0] = { 0x0320, 0x00, 0x00, 0x01 },
 	[1] = { 0x0320, 0x00, 0x00, 0x45 },
@@ -57,9 +57,9 @@ static struct trx_telegram encode_gain_telegram(uint16_t gain_state) {
 	static const uint16_t RANGE_FIELDS[GSM_TRX_GAIN_RANGE_COUNT] = { 0x0600, 0x0400, 0x0000 };
 	uint32_t range = gsm_trx_get_gain_state_range(gain_state);
 	uint32_t step = gsm_trx_get_gain_state_step(gain_state);
-	uint32_t telegram = RANGE_FIELDS[range] | step << HD155153NP_REGISTER_VALUE_SHIFT | HD155153NP_GAIN_CONTROL;
+	uint32_t telegram = RANGE_FIELDS[range] | (step << HD155153NP_REGISTER_VALUE_SHIFT) | HD155153NP_GAIN_CONTROL;
 
-	return (struct trx_telegram) { 0x0310, telegram >> 8, telegram & 0xFF, 0 };
+	return (struct trx_telegram) { 0x0310, (telegram >> 8), (telegram & 0xFF), 0 };
 }
 
 static void write_telegram_slot(uint32_t bank, size_t slot) {
@@ -106,7 +106,7 @@ void gsm_trx_configure_monitoring(uint32_t bank, const uint16_t *channel_indices
 		write_telegram_slot(bank, slot);
 }
 
-void gsm_trx_configure_fcch(uint32_t bank, uint16_t channel_index, uint16_t gain_state) {
+void gsm_trx_configure_acquisition(uint32_t bank, uint16_t channel_index, uint16_t gain_state) {
 	const struct channel_telegram *channel = &CHANNEL_TELEGRAMS[channel_index];
 
 	telegrams[TELEGRAM_SLOT_FC_GAIN] = encode_gain_telegram(gain_state);
@@ -126,7 +126,7 @@ bool gsm_trx_is_idle(void) {
 }
 
 uint32_t gsm_trx_get_gain_state_range(uint16_t gain_state) {
-	return gain_state >> 6 & 0x03;
+	return (gain_state >> 6) & 0x03;
 }
 
 uint32_t gsm_trx_get_gain_state_step(uint16_t gain_state) {
@@ -138,7 +138,7 @@ uint32_t gsm_trx_get_max_gain_step(void) {
 }
 
 uint16_t gsm_trx_encode_gain_state(int32_t residual, uint32_t range, uint32_t step) {
-	return (uint16_t) residual << 8 | range << 6 | step;
+	return ((uint16_t) residual << 8) | (range << 6) | step;
 }
 
 #endif

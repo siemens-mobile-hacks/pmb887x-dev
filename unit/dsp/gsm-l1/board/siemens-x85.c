@@ -2,11 +2,11 @@
 #include <gen/peripheral/pmic/D1094XX.h>
 #include <i2c.h>
 #include <stopwatch.h>
+#include <wdt.h>
 
-#include "dsp/gsm-trx.h"
+#include "dsp/gsm-l1/gsm-trx.h"
 #include "eeprom.h"
 #include "gsm.h"
-#include "test.h"
 
 #if defined(BOARD_PLATFORM_SIEMENS_X85)
 
@@ -15,6 +15,7 @@
 #endif
 
 #define CGU_LOCK_TIMEOUT_MS 20
+#define CGU_TRANSITION_TIMEOUT_MS 20
 #define SYSTEM_FREQUENCY_HZ 52000000
 #define CPU_FREQUENCY_HZ 104000000
 #define CGU_CPU_EBU_CLOCK_MASK (CGU_CON2_EBU_CLKSEL | CGU_CON2_CPU_DIV | CGU_CON2_CPU_DIV_EN)
@@ -131,38 +132,74 @@ static struct receiver_calibration calibration;
 
 static int32_t frequency_correction_hz;
 
+static bool wait_for_flag(volatile uint32_t *reg, uint32_t flag, uint32_t timeout_ms) {
+	stopwatch_t start = stopwatch_get();
+
+	while ((*reg & flag) == 0 && stopwatch_elapsed_ms(start) < timeout_ms)
+		wdt_serve();
+	return (*reg & flag) != 0;
+}
+
 static bool configure_system_clocks(void) {
-	uint32_t cgu_osc = (3 << CGU_OSC_NDIV_SHIFT);
-	uint32_t cgu_con0 = (0x0B << CGU_CON0_PHASE1_CONFIG_SHIFT) |
+	// Configure and lock the 104 MHz PLL.
+	CGU_OSC = (3 << CGU_OSC_NDIV_SHIFT);
+	CGU_CON0 = (0x0B << CGU_CON0_PHASE1_CONFIG_SHIFT) |
 		(0x08 << CGU_CON0_PHASE2_CONFIG_SHIFT) |
 		(0x20 << CGU_CON0_PHASE3_CONFIG_SHIFT) |
 		(0x11 << CGU_CON0_PHASE4_CONFIG_SHIFT);
-
-	/* Firmware 0801 CGU initialization from FUN_a054e2e4. */
-	CGU_OSC = cgu_osc;
-	CGU_CON0 = cgu_con0;
-	CGU_OSC = cgu_osc | CGU_OSC_PLL_POWER_UP;
-	stopwatch_t start = stopwatch_get();
-	while ((CGU_STAT & CGU_STAT_LOCK) == 0 && stopwatch_elapsed_ms(start) < CGU_LOCK_TIMEOUT_MS)
-		test_watchdog_serve();
-	if ((CGU_STAT & CGU_STAT_LOCK) == 0)
+	CGU_OSC |= CGU_OSC_PLL_POWER_UP;
+	if (!wait_for_flag(&CGU_STAT, CGU_STAT_LOCK, CGU_LOCK_TIMEOUT_MS))
 		return false;
-	CGU_OSC = cgu_osc | CGU_OSC_PLL_POWER_UP | CGU_OSC_PLL_BYPASS_N;
+	CGU_OSC |= CGU_OSC_PLL_BYPASS_N;
 
-	/* USART TX request means that TXB is empty, not that the frame has left the shifter. */
+	// Preserve the USART baud rate before switching fSYS to 52 MHz.
 	stopwatch_usleep_wd(1000);
 	USART_CLC(USART0) = (2 << MOD_CLC_RMC_SHIFT);
-	CGU_CON1 = (CGU_CON1 & ~CGU_CON1_AHB_CLKSEL) | CGU_CON1_AHB_CLKSEL_PLL;
-	CGU_CON2 = (CGU_CON2 & ~CGU_CPU_EBU_CLOCK_MASK) | CGU_CON2_EBU_CLKSEL_AHB;
-	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_CLK48M_CLKSEL) | CGU_CON2_CLK48M_CLKSEL_DISABLE;
-	CGU_CON3 = (CGU_CON3 & ~(CGU_CON3_MMCI_CLKSEL | CGU_CON3_MMCI_CLKDIV)) |
-		CGU_CON3_MMCI_CLKSEL_DISABLE;
-	CGU_CON3 = (CGU_CON3 & ~(CGU_CON3_AHB_PER_CLKSEL | CGU_CON3_AHB_PER_CLKDIV)) |
-		CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2;
-	CGU_CON1 = (CGU_CON1 & ~CGU_CON1_FPI1_CLKSEL) | CGU_CON1_FPI1_CLKSEL_PLL_DIV_2;
-	CGU_CON1 = (CGU_CON1 & ~CGU_CON1_FSYS_CLKSEL) | CGU_CON1_FSYS_CLKSEL_PLL;
-	CGU_CON3 |= CGU_CON3_DMA_CLK_DISABLE;
+
+	// Configure the FPI1, fSYS, and initial AHB clock sources.
+	CGU_CON1 = CGU_CON1_FPI1_CLKSEL_PLL_DIV_2;
+	CGU_CON1 |= CGU_CON1_FSYS_CLKSEL_PLL;
+	CGU_CON1 |= CGU_CON1_AHB_CLKSEL_PLL;
+
+	// Configure the initial EBU source and auxiliary clocks.
+	CGU_CON2 = CGU_CON2_EBU_CLKSEL_AHB;
 	CGU_CON2 |= CGU_CON2_AFC32K_EN;
+	CGU_CON2 |= CGU_CON2_CLK48M_CLKSEL_DISABLE;
+
+	// Configure the AHB peripheral source and disable unused clocks.
+	CGU_CON3 = CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2;
+	CGU_CON3 |= CGU_CON3_MMCI_CLKSEL_DISABLE;
+	CGU_CON3 |= CGU_CON3_DMA_CLK_DISABLE;
+
+	// Start the 208 MHz phase.
+	CGU_OSC |= (CGU_OSC_PHASE2_POWER_UP | CGU_OSC_PHASE2_BYPASS_N);
+
+	// Switch EBU to the PLL and divide the phase to the 104 MHz CPU clock.
+	CGU_CON2 &= ~CGU_CPU_EBU_CLOCK_MASK;
+	CGU_CON2 |= CGU_CON2_EBU_CLKSEL_PLL;
+	CGU_CON2 |= ((1 << CGU_CON2_CPU_DIV_SHIFT) | CGU_CON2_CPU_DIV_EN);
+
+	// Prepare the EBU for the AHB source transition.
+	SCU_EBUCLC2 |= (1 << SCU_EBUCLC2_FLAG1_SHIFT);
+	if (!wait_for_flag(&SCU_EBUCLC2, SCU_EBUCLC2_READY, CGU_TRANSITION_TIMEOUT_MS))
+		return false;
+
+	// Switch AHB to the 208 MHz phase and wait for the EBU handshake.
+	CGU_CON1 = (CGU_CON1 & ~CGU_CON1_AHB_CLKSEL) | CGU_CON1_AHB_CLKSEL_PHASE2;
+	SCU_EBUCLC1 |= (1 << SCU_EBUCLC1_FLAG1_SHIFT);
+	if (!wait_for_flag(&SCU_EBUCLC1, SCU_EBUCLC1_READY, CGU_TRANSITION_TIMEOUT_MS))
+		return false;
+
+	// Finalize the EBU clock transition.
+	EBU_CON &= ~EBU_CON_SDCMSEL;
+	SCU_EBUCLC1 = 0;
+
+	// Start the DSP phase and configure the DSP clock.
+	CGU_OSC |= (CGU_OSC_PHASE1_POWER_UP | CGU_OSC_PHASE1_BYPASS_N);
+	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_DSP_CLKSEL) | CGU_CON2_DSP_CLKSEL_PHASE1;
+
+	// Configure the mixed-signal clock.
+	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_MS_CLKSEL) | CGU_CON2_MS_CLKSEL_OSC_DIV_64;
 
 	return cpu_get_sys_freq() == SYSTEM_FREQUENCY_HZ && cpu_get_freq() == CPU_FREQUENCY_HZ;
 }
@@ -186,7 +223,6 @@ static void enable_transceiver_power_rails(void) {
 
 static void enable_afc_reference(void) {
 	AFC_CLC = (1 << MOD_CLC_RMC_SHIFT);
-	/* Firmware 0801 initializes AFCVAL to 0x4800 before applying EELITE block 306. */
 	AFC_AFCVAL = AFC_STARTUP_VALUE;
 	stopwatch_usleep_wd(RF_POWER_SETTLE_US);
 }
@@ -518,32 +554,6 @@ static void enable_baseband_analog_reference(void) {
 	stopwatch_usleep_wd(150);
 }
 
-static void request_ebu_clock_transition(volatile uint32_t *control, uint32_t request_mask, uint32_t ready_mask) {
-	*control |= request_mask;
-	while ((*control & ready_mask) == 0)
-		;
-}
-
-static void configure_l1_clocks(void) {
-	/* Firmware 0801 L1CTRL clock mode 3 from FUN_a054e734. */
-	uint32_t cpu_clock = CGU_CON2_EBU_CLKSEL_PLL | (1 << CGU_CON2_CPU_DIV_SHIFT) | CGU_CON2_CPU_DIV_EN;
-	CGU_CON2 = (CGU_CON2 & ~CGU_CPU_EBU_CLOCK_MASK) | cpu_clock;
-
-	/* Firmware 0801 low-RAM clock mode from PWR_SetLowRamClock. */
-	CGU_OSC |= CGU_OSC_PHASE2_POWER_UP | CGU_OSC_PHASE2_BYPASS_N;
-	cpu_clock = CGU_CON2_EBU_CLKSEL_PLL | (1 << CGU_CON2_CPU_DIV_SHIFT);
-	CGU_CON2 = (CGU_CON2 & ~CGU_CPU_EBU_CLOCK_MASK) | cpu_clock;
-	request_ebu_clock_transition(&SCU_EBUCLC2, (1 << SCU_EBUCLC2_FLAG1_SHIFT), SCU_EBUCLC2_READY);
-	CGU_CON1 = (CGU_CON1 & ~CGU_CON1_AHB_CLKSEL) | CGU_CON1_AHB_CLKSEL_PHASE2;
-	request_ebu_clock_transition(&SCU_EBUCLC1, (1 << SCU_EBUCLC1_FLAG1_SHIFT), SCU_EBUCLC1_READY);
-	EBU_CON &= ~EBU_CON_SDCMSEL;
-	SCU_EBUCLC1 = 0;
-
-	/* Firmware 0801 DSP clock mode from FUN_a054e660. */
-	CGU_OSC |= CGU_OSC_PHASE1_POWER_UP | CGU_OSC_PHASE1_BYPASS_N;
-	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_DSP_CLKSEL) | CGU_CON2_DSP_CLKSEL_PHASE1;
-}
-
 static int32_t decode_monitor_value(uint16_t raw) {
 	int32_t monitor = (int16_t) raw;
 
@@ -589,21 +599,17 @@ bool gsm_board_init(void) {
 	return true;
 }
 
-void gsm_board_configure_transceiver_clocks(void) {
-	configure_l1_clocks();
-}
-
 void gsm_board_enable_transceiver_power(void) {
 	enable_transceiver_power_rails();
 }
 
 uint16_t gsm_board_get_initial_gain_state(void) {
-	/* Firmware 0801 algorithm-3 startup state: range 1, step 15, zero residual. */
+	/* EL71 v45 algorithm-3 startup state: range 1, step 15, zero residual. */
 	return AGC_INITIAL_GAIN_STATE;
 }
 
 uint16_t gsm_board_calculate_next_gain_state(enum gsm_band band, uint16_t channel_index, uint16_t gain_state, uint16_t raw) {
-	/* Firmware 0801 gsm_convert_monitor_and_update_gain at 0xA0B220FE. */
+	/* EL71 v45 gsm_convert_monitor_and_update_gain at 0xA0B220FE. */
 	const struct band_calibration *band_calibration = &calibration.bands[band];
 	uint32_t range = gsm_trx_get_gain_state_range(gain_state);
 	uint32_t step = gsm_trx_get_gain_state_step(gain_state);
