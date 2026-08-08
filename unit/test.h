@@ -15,6 +15,7 @@ bool test_module_id(const char *name, uint32_t expected, uint32_t actual);
 bool test_module_clock(const char *name, uint32_t clc);
 bool test_amba_part_id(const char *name, uint16_t expected, uint32_t id0, uint32_t id1);
 bool test_eq_memory(const char *name, const void *expected, const volatile void *actual, size_t size);
+bool test_wait_for_flag(const volatile uint32_t *reg, uint32_t flag, uint32_t timeout_ms);
 
 bool test_u32_in_interval(uint32_t value, uint32_t first, uint32_t last);
 bool test_is_qemu(void);
