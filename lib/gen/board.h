@@ -37,6 +37,10 @@
 #include "board_siemens_cl61.h" // IWYU pragma: export
 #endif
 
+#ifdef BOARD_SIEMENS_CL61A
+#include "board_siemens_cl61a.h" // IWYU pragma: export
+#endif
+
 #ifdef BOARD_SIEMENS_CX65
 #include "board_siemens_cx65.h" // IWYU pragma: export
 #endif
