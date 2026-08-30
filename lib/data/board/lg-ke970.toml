@@ -2,8 +2,8 @@
 vendor = "LG"
 model = "KE970"
 cpu.type = "pmb8876"
-cpu.rev = 0x10 # newer units may have 0x11, LG firmware supports both even in V10a
-# cpu.rev = 0x11
+# cpu.rev = 0x10 # newer units may have 0x11, LG firmware supports both even in V10a
+cpu.rev = 0x11
 cpu.uid0 = 0x03157463
 cpu.uid1 = 0x18000283
 cpu.uid2 = 0x00090D0C
@@ -81,13 +81,20 @@ DSPIN0 = "BT_RESET"
 DSPIN1 = "SIM_EN"
 PIN110 = "RPWRON" # remote poweron
 PIN111 = "SPK_RCV_SEL"
-DIF_CS2 = "FM_BBP_SEL" # GPIO96: audio amp input select (low: baseband/EPPA, high: FM)
+DIF_CS2 = "LCD_IF_MODE"
+DIF_RD = "HOOK_DETECT"
 USART1_RTS = "HSO_SEL"
 USART1_CTS = "AUDIO_AMP_EN"
-T_OUT12 = "AU_PWR_EN"
+T_OUT12 = "AF_PWR_EN"
+T_OUT8 = "JACK_DETECT"
+CLKOUT0 = "SLIDE_OPEN"
+PIN109 = "SCROLL_EN"
 
 [gpio.inputs]
 RPWRON = 1 # remote power on (skips power button hold requirement)
+SLIDE_OPEN = 1
+SCROLL_EN = 1
+JACK_DETECT = 1 # high = no headphones connected
 
 [keyboard]
 # [KP_IN, KP_OUT, ..., KP_OUT]
@@ -122,6 +129,8 @@ VOLUME_DOWN	= [3, 3]	# KB_DOWN
 
 [keyboard.gpio]
 END_CALL = [{ target = "PMIC:ON" }]
+# NAV_UP = [{ target = "SCROLL_KEY_A" }]
+# NAV_DOWN = [{ target = "SCROLL_KEY_B" }]
 
 [startup.ONLINE]
 duration = 5

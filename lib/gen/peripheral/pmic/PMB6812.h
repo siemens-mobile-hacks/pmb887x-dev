@@ -9,6 +9,7 @@
 /* Reset and shutdown control */
 #define	PMB6812_RESCTRL								0x01
 #define	PMB6812_RESCTRL_RES							BIT(0)			 // Trigger internal and external reset
+#define	PMB6812_RESCTRL_UNLOCK						BIT(1)			 // Undocumented
 #define	PMB6812_RESCTRL_ALLOFF						BIT(6)			 // Shut down all regulators except LRTC
 #define	PMB6812_RESCTRL_RESDN						BIT(7)			 // Generate external reset during power-down
 
@@ -34,8 +35,11 @@
 #define	PMB6812_PWCTRL2_VSEL_SHIFT					0
 #define	PMB6812_PWCTRL2_VSEL_1V5					0x0
 #define	PMB6812_PWCTRL2_VSEL_1V8					0x1
-#define	PMB6812_PWCTRL2_VSEL_TEST					0x2
+#define	PMB6812_PWCTRL2_VSEL_1V86					0x2
 #define	PMB6812_PWCTRL2_VSEL_1V92					0x3
+#define	PMB6812_PWCTRL2_IMAXSD						BIT(2)
+#define	PMB6812_PWCTRL2_IMAXSD_650MA				0x0
+#define	PMB6812_PWCTRL2_IMAXSD_850MA				0x4
 #define	PMB6812_PWCTRL2_LPEN						BIT(4)			 // Enable PFM low-power mode
 #define	PMB6812_PWCTRL2_ASPWM						BIT(5)			 // Enable automatic switchback to PWM
 #define	PMB6812_PWCTRL2_SDBBMD						GENMASK(7, 6)	 // SDBB operating mode
@@ -89,11 +93,13 @@
 #define	PMB6812_INTCTRL2_DEBUG_CURRENT				0x0
 #define	PMB6812_INTCTRL2_DEBUG_LATCHED				0x1
 #define	PMB6812_INTCTRL2_EION						BIT(1)			 // Interrupt when ON pin level changes
+#define	PMB6812_INTCTRL2_EIVBH						BIT(2)			 // Interrupt when VBUS crosses VBUSHmax
+#define	PMB6812_INTCTRL2_EIVBOUT					BIT(3)			 // Interrupt when VBUS crosses VBUSout_min
 #define	PMB6812_INTCTRL2_OTSEN						BIT(4)			 // Enable overtemperature shutdown
 #define	PMB6812_INTCTRL2_RAGOTW						BIT(6)			 // Reduce audio gain on overtemperature warning
 #define	PMB6812_INTCTRL2_EIOTW						BIT(7)			 // Interrupt when overtemperature-warning state changes
 
-/* LRF2 regulator control */
+/* LRF2 and LRF3 regulator control */
 #define	PMB6812_PWCTRL3								0x07
 #define	PMB6812_PWCTRL3_LRF2MD						GENMASK(1, 0)	 // LRF2 operating mode
 #define	PMB6812_PWCTRL3_LRF2MD_SHIFT				0
@@ -102,8 +108,17 @@
 #define	PMB6812_PWCTRL3_LRF2MD_FORCED_OFF			0x2
 #define	PMB6812_PWCTRL3_LRF2MD_ON					0x3
 #define	PMB6812_PWCTRL3_LRF2V						BIT(2)			 // LRF2 output voltage
-#define	PMB6812_PWCTRL3_LRF2V_2V7					0x0
-#define	PMB6812_PWCTRL3_LRF2V_2V5					0x4
+#define	PMB6812_PWCTRL3_LRF2V_2V5					0x0
+#define	PMB6812_PWCTRL3_LRF2V_2V7					0x4
+#define	PMB6812_PWCTRL3_LRF3MD						GENMASK(4, 3)	 // LRF3 operating mode
+#define	PMB6812_PWCTRL3_LRF3MD_SHIFT				3
+#define	PMB6812_PWCTRL3_LRF3MD_OFF					0x0
+#define	PMB6812_PWCTRL3_LRF3MD_VCXO					0x8
+#define	PMB6812_PWCTRL3_LRF3MD_VRF3					0x10
+#define	PMB6812_PWCTRL3_LRF3MD_ON					0x18
+#define	PMB6812_PWCTRL3_LRF3V						BIT(5)			 // LRF3 output voltage
+#define	PMB6812_PWCTRL3_LRF3V_2V65					0x0
+#define	PMB6812_PWCTRL3_LRF3V_1V8					0x20
 
 /* Charger current control */
 #define	PMB6812_CHCTRL2								0x08
@@ -118,22 +133,33 @@
 #define	PMB6812_CHCTRL2_CHCLIM_1000MA				0x6
 #define	PMB6812_CHCTRL2_CHCLIM_1100MA				0x7
 #define	PMB6812_CHCTRL2_PREOFF						BIT(4)			 // Disable precharging
-#define	PMB6812_CHCTRL2_RVM							GENMASK(7, 5)	 // Charging-current measurement reference
+#define	PMB6812_CHCTRL2_RVM							GENMASK(7, 5)	 // Charge-current reference voltage multiplier
 #define	PMB6812_CHCTRL2_RVM_SHIFT					5
-#define	PMB6812_CHCTRL2_RVM_0MA						0x0
-#define	PMB6812_CHCTRL2_RVM_100MA					0x20
-#define	PMB6812_CHCTRL2_RVM_200MA					0x40
-#define	PMB6812_CHCTRL2_RVM_300MA					0x60
-#define	PMB6812_CHCTRL2_RVM_400MA					0x80
-#define	PMB6812_CHCTRL2_RVM_500MA					0xA0
-#define	PMB6812_CHCTRL2_RVM_600MA					0xC0
-#define	PMB6812_CHCTRL2_RVM_700MA					0xE0
+#define	PMB6812_CHCTRL2_RVM_X1						0x0
+#define	PMB6812_CHCTRL2_RVM_X2						0x20
+#define	PMB6812_CHCTRL2_RVM_X3						0x40
+#define	PMB6812_CHCTRL2_RVM_X4						0x60
+#define	PMB6812_CHCTRL2_RVM_X5						0x80
+#define	PMB6812_CHCTRL2_RVM_X6						0xA0
+#define	PMB6812_CHCTRL2_RVM_X7						0xC0
+#define	PMB6812_CHCTRL2_RVM_X8						0xE0
+
+/* Test Register 1 */
+#define	PMB6812_TEST1								0x09
+#define	PMB6812_TEST1_BGTVAL						GENMASK(3, 0)	 // Band gap trim value
+#define	PMB6812_TEST1_BGTVAL_SHIFT					0
+#define	PMB6812_TEST1_BGTRIM						BIT(5)			 // Enable band gap trimming
+#define	PMB6812_TEST1_OTWSEN						BIT(6)			 // OTW sensor - 0: 120 dgr C, 1: 0 dgr C
+#define	PMB6812_TEST1_OTSSEN						BIT(7)			 // OTS sensor - 0: 140 dgr C, 1: 0 dgr C
 
 /* Main LED driver control */
 #define	PMB6812_LEDCTRL1							0x0A
-#define	PMB6812_LEDCTRL1_LEDON						BIT(0)			 // Enable main LED driver
-#define	PMB6812_LEDCTRL1_LEDPWM						GENMASK(6, 1)	 // LED PWM duty-cycle code from 0 to 63
+#define	PMB6812_LEDCTRL1_LEDON						BIT(0)			 // Enable LED backlight
+#define	PMB6812_LEDCTRL1_LEDPWM						GENMASK(6, 1)	 // LED current multiplier code (L1..L6)
 #define	PMB6812_LEDCTRL1_LEDPWM_SHIFT				1
+#define	PMB6812_LEDCTRL1_PWMFREQ					BIT(7)			 // LED PWM frequency
+#define	PMB6812_LEDCTRL1_PWMFREQ_60HZ				0x0
+#define	PMB6812_LEDCTRL1_PWMFREQ_16KHZ				0x80
 
 /* Vibrator driver control */
 #define	PMB6812_DRVCTRL								0x0B
@@ -142,8 +168,21 @@
 
 /* USB control */
 #define	PMB6812_USBCTRL								0x0C
-#define	PMB6812_USBCTRL_VALUE						GENMASK(7, 0)	 // Raw PMB6812 USB control value
-#define	PMB6812_USBCTRL_VALUE_SHIFT					0
+#define	PMB6812_USBCTRL_VBUS						BIT(0)			 // Enable VBUS voltage output
+#define	PMB6812_USBCTRL_LUSBMD						GENMASK(2, 1)	 // LUSB regulator mode
+#define	PMB6812_USBCTRL_LUSBMD_SHIFT				1
+#define	PMB6812_USBCTRL_LUSBMD_OFF					0x0
+#define	PMB6812_USBCTRL_LUSBMD_STANDBY_VCXO			0x2
+#define	PMB6812_USBCTRL_LUSBMD_STANDBY				0x4
+#define	PMB6812_USBCTRL_LUSBMD_ON					0x6
+#define	PMB6812_USBCTRL_PULLUP						GENMASK(4, 3)	 // D+ pull resistor mode
+#define	PMB6812_USBCTRL_PULLUP_SHIFT				3
+#define	PMB6812_USBCTRL_PULLUP_NC					0x0
+#define	PMB6812_USBCTRL_PULLUP_PULLUP				0x8
+#define	PMB6812_USBCTRL_PULLUP_PULLDOWN				0x10
+#define	PMB6812_USBCTRL_COMP2						BIT(5)			 // Enable 2.0 V VBUS comparator
+#define	PMB6812_USBCTRL_COMP4						BIT(6)			 // Enable 4.4 V VBUS comparator
+#define	PMB6812_USBCTRL_DISCH						BIT(7)			 // Discharge VBUS via 700 ohm
 
 /* Audio amplifier control */
 #define	PMB6812_AUDCTRL								0x0D
@@ -154,8 +193,15 @@
 #define	PMB6812_AUDCTRL_AUDGAIN_MINUS_6DB			0x0
 #define	PMB6812_AUDCTRL_AUDGAIN_MINUS_1_2DB			0x4
 #define	PMB6812_AUDCTRL_AUDGAIN_PLUS_2_7DB			0x8
-#define	PMB6812_AUDCTRL_AUDGAIN_PLUS_7_6DB			0xC
+#define	PMB6812_AUDCTRL_AUDGAIN_PLUS_6DB			0xC
 #define	PMB6812_AUDCTRL_TRISTATE					BIT(4)			 // Make audio output high-impedance while powered down
+#define	PMB6812_AUDCTRL_AUDBST						BIT(5)			 // Enable audio boost mode
+#define	PMB6812_AUDCTRL_AUDCM						GENMASK(7, 6)	 // Audio amplifier voltage
+#define	PMB6812_AUDCTRL_AUDCM_SHIFT					6
+#define	PMB6812_AUDCTRL_AUDCM_1550MV				0x0
+#define	PMB6812_AUDCTRL_AUDCM_1650MV				0x40
+#define	PMB6812_AUDCTRL_AUDCM_1800MV				0x80
+#define	PMB6812_AUDCTRL_AUDCM_1950MV				0xC0
 
 /* LRFC and LRF1 regulator control */
 #define	PMB6812_PWCTRL4								0x0E
@@ -163,14 +209,43 @@
 #define	PMB6812_PWCTRL4_LRF1MD_SHIFT				2
 #define	PMB6812_PWCTRL4_LRF1MD_OFF					0x0
 #define	PMB6812_PWCTRL4_LRF1MD_VCXO					0x4
-#define	PMB6812_PWCTRL4_LRF1MD_FORCED_OFF			0x8
+#define	PMB6812_PWCTRL4_LRF1MD_VRF3					0x8
 #define	PMB6812_PWCTRL4_LRF1MD_ON					0xC
+#define	PMB6812_PWCTRL4_LRF1V						GENMASK(5, 4)	 // LRF1 output voltage
+#define	PMB6812_PWCTRL4_LRF1V_SHIFT					4
+#define	PMB6812_PWCTRL4_LRF1V_2V85					0x0
+#define	PMB6812_PWCTRL4_LRF1V_2V7					0x10
+#define	PMB6812_PWCTRL4_LRF1V_2V5					0x20
+#define	PMB6812_PWCTRL4_LRF1V_RESERVED				0x30
 #define	PMB6812_PWCTRL4_LRFCMD						GENMASK(7, 6)	 // LRFC operating mode
 #define	PMB6812_PWCTRL4_LRFCMD_SHIFT				6
 #define	PMB6812_PWCTRL4_LRFCMD_OFF					0x0
 #define	PMB6812_PWCTRL4_LRFCMD_VCXO					0x40
-#define	PMB6812_PWCTRL4_LRFCMD_FORCED_OFF			0x80
+#define	PMB6812_PWCTRL4_LRFCMD_VRF3					0x80
 #define	PMB6812_PWCTRL4_LRFCMD_ON					0xC0
+
+/* Test Register 2 */
+#define	PMB6812_TEST2								0x0F
+#define	PMB6812_TEST2_DISCAD						BIT(0)			 // Enable current sense comparator
+#define	PMB6812_TEST2_RDS_ON_EN						BIT(1)			 // Enable RDS test mode
+#define	PMB6812_TEST2_RDS_ON_SEL					BIT(2)			 // Select RDS test mode MOS type
+#define	PMB6812_TEST2_RDS_ON_SEL_PMOS				0x0
+#define	PMB6812_TEST2_RDS_ON_SEL_NMOS				0x4
+#define	PMB6812_TEST2_LEAKAGE						BIT(3)			 // Enable leakage test mode
+#define	PMB6812_TEST2_PFMTEST						BIT(4)			 // Enable PFM test mode
+#define	PMB6812_TEST2_BANDGAP						BIT(5)			 // Bandgap value
+#define	PMB6812_TEST2_BANDGAP_R70K					0x0
+#define	PMB6812_TEST2_BANDGAP_R7K					0x20
+#define	PMB6812_TEST2_OSCOFF						BIT(6)			 // Oscillator ON/OFF
+#define	PMB6812_TEST2_USBPROT						BIT(7)			 // Enable USB overvoltage protection
+
+/* Test Register 3 */
+#define	PMB6812_TEST3								0x10
+#define	PMB6812_TEST3_LDDIS							BIT(0)			 // Enable artificial load
+#define	PMB6812_TEST3_VCHMAXCAL						GENMASK(5, 1)	 // VCHmax trim value
+#define	PMB6812_TEST3_VCHMAXCAL_SHIFT				1
+#define	PMB6812_TEST3_CHALEN						BIT(6)			 // VCHmax trimming enabled
+#define	PMB6812_TEST3_OSCOFF						BIT(7)			 // Oscillator ON/OFF
 
 /* LSIM and LSIM2 regulator control */
 #define	PMB6812_PWCTRL5								0x11
@@ -205,7 +280,8 @@
 #define	PMB6812_PWCTRL6_LMMCMD_VCXO_STANDBY			0x1
 #define	PMB6812_PWCTRL6_LMMCMD_STANDBY				0x2
 #define	PMB6812_PWCTRL6_LMMCMD_ON					0x3
-#define	PMB6812_PWCTRL6_LMMCV						BIT(2)			 // LMMC output voltage
+#define	PMB6812_PWCTRL6_LMMCV						GENMASK(3, 2)	 // LMMC output voltage
+#define	PMB6812_PWCTRL6_LMMCV_SHIFT					2
 #define	PMB6812_PWCTRL6_LMMCV_1V8					0x0
 #define	PMB6812_PWCTRL6_LMMCV_2V85					0x4
 
@@ -224,6 +300,11 @@
 #define	PMB6812_LEDCTRL2_SLED1ON					BIT(6)			 // Enable secondary LED driver 1
 #define	PMB6812_LEDCTRL2_SLED2ON					BIT(7)			 // Enable secondary LED driver 2
 
+/* Test Register 4 */
+#define	PMB6812_TEST4								0x14
+#define	PMB6812_TEST4_PROGV							GENMASK(3, 0)	 // Programming voltage
+#define	PMB6812_TEST4_PROGV_SHIFT					0
+
 /* First general error flags */
 #define	PMB6812_GEF1								0x80
 #define	PMB6812_GEF1_LINT							BIT(0)			 // LINT current limit exceeded
@@ -231,6 +312,8 @@
 #define	PMB6812_GEF1_LRF2							BIT(2)			 // LRF2 current limit exceeded
 #define	PMB6812_GEF1_LRF1							BIT(3)			 // LRF1 current limit exceeded
 #define	PMB6812_GEF1_LRFC							BIT(4)			 // LRFC current limit exceeded
+#define	PMB6812_GEF1_LRF3							BIT(5)			 // LRF3 current limit exceeded
+#define	PMB6812_GEF1_LUSB							BIT(6)			 // LUSB current limit exceeded
 
 /* Interrupt source flags */
 #define	PMB6812_ISF									0x81
@@ -239,6 +322,8 @@
 #define	PMB6812_ISF_SPWM							BIT(2)			 // Automatic switchback from PFM to PWM occurred
 #define	PMB6812_ISF_LSIM							BIT(3)			 // LSIM out of regulation
 #define	PMB6812_ISF_LMMC							BIT(4)			 // LMMC out of regulation
+#define	PMB6812_ISF_VBH								BIT(5)			 // VBUS above VBUSHmax
+#define	PMB6812_ISF_BVOUT							BIT(6)			 // VBUS below VBUSout_min
 #define	PMB6812_ISF_OTW								BIT(7)			 // Overtemperature warning
 
 /* Charger status and PMIC identification */

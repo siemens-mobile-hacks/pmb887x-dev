@@ -222,11 +222,12 @@ i2c_v2_result_t i2c_v2_transfer_bytes_running(uint8_t address, const uint8_t *tx
 	if (i2c_v2_state.reading) {
 		I2C_MRPSCTRL = size;
 		I2C_TPSCTRL = 1;
+		if ((I2C_FIFOCFG & I2C_FIFOCFG_TXFC) == 0)
+			write_fifo();
 	} else {
 		I2C_TPSCTRL = size + 1;
-	}
-	if ((I2C_FIFOCFG & I2C_FIFOCFG_TXFC) == 0)
 		write_fifo();
+	}
 
 	stopwatch_t start = stopwatch_get();
 	while (i2c_v2_state.result == I2C_V2_PENDING && stopwatch_elapsed_ms(start) < I2C_TIMEOUT_MS)
@@ -247,12 +248,76 @@ bool i2c_v2_transfer(uint8_t address, const uint8_t *tx, uint8_t *rx, uint32_t s
 }
 
 i2c_v2_result_t i2c_v2_smbus_read(uint8_t address, uint8_t reg, uint8_t *data, uint32_t size) {
-	i2c_v2_result_t result = i2c_v2_transfer_bytes(address, &reg, NULL, 1);
+	uint32_t saved_addrcfg = I2C_ADDRCFG;
 
-	if (result != I2C_V2_DONE)
-		return result;
+	I2C_RUNCTRL = 0;
+	I2C_ADDRCFG = I2C_ADDRCFG_MnS;
+	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
+	I2C_ERRIRQSC = I2C_ERROR_CLEAR;
+	I2C_PIRQSC = I2C_PROTOCOL_CLEAR;
 
-	return i2c_v2_transfer_bytes(address, NULL, data, size);
+	I2C_TPSCTRL = 2;
+	I2C_TXD = ((uint32_t) reg << 8) | (uint32_t) (address << 1);
+	stopwatch_t start = stopwatch_get();
+	while (!(I2C_PIRQSS & (I2C_PIRQSS_TX_END | I2C_PIRQSS_NACK)) &&
+		stopwatch_elapsed_ms(start) < I2C_TIMEOUT_MS)
+		wdt_serve();
+	i2c_v2_result_t result = (I2C_PIRQSS & I2C_PIRQSS_NACK) != 0 ? I2C_V2_NACK : I2C_V2_DONE;
+	I2C_PIRQSC = I2C_PROTOCOL_CLEAR;
+
+	uint8_t *dst = data;
+	uint32_t remaining = size;
+	while (result == I2C_V2_DONE && remaining > 0) {
+		uint32_t chunk = remaining < 4 ? remaining : 4;
+
+		I2C_TPSCTRL = 1;
+		I2C_MRPSCTRL = chunk;
+		I2C_TXD = (uint32_t) (address << 1) | 1;   // repeated START into the read
+
+		start = stopwatch_get();
+		while ((I2C_PIRQSS & (I2C_PIRQSS_RX | I2C_PIRQSS_TX_END)) != (I2C_PIRQSS_RX | I2C_PIRQSS_TX_END) &&
+			(I2C_PIRQSS & I2C_PIRQSS_NACK) == 0 &&
+			stopwatch_elapsed_ms(start) < I2C_TIMEOUT_MS)
+			wdt_serve();
+
+		start = stopwatch_get();
+		while ((I2C_FFSSTAT & I2C_FFSSTAT_FFS) == 0 && (I2C_PIRQSS & I2C_PIRQSS_NACK) == 0 &&
+			stopwatch_elapsed_ms(start) < I2C_TIMEOUT_MS)
+			wdt_serve();
+
+		I2C_ENDDCTRL = I2C_ENDDCTRL_SETEND;
+		start = stopwatch_get();
+		while (!(I2C_PIRQSS & (I2C_PIRQSS_TX_END | I2C_PIRQSS_NACK)) &&
+			stopwatch_elapsed_ms(start) < I2C_TIMEOUT_MS)
+			wdt_serve();
+
+		if ((I2C_PIRQSS & I2C_PIRQSS_NACK) != 0) {
+			result = I2C_V2_NACK;
+			break;
+		}
+
+		uint32_t received = I2C_RPSSTAT & 0xFF;
+		uint32_t word = I2C_RXD;
+		if (received == 0) {
+			result = I2C_V2_ERROR;
+			break;
+		}
+		if (received > chunk)
+			received = chunk;
+		for (uint32_t i = 0; i < received && remaining > 0; i++) {
+			*dst++ = (uint8_t) (word >> (8 * i));
+			remaining--;
+		}
+		I2C_PIRQSC = I2C_PROTOCOL_CLEAR;
+	}
+
+	I2C_PIRQSC = I2C_PROTOCOL_CLEAR;
+	I2C_ERRIRQSC = I2C_ERROR_CLEAR;
+	I2C_RUNCTRL = 0;
+	I2C_ADDRCFG = saved_addrcfg;
+	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
+
+	return result;
 }
 
 i2c_v2_result_t i2c_v2_smbus_write(uint8_t address, uint8_t reg, uint8_t value) {
@@ -261,8 +326,27 @@ i2c_v2_result_t i2c_v2_smbus_write(uint8_t address, uint8_t reg, uint8_t value) 
 	return i2c_v2_transfer_bytes(address, data, NULL, sizeof(data));
 }
 
+static uint8_t i2c_v2_pec(const uint8_t *data, uint32_t size) {
+	uint8_t crc = 0;
+
+	for (uint32_t i = 0; i < size; i++) {
+		crc ^= data[i];
+		for (int j = 0; j < 8; j++)
+			crc = (crc & 0x80) ? (crc << 1) ^ 0x07 : (crc << 1);
+	}
+
+	return crc;
+}
+
+i2c_v2_result_t i2c_v2_smbus_write_pec(uint8_t address, uint8_t reg, uint8_t value) {
+	uint8_t crc_data[] = {(uint8_t) (address << 1), reg, value};
+	uint8_t data[] = {reg, value, i2c_v2_pec(crc_data, sizeof(crc_data))};
+
+	return i2c_v2_transfer_bytes(address, data, NULL, sizeof(data));
+}
+
 void i2c_v2_init(void) {
-	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	I2C_CLC = 0x10A << MOD_CLC_RMC_SHIFT;
 
 	GPIO_PIN(GPIO_I2C_SCL) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
 	GPIO_PIN(GPIO_I2C_SDA) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
@@ -270,10 +354,9 @@ void i2c_v2_init(void) {
 	I2C_RUNCTRL = 0;
 	I2C_ADDRCFG = I2C_ADDRCFG_MnS | I2C_ADDRCFG_SONA | I2C_ADDRCFG_SOPE;
 	I2C_FIFOCFG = (
-		I2C_FIFOCFG_RXBS_4_WORD | I2C_FIFOCFG_TXBS_4_WORD | I2C_FIFOCFG_RXFC |
-		I2C_FIFOCFG_TXFC
+		I2C_FIFOCFG_RXBS_1_WORD | I2C_FIFOCFG_TXBS_1_WORD | I2C_FIFOCFG_RXFA_1 | I2C_FIFOCFG_RXFC
 	);
-	I2C_FDIVCFG = (0x3D << I2C_FDIVCFG_DEC_SHIFT) | (4 << I2C_FDIVCFG_INC_SHIFT);
+	I2C_FDIVCFG = (0x0A << I2C_FDIVCFG_DEC_SHIFT) | (1 << I2C_FDIVCFG_INC_SHIFT);
 	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
 
 	VIC_CON(VIC_I2C_SINGLE_REQ_IRQ) = 1;
@@ -289,13 +372,8 @@ static void handle_request_irq(void) {
 	i2c_v2_state.request_irqs++;
 	i2c_v2_state.request_status |= status;
 	if (i2c_v2_state.reading && i2c_v2_state.address_sent && (I2C_FFSSTAT & I2C_FFSSTAT_FFS) != 0) {
-		uint32_t stages = 1;
-
 		i2c_v2_state.rx_request_status |= status;
-		if ((I2C_FIFOCFG & I2C_FIFOCFG_RXFC) != 0 &&
-			(status & (I2C_RIS_LBREQ_INT | I2C_RIS_BREQ_INT)) != 0)
-			stages = 1 << ((I2C_FIFOCFG & I2C_FIFOCFG_RXBS) >> I2C_FIFOCFG_RXBS_SHIFT);
-		read_fifo(stages);
+		read_fifo(I2C_FFSSTAT & I2C_FFSSTAT_FFS);
 		if ((I2C_FIFOCFG & I2C_FIFOCFG_RXFC) == 0 && i2c_v2_state.remaining == 0) {
 			I2C_IMSC = I2C_IMSC_I2C_ERR_INT | I2C_IMSC_I2C_P_INT;
 			if ((I2C_BUSSTAT & I2C_BUSSTAT_BS) == I2C_BUSSTAT_BS_FREE)

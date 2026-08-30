@@ -42,6 +42,7 @@ bool i2c_v2_transfer(uint8_t address, const uint8_t *tx, uint8_t *rx, uint32_t s
 
 i2c_v2_result_t i2c_v2_smbus_read(uint8_t address, uint8_t reg, uint8_t *data, uint32_t size);
 i2c_v2_result_t i2c_v2_smbus_write(uint8_t address, uint8_t reg, uint8_t value);
+i2c_v2_result_t i2c_v2_smbus_write_pec(uint8_t address, uint8_t reg, uint8_t value);
 
 i2c_v2_result_t i2c_v2_dma_write(uint32_t channel, uint8_t address, const uint8_t *data, uint32_t size);
 i2c_v2_result_t i2c_v2_dma_read(uint32_t channel, uint8_t address, uint8_t *data, uint32_t size);

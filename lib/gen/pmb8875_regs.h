@@ -3913,7 +3913,7 @@
 // Digital Signal Processor
 #define	DSP_BASE					0xF6000000
 #define	DSP_RAM_BASE				(DSP_BASE + 0x1000)
-#define	DSP_RAM_SIZE				0x1000
+#define	DSP_RAM_SIZE				0x1800
 #define	DSP_RAM(n)					MMIO32(DSP_RAM_BASE + ((n) * 0x4))
 
 /* Clock Control Register */

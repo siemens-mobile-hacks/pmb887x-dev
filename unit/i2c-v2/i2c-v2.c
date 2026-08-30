@@ -168,12 +168,12 @@ static void test_registers(void) {
 	);
 	test_eq_u32(
 		"fractional divider readback",
-		(0x3D << I2C_FDIVCFG_DEC_SHIFT) | (4 << I2C_FDIVCFG_INC_SHIFT),
+		(0x0A << I2C_FDIVCFG_DEC_SHIFT) | (1 << I2C_FDIVCFG_INC_SHIFT),
 		I2C_FDIVCFG
 	);
 	test_eq_u32(
 		"FIFO configuration readback",
-		I2C_FIFOCFG_RXBS_4_WORD | I2C_FIFOCFG_TXBS_4_WORD | I2C_FIFOCFG_RXFC | I2C_FIFOCFG_TXFC,
+		I2C_FIFOCFG_RXBS_1_WORD | I2C_FIFOCFG_TXBS_1_WORD | I2C_FIFOCFG_RXFA_1 | I2C_FIFOCFG_RXFC,
 		I2C_FIFOCFG
 	);
 	test_check("I2C interface is running", (I2C_RUNCTRL & I2C_RUNCTRL_RUN) != 0);

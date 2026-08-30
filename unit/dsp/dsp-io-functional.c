@@ -123,6 +123,19 @@ static void test_dspin0(void) {
 	test_eq_u32("exactly two DSPIN0 edges enter INT1", 2, dsp_hw_shared_memory[IRQ_COUNT_OFFSET]);
 }
 
+static void test_dsp_shared_ram(void) {
+	test_category("DSP shared RAM test");
+
+	bool success = true;
+	for (uint32_t i = 0; i < (DSP_RAM_SIZE / 4); i++) {
+		DSP_RAM(i) = i;
+		success &= DSP_RAM(i) == i;
+		DSP_RAM(i) = 0;
+	}
+
+	test_check("shared DSP RAM range is writable", success);
+}
+
 int main(void) {
 	test_start("DSP pad I/O functional test");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
@@ -130,6 +143,8 @@ int main(void) {
 		GPIO_CLC = 1 << MOD_CLC_RMC_SHIFT;
 		configure_dspin0(GPIO_PDPU_PULLDOWN);
 	}
+
+	test_dsp_shared_ram();
 
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
 		return test_finish();

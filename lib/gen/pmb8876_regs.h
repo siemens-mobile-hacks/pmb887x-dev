@@ -3457,7 +3457,7 @@
 // Digital Signal Processor
 #define	DSP_BASE					0xF6000000
 #define	DSP_RAM_BASE				(DSP_BASE + 0x1000)
-#define	DSP_RAM_SIZE				0x1000
+#define	DSP_RAM_SIZE				0x1800
 #define	DSP_RAM(n)					MMIO32(DSP_RAM_BASE + ((n) * 0x4))
 
 /* Clock Control Register */
@@ -4626,6 +4626,64 @@
 
 /* PrimeCell identification register 3 */
 #define	MCI_PCELL_ID3					MMIO32(MCI_BASE + 0xFFC)
+
+
+// USIF [MOD_NUM=F051, MOD_REV=12, MOD_32BIT=C0]
+// Universal Serial Interface (Infineon USIF, used for the Bluetooth HCI transport)
+#define	USIF_BASE					0xF7500000
+/* Clock Control Register */
+#define	USIF_CLC					MMIO32(USIF_BASE + 0x00)
+
+/* Run Control Register */
+#define	USIF_RUN					MMIO32(USIF_BASE + 0x10)
+#define	USIF_RUN_RUN				BIT(0)						 // Enable USIF
+#define	USIF_RUN_BUSY				BIT(17)						 // Module Busy
+
+/* Modem Control Register (DTR/RTS) */
+#define	USIF_MODEM_CTRL				MMIO32(USIF_BASE + 0x14)
+#define	USIF_MODEM_CTRL_DTR			BIT(3)
+#define	USIF_MODEM_CTRL_RTS			BIT(4)
+
+/* Protocol / Framing Register */
+#define	USIF_PROTO					MMIO32(USIF_BASE + 0x1C)
+
+/* Mode / Oversampling Register */
+#define	USIF_MODE					MMIO32(USIF_BASE + 0x20)
+
+/* Baudrate Reload Register */
+#define	USIF_BAUD					MMIO32(USIF_BASE + 0x28)
+
+/* Fractional Baudrate Register */
+#define	USIF_FBAUD					MMIO32(USIF_BASE + 0x2C)
+
+/* RX Sampling Point Register */
+#define	USIF_RXSMP					MMIO32(USIF_BASE + 0x30)
+
+/* Modem Status Register (CTS/DSR) [read-only] */
+#define	USIF_MODEM_STAT				MMIO32(USIF_BASE + 0x34)
+#define	USIF_MODEM_STAT_CTS			BIT(0)
+#define	USIF_MODEM_STAT_DSR			BIT(1)
+
+/* TX Transfer Count / Pending Size [read-only] */
+#define	USIF_TPS					MMIO32(USIF_BASE + 0x3C)
+
+/* TX FIFO Status Register [read-only] */
+#define	USIF_FIFO_STAT				MMIO32(USIF_BASE + 0x40)
+#define	USIF_FIFO_STAT_FILL			GENMASK(4, 0)				 // TX FIFO fill level
+#define	USIF_FIFO_STAT_FILL_SHIFT	0
+#define	USIF_FIFO_STAT_BUSY			BIT(8)						 // TX in progress
+
+/* TX Interrupt Mask Register */
+#define	USIF_TX_IMSC				MMIO32(USIF_BASE + 0x84)
+
+/* RX Interrupt Mask Register */
+#define	USIF_RX_IMSC				MMIO32(USIF_BASE + 0x94)
+
+/* TX FIFO Data Window (also DMA TX endpoint) [write-only] */
+#define	USIF_TXD					MMIO32(USIF_BASE + 0x4000)
+
+/* RX FIFO Data Window (also DMA RX endpoint) [read-only] */
+#define	USIF_RXD					MMIO32(USIF_BASE + 0x8000)
 
 
 // I2C [MOD_NUM=F057, MOD_REV=12, MOD_32BIT=C0]

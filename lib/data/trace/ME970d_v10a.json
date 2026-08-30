@@ -1,68 +1,68 @@
 [
-	/* Debug */
 	{
 		"name":		"__assert",
-		"addr":		0xA2129ED0,
+		"addr":		0xA1B6177C,
+		"args":		["cstr", "uint32", "uint32"]
+	},
+	{
+		"name":		"__assert@2",
+		"addr":		0xA1A69AF0,
 		"args":		["cstr", "uint32", "uint32"]
 	},
 	{
 		"name":		"emcpp_assert",
-		"addr":		0xA27F09D8,
+		"addr":		0xA2105338,
 		"args":		["cstr", "uint32", "uint32", "cstr"]
 	},
 	{
 		"name":		"debug_out_cond",
-		"addr":		0xA1E05D1E,
-		"args":		["fmt"],
-	},
-	{
-		"name": 	"gprs_trace_0",
-		"addr":		0xA1ED90E0,
-		"args":		["uint32", "cstr", "uint32", "uint32"]
-	},
-	{
-		"name": 	"dwd_trace",
-		"addr":		0xA25D43DC,
-		"args":		["uint32", "cstr", "uint32"],
-		"skip":		true
-	},
-	{
-		"name":		"bora_trace",
-		"addr":		0xA1B239CE,
+		"addr":		0xA176177E,
 		"args":		["fmt"]
 	},
 	{
-		"name": 	"apoxi_trace",
-		"addr":		0xA1EBB7A6,
+		"name":		"gprs_trace_0",
+		"addr":		0xA173CBF8,
+		"args":		["uint32", "cstr", "uint32", "uint32"]
+	},
+	{
+		"name":		"dwd_trace",
+		"addr":		0xA1F1392C,
 		"args":		["uint32", "cstr", "uint32"],
-		"skip":		true
+	},
+	{
+		"name":		"bora_trace",
+		"addr":		0xA15B3666,
+		"args":		["fmt"]
+	},
+	{
+		"name":		"apoxi_trace",
+		"addr":		0xA17BD57E,
+		"args":		["uint32", "cstr", "uint32"],
 	},
 	{
 		"name":		"apoxi_fault",
-		"addr":		0xA25DD330,
+		"addr":		0xA1F1C880,
 		"args":		["uint32"]
 	},
 	{
 		"name":		"lg_mmi_trace",
-		"addr":		0xA248719C,
+		"addr":		0xA1D557C0,
 		"args":		["fmt"]
 	},
-
 	{
 		"name":		"platform_panic",
-		"addr":		0xA1E05D56,
+		"addr":		0xA17617B6,
 		"args":		["cstr", "uint32", "uint32"]
 	},
-
 	{
 		"name":		"dwd_audio_trace",
-		"addr":		0xA25DD3C4,
+		"addr":		0xA1F1C914,
 		"args":		["uint32", "uint32", "uint32", "uint32", "cstr"],
 		"skip":		true
 	},
 	{
 		"name":		"dwd_audio_dsp_com_irq_handler",
-		"addr":		0xA2610F20,
+		"addr":		0xA1F5A1A8,
 		"args":		[],
 		"skip":		true
 	}
