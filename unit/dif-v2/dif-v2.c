@@ -1918,6 +1918,7 @@ static void test_continuous_tx_dma(void) {
 	DMAC_ERR_CLEAR = BIT(DMA_TX_CHANNEL);
 	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
 	SCU_DMARS &= ~BIT(DMA_TX_REQUEST);
+	DIF_IMSC = DIF_IMSC_TXBREQ;
 	DIF_DMAE = DIF_DMAE_TXBREQ;
 
 	for (uint32_t scanline = 0; scanline < 2; scanline++) {
@@ -1951,6 +1952,7 @@ static void test_continuous_tx_dma(void) {
 	}
 
 	DIF_DMAE = 0;
+	DIF_IMSC = 0;
 	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
 	test_eq_u32("continuous DMA TX has no TX FIFO overflow", 0, DIF_ERRIRQSS & DIF_ERRIRQSS_TXFOFL);
 	finish_continuous_tx();

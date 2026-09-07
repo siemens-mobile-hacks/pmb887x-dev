@@ -13,6 +13,18 @@
 
 #define DIF_TIMEOUT_MS 100
 #define LCD_GRAM_TEST_BYTES_MAX 4U
+#define DMA_TX_CHANNEL 1
+#define DMA_TX_REQUEST 4
+#define LCD_BLIT_SCANLINE_WORDS_MAX 160U
+#define LCD_BLIT_PROGRESS_ROWS 32U
+/*
+ * TXFA_2 splits every 32-bit TXD stage into two 16-bit lanes and BSCONF_2x8BIT splits every lane into
+ * two bus bytes, so the stage leaves the FIFO as byte 0, byte 1, byte 2, byte 3 with the bit
+ * multiplexer left at identity. The panel latches RGB565 high byte first, so the high byte of a pixel
+ * has to sit in the low byte of the word: red 0xF800 becomes 0x00F8, and a stage carrying two red
+ * pixels is 0x00F800F8. An inverted byte order would emit 0x00F8 to the panel instead, i.e. blue.
+ */
+#define LCD_BLIT_RED_PIXEL_PAIR 0x00F800F8U
 /* Both supported panels use the fast write profile; reads require a longer /RD cycle. */
 #define LCD_WRITE_TIM1 0x00000400U
 #define LCD_WRITE_TIM2 0x02000400U
@@ -749,6 +761,104 @@ static int32_t find_pixel(const uint8_t *data, uint32_t size, uint16_t pixel) {
 	return -1;
 }
 
+static uint32_t lcd_blit_scanline[LCD_BLIT_SCANLINE_WORDS_MAX] __attribute__((aligned(16)));
+
+static bool lcd_blit_scanline_dma(uint32_t words) {
+	DMAC_TC_CLEAR = BIT(DMA_TX_CHANNEL);
+	DMAC_ERR_CLEAR = BIT(DMA_TX_CHANNEL);
+	DMAC_CH_SRC_ADDR(DMA_TX_CHANNEL) = (uint32_t) lcd_blit_scanline;
+	DMAC_CH_DST_ADDR(DMA_TX_CHANNEL) = (uint32_t) &DIF_TXD;
+	DMAC_CH_CONTROL(DMA_TX_CHANNEL) = (
+		words | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
+		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+	);
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = (
+		(DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER |
+		DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_ENABLE
+	);
+	DIF_ISR = DIF_ISR_TXBREQ;
+
+	stopwatch_t start = stopwatch_get();
+	while ((DMAC_RAW_TC_STATUS & BIT(DMA_TX_CHANNEL)) == 0 &&
+		(DMAC_RAW_ERR_STATUS & BIT(DMA_TX_CHANNEL)) == 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+
+	return (DMAC_RAW_TC_STATUS & BIT(DMA_TX_CHANNEL)) != 0 &&
+		(DMAC_RAW_ERR_STATUS & BIT(DMA_TX_CHANNEL)) == 0;
+}
+
+static void test_continuous_dma_blit(void) {
+	uint32_t words = lcd->width / 2;
+	uint32_t completed = 0;
+
+	test_category("Full-screen continuous DMA blit");
+	if (!test_check("DMA blit scanline fits the staging buffer",
+			words != 0 && words <= ARRAY_SIZE(lcd_blit_scanline)))
+		return;
+	for (uint32_t word = 0; word < words; word++)
+		lcd_blit_scanline[word] = LCD_BLIT_RED_PIXEL_PAIR;
+
+	lcd_board_enable_backlight();
+	if (!test_check("DMA blit initializes the controller", lcd_reset_and_init_controller()))
+		return;
+	lcd_command_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	lcd_data_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	if (!test_check("DMA blit selects the full panel window",
+			lcd->set_window(0, lcd->width - 1, 0, lcd->height - 1) &&
+			(lcd->set_cursor == NULL || lcd->set_cursor(0, 0))))
+		return;
+	if (!test_check("DMA blit issues the GRAM write command", lcd_write_gram_command()))
+		return;
+
+	cpu_enable_irq(false);
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
+	DMAC_TC_CLEAR = BIT(DMA_TX_CHANNEL);
+	DMAC_ERR_CLEAR = BIT(DMA_TX_CHANNEL);
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	SCU_DMARS &= ~BIT(DMA_TX_REQUEST);
+	DIF_IMSC = DIF_IMSC_TXBREQ;
+	DIF_DMAE = DIF_DMAE_TXBREQ;
+
+	for (uint32_t row = 0; row < lcd->height; row++) {
+		if ((row % LCD_BLIT_PROGRESS_ROWS) == 0)
+			printf("# DMA blit row %u\n", (unsigned int) row);
+		if (!dif_wait_idle())
+			break;
+		DIF_RUNCTRL = 0;
+		DIF_TXFIFO_CFG = DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_2;
+		DIF_CSREG = DIF_CSREG_CS1 | DIF_CSREG_BSCONF_2x8BIT;
+		DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+		if (!lcd_blit_scanline_dma(words))
+			break;
+		completed++;
+		test_watchdog_serve();
+	}
+
+	bool drained = dif_wait_idle();
+	uint32_t error_status = DMAC_RAW_ERR_STATUS;
+	uint32_t fifo_stages = DIF_TXFFS_STAT;
+	uint32_t packet_size = DIF_TPS_CTRL;
+	uint32_t error_sources = DIF_ERRIRQSS;
+
+	DIF_DMAE = 0;
+	DIF_IMSC = 0;
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
+	DIF_RUNCTRL = 0;
+	DIF_TXFIFO_CFG = DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC;
+	DIF_CSREG = DIF_CSREG_CS1 | DIF_CSREG_BSCONF_1x8BIT;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+
+	printf("# DMA blit finished %u of %u scanlines\n",
+		(unsigned int) completed, (unsigned int) lcd->height);
+	test_eq_u32("DMA blit reaches terminal count on every scanline", lcd->height, completed);
+	test_eq_u32("DMA blit has no bus errors", 0, error_status & BIT(DMA_TX_CHANNEL));
+	test_check("DMA blit completes", drained);
+	test_eq_u32("DMA blit drains TX FIFO", 0, fifo_stages);
+	test_eq_u32("DMA blit does not use TPS_CTRL", 0, packet_size);
+	test_eq_u32("DMA blit has no TX FIFO overflow", 0, error_sources & DIF_ERRIRQSS_TXFOFL);
+}
+
 int main(void) {
 	test_start("DIFv2 LCD interface test");
 	test_reset_values();
@@ -767,6 +877,8 @@ int main(void) {
 		lcd_controller_matches_id(lcd, detected_id)
 	);
 	test_check("controller initializes", lcd_reset_and_init_controller());
+
+	test_continuous_dma_blit();
 
 	uint16_t probe_pixel = 0;
 	test_category("TXD ordering across CD changes");
