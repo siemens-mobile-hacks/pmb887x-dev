@@ -68,13 +68,17 @@ M_9 = { type = "resistor", value = 15000 }
 ram0_value = 0x0801
 
 [gpio.aliases]
-DIF_HD = "OPEN_CLOSE_SW1"
-MMCI_DAT1 = "OPEN_CLOSE_SW2"
+PIN110 = "RPWRON" # remote poweron
+PIN111 = "SPK_RCV_SEL"
+T_OUT8 = "JACK_DETECT"
+CLKOUT0 = "SLIDE_OPEN"
+PIN109 = "SCROLL_EN"
 
 [gpio.inputs]
-
-# Slider
-OPEN_CLOSE_SW2 = 1
+RPWRON = 1 # remote power on (skips power button hold requirement)
+SLIDE_OPEN = 1
+SCROLL_EN = 1
+JACK_DETECT = 1 # high = no headphones connected
 
 [keyboard]
 # [KP_IN, KP_OUT, ..., KP_OUT]
