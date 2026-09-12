@@ -21,7 +21,7 @@ ebu.cs = 1
 ram.size = 0x1000000 # 16 Mb
 
 [peripheral.RF]
-type = "hd155153np"
+type = "pmb6272"
 bus = "TPU:RFSSC"
 
 [analog]

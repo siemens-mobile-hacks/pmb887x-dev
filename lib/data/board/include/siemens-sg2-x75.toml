@@ -40,7 +40,7 @@ addr = 0x31
 revision = 0xED
 
 [peripheral.RF]
-type = "hd155153np"
+type = "pmb6272"
 bus = "TPU:RFSSC"
 
 [analog]
