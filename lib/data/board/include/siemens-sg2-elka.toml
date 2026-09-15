@@ -20,9 +20,9 @@ bus = "EBU"
 ebu.cs = 1
 ram.size = 0x1000000 # 16 Mb
 
-[peripheral.RF]
-type = "hd155153np"
-bus = "TPU:RFSSC"
+#[peripheral.RF]
+#type = "hd155153np"
+#bus = "TPU:RFSSC"
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }

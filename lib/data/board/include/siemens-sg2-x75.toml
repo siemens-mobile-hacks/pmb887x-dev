@@ -39,9 +39,9 @@ bus = "I2C"
 addr = 0x31
 revision = 0xED
 
-[peripheral.RF]
-type = "hd155153np"
-bus = "TPU:RFSSC"
+#[peripheral.RF]
+#type = "hd155153np"
+#bus = "TPU:RFSSC"
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }
@@ -147,3 +147,5 @@ HASH		= [4, 2]
 END_CALL	= [0, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 VOLUME_UP	= [2, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 VOLUME_DOWN	= [1, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+CAMERA		= [3, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+PLAY_PAUSE	= [4, 0, 1, 2, 3, 4, 5, 6, 7, 8]
