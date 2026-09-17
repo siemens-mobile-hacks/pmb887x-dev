@@ -5,6 +5,9 @@ model = "KE800"
 cpu.type = "pmb8876"
 cpu.rev = 0x10
 
+[rtc]
+format = "calendar"
+
 [peripheral.LCD0]
 type = "r63400"
 bus = "DIF"

@@ -8,6 +8,9 @@ cpu.uid0 = 0x03157463
 cpu.uid1 = 0x18000283
 cpu.uid2 = 0x00090D0C
 
+[rtc]
+format = "calendar"
+
 [peripheral.LCD0]
 type = "r61505"
 bus = "DIF"
