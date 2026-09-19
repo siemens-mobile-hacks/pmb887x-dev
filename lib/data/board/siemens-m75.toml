@@ -1,12 +1,11 @@
 [board]
 vendor = "Siemens"
-model = "CX75"
+model = "M75"
 extends = "include/siemens-sgl-sirius.toml"
 
 [gpio.inputs]
-# HWID 5000
-HW_DET_MOB_TYPE1 = 1
-HW_DET_MOB_TYPE2 = 0
+HW_DET_MOB_TYPE1 = 0
+HW_DET_MOB_TYPE2 = 1
 HW_DET_MOB_TYPE3 = 0
 HW_DET_MOB_TYPE4 = 0
 HW_DET_MOB_TYPE5 = 0

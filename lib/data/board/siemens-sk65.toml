@@ -1,0 +1,98 @@
+[board]
+vendor = "Siemens"
+model = "SK65"
+cpu.type = "pmb8875"
+cpu.rev = 0x05
+
+[peripheral.SIM_CARD]
+type = "sim-card"
+bus = "SIM"
+in = { RST = "SIM:CC_RST" }
+
+[peripheral.FLASH0]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 0
+flash = { vid = 0x0089, pid = 0x880D }
+
+[peripheral.FLASH1]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 2
+flash = { vid = 0x0089, pid = 0x881C }
+
+[peripheral.SDRAM]
+type = "sdram"
+bus = "EBU"
+ebu.cs = 1
+ram.size = 0x1000000 # 16 Mb
+
+# No graphics companion chip: the panel hangs directly off the serial DIF.
+[peripheral.LCD0]
+type = "lr38826"
+bus = "DIF"
+width = 132
+height = 176
+in = { CS = "DISPLAY_CS", CD = "DISPLAY_RS", RESET = "DISPLAY_RESET" }
+
+[peripheral.PMIC]
+type = "d1094xx"
+bus = "I2C"
+addr = 0x31
+revision = 0xDB
+
+[analog]
+M_0 = { type = "resistor", value = 9300 }
+M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
+M_7 = { type = "resistor", value = 14800 }
+M_9 = { type = "resistor", value = 15000 }
+
+[dsp]
+ram0_value = 0x0602
+
+[gpio.aliases]
+DSPOUT0 = "AC_DCD"
+DSPOUT1 = "PM_WADOG"
+T_OUT1 = "PM_CHARGE_UC"
+T_OUT6 = "PM_SSC_CS"
+T_OUT9 = "DISPLAY_RESET"
+T_OUT10 = "USB_SWITCH_EN"
+DIF_DAT = "DISPLAY_DAT"
+DIF_CLK = "DISPLAY_CLK"
+DIF_CS = "DISPLAY_CS"
+DIF_RS = "DISPLAY_RS"
+SSC2_SCLK = "PM_SSC_SCLK"
+SSC2_MRST = "PM_SSC_MRST"
+SSC2_MTSR = "PM_SSC_MTSR"
+
+USART0_TXD = "AC_TX"
+USART0_RXD = "AC_RX"
+USART0_CTS = "AC_RTS"
+USART0_RTS = "AC_CTS"
+
+KP_OUT0 = "PEXT_INT"
+KP_IN5 = "SLIDER_SW2"
+KP_IN6 = "BT_WAKEUP_GSM"
+
+PIPESTAT0 = "HW_DET_MOB_TYPE1"
+PIPESTAT1 = "HW_DET_MOB_TYPE2"
+PIPESTAT2 = "HW_DET_MOB_TYPE3"
+TRACEPKT0 = "HW_DET_MOB_TYPE4"
+
+[gpio.inputs]
+# Default state
+DISPLAY_CS = 1
+DISPLAY_RESET = 1
+
+# Cable detect
+AC_RTS = 1
+AC_RX = 1
+
+HW_DET_MOB_TYPE1 = 1
+HW_DET_MOB_TYPE2 = 1
+HW_DET_MOB_TYPE3 = 1
+HW_DET_MOB_TYPE4 = 1
+
+# The keypad matrix is not wired to the CPU: every key (both the rotary MMI
+# board and the slide-out QWERTY) is scanned by the COP8TAC5XLQ8 expander on
+# sheet 34 and read over I2C, which the emulator does not model.
