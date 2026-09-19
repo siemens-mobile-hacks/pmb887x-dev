@@ -1,0 +1,53 @@
+[board]
+vendor = "Siemens"
+model = "SL65"
+extends = "include/siemens-sgl-r65.toml"
+
+[peripheral.LCD0]
+# The visible area is 130x130, but the firmware programs the window as
+# x/y 1..131, and pmb887x_lcd_set_window_x2() clamps that to width - 1. With
+# width = 130 every scan line ends two pixels early and the picture shears.
+type = "l2f50250"
+width = 132
+height = 132
+
+[gpio.aliases]
+# DIF_CS (A6) is left open; the display CS comes from CLKOUT0 (DISP_CS_18).
+DIF_CS = "DISP_CS_NC"
+CLKOUT0 = "DISPLAY_CS1"
+
+# Slider open/close hall sensors
+USART1_RTS = "HALL_1"
+KP_IN6 = "HALL_2"
+
+[gpio.inputs]
+# HWID 324 (reported by the firmware itself)
+# HW_DET straps, SL65 "R65 IRIS" schematic sheet 5
+HW_DET_MOB_TYPE1 = 1
+HW_DET_MOB_TYPE2 = 1
+HW_DET_MOB_TYPE3 = 0
+HW_DET_MOB_TYPE4 = 1
+HW_DET_MOB_TYPE5 = 0
+HW_DET_RF_TYPE = 0
+HW_DET_BAND_SEL = 0
+
+# Slider opened
+HALL_1 = 1
+HALL_2 = 1
+
+[keyboard]
+# The MMI board gets only KP_IN0..4 and KP_OUT3 over X2750 (sheet 4), so the
+# joystick takes KP_OUT3 and its three remaining keys ground a whole KP_IN row,
+# the way the on/off key grounds KP_IN1. Confirmed against the firmware: row 2
+# opens the call list, row 3 is the left softkey and row 4 the right one.
+SEND		= [2, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+SOFT_LEFT	= [3, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+SOFT_RIGHT	= [4, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+# Side keys, all three on KP_IN4 (sheet 11). BROWSER is the memo key - the
+# closest spare name the emulator has. From the idle screen Vol+ and the memo
+# key both open the dictaphone and Vol- does nothing, so they only look alike:
+# the device test (*#06#, Др.функ. x3, Клавиатура) reports three separate keys.
+VOLUME_UP	= [4, 0]
+VOLUME_DOWN	= [4, 1]
+BROWSER		= [4, 2]
