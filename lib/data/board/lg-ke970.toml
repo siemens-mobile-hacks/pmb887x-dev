@@ -57,6 +57,10 @@ type = "lm4946"
 bus = "I2C"
 addr = 0x7D
 
+[peripheral.SCROLL]
+type = "ke970-scroll"
+out = { A = "SCROLL_KEY_A", B = "SCROLL_KEY_B" }
+key = { CW = "NAV_UP", CCW = "NAV_DOWN" }
 
 [analog]
 # M0  BATT_TEMP Battery temperature measure
@@ -64,18 +68,22 @@ addr = 0x7D
 # M2  JACK_TYPE Accessory type detect
 # M7  H/W VERSION S-Gold2 H/W version detect
 # M8  VSUPPLY Battery supply voltage measure
-# M9  I_MONITOR Current consumption measure
+# M9  I_MONITOR Current consumption measure / 47 mΩ × 0.01 A/A × 2.2 kΩ ≈ 1.03 mV/mA
 # M10 REMOTE_ADC Remote control key detect
-M_0 = { type = "resistor", value = 9300 }
+# M0 = the higher it goes the lower temp is reported, fw caps at -30°C
+# 500 - tbat_adc says 999 -> fw report 42°C
+# 683 - tbat_adc says 1364 -> fw report 22°C
+M_0 = { type = "voltage", value = 683 }
 M_7 = { type = "resistor", value = 14800 }
 M_8 = { type = "resistor_divider", r1 = 390000, r2 = 100000, value = 4200 }
-M_9 = { type = "resistor", value = 15000 }
+M_9 = { type = "voltage", value = 1500 } # ~150mV draw
 
 [dsp]
 ram0_value = 0x0801
 
 [gpio.aliases]
-DIF_HD = "USB_CHG_EN"
+DIF_HD = "TF_DAT1"
+MMCI_DAT1 = "USB_CHG_EN"
 T_OUT7 = "KP_OUT4"
 T_OUT9 = "LCD_BACKLIGHT"
 I2S2_WA1 = "SLIDE_KEY_BACKLIGHT"
@@ -133,8 +141,6 @@ VOLUME_DOWN	= [3, 3]	# KB_DOWN
 
 [keyboard.gpio]
 END_CALL = [{ target = "PMIC:ON" }]
-# NAV_UP = [{ target = "SCROLL_KEY_A" }]
-# NAV_DOWN = [{ target = "SCROLL_KEY_B" }]
 
 [startup.ONLINE]
 duration = 5
