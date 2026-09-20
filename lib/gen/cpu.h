@@ -1,6 +1,10 @@
 #pragma once
 // IWYU pragma: private, include <pmb887x.h>
 
+#ifdef PMB8878
+#include "pmb8878_regs.h" // IWYU pragma: export
+#endif
+
 #ifdef PMB8876
 #include "pmb8876_regs.h" // IWYU pragma: export
 #endif

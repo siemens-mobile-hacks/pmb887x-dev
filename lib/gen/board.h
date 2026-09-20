@@ -69,12 +69,24 @@
 #include "board_siemens_el71.h" // IWYU pragma: export
 #endif
 
+#ifdef BOARD_SIEMENS_M65
+#include "board_siemens_m65.h" // IWYU pragma: export
+#endif
+
 #ifdef BOARD_SIEMENS_M72
 #include "board_siemens_m72.h" // IWYU pragma: export
 #endif
 
+#ifdef BOARD_SIEMENS_M75
+#include "board_siemens_m75.h" // IWYU pragma: export
+#endif
+
 #ifdef BOARD_SIEMENS_M81
 #include "board_siemens_m81.h" // IWYU pragma: export
+#endif
+
+#ifdef BOARD_SIEMENS_ME75
+#include "board_siemens_me75.h" // IWYU pragma: export
 #endif
 
 #ifdef BOARD_SIEMENS_S65
@@ -87,6 +99,14 @@
 
 #ifdef BOARD_SIEMENS_S75
 #include "board_siemens_s75.h" // IWYU pragma: export
+#endif
+
+#ifdef BOARD_SIEMENS_SK65
+#include "board_siemens_sk65.h" // IWYU pragma: export
+#endif
+
+#ifdef BOARD_SIEMENS_SL65
+#include "board_siemens_sl65.h" // IWYU pragma: export
 #endif
 
 #ifdef BOARD_SIEMENS_SL75

@@ -582,8 +582,20 @@
 #define	USART_WHBCON_SETOE				BIT(13)					 // Set overrun error flag
 
 #define	USART_WHBABCON(base)			MMIO32((base) + 0x54)
+#define	USART_WHBABCON_CLRABEN			BIT(0)					 // Clear autobaud detection enable
+#define	USART_WHBABCON_SETABEN			BIT(1)					 // Set autobaud detection enable
 
 #define	USART_WHBABSTAT(base)			MMIO32((base) + 0x58)
+#define	USART_WHBABSTAT_CLRFCSDET		BIT(0)					 // Clear first small character detected flag
+#define	USART_WHBABSTAT_CLRFCCDET		BIT(1)					 // Clear first capital character detected flag
+#define	USART_WHBABSTAT_CLRSCSDET		BIT(2)					 // Clear second small character detected flag
+#define	USART_WHBABSTAT_CLRSCCDET		BIT(3)					 // Clear second capital character detected flag
+#define	USART_WHBABSTAT_CLRDETWAIT		BIT(4)					 // Clear autobaud detection waiting flag
+#define	USART_WHBABSTAT_SETFCSDET		BIT(5)					 // Set first small character detected flag
+#define	USART_WHBABSTAT_SETFCCDET		BIT(6)					 // Set first capital character detected flag
+#define	USART_WHBABSTAT_SETSCSDET		BIT(7)					 // Set second small character detected flag
+#define	USART_WHBABSTAT_SETSCCDET		BIT(8)					 // Set second capital character detected flag
+#define	USART_WHBABSTAT_SETDETWAIT		BIT(9)					 // Set autobaud detection waiting flag
 
 #define	USART_FCCON(base)				MMIO32((base) + 0x5C)
 #define	USART_FCCON_CTSEN				BIT(0)					 // RTS enbled (0: disable; 1: enable)
