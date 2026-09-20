@@ -338,9 +338,15 @@ static uint8_t i2c_v2_pec(const uint8_t *data, uint32_t size) {
 	return crc;
 }
 
-i2c_v2_result_t i2c_v2_smbus_write_pec(uint8_t address, uint8_t reg, uint8_t value) {
+/* PEC byte for a {reg, value} write: CRC-8 poly 0x07 over [addr<<1, reg, value]. */
+uint8_t i2c_v2_smbus_pec(uint8_t address, uint8_t reg, uint8_t value) {
 	uint8_t crc_data[] = {(uint8_t) (address << 1), reg, value};
-	uint8_t data[] = {reg, value, i2c_v2_pec(crc_data, sizeof(crc_data))};
+
+	return i2c_v2_pec(crc_data, sizeof(crc_data));
+}
+
+i2c_v2_result_t i2c_v2_smbus_write_pec(uint8_t address, uint8_t reg, uint8_t value) {
+	uint8_t data[] = {reg, value, i2c_v2_smbus_pec(address, reg, value)};
 
 	return i2c_v2_transfer_bytes(address, data, NULL, sizeof(data));
 }
@@ -383,7 +389,7 @@ static void handle_request_irq(void) {
 		i2c_v2_state.tx_request_status |= status;
 		write_fifo();
 	}
-	I2C_ICR = status & I2C_STATUS_CLEAR;
+	I2C_ICR = status & I2C_REQUEST_IRQS;
 }
 
 static void handle_protocol_irq(void) {
