@@ -6,6 +6,7 @@
 
 #define PHONE_INFO_STRING_SIZE 16
 #define TEST_TIMEOUT_MS 3000
+#define TEST_HEARTBEAT_MS 100
 
 #if TEST_COLOR
 #define COLOR_RESET "\x1B[0m"
@@ -26,13 +27,124 @@ static struct test_state {
 	unsigned int failures;
 } state;
 
-static void __attribute__((noreturn)) exception_wait_for_watchdog_reset(const char *name, uint32_t pc, uint32_t spsr,
-	uint32_t fault_status, uint32_t fault_address) {
-	printf("# EXCEPTION: %s PC=%08X SPSR=%08X FSR=%08X FAR=%08X\n", name, pc, spsr,
-		fault_status, fault_address);
-	usart_putc(USART0, 0);
+/* Set by test_watchdog_disable(): nothing re-arms a budget after that. */
+static bool watchdog_disabled;
+
+typedef struct test_fault_jmp {
+	uint32_t r4, r5, r6, r7, r8, r9, r10, r11;
+	uint32_t sp, lr, cpsr;
+} test_fault_jmp_t;
+
+static test_fault_jmp_t fault_recovery;
+static volatile bool fault_recovery_armed;
+static volatile uint32_t fault_nesting;
+
+/* r0 = ctx; returns 0 on the direct call, 1 when the fault handler longjmps back here. */
+__attribute__((naked)) int test_fault_setjmp(test_fault_jmp_t *) {
+	__asm__("stmia r0!, {r4-r11}\n\t"
+		"str sp, [r0], #4\n\t"
+		"str lr, [r0], #4\n\t"
+		"mrs r1, cpsr\n\t"
+		"str r1, [r0]\n\t"
+		"mov r0, #0\n\t"
+		"bx lr");
+}
+
+/* r0 = ctx; switches back to the mode that armed the recovery and returns 1 there. */
+__attribute__((naked, noreturn)) void test_fault_longjmp(test_fault_jmp_t *) {
+	__asm__("ldr r1, [r0, #40]\n\t"
+		"msr cpsr_cxsf, r1\n\t"
+		"ldmia r0!, {r4-r11}\n\t"
+		"ldr sp, [r0], #4\n\t"
+		"ldr lr, [r0], #4\n\t"
+		"mov r0, #1\n\t"
+		"bx lr");
+}
+
+/*
+ * Arm recovery around a guarded body.  Returns 0 when the arm itself completed; if a fault is
+ * taken before test_fault_guard_end(), the handler prints the fields and longjmps back, so
+ * this call returns 1 at the same point and the body's writes must not be trusted.  Both
+ * paths must call test_fault_guard_end().
+ */
+int test_fault_guard(void) {
+	fault_nesting = 0;
+	fault_recovery_armed = true;
+	return test_fault_setjmp(&fault_recovery) != 0;
+}
+
+void test_fault_guard_end(void) {
+	fault_recovery_armed = false;
+}
+
+static void fault_putc(char c) {
+	USART_TXB(USART0) = c;
+	while ((USART_RIS(USART0) & USART_RIS_TX) == 0)
+		;
+	USART_ICR(USART0) |= USART_ICR_TX;
+}
+
+static void fault_put_hex(uint32_t value) {
+	fault_putc('0');
+	fault_putc('x');
+	for (int shift = 28; shift >= 0; shift -= 4) {
+		uint32_t nibble = (value >> shift) & 0xF;
+
+		fault_putc(nibble < 10 ? (char) ('0' + nibble) : (char) ('A' + nibble - 10));
+	}
+}
+
+/* One line: "\n# EXC <type> <label>=<hex>", label up to four immediate characters.  The
+   leading newline terminates whatever was on the line before; the caller ends the run of
+   fields with one newline. */
+static void fault_field(char type, char a, char b, char c, char d, uint32_t value) {
+	fault_putc('\n');
+	fault_putc('#');
+	fault_putc(' ');
+	fault_putc('E');
+	fault_putc('X');
+	fault_putc('C');
+	fault_putc(' ');
+	fault_putc(type);
+	fault_putc(' ');
+	fault_putc(a);
+	if (b != 0) {
+		fault_putc(b);
+		if (c != 0) {
+			fault_putc(c);
+			if (d != 0)
+				fault_putc(d);
+		}
+	}
+	fault_putc('=');
+	fault_put_hex(value);
+}
+
+static void __attribute__((noreturn)) exception_report(char type, uint32_t lr, uint32_t spsr, uint32_t fsr,
+	uint32_t far) {
+	/* One entry prints the fields; a re-fault while printing sends nothing further and
+	   goes straight to the recovery or the spin, so the reporter cannot recurse forever. */
+	if (fault_nesting++ == 0) {
+		fault_field(type, 'L', 'R', 0, 0, lr);
+		fault_field(type, 'S', 'P', 'S', 'R', spsr);
+		fault_field(type, 'F', 'S', 'R', 0, fsr);
+		fault_field(type, 'F', 'A', 'R', 0, far);
+		fault_putc('\n');
+	}
+
+	if (fault_recovery_armed)
+		test_fault_longjmp(&fault_recovery);
+
+	test_fault_decode(lr, far);
 	while (true)
 		__asm__ volatile("nop");
+}
+
+/* A suite that knows its own register map names the block here (see test.h); the decode runs
+   only after the fields have reached the log. */
+__attribute__((weak)) void test_fault_decode(uint32_t pc, uint32_t far) {
+	(void) pc;
+	(void) far;
 }
 
 __IRQ void data_abort_handler(void) {
@@ -44,7 +156,7 @@ __IRQ void data_abort_handler(void) {
 	__asm__ volatile("mrs %0, spsr" : "=r" (spsr));
 	__asm__ volatile("mrc p15, 0, %0, c5, c0, 0" : "=r" (fault_status));
 	__asm__ volatile("mrc p15, 0, %0, c6, c0, 0" : "=r" (fault_address));
-	exception_wait_for_watchdog_reset("data abort", link - 8, spsr, fault_status, fault_address);
+	exception_report('D', link - 8, spsr, fault_status, fault_address);
 }
 
 __IRQ void prefetch_abort_handler(void) {
@@ -56,7 +168,7 @@ __IRQ void prefetch_abort_handler(void) {
 	__asm__ volatile("mrs %0, spsr" : "=r" (spsr));
 	__asm__ volatile("mrc p15, 0, %0, c5, c0, 1" : "=r" (fault_status));
 	__asm__ volatile("mrc p15, 0, %0, c6, c0, 2" : "=r" (fault_address));
-	exception_wait_for_watchdog_reset("prefetch abort", link - 4, spsr, fault_status, fault_address);
+	exception_report('P', link - 4, spsr, fault_status, fault_address);
 }
 
 __IRQ void undef_handler(void) {
@@ -64,7 +176,7 @@ __IRQ void undef_handler(void) {
 	uint32_t spsr;
 	__asm__ volatile("mov %0, lr" : "=r" (link));
 	__asm__ volatile("mrs %0, spsr" : "=r" (spsr));
-	exception_wait_for_watchdog_reset("undefined instruction", link - 4, spsr, 0, 0);
+	exception_report('U', link - 4, spsr, 0, 0);
 }
 
 static bool read_flash_string(char *destination, size_t size, uint32_t address) {
@@ -121,6 +233,9 @@ static void print_hardware(void) {
 }
 
 static void reset_timeout(void) {
+	if (watchdog_disabled)
+		return;
+
 	wdt_set_max_execution_time(TEST_TIMEOUT_MS);
 	wdt_serve();
 }
@@ -262,12 +377,53 @@ bool test_is_qemu(void) {
 	return SCU_EMU_ID == SCU_EMU_ID_VALUE_QEMU;
 }
 
+uint32_t test_stm_ticks_per_ms(void) {
+	uint32_t hz = cpu_get_stm_freq();
+	uint32_t rmc = (STM_CLC & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT;
+
+	if (rmc == 0)
+		rmc = 1;
+	if (hz == 0)
+		hz = 26000000;
+
+	return hz / rmc / 1000;
+}
+
+bool test_elapsed_bound_ms(uint64_t start, uint32_t ms) {
+	uint64_t ticks = (uint64_t) ms * test_stm_ticks_per_ms();
+
+	return stopwatch_elapsed(start) >= (ticks ? ticks : 1);
+}
+
+void test_heartbeat(void) {
+	static uint64_t last;
+	uint64_t now = stopwatch_get();
+
+	if (now - last < (uint64_t) TEST_HEARTBEAT_MS * test_stm_ticks_per_ms())
+		return;
+	last = now;
+	usart_putc(USART0, '.');
+}
+
+/* Ends a heartbeat line a caller started with "# ". */
+void test_heartbeat_end(void) {
+	usart_putc(USART0, '\n');
+}
+
 void test_watchdog_serve(void) {
 	wdt_serve();
 }
 
 void test_watchdog_reset(void) {
 	reset_timeout();
+}
+
+void test_watchdog_disable(void) {
+	watchdog_disabled = true;
+	wdt_set_max_execution_time(0);
+#ifndef GPIO_PM_WADOG
+	wdt_disable();
+#endif
 }
 
 void test_spin(unsigned int iterations) {

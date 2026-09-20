@@ -1,24 +1,22 @@
 #include <stopwatch.h>
 
 static uint32_t ticks_per_s;
-static uint32_t ticks_per_ms;
-static uint32_t ticks_per_us;
 
 void stopwatch_init() {
 	uint32_t clock = (STM_CLC & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT;
-	
-	ticks_per_s = PMB8876_SYSTEM_FREQ / clock;
-	ticks_per_ms = ticks_per_s / 1000;
-	ticks_per_us = ticks_per_s / 1000000;
+
+	ticks_per_s = cpu_get_stm_freq() / clock;
 }
 
 void stopwatch_usleep(uint32_t us) {
-	stopwatch_t end = stopwatch_get() + us * ticks_per_us;
+	stopwatch_t end = stopwatch_get() + (stopwatch_t) us * ticks_per_s / 1000000;
+
 	while (stopwatch_get() <= end);
 }
 
 void stopwatch_usleep_wd(uint32_t us) {
-	stopwatch_t end = stopwatch_get() + us * ticks_per_us;
+	stopwatch_t end = stopwatch_get() + (stopwatch_t) us * ticks_per_s / 1000000;
+
 	while (stopwatch_get() <= end)
 		wdt_serve();
 }
@@ -32,23 +30,23 @@ stopwatch_t stopwatch_elapsed(stopwatch_t start) {
 }
 
 uint32_t stopwatch_elapsed_us(stopwatch_t start) {
-	return stopwatch_elapsed(start) / ticks_per_us;
+	return (uint32_t) (stopwatch_elapsed(start) * 1000000ULL / ticks_per_s);
 }
 
 uint32_t stopwatch_elapsed_ms(stopwatch_t start) {
-	return stopwatch_elapsed(start) / ticks_per_ms;
+	return (uint32_t) (stopwatch_elapsed(start) * 1000ULL / ticks_per_s);
 }
 
 uint32_t stopwatch_elapsed_s(stopwatch_t start) {
-	return stopwatch_elapsed(start) / ticks_per_s;
+	return (uint32_t) (stopwatch_elapsed(start) / ticks_per_s);
 }
 
 uint32_t stopwatch_ticks_per_us() {
-	return ticks_per_us;
+	return ticks_per_s / 1000000;
 }
 
 uint32_t stopwatch_ticks_per_ms() {
-	return ticks_per_ms;
+	return ticks_per_s / 1000;
 }
 
 uint32_t stopwatch_ticks_per_s() {

@@ -515,7 +515,26 @@ static uint32_t benchmark_ahb_per_reads(uint32_t *checksum) {
 	return (uint32_t) stopwatch_elapsed(start);
 }
 
-static bool measure_mmci_frequency(uint32_t expected_hz, uint32_t *measured_hz, uint32_t *elapsed_ticks) {
+/*
+ * The conversion needs the STM COUNTER rate - fSTM / STM_CLC.RMC - not
+ * cpu_get_stm_freq(), which models fSTM with no CLC divider applied.  Those two
+ * differ by STM_CLC.RMC, so this measurement was only valid while that register
+ * happened to be 1, which nothing checked and nothing printed (the same defect
+ * class as the stopwatch's own omitted fSTM divider, found in the round-2
+ * audit).  stopwatch_ticks_per_s() IS the counter rate - bsp/lib/stopwatch.c
+ * latches cpu_get_stm_freq() / STM_CLC.RMC at stopwatch_init() - and it is the
+ * rate that produced *elapsed_ticks, so the conversion no longer depends on RMC
+ * at all.
+ *
+ * stm_rtc_hz is the same counter rate measured against RTC T14 (the 32.768 kHz
+ * crystal, benchmark_stm_ticks/stm_ticks_to_khz below).  It is reported, not
+ * asserted: the two references come from different oscillators, so their
+ * disagreement is information, while their agreement is what makes the
+ * stopwatch-referenced number trustable.  rtc_referenced_hz is the MCI timer
+ * rate computed with that independent reference instead.
+ */
+static bool measure_mmci_frequency(uint32_t expected_hz, uint32_t stm_counter_hz, uint32_t stm_rtc_hz,
+		uint32_t *measured_hz, uint32_t *rtc_referenced_hz, uint32_t *elapsed_ticks) {
 	uint32_t timeout_cycles = expected_hz / MCI_TIMEOUT_TARGET_HZ;
 	if (timeout_cycles < MCI_TIMEOUT_MIN_CYCLES)
 		timeout_cycles = MCI_TIMEOUT_MIN_CYCLES;
@@ -541,8 +560,37 @@ static bool measure_mmci_frequency(uint32_t expected_hz, uint32_t *measured_hz, 
 	if (!completed)
 		return false;
 
-	*measured_hz = (uint64_t) timeout_cycles * cpu_get_stm_freq() / *elapsed_ticks;
+	*measured_hz = (uint64_t) timeout_cycles * stm_counter_hz / *elapsed_ticks;
+	*rtc_referenced_hz = stm_rtc_hz
+		? (uint32_t) ((uint64_t) timeout_cycles * stm_rtc_hz / *elapsed_ticks)
+		: 0;
 	return true;
+}
+
+/*
+ * Establish and report the MMCI measurement's time base before anything is
+ * measured, so a log carries the reference it was taken against.  Returns
+ * whether the stopwatch's latched rate is still the counter rate the current
+ * registers imply; if it is not (the suite or a loader moved STM_CLC after
+ * test_start(), or the STM has no clock), raw ticks cannot be converted and the
+ * caller must say so rather than measure.
+ */
+static bool mmci_measure_time_base(uint32_t *stm_counter_hz, uint32_t *stm_rtc_hz) {
+	uint32_t rmc = (STM_CLC & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT;
+	uint32_t counter_hz = stopwatch_ticks_per_s();
+
+	init_reference_rtc();
+	*stm_rtc_hz = stm_ticks_to_khz(benchmark_stm_ticks()) * 1000;
+	*stm_counter_hz = counter_hz;
+
+	printf("# MCI time base: STM_CLC=%08X (RMC=%u) -> stopwatch counter %u Hz; CGU model fSTM=%u Hz; "
+		"RTC T14-referenced counter %u Hz\n",
+		(unsigned int) STM_CLC, (unsigned int) rmc, (unsigned int) counter_hz,
+		(unsigned int) cpu_get_stm_freq(), (unsigned int) *stm_rtc_hz);
+	printf("# MCI time base note: the conversion uses the counter rate, so RMC=%u is applied and the "
+		"absolute numbers do not depend on RMC being 1\n", (unsigned int) rmc);
+
+	return rmc != 0 && counter_hz == cpu_get_stm_freq() / rmc;
 }
 
 static bool probe_mci_command_progress(uint32_t *elapsed_ticks) {
@@ -560,8 +608,20 @@ static bool probe_mci_command_progress(uint32_t *elapsed_ticks) {
 }
 
 static void test_mmci_source_frequencies(void) {
+	/* Before the emulator gate: the time base is a register reading plus an
+	 * RTC-referenced measurement, both meaningful in either environment, and
+	 * reporting it is what makes the numbers below judgeable. */
+	uint32_t stm_counter_hz = 0;
+	uint32_t stm_rtc_hz = 0;
+	bool time_base_valid = mmci_measure_time_base(&stm_counter_hz, &stm_rtc_hz);
+
 	if (test_is_qemu()) {
 		test_skip("MMCI source and divider frequencies match the CGU model", "QEMU does not implement the MCI core");
+		return;
+	}
+	if (!time_base_valid) {
+		test_skip("MMCI source and divider frequencies match the CGU model",
+			"raw STM ticks cannot be converted: STM_CLC/CGU_CON1 no longer match the rate stopwatch_init() latched");
 		return;
 	}
 
@@ -615,12 +675,16 @@ static void test_mmci_source_frequencies(void) {
 			uint32_t mmci_clc_hz = mmci_hz / rmc;
 			uint32_t expected_hz = mmci_clc_hz / 8;
 			uint32_t measured_hz = 0;
+			uint32_t rtc_referenced_hz = 0;
 			uint32_t elapsed_ticks = 0;
-			bool measured = measure_mmci_frequency(expected_hz, &measured_hz, &elapsed_ticks);
+			bool measured = measure_mmci_frequency(expected_hz, stm_counter_hz, stm_rtc_hz,
+				&measured_hz, &rtc_referenced_hz, &elapsed_ticks);
 
-			printf("# MMCI %s DIV%u: CGU=%u Hz CLC=%u Hz MCLK expected=%u Hz measured=%u Hz elapsed=%u STM ticks\n",
+			printf("# MMCI %s DIV%u: CGU=%u Hz CLC=%u Hz MCLK expected=%u Hz measured=%u Hz "
+				"(RTC-referenced %u Hz) elapsed=%u STM ticks\n",
 				SOURCES[source].name, (1U << divider), (unsigned int) mmci_hz, (unsigned int) mmci_clc_hz,
-				(unsigned int) expected_hz, (unsigned int) measured_hz, (unsigned int) elapsed_ticks);
+				(unsigned int) expected_hz, (unsigned int) measured_hz,
+				(unsigned int) rtc_referenced_hz, (unsigned int) elapsed_ticks);
 			bool is_slowest_mode = SOURCES[source].source == CGU_CON3_MMCI_CLKSEL_CLK32K &&
 				DIVIDERS[divider] == CGU_CON3_MMCI_CLKDIV_DIV8;
 			if (is_slowest_mode) {
@@ -926,6 +990,7 @@ static void test_ahb_frequency_measurement(void) {
 static void test_pll_source_frequencies(void) {
 	if (test_is_qemu()) {
 		test_skip("PLL and phase frequencies match the CGU model", "QEMU does not clock ARM instructions from CGU");
+		test_skip("phase 1 K1=0 K2=2 selects fPLL/8", "QEMU does not clock ARM instructions from CGU");
 		return;
 	}
 
@@ -946,6 +1011,7 @@ static void test_pll_source_frequencies(void) {
 		test_skip("phase 2 frequency follows K1/K2 divider", "boot clock or ITCM configuration is incompatible");
 		test_skip("phase 3 frequency follows K1/K2 divider", "boot clock or ITCM configuration is incompatible");
 		test_skip("phase 4 frequency follows K1/K2 divider", "boot clock or ITCM configuration is incompatible");
+		test_skip("phase 1 K1=0 K2=2 selects fPLL/8", "boot clock or ITCM configuration is incompatible");
 		return;
 	}
 
@@ -1002,18 +1068,21 @@ static void test_pll_source_frequencies(void) {
 		0x22,
 		0x23,
 		0x22,
+		0x10,
 	};
 	static const uint32_t PHASE_SOURCES[] = {
 		CGU_CON1_AHB_CLKSEL_PHASE1,
 		CGU_CON1_AHB_CLKSEL_PHASE1,
 		CGU_CON1_AHB_CLKSEL_PHASE1,
 		CGU_CON1_AHB_CLKSEL_PHASE2,
+		CGU_CON1_AHB_CLKSEL_PHASE1,
 	};
 	static const char *const PHASE_TEST_NAMES[] = {
 		"phase 1 K1=2 K2=1 produces 96 MHz",
 		"phase 1 K1=4 K2=2 produces 48 MHz",
 		"phase 1 K1=4 K2=3 produces 46.222 MHz",
 		"phase 2 K1=4 K2=2 produces 48 MHz",
+		"phase 1 K1=0 K2=2 selects fPLL/8",
 	};
 	uint32_t phase_calculated_hz[ARRAY_SIZE(PHASE_SOURCES)] = { 0 };
 	uint32_t phase_measured_khz[ARRAY_SIZE(PHASE_SOURCES)] = { 0 };
@@ -1021,13 +1090,21 @@ static void test_pll_source_frequencies(void) {
 		CGU_OSC |= CGU_OSC_PHASE1_POWER_UP | CGU_OSC_PHASE2_POWER_UP;
 		CGU_OSC |= CGU_OSC_PHASE1_BYPASS_N | CGU_OSC_PHASE2_BYPASS_N;
 		for (uint32_t index = 0; index < ARRAY_SIZE(PHASE_SOURCES); index++) {
-			uint32_t config_mask = index < 3 ? CGU_CON0_PHASE1_CONFIG : CGU_CON0_PHASE2_CONFIG;
-			uint32_t config_shift = index < 3 ? CGU_CON0_PHASE1_CONFIG_SHIFT : CGU_CON0_PHASE2_CONFIG_SHIFT;
+			bool phase2 = PHASE_SOURCES[index] == CGU_CON1_AHB_CLKSEL_PHASE2;
+			uint32_t config_mask = phase2 ? CGU_CON0_PHASE2_CONFIG : CGU_CON0_PHASE1_CONFIG;
+			uint32_t config_shift = phase2 ? CGU_CON0_PHASE2_CONFIG_SHIFT : CGU_CON0_PHASE1_CONFIG_SHIFT;
 			CGU_CON0 = (CGU_CON0 & ~config_mask) | (PHASE_CONFIGS[index] << config_shift);
 			selected_con1 = (safe_con1 & ~CGU_CON1_AHB_CLKSEL) | PHASE_SOURCES[index];
 			CGU_CON1 = selected_con1;
 			phase_calculated_hz[index] = cpu_get_ahb_freq();
 			CGU_CON1 = safe_con1;
+			/* The K1=0 case is measured last and may stop the core: if the phase
+			 * shaper has no output for K1=0, selecting it as the AHB source leaves
+			 * the ARM with no clock and the watchdog resets the phone before the
+			 * result line below is reached.  The line is printed first so that a
+			 * log ending here is itself the answer ("no counting"), not a lost run. */
+			if (PHASE_CONFIGS[index] == 0x10)
+				printf("# K1=0 K2=2: about to select phase 1 as the AHB source; if this is the last line, the source counted nothing\n");
 			phase_measured_khz[index] = measure_ahb_source_khz(selected_con1, safe_con1);
 		}
 	}
