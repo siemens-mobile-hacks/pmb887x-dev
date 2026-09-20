@@ -68,11 +68,11 @@ key = { CW = "NAV_UP", CCW = "NAV_DOWN" }
 # M2  JACK_TYPE Accessory type detect
 # M7  H/W VERSION S-Gold2 H/W version detect
 # M8  VSUPPLY Battery supply voltage measure
-# M9  I_MONITOR Current consumption measure / 47 mΩ × 0.01 A/A × 2.2 kΩ ≈ 1.03 mV/mA
+# M9  I_MONITOR Current consumption measure / 47 mOhn * 0.01 A/A * 2.2 kOhm ~= 1.03 mV/mA
 # M10 REMOTE_ADC Remote control key detect
-# M0 = the higher it goes the lower temp is reported, fw caps at -30°C
-# 500 - tbat_adc says 999 -> fw report 42°C
-# 683 - tbat_adc says 1364 -> fw report 22°C
+# M0 = the higher it goes the lower temp is reported, fw caps at -30C
+# 500 - tbat_adc says 999 -> fw report 42C
+# 683 - tbat_adc says 1364 -> fw report 22C
 M_0 = { type = "voltage", value = 683 }
 M_7 = { type = "resistor", value = 14800 }
 M_8 = { type = "resistor_divider", r1 = 390000, r2 = 100000, value = 4200 }
