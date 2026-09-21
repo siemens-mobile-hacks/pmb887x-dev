@@ -82,10 +82,11 @@ M_9 = { type = "voltage", value = 1500 } # ~150mV draw
 ram0_value = 0x0801
 
 [gpio.aliases]
-DIF_HD = "TF_DAT1"
 MMCI_DAT1 = "USB_CHG_EN"
 T_OUT7 = "KP_OUT4"
 T_OUT9 = "LCD_BACKLIGHT"
+I2S2_RX = "SCROLL_EN"
+I2S2_TX = "HALL_EN"
 I2S2_WA1 = "SLIDE_KEY_BACKLIGHT"
 DSPOUT0 = "SCROLL_KEY_A"
 DSPOUT1 = "SCROLL_KEY_B"
@@ -100,12 +101,11 @@ USART1_CTS = "AUDIO_AMP_EN"
 T_OUT12 = "AF_PWR_EN"
 T_OUT8 = "JACK_DETECT"
 CLKOUT0 = "SLIDE_OPEN"
-PIN109 = "SCROLL_EN"
+PIN109 = "USB_EOC"
 
 [gpio.inputs]
 RPWRON = 1 # remote power on (skips power button hold requirement)
 SLIDE_OPEN = 1
-SCROLL_EN = 1
 JACK_DETECT = 1 # high = no headphones connected
 
 [keyboard]

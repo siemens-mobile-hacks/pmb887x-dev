@@ -23,7 +23,7 @@ bus = "I2C"
 addr = 0x10
 
 [gpio.aliases]
-DIF_HD = "HW_DET_FM_RADIO"
+MMCI_DAT1 = "HW_DET_FM_RADIO"
 USIF_TXD_MTSR = "A_FM_STANDBY"
 
 [gpio.inputs]

@@ -18,8 +18,8 @@ addr = 0x31
 revision = 0xED
 
 [gpio.aliases]
-DIF_HD = "OPEN_CLOSE_SW1"
-MMCI_DAT1 = "OPEN_CLOSE_SW2"
+MMCI_DAT1 = "OPEN_CLOSE_SW1"
+DIF_HD = "OPEN_CLOSE_SW2"
 
 [gpio.inputs]
 # HWID 407
