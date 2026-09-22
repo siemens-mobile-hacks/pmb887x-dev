@@ -2,8 +2,21 @@
 cpu.type = "pmb8875"
 vendor = "Generic"
 model = "PMB8875"
+platform = "apoxi"
 
 [peripheral.SIM_CARD]
 type = "sim-card"
 bus = "SIM"
 in = { RST = "SIM:CC_RST" }
+
+[peripheral.FLASH0]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 0
+flash = { vid = 0x0020, pid = 0x8819 }
+
+[peripheral.SDRAM]
+type = "sdram"
+bus = "EBU"
+ebu.cs = 1
+ram.size = 0x2000000 # 32 MiB

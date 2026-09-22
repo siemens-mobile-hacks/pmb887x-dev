@@ -53,10 +53,11 @@ start:
 	.int	0, 0, 0, 0				@ Boot key
 	.int	0, 0, 0, 0
 #else
+start:
 	b	boot_entry
 #endif
 
-#if !defined(BOOT_FLASH)
+#if !defined(BOOT_FLASH) && (defined(BOARD_PLATFORM_APOXI) || defined(BOARD_PLATFORM_SIEMENS))
 # --------------------------------------------------
 .Lpreloader_header:
 #if defined(PMB8875)
@@ -71,13 +72,9 @@ start:
 	.byte	0
 #elif defined(BOARD_PLATFORM_APOXI)
 	.byte	1
-#else
-#error Unsupported platform
 #endif
 
-#if defined(BOOT_FLASH)
-	.int	0xA0000000
-#elif defined(BOOT_EXTRAM)
+#if defined(BOOT_EXTRAM)
 	.int	0xB0000000
 #elif defined(BOOT_INTRAM) || defined(BOOT_TCM)
 	.int	0x00082000
