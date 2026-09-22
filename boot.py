@@ -162,7 +162,7 @@ def read_preloader_header(data):
 	elif data[SIEMENS_BOOT_MARKER_OFFSET:SIEMENS_BOOT_MARKER_OFFSET + 16] == b"SIEMENS_BOOTCODE":
 		offset = 96
 	else:
-		offset = 0
+		offset = 4
 
 	magic = data[offset:offset + 7]
 	if magic not in (b"PMB8875", b"PMB8876"):
@@ -330,7 +330,6 @@ def forward_output(port, output):
 			return
 
 		output.write(data)
-		output.flush()
 
 
 def parse_address(value):

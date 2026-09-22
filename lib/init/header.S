@@ -52,9 +52,11 @@ start:
 	.int	3, 0
 	.int	0, 0, 0, 0				@ Boot key
 	.int	0, 0, 0, 0
+#else
+	b	boot_entry
 #endif
 
-#if defined(BOARD_PLATFORM_SIEMENS) || defined(BOARD_PLATFORM_APOXI)
+#if !defined(BOOT_FLASH)
 # --------------------------------------------------
 .Lpreloader_header:
 #if defined(PMB8875)
