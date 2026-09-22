@@ -40,9 +40,9 @@ static bool wait_for_semaphore(uint32_t expected) {
 }
 
 static void print_record(size_t pass) {
-	printf("# DSPMCS,%u", (uint32_t) pass);
+	printf("# DSPMCS,%lu", (uint32_t) pass);
 	for (size_t address = RESULT_BASE; address <= RESULT_LAST; address++)
-		printf(",%04X", (uint32_t) dsp_hw_shared_memory[address]);
+		printf(",%04lX", (uint32_t) dsp_hw_shared_memory[address]);
 	printf("\n");
 }
 
@@ -136,7 +136,7 @@ static bool run_pass(size_t pass) {
 		for (size_t i = 0; i < RESULT_WORDS; i++) {
 			char name[64];
 
-			tfp_sprintf(name, "result word %u repeats after DSP reset", (uint32_t) i);
+			sprintf(name, "result word %lu repeats after DSP reset", (uint32_t) i);
 			test_eq_u32(name, first_record[i], dsp_hw_shared_memory[RESULT_BASE + i]);
 		}
 	}
@@ -151,7 +151,7 @@ int main(void) {
 	for (size_t pass = 1; pass <= 2; pass++) {
 		char category[32];
 
-		tfp_sprintf(category, "Independent reset pass %u", (uint32_t) pass);
+		sprintf(category, "Independent reset pass %lu", (uint32_t) pass);
 		test_category(category);
 		if (!run_pass(pass))
 			break;

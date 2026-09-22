@@ -79,14 +79,14 @@ static void load_parameters(void) {
 }
 
 static void print_record(void) {
-	printf("# %s TX reset=%04X first=%04X stopped=%04X second=%04X wrap=%04X reset2=%04X "
-		"irqs=%04X seen=%04X pending=%04X ctrl=%04X\n",
+	printf("# %s TX reset=%04lX first=%04lX stopped=%04lX second=%04lX wrap=%04lX reset2=%04lX "
+		"irqs=%04lX seen=%04lX pending=%04lX ctrl=%04lX\n",
 		TEST_MODULE, (uint32_t) dsp_hw_shared_memory[0x0020], (uint32_t) dsp_hw_shared_memory[0x0021],
 		(uint32_t) dsp_hw_shared_memory[0x0022], (uint32_t) dsp_hw_shared_memory[0x0023],
 		(uint32_t) dsp_hw_shared_memory[0x0024], (uint32_t) dsp_hw_shared_memory[0x0025],
 		(uint32_t) dsp_hw_shared_memory[0x002E], (uint32_t) dsp_hw_shared_memory[0x0027],
 		(uint32_t) dsp_hw_shared_memory[0x0028], (uint32_t) dsp_hw_shared_memory[0x0029]);
-	printf("# %s PCM pointer=%04X ctrl=%04X irqs=%04X stopped=%04X\n", TEST_MODULE,
+	printf("# %s PCM pointer=%04lX ctrl=%04lX irqs=%04lX stopped=%04lX\n", TEST_MODULE,
 		(uint32_t) dsp_hw_shared_memory[0x002A], (uint32_t) dsp_hw_shared_memory[0x002B],
 		(uint32_t) dsp_hw_shared_memory[0x002C], (uint32_t) dsp_hw_shared_memory[0x002D]);
 }
@@ -146,8 +146,8 @@ static uint16_t transmit_pointer(uint16_t value) {
 }
 
 static void print_receive_record(void) {
-	printf("# %s RX reset=%04X first=%04X stopped=%04X second=%04X wrap=%04X reset2=%04X "
-		"irqs=%04X flags=%04X pending=%04X ctrl=%04X\n",
+	printf("# %s RX reset=%04lX first=%04lX stopped=%04lX second=%04lX wrap=%04lX reset2=%04lX "
+		"irqs=%04lX flags=%04lX pending=%04lX ctrl=%04lX\n",
 		TEST_MODULE, (uint32_t) dsp_hw_shared_memory[0x0020], (uint32_t) dsp_hw_shared_memory[0x0021],
 		(uint32_t) dsp_hw_shared_memory[0x0022], (uint32_t) dsp_hw_shared_memory[0x0023],
 		(uint32_t) dsp_hw_shared_memory[0x0024], (uint32_t) dsp_hw_shared_memory[0x0025],
@@ -180,7 +180,7 @@ static void validate_receive_record(void) {
 }
 
 static void print_receive_pcm_record(void) {
-	printf("# %s RX PCM reset=%04X pointer=%04X ctrl=%04X irqs=%04X stopped=%04X flags=%04X pending=%04X\n",
+	printf("# %s RX PCM reset=%04lX pointer=%04lX ctrl=%04lX irqs=%04lX stopped=%04lX flags=%04lX pending=%04lX\n",
 		TEST_MODULE, (uint32_t) dsp_hw_shared_memory[0x0025], (uint32_t) dsp_hw_shared_memory[0x002A],
 		(uint32_t) dsp_hw_shared_memory[0x002B], (uint32_t) dsp_hw_shared_memory[0x002C],
 		(uint32_t) dsp_hw_shared_memory[0x002D], (uint32_t) dsp_hw_shared_memory[0x0027],

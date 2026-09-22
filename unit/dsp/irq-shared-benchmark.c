@@ -39,12 +39,12 @@ static void print_irq_entry_results(void) {
 		uint16_t retired = dsp_hw_shared_memory[IRQ_ENTRY_BASE + i * 2];
 		uint16_t handlers = dsp_hw_shared_memory[IRQ_ENTRY_BASE + i * 2 + 1];
 
-		printf("# DSP-IRQ-ENTRY,%s,instructions-after-SINT=%u,handlers=%u\n",
+		printf("# DSP-IRQ-ENTRY,%s,instructions-after-SINT=%lu,handlers=%lu\n",
 			IRQ_NAMES[i], (uint32_t) retired, (uint32_t) handlers);
 		char name[80];
-		tfp_sprintf(name, "%s reaches its vector inside the probe window", IRQ_NAMES[i]);
+		sprintf(name, "%s reaches its vector inside the probe window", IRQ_NAMES[i]);
 		test_check(name, retired <= 16);
-		tfp_sprintf(name, "%s enters exactly one handler", IRQ_NAMES[i]);
+		sprintf(name, "%s enters exactly one handler", IRQ_NAMES[i]);
 		test_eq_u32(name, 1, handlers);
 	}
 }
@@ -59,7 +59,7 @@ static void print_dsp_irq_round_trip(void) {
 	uint32_t cycles = ticks * TIMER2_DIVIDER;
 	uint32_t cycles_milli = cycles * 1000 / DSP_IRQ_ROUND_TRIPS;
 
-	printf("# DSP-IRQ-ROUNDTRIP,requests=%u,timer2-ticks=%u,cycles-per-request=%u.%03u\n",
+	printf("# DSP-IRQ-ROUNDTRIP,requests=%u,timer2-ticks=%lu,cycles-per-request=%lu.%03lu\n",
 		DSP_IRQ_ROUND_TRIPS, ticks, cycles_milli / 1000, cycles_milli % 1000);
 	test_eq_u32("every sustained synthetic IRQ enters the handler", DSP_IRQ_ROUND_TRIPS, count);
 }
@@ -74,7 +74,7 @@ static void print_dsp_memory_score(const char *name, uint16_t ticks) {
 	uint32_t cycles_milli = cycles * 1000 / DSP_MEMORY_OPERATIONS;
 	uint32_t mwords_milli = (uint32_t) ((uint64_t) DSP_MEMORY_OPERATIONS * (DSP_CLOCK_HZ / 1000) / cycles);
 
-	printf("# DSP-MEMORY,%s,words=%u,timer2-ticks=%u,cycles-per-word=%u.%03u,Mword/s=%u.%03u\n",
+	printf("# DSP-MEMORY,%s,words=%u,timer2-ticks=%lu,cycles-per-word=%lu.%03lu,Mword/s=%lu.%03lu\n",
 		name, DSP_MEMORY_OPERATIONS, (uint32_t) ticks, cycles_milli / 1000, cycles_milli % 1000,
 		mwords_milli / 1000, mwords_milli % 1000);
 }
@@ -132,7 +132,7 @@ static void benchmark_arm_to_dsp_irq(size_t channel) {
 	}
 
 	char name[72];
-	tfp_sprintf(name, "MCU%u completes every ARM-to-DSP latency sample", (uint32_t) channel);
+	sprintf(name, "MCU%lu completes every ARM-to-DSP latency sample", (uint32_t) channel);
 	test_check(name, completed);
 	if (!completed)
 		return;
@@ -160,15 +160,15 @@ static void benchmark_arm_to_dsp_irq(size_t channel) {
 	uint32_t percentile95_ns = (uint32_t) ((uint64_t) percentile95 * 1000000000 / ticks_per_second);
 	uint32_t maximum_ns = (uint32_t) ((uint64_t) maximum * 1000000000 / ticks_per_second);
 
-	printf("# ARM-DSP-IRQ,MCU%u,samples=%u,ticks-min=%u,ticks-avg=%u,ticks-p50=%u,ticks-p95=%u,ticks-max=%u\n",
+	printf("# ARM-DSP-IRQ,MCU%lu,samples=%u,ticks-min=%lu,ticks-avg=%lu,ticks-p50=%lu,ticks-p95=%lu,ticks-max=%lu\n",
 		(uint32_t) channel, ARM_IRQ_SAMPLES, minimum, average, median, percentile95, maximum);
-	printf("# ARM-DSP-IRQ-NS,MCU%u,min=%u,avg=%u,p50=%u,p95=%u,max=%u\n",
+	printf("# ARM-DSP-IRQ-NS,MCU%lu,min=%lu,avg=%lu,p50=%lu,p95=%lu,max=%lu\n",
 		(uint32_t) channel, minimum_ns, average_ns, median_ns, percentile95_ns, maximum_ns);
 }
 
 static void print_arm_memory_score(const char *name, size_t operations, size_t bytes, stopwatch_t elapsed, uint32_t checksum) {
 	if (elapsed == 0) {
-		printf("# ARM-MEMORY,%s,accesses=%u,ticks=0,checksum=%08X\n",
+		printf("# ARM-MEMORY,%s,accesses=%lu,ticks=0,checksum=%08lX\n",
 			name, (uint32_t) operations, checksum);
 		return;
 	}
@@ -177,7 +177,7 @@ static void print_arm_memory_score(const char *name, size_t operations, size_t b
 	uint32_t mib_milli = (uint32_t) (bytes_per_second * 1000 / (1024 * 1024));
 	uint32_t ns_per_access = (uint32_t) ((uint64_t) elapsed * 1000000000 / stopwatch_ticks_per_s() / operations);
 
-	printf("# ARM-MEMORY,%s,accesses=%u,ticks=%u,MiB/s=%u.%03u,ns/access=%u,checksum=%08X\n",
+	printf("# ARM-MEMORY,%s,accesses=%lu,ticks=%lu,MiB/s=%lu.%03lu,ns/access=%lu,checksum=%08lX\n",
 		name, (uint32_t) operations, (uint32_t) elapsed, mib_milli / 1000, mib_milli % 1000,
 		ns_per_access, checksum);
 }

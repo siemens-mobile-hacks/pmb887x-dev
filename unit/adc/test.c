@@ -202,7 +202,7 @@ static void test_battery(void) {
 		minimum >= LI_ION_MIN_MV && maximum <= LI_ION_MAX_MV
 	);
 	test_check("M1_VBAT is stable", maximum - minimum <= 100);
-	printf("# M1_VBAT: %d..%d mV\n", minimum, maximum);
+	printf("# M1_VBAT: %ld..%ld mV\n", minimum, maximum);
 	printf("# Li-ion range: %d..%d mV\n", LI_ION_MIN_MV, LI_ION_MAX_MV);
 }
 

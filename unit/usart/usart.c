@@ -710,7 +710,7 @@ static void test_timeout(void) {
 	}
 
 	printf(
-		"# TMO measured/expected: 32 = %u/%u us, 64 = %u/%u us, 128 = %u/%u us\n",
+		"# TMO measured/expected: 32 = %lu/%lu us, 64 = %lu/%lu us, 128 = %lu/%lu us\n",
 		durations_us[0],
 		expected_us[0],
 		durations_us[1],
@@ -755,7 +755,7 @@ static void test_timeout(void) {
 	);
 
 	printf(
-		"# TMO reload after second byte: measured/expected = %u/%u us\n",
+		"# TMO reload after second byte: measured/expected = %lu/%lu us\n",
 		restarted_duration_us,
 		expected_us[2]
 	);

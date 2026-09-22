@@ -32,9 +32,12 @@ set(CMAKE_CXX_COMPILER ${ARM_CXX_COMPILER} CACHE INTERNAL "CMAKE_CXX_COMPILER")
 
 add_compile_options(-mcpu=arm926ej-s -mthumb-interwork -msoft-float -mlittle-endian -ffreestanding -ffunction-sections -fdata-sections)
 include_directories(${PMB887X_LIB_PATH} ${PMB887X_LIB_PATH}/gen/peripheral)
-add_link_options(-Wl,-z,max-page-size=1 -ffreestanding -nostartfiles -Wl,--gc-sections)
+add_link_options(-Wl,-z,max-page-size=1 -ffreestanding -nostartfiles -Wl,--gc-sections --specs=nano.specs --specs=nosys.specs)
 add_compile_definitions(BOARD_${BOARD_ID})
 add_compile_definitions(BOOT_${BOOT})
+if (SECURE_BOOT)
+	add_compile_definitions(SECURE_BOOT)
+endif()
 
 if (BOOT STREQUAL "intram")
 	add_compile_definitions(BOOT_INTRAM)
@@ -45,6 +48,9 @@ elseif (BOOT STREQUAL "extram")
 elseif (BOOT STREQUAL "flash")
 	add_compile_definitions(BOOT_FLASH)
 	add_link_options("SHELL:-T ${PMB887X_LIB_PATH}/ld/flash.ld")
+elseif (BOOT STREQUAL "tcm")
+	add_compile_definitions(BOOT_TCM)
+	add_link_options("SHELL:-T ${PMB887X_LIB_PATH}/ld/tcm.ld")
 elseif (BOOT STREQUAL "custom")
 	add_compile_definitions(BOOT_CUSTOM)
 	add_link_options("SHELL:-T ${LDSCRIPT}")
@@ -60,4 +66,15 @@ function(target_output_bin target)
         COMMAND ${ARM_OBJCOPY} -O binary ${input_name} ${output_name}
         COMMENT "Generating binary file: ${output_name}"
     )
+endfunction()
+
+function(target_sign_boot target)
+	find_package(Python3 COMPONENTS Interpreter REQUIRED)
+	set(sign_script "${PMB887X_LIB_PATH}/../boot/fakesign.py")
+	set_property(TARGET ${target} APPEND PROPERTY LINK_DEPENDS "${sign_script}")
+	add_custom_command(TARGET ${target} POST_BUILD
+		COMMAND "${Python3_EXECUTABLE}" "${sign_script}" "${CMAKE_CURRENT_BINARY_DIR}/${target}.bin"
+		COMMENT "Signing boot image: ${target}.bin"
+		VERBATIM
+	)
 endfunction()

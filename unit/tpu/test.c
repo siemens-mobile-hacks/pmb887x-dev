@@ -115,7 +115,7 @@ static void test_clock(void) {
 	uint32_t divided_fractional = measure_frequency(1, 1, 4);
 	uint32_t multiplied_fractional = measure_frequency(1, 2, 4);
 	printf(
-		"# counter: base %u Hz, RMC/2 %u Hz, L/2 %u Hz, K*2 %u Hz\n",
+		"# counter: base %lu Hz, RMC/2 %lu Hz, L/2 %lu Hz, K*2 %lu Hz\n",
 		(uint32_t) base,
 		(uint32_t) divided_rmc,
 		(uint32_t) divided_fractional,
@@ -137,7 +137,7 @@ static void test_clock(void) {
 	TPU_GSMCLK3 = TPU_GSMCLK3_LOAD;
 	uint32_t after_load = measure_running_frequency();
 	printf(
-		"# clock update: active %u Hz, without LOAD %u Hz, after LOAD %u Hz\n",
+		"# clock update: active %lu Hz, without LOAD %lu Hz, after LOAD %lu Hz\n",
 		(uint32_t) active,
 		(uint32_t) before_load,
 		(uint32_t) after_load
@@ -174,7 +174,7 @@ static void test_correction(void) {
 	uint32_t corrected_current = measure_wrap_us();
 	uint32_t regular_after = measure_wrap_us();
 	printf(
-		"# correction CTRL=0 above counter: write_counter=%u,current_tail_us=%u,following_us=%u\n",
+		"# correction CTRL=0 above counter: write_counter=%lu,current_tail_us=%lu,following_us=%lu\n",
 		(uint32_t) first_write_counter,
 		(uint32_t) corrected_current,
 		(uint32_t) regular_after
@@ -196,7 +196,7 @@ static void test_correction(void) {
 	regular_after = measure_wrap_us();
 	bool first_correction_kept = corrected_current >= 2500 && corrected_current <= 5000;
 	printf(
-		"# correction CTRL=0 active rewrite: first_counter=%u,second_counter=%u,readback=%u,current_tail_us=%u,following_us=%u\n",
+		"# correction CTRL=0 active rewrite: first_counter=%lu,second_counter=%lu,readback=%lu,current_tail_us=%lu,following_us=%lu\n",
 		(uint32_t) first_write_counter,
 		(uint32_t) second_write_counter,
 		(uint32_t) correction_after_second_write,
@@ -219,7 +219,7 @@ static void test_correction(void) {
 	uint32_t corrected_next = measure_wrap_us();
 	regular_after = measure_wrap_us();
 	printf(
-		"# correction CTRL=0 below counter: write_counter=%u,current_tail_us=%u,next_us=%u,following_us=%u\n",
+		"# correction CTRL=0 below counter: write_counter=%lu,current_tail_us=%lu,next_us=%lu,following_us=%lu\n",
 		(uint32_t) first_write_counter,
 		(uint32_t) regular_tail,
 		(uint32_t) corrected_next,
@@ -244,7 +244,7 @@ static void test_correction(void) {
 	corrected_next = measure_wrap_us();
 	regular_after = measure_wrap_us();
 	printf(
-		"# correction CTRL=0 delayed rewrite: first_counter=%u,current_tail_us=%u,second_counter=%u,readback=%u,next_tail_us=%u,following_us=%u\n",
+		"# correction CTRL=0 delayed rewrite: first_counter=%lu,current_tail_us=%lu,second_counter=%lu,readback=%lu,next_tail_us=%lu,following_us=%lu\n",
 		(uint32_t) first_write_counter,
 		(uint32_t) regular_tail,
 		(uint32_t) second_write_counter,
@@ -265,7 +265,7 @@ static void test_correction(void) {
 	uint32_t regular_current = measure_wrap_us();
 	corrected_next = measure_wrap_us();
 	printf(
-		"# correction CTRL=1: current %u us, next %u us\n",
+		"# correction CTRL=1: current %lu us, next %lu us\n",
 		(uint32_t) regular_current,
 		(uint32_t) corrected_next
 	);
@@ -285,7 +285,7 @@ static void test_offset(void) {
 	uint32_t direct_offset = measure_wrap_us();
 	uint32_t following_frame = measure_wrap_us();
 	printf(
-		"# offset CTRL=0: first reset %u us, following %u us\n",
+		"# offset CTRL=0: first reset %lu us, following %lu us\n",
 		(uint32_t) direct_offset,
 		(uint32_t) following_frame
 	);
@@ -300,7 +300,7 @@ static void test_offset(void) {
 	uint32_t regular_before_offset = measure_wrap_us();
 	uint32_t delayed_offset = measure_wrap_us();
 	printf(
-		"# offset CTRL=1: current %u us, next %u us, delayed reset %u us\n",
+		"# offset CTRL=1: current %lu us, next %lu us, delayed reset %lu us\n",
 		(uint32_t) regular_current,
 		(uint32_t) regular_before_offset,
 		(uint32_t) delayed_offset
@@ -325,7 +325,7 @@ static void test_frame_skip(void) {
 	uint32_t validation_period = measure_wrap_us();
 	uint32_t skipped_period = measure_wrap_us();
 	printf(
-		"# frame skip: validation %u us, skipped reset %u us\n",
+		"# frame skip: validation %lu us, skipped reset %lu us\n",
 		(uint32_t) validation_period,
 		(uint32_t) skipped_period
 	);

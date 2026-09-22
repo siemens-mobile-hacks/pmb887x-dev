@@ -15,8 +15,8 @@
 #endif
 
 static void print_record(void) {
-	printf("# MOD status reset=%04X irq1=%04X irq2=%04X active=%04X stopped=%04X ctrl=%04X "
-		"seen=%04X pending=%04X ram0=%04X ram511=%04X\n",
+	printf("# MOD status reset=%04lX irq1=%04lX irq2=%04lX active=%04lX stopped=%04lX ctrl=%04lX "
+		"seen=%04lX pending=%04lX ram0=%04lX ram511=%04lX\n",
 		(uint32_t) dsp_hw_shared_memory[0x0020], (uint32_t) dsp_hw_shared_memory[0x0021],
 		(uint32_t) dsp_hw_shared_memory[0x0022], (uint32_t) dsp_hw_shared_memory[0x0023],
 		(uint32_t) dsp_hw_shared_memory[0x0024], (uint32_t) dsp_hw_shared_memory[0x0025],

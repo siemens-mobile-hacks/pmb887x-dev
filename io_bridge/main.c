@@ -20,11 +20,7 @@ int main(void) {
 	GPIO_PIN(GPIO_I2C_SCL) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
 	GPIO_PIN(GPIO_I2C_SDA) = GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PPEN_OPENDRAIN | GPIO_PS_ALT | GPIO_DIR_IN;
 
-#ifdef PMB8876
-	usart_set_speed(USART0, UART_SPEED_1600000);
-#else
-	usart_set_speed(USART0, UART_SPEED_1600000);
-#endif
+	usart_set_speed(USART0, 1600000);
 	while (usart_getc(USART0) != 'O');
 	while (usart_getc(USART0) != 'K');
 	usart_putc(USART0, '.');
@@ -33,9 +29,8 @@ int main(void) {
 	cpu_enable_fiq(true);
 	
 	while (true) {
-		if (usart_has_byte(USART0)) {
+		if (usart_get_rx_fifo_level(USART0) != 0)
 			__asm__ volatile("swi 0");
-		}
 	}
 	
 	return 0;
@@ -43,7 +38,7 @@ int main(void) {
 
 static int command_handler(int irq) {
 	uint32_t value = 0, addr;
-	if (usart_has_byte(USART0)) {
+	if (usart_get_rx_fifo_level(USART0) != 0) {
 		char c = usart_getc(USART0);
 		
 		if (c == '.') {

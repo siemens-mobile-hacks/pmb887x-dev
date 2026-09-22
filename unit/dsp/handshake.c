@@ -118,7 +118,7 @@ static void run_race(size_t words, uint32_t interrupt_delay_us) {
 		}
 	}
 
-	printf("# words=%u SET-to-IRQ=%u us ACK polls=%u ticks=%u us=%u result: before-ACK=%u after-ACK=%u other=%u\n",
+	printf("# words=%lu SET-to-IRQ=%lu us ACK polls=%lu ticks=%lu us=%lu result: before-ACK=%lu after-ACK=%lu other=%lu\n",
 		(uint32_t) words, interrupt_delay_us, ack_polls, ack_ticks, ack_us,
 		(uint32_t) pattern_a, (uint32_t) pattern_b, (uint32_t) other);
 }
@@ -158,8 +158,9 @@ static void observe_dload(void) {
 		}
 	}
 
-	printf("# DLOAD shared: polls=%u first-while-busy=%u last-while-busy=%u final-first=%04X final-last=%04X\n",
-		polls, first_seen_while_busy, last_seen_while_busy, target[0], target[DSP_BOOT_MAX_WORDS - 1]);
+	printf("# DLOAD shared: polls=%lu first-while-busy=%lu last-while-busy=%lu final-first=%04lX final-last=%04lX\n",
+		polls, (uint32_t) first_seen_while_busy,
+		(uint32_t) last_seen_while_busy, (uint32_t) target[0], (uint32_t) target[DSP_BOOT_MAX_WORDS - 1]);
 	test_check("DLOAD destination is complete at ACK", target[0] == first_expected &&
 		target[DSP_BOOT_MAX_WORDS - 1] == last_expected);
 }

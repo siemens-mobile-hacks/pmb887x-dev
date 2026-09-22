@@ -178,9 +178,9 @@ static void print_capture(size_t first, size_t count) {
 		volatile uint16_t *record = DSP_SHARED_MEMORY + DSP_INSTRUCTION_RESULT_OFFSET + i * DSP_INSTRUCTION_RECORD_WORDS;
 		size_t case_index = first + i;
 
-		printf("# DSPCASE %u \"%s\"", (uint32_t) case_index, DSP_INSTRUCTION_CASE_NAMES[case_index]);
+		printf("# DSPCASE %lu \"%s\"", (uint32_t) case_index, DSP_INSTRUCTION_CASE_NAMES[case_index]);
 		for (size_t j = 0; j < DSP_INSTRUCTION_RECORD_WORDS; j++)
-			printf(" %04X", (uint32_t) record[j]);
+			printf(" %04lX", (uint32_t) record[j]);
 		printf("\n");
 	}
 }
@@ -202,7 +202,7 @@ int main(void) {
 	if (!test_check("DSP Mask ROM boot dispatcher becomes ready", reset_dsp()))
 		return test_finish();
 	uint16_t mask_id = DSP_SHARED_MEMORY[0];
-	printf("# DSP mask ID: %04X\n", (uint32_t) mask_id);
+	printf("# DSP mask ID: %04lX\n", (uint32_t) mask_id);
 	if (!test_eq_u32("EL71 DSP Mask ROM is 0801", DSP_EXPECTED_MASK_ID, mask_id))
 		return test_finish();
 
@@ -218,7 +218,7 @@ int main(void) {
 		for (size_t i = 0; i < count * DSP_INSTRUCTION_RECORD_WORDS; i++)
 			DSP_SHARED_MEMORY[DSP_INSTRUCTION_RESULT_OFFSET + i] = 0;
 
-		tfp_sprintf(name, "boot commands load instruction corpus shard %u", (uint32_t) shard);
+		sprintf(name, "boot commands load instruction corpus shard %lu", (uint32_t) shard);
 #ifdef DSP_INSTRUCTION_IMAGES_PACKED
 		const uint8_t *image = unpack_instruction_image(shard);
 #else
@@ -226,10 +226,10 @@ int main(void) {
 #endif
 		if (!test_check(name, load_dsp1_image(image)))
 			return test_finish();
-		tfp_sprintf(name, "BRANCH starts instruction corpus shard %u", (uint32_t) shard);
+		sprintf(name, "BRANCH starts instruction corpus shard %lu", (uint32_t) shard);
 		if (!test_check(name, branch_to_test()))
 			return test_finish();
-		tfp_sprintf(name, "instruction corpus shard %u reaches completion marker", (uint32_t) shard);
+		sprintf(name, "instruction corpus shard %lu reaches completion marker", (uint32_t) shard);
 		if (!test_check(name, wait_for_test_done())) {
 			print_capture(first, count);
 			return test_finish();

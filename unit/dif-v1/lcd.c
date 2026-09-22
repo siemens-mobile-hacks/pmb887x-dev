@@ -33,8 +33,8 @@ int main(void) {
 	lcd_transport_init();
 	test_eq_u32(
 		"CX75 DIF is enabled as master",
-		DIF_CON_MS_MASTER | DIF_CON_EN,
-		DIF_CON & (DIF_CON_MS | DIF_CON_EN)
+		SSC_CON_MS_MASTER | DIF_CON_PH,
+		DIF_CON & (DIF_CON_PH | DIF_CON_EN)
 	);
 
 	test_category("S1D13732 bridge");
@@ -72,7 +72,7 @@ int main(void) {
 		return test_finish();
 	bool fallback = detection.controller_type == LCD_CONTROLLER_UNKNOWN;
 	printf(
-		"# selected controller: %s, type=%u, nominal ID=%08X%s\n",
+		"# selected controller: %s, type=%u, nominal ID=%08lX%s\n",
 		lcd->name,
 		lcd->type,
 		lcd->id,

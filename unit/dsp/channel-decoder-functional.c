@@ -75,7 +75,7 @@ static void validate_decode(void) {
 		dsp_hw_shared_memory + 0x0690, sizeof(TRACEBACK_EXPECTED));
 	printf("# Channel decoder traceback:");
 	for (size_t i = 0; i < ARRAY_SIZE(TRACEBACK_EXPECTED); i++)
-		printf(" %04X", (uint32_t) dsp_hw_shared_memory[0x0690 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0690 + i]);
 	printf("\n");
 }
 
@@ -101,7 +101,7 @@ static bool run_pass(size_t pass) {
 	validate_decode();
 	validate_reset();
 	test_eq_u32("test reaches final memory phase", 1, dsp_hw_shared_memory[0x0602]);
-	printf("# Channel decoder ext0 pass %u complete\n", (uint32_t) pass);
+	printf("# Channel decoder ext0 pass %lu complete\n", (uint32_t) pass);
 	return true;
 }
 
@@ -112,7 +112,7 @@ int main(void) {
 	for (size_t pass = 1; pass <= 2; pass++) {
 		char category[32];
 
-		tfp_sprintf(category, "Independent reset pass %u", (uint32_t) pass);
+		sprintf(category, "Independent reset pass %lu", (uint32_t) pass);
 		test_category(category);
 		if (!run_pass(pass))
 			break;

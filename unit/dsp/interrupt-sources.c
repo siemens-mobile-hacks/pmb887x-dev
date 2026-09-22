@@ -119,19 +119,19 @@ static void run_mask(const char *name, uint16_t mask) {
 
 	dsp_hw_shared_memory[MASK_OFFSET] = mask;
 	dsp_hw_shared_memory[REQUEST_OFFSET] = ++request_sequence;
-	tfp_sprintf(check, "%s request completes", name);
+	sprintf(check, "%s request completes", name);
 	if (!test_check(check, dsp_hw_wait_shared(DONE_OFFSET, request_sequence, TEST_TIMEOUT_MS)))
 		return;
 
-	tfp_sprintf(check, "%s latches while globally disabled", name);
+	sprintf(check, "%s latches while globally disabled", name);
 	test_eq_u32(check, mask, dsp_hw_shared_memory[PENDING_BEFORE_ENABLE_OFFSET]);
-	tfp_sprintf(check, "%s does not enter its handler while disabled", name);
+	sprintf(check, "%s does not enter its handler while disabled", name);
 	test_eq_u32(check, 0, dsp_hw_shared_memory[ENTRIES_BEFORE_ENABLE_OFFSET]);
-	tfp_sprintf(check, "%s enters the bank handler exactly once", name);
+	sprintf(check, "%s enters the bank handler exactly once", name);
 	test_eq_u32(check, 1, dsp_hw_shared_memory[HANDLER_COUNT_OFFSET]);
-	tfp_sprintf(check, "%s is visible in the handler", name);
+	sprintf(check, "%s is visible in the handler", name);
 	test_eq_u32(check, mask, dsp_hw_shared_memory[HANDLER_FLAGS_OFFSET]);
-	tfp_sprintf(check, "%s is cleared by acknowledgement", name);
+	sprintf(check, "%s is cleared by acknowledgement", name);
 	test_eq_u32(check, 0, dsp_hw_shared_memory[FLAGS_AFTER_ACK_OFFSET]);
 }
 

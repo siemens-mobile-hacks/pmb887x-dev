@@ -231,16 +231,16 @@ static bool load_eelite_block(uint32_t block_id, uint16_t version, uint32_t size
 	enum eeprom_result result = eeprom_find_block(EEPROM_PARTITION_EELITE, block_id, block);
 
 	if (result != EEPROM_RESULT_OK) {
-		printf("# RF_CALIBRATION,error=read,eelite_block=%u,result=%u\n", block_id, (uint32_t) result);
+		printf("# RF_CALIBRATION,error=read,eelite_block=%lu,result=%lu\n", block_id, (uint32_t) result);
 		return false;
 	}
 	if (block->version != version) {
-		printf("# RF_CALIBRATION,error=format,eelite_block=%u,version=%u,size=%u\n",
+		printf("# RF_CALIBRATION,error=format,eelite_block=%lu,version=%u,size=%lu\n",
 			block_id, block->version, block->size);
 		return false;
 	}
 	if (block->size != size) {
-		printf("# RF_CALIBRATION,error=format,eelite_block=%u,version=%u,size=%u\n",
+		printf("# RF_CALIBRATION,error=format,eelite_block=%lu,version=%u,size=%lu\n",
 			block_id, block->version, block->size);
 		return false;
 	}
@@ -408,7 +408,7 @@ static bool load_agc_channel_calibration(void) {
 
 		for (size_t range = 0; range < AGC_RANGE_COUNT; range++) {
 			if (!load_agc_channel_record(band, range, &data->ranges[range])) {
-				printf("# RF_CALIBRATION,error=data_format,eelite_block=%u,band=%u,range=%u\n",
+				printf("# RF_CALIBRATION,error=data_format,eelite_block=%u,band=%lu,range=%lu\n",
 					AGC_CHANNEL_EELITE_BLOCK, (uint32_t) band, (uint32_t) range);
 				return false;
 			}
@@ -488,12 +488,12 @@ static bool load_afc_calibration(void) {
 	for (size_t i = 1; i < ARRAY_SIZE(points); i++) {
 		points[i] = data->remaining_points[i - 1];
 		if (points[i].frequency_div64 <= points[i - 1].frequency_div64) {
-			printf("# RF_CALIBRATION,error=afc_frequency,eelite_block=%u,index=%u\n",
+			printf("# RF_CALIBRATION,error=afc_frequency,eelite_block=%u,index=%lu\n",
 				AFC_EELITE_BLOCK, (uint32_t) i);
 			return false;
 		}
 		if (points[i].value <= points[i - 1].value) {
-			printf("# RF_CALIBRATION,error=afc_value,eelite_block=%u,index=%u\n",
+			printf("# RF_CALIBRATION,error=afc_value,eelite_block=%u,index=%lu\n",
 				AFC_EELITE_BLOCK, (uint32_t) i);
 			return false;
 		}

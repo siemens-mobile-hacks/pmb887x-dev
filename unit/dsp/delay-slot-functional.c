@@ -26,7 +26,7 @@ int main(void) {
 		return test_finish();
 
 	bool completed = dsp_hw_wait_shared(COMPLETE_OFFSET, COMPLETE_MARKER, 100);
-	printf("# DSP_DELAY_SLOT,low=%04X,high=%04X,status=%04X\n",
+	printf("# DSP_DELAY_SLOT,low=%04lX,high=%04lX,status=%04lX\n",
 		(uint32_t) dsp_hw_shared_memory[RESULT_LOW_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[RESULT_HIGH_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[RESULT_STATUS_OFFSET]);

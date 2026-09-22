@@ -280,7 +280,7 @@ static bool capture_reset_value(uint16_t address, uint16_t *value) {
 static void test_reset_registers(const char *module, const struct dsp_reset_register *registers, size_t count) {
 	char category[48];
 
-	tfp_sprintf(category, "%s / Reset values", module);
+	sprintf(category, "%s / Reset values", module);
 	test_category(category);
 	for (size_t i = 0; i < count; i++) {
 		const struct dsp_reset_register *reg = &registers[i];
@@ -288,18 +288,18 @@ static void test_reset_registers(const char *module, const struct dsp_reset_regi
 		uint16_t second = 0xDEAD;
 		char name[80];
 
-		tfp_sprintf(name, "%s.%s first reset capture completes", module, reg->name);
+		sprintf(name, "%s.%s first reset capture completes", module, reg->name);
 		bool first_completed = test_check(name, capture_reset_value(reg->address, &first));
-		tfp_sprintf(name, "%s.%s second reset capture completes", module, reg->name);
+		sprintf(name, "%s.%s second reset capture completes", module, reg->name);
 		bool second_completed = test_check(name, capture_reset_value(reg->address, &second));
-		printf("# TEAKRESET,%s,%s,%04X,%04X,%04X\n", module, reg->name, (uint32_t) reg->address,
+		printf("# TEAKRESET,%s,%s,%04lX,%04lX,%04lX\n", module, reg->name, (uint32_t) reg->address,
 			(uint32_t) first, (uint32_t) second);
 		if (!first_completed || !second_completed)
 			continue;
 
-		tfp_sprintf(name, "%s.%s reset value is deterministic", module, reg->name);
+		sprintf(name, "%s.%s reset value is deterministic", module, reg->name);
 		test_eq_u32(name, first, second);
-		tfp_sprintf(name, "%s.%s reset value", module, reg->name);
+		sprintf(name, "%s.%s reset value", module, reg->name);
 		test_eq_u32(name, reg->expected & reg->mask, first & reg->mask);
 	}
 }
@@ -308,9 +308,9 @@ static bool prepare_behavior(const char *module) {
 	char category[48];
 	char name[64];
 
-	tfp_sprintf(category, "%s / Behavior", module);
+	sprintf(category, "%s / Behavior", module);
 	test_category(category);
-	tfp_sprintf(name, "%s reset before behavior", module);
+	sprintf(name, "%s reset before behavior", module);
 	return test_check(name, dsp_reset());
 }
 
@@ -326,13 +326,13 @@ static void test_readback(const char *name, uint16_t address, uint16_t value, ui
 	char operation[80];
 	uint16_t actual = 0;
 
-	tfp_sprintf(operation, "%s write completes", name);
+	sprintf(operation, "%s write completes", name);
 	if (!write_checked(operation, address, value))
 		return;
-	tfp_sprintf(operation, "%s read completes", name);
+	sprintf(operation, "%s read completes", name);
 	if (!read_checked(operation, address, &actual))
 		return;
-	tfp_sprintf(operation, "%s reads back", name);
+	sprintf(operation, "%s reads back", name);
 	test_eq_u32(operation, value & mask, actual & mask);
 }
 
@@ -579,7 +579,7 @@ int main(void) {
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_reset()))
 		return test_finish();
 
-	printf("# DSP Mask ROM ID: %04X\n", (uint32_t) DSP_SHARED_MEMORY[0]);
+	printf("# DSP Mask ROM ID: %04lX\n", (uint32_t) DSP_SHARED_MEMORY[0]);
 	test_interrupt();
 	test_cipher();
 	test_timer1();

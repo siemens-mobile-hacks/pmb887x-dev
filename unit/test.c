@@ -304,8 +304,8 @@ bool test_eq_u32(const char *name, uint32_t expected, uint32_t actual) {
 	bool passed = report(name, actual == expected);
 
 	if (!passed) {
-		printf("# %sexpected: %08X%s\n", COLOR_YELLOW, expected, COLOR_RESET);
-		printf("# %sactual:   %08X%s\n", COLOR_RED, actual, COLOR_RESET);
+		printf("# %sexpected: %08lX%s\n", COLOR_YELLOW, expected, COLOR_RESET);
+		printf("# %sactual:   %08lX%s\n", COLOR_RED, actual, COLOR_RESET);
 	}
 
 	reset_timeout();
@@ -314,12 +314,12 @@ bool test_eq_u32(const char *name, uint32_t expected, uint32_t actual) {
 }
 
 bool test_id_u32(const char *name, uint32_t expected, uint32_t actual) {
-	printf("# %s: %08X\n", name, actual);
+	printf("# %s: %08lX\n", name, actual);
 	return test_eq_u32(name, expected, actual);
 }
 
 bool test_module_id(const char *name, uint32_t expected, uint32_t actual) {
-	printf("# %s: %08X\n", name, actual);
+	printf("# %s: %08lX\n", name, actual);
 	return test_eq_u32(name, expected & ~MOD_ID_REV, actual & ~MOD_ID_REV);
 }
 
@@ -328,7 +328,7 @@ bool test_module_clock(const char *name, uint32_t clc) {
 
 	report(name, enabled);
 	if (!enabled)
-		printf("# %sCLC=%08X%s\n", COLOR_RED, clc, COLOR_RESET);
+		printf("# %sCLC=%08lX%s\n", COLOR_RED, clc, COLOR_RESET);
 
 	reset_timeout();
 

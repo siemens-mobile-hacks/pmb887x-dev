@@ -229,7 +229,7 @@ static void print_region(size_t region, bool have_baseline) {
 	size_t differences = 0;
 	size_t printed = 0;
 
-	printf("#   %s hash=%08X", description->name,
+	printf("#   %s hash=%08lX", description->name,
 		(uint32_t) hash_region(description->offset, description->words));
 	for (size_t i = 0; i < description->words; i++) {
 		uint16_t value = dsp_hw_shared_memory[description->offset + i];
@@ -239,11 +239,11 @@ static void print_region(size_t region, bool have_baseline) {
 			continue;
 		differences++;
 		if (printed < MAX_PRINTED_DIFFERENCES) {
-			printf(" %u:%04X/%04X", (uint32_t) i, (uint32_t) reference, (uint32_t) value);
+			printf(" %lu:%04lX/%04lX", (uint32_t) i, (uint32_t) reference, (uint32_t) value);
 			printed++;
 		}
 	}
-	printf(" diff=%u\n", (uint32_t) differences);
+	printf(" diff=%lu\n", (uint32_t) differences);
 }
 
 static bool run_vector(const struct equalizer_vector *vector, uint16_t request, bool have_baseline) {
@@ -257,7 +257,7 @@ static bool run_vector(const struct equalizer_vector *vector, uint16_t request, 
 	test_eq_u32("equalizer is idle after completion", 0, dsp_hw_shared_memory[DONE_STATUS_OFFSET]);
 	test_eq_u32("equalizer completion raises its interrupt source", TEAK_INT_FINTA0_EQ,
 		dsp_hw_shared_memory[DONE_IRQ_OFFSET] & TEAK_INT_FINTA0_EQ);
-	printf("# EQV %02u %s count=%04X flags=%04X scale=%04X start=%04X/%04X done=%04X/%04X/%04X\n",
+	printf("# EQV %02lu %s count=%04lX flags=%04lX scale=%04lX start=%04lX/%04lX done=%04lX/%04lX/%04lX\n",
 		(uint32_t) request, vector->name, (uint32_t) vector->count, (uint32_t) vector->flags,
 		(uint32_t) vector->scale, (uint32_t) dsp_hw_shared_memory[START_CONF2_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[START_STATUS_OFFSET], (uint32_t) dsp_hw_shared_memory[DONE_CONF2_OFFSET],
@@ -269,7 +269,7 @@ static bool run_vector(const struct equalizer_vector *vector, uint16_t request, 
 
 static void print_words(size_t offset, size_t words) {
 	for (size_t i = 0; i < words; i++)
-		printf("%s%04X", i == 0 ? "" : ",", (uint32_t) dsp_hw_shared_memory[offset + i]);
+		printf("%s%04lX", i == 0 ? "" : ",", (uint32_t) dsp_hw_shared_memory[offset + i]);
 }
 
 static bool capture_compact_probe(const char *kind, size_t index, uint16_t value, uint16_t flags, uint16_t request) {
@@ -288,7 +288,7 @@ static bool capture_compact_probe(const char *kind, size_t index, uint16_t value
 	if ((dsp_hw_shared_memory[DONE_IRQ_OFFSET] & TEAK_INT_FINTA0_EQ) == 0)
 		return false;
 
-	printf("# %s %03u %04X m=", kind, (uint32_t) index, (uint32_t) value);
+	printf("# %s %03lu %04lX m=", kind, (uint32_t) index, (uint32_t) value);
 	print_words(metric_offset, 16);
 	printf(" p=");
 	print_words(path_offset, 16);
@@ -656,7 +656,7 @@ static bool run_multistep_characterization(uint16_t *request) {
 		if (!capture_compact_probe("EQTS", counts[i], counts[i], TEAK_EQ_CONF2_EQ_EDGE, (*request)++))
 			return false;
 
-		printf("# EQTS-DETAIL count=%u w1m=", (uint32_t) counts[i]);
+		printf("# EQTS-DETAIL count=%lu w1m=", (uint32_t) counts[i]);
 		print_words(W1_EML_OUTPUT_OFFSET, 16);
 		printf(" w2m=");
 		print_words(W2_EML_OUTPUT_OFFSET, 16);

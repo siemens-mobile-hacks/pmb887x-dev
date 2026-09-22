@@ -15,7 +15,7 @@ static void test_operation(const char *name, uint16_t status) {
 static bool find_flash(struct flash_device *flash) {
 	for (uint32_t i = 0; i < FLASH_CHIP_SELECT_COUNT; i++) {
 		if (cfi_probe(cfi_chip_selects[i], flash)) {
-			printf("# CS%u %04X:%04X\n", flash->cs, flash->manufacturer, flash->device);
+			printf("# CS%lu %04lX:%04lX\n", flash->cs, flash->manufacturer, flash->device);
 			return true;
 		}
 	}

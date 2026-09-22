@@ -48,17 +48,17 @@ static bool tx_ring_matches_vector(void) {
 }
 
 static void print_record(void) {
-	printf("# AFE RX reset=%04X first=%04X wrap=%04X restarted=%04X irqs=%04X seen=%04X pending=%04X bcon=%04X\n",
+	printf("# AFE RX reset=%04lX first=%04lX wrap=%04lX restarted=%04lX irqs=%04lX seen=%04lX pending=%04lX bcon=%04lX\n",
 		(uint32_t) dsp_hw_shared_memory[0x0020], (uint32_t) dsp_hw_shared_memory[0x0021],
 		(uint32_t) dsp_hw_shared_memory[0x0022], (uint32_t) dsp_hw_shared_memory[0x0023],
 		(uint32_t) dsp_hw_shared_memory[0x0024], (uint32_t) dsp_hw_shared_memory[0x0025],
 		(uint32_t) dsp_hw_shared_memory[0x0026], (uint32_t) dsp_hw_shared_memory[0x0027]);
-	printf("# AFE TX reset=%04X first=%04X wrap=%04X restarted=%04X irqs=%04X seen=%04X pending=%04X bcon=%04X\n",
+	printf("# AFE TX reset=%04lX first=%04lX wrap=%04lX restarted=%04lX irqs=%04lX seen=%04lX pending=%04lX bcon=%04lX\n",
 		(uint32_t) dsp_hw_shared_memory[0x0028], (uint32_t) dsp_hw_shared_memory[0x0029],
 		(uint32_t) dsp_hw_shared_memory[0x002A], (uint32_t) dsp_hw_shared_memory[0x002B],
 		(uint32_t) dsp_hw_shared_memory[0x002C], (uint32_t) dsp_hw_shared_memory[0x002D],
 		(uint32_t) dsp_hw_shared_memory[0x002E], (uint32_t) dsp_hw_shared_memory[0x002F]);
-	printf("# AFE power-down TX vector hash=%08X first=%04X last=%04X\n",
+	printf("# AFE power-down TX vector hash=%08lX first=%04lX last=%04lX\n",
 		hash_words(TX_SNAPSHOT_OFFSET, AFE_RING_WORDS),
 		(uint32_t) dsp_hw_shared_memory[TX_SNAPSHOT_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[TX_SNAPSHOT_OFFSET + AFE_RING_WORDS - 1]);

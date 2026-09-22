@@ -242,7 +242,7 @@ static void ebu_map_print(void) {
 		ebu_windows[cs].base = ((addrsel & EBU_ADDRSEL_BASE) >> EBU_ADDRSEL_BASE_SHIFT) << 12;
 		ebu_windows[cs].size = 1u << (27 - mask);
 
-		printf("# CS%u ADDRSEL=%08X REGENAB=%u MASK=%X ALTENAB=%u ALTSEG=%X BUSCON=%08X AGEN=%u PORTW=%u CTYPE=%u CMULT=%u WAIT=%u RO=%u\n",
+		printf("# CS%lu ADDRSEL=%08X REGENAB=%u MASK=%X ALTENAB=%u ALTSEG=%X BUSCON=%08X AGEN=%u PORTW=%u CTYPE=%u CMULT=%u WAIT=%u RO=%u\n",
 			cs, (unsigned int) addrsel, (unsigned int) (addrsel & EBU_ADDRSEL_REGENAB),
 			(unsigned int) mask, (unsigned int) (addrsel & EBU_ADDRSEL_ALTENAB),
 			(unsigned int) ((addrsel & EBU_ADDRSEL_ALTSEG) >> EBU_ADDRSEL_ALTSEG_SHIFT),
@@ -254,7 +254,7 @@ static void ebu_map_print(void) {
 			(unsigned int) ((buscon & EBU_BUSCON_WRITE) != 0));
 
 		if (ebu_windows[cs].live)
-			printf("#   CS%u window %08X-%08X [%u MiB]%s\n", cs,
+			printf("#   CS%lu window %08X-%08X [%u MiB]%s\n", cs,
 				(unsigned int) ebu_windows[cs].base,
 				(unsigned int) (ebu_windows[cs].base + ebu_windows[cs].size - 1),
 				(unsigned int) (ebu_windows[cs].size / 1024 / 1024),

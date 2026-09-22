@@ -327,10 +327,10 @@ static void test_read_words(const char *name, uint16_t command, uint16_t source,
 	char command_name[80];
 	char contents_name[80];
 
-	tfp_sprintf(command_name, "%s command completes", name);
+	sprintf(command_name, "%s command completes", name);
 	if (!test_check(command_name, read_words(command, source, words)))
 		return;
-	tfp_sprintf(contents_name, "%s returns expected words", name);
+	sprintf(contents_name, "%s returns expected words", name);
 	test_eq_memory(contents_name, expected, DSP_SHARED_MEMORY + DSP_BOOT_RESULT_OFFSET, words * sizeof(uint16_t));
 }
 
@@ -389,10 +389,10 @@ static bool test_mask_rom_read(const char *name, uint16_t command, uint16_t sour
 	char command_name[80];
 	char contents_name[80];
 
-	tfp_sprintf(command_name, "%s command completes", name);
+	sprintf(command_name, "%s command completes", name);
 	if (!test_check(command_name, read_words(command, source, words)))
 		return false;
-	tfp_sprintf(contents_name, "%s returns expected words", name);
+	sprintf(contents_name, "%s returns expected words", name);
 	if (verify_fingerprint)
 		test_eq_memory(contents_name, expected, DSP_SHARED_MEMORY + DSP_BOOT_RESULT_OFFSET,
 			words * sizeof(uint16_t));
@@ -411,7 +411,7 @@ static void test_program_mask_rom(void) {
 	for (size_t i = 0; i < dsp_mask_config->program_rom_fingerprint_count; i++) {
 		char name[48];
 
-		tfp_sprintf(name, "PREAD Program Mask ROM P:%04X",
+		sprintf(name, "PREAD Program Mask ROM P:%04lX",
 			(uint32_t) dsp_mask_config->program_rom_addresses[i]);
 		test_mask_rom_read(name, DSP_BOOT_PREAD, dsp_mask_config->program_rom_addresses[i],
 			dsp_mask_config->program_rom_fingerprints[i], ARRAY_SIZE(dsp_mask_config->program_rom_fingerprints[i]),
@@ -450,11 +450,11 @@ static bool test_user_command_pipe(size_t pipe_index) {
 	char executed_name[64];
 
 	DSP_SHARED_MEMORY[DSP_USER_RESULT_OFFSET] = 0;
-	tfp_sprintf(accepted_name, "pipe %u accepts custom user command", (uint32_t) pipe_index);
+	sprintf(accepted_name, "pipe %lu accepts custom user command", (uint32_t) pipe_index);
 	if (!test_check(accepted_name, submit_runtime_command(pipe_index, dsp_mask_config->user_command, parameters,
 		ARRAY_SIZE(parameters))))
 		return false;
-	tfp_sprintf(executed_name, "pipe %u executes custom user handler", (uint32_t) pipe_index);
+	sprintf(executed_name, "pipe %lu executes custom user handler", (uint32_t) pipe_index);
 	return test_eq_u32(executed_name, parameters[0], DSP_SHARED_MEMORY[DSP_USER_RESULT_OFFSET]);
 }
 
@@ -468,19 +468,19 @@ static bool test_switch_command(const char *name, uint16_t command, uint16_t sta
 
 	for (uint16_t state = 0; state <= 1; state++) {
 		parameters[0] = state;
-		tfp_sprintf(command_name, "%s accepts state %u", name, (uint32_t) state);
+		sprintf(command_name, "%s accepts state %lu", name, (uint32_t) state);
 		if (!test_check(command_name, submit_runtime_command(0, command, parameters, ARRAY_SIZE(parameters))))
 			return false;
-		tfp_sprintf(read_name, "READ_DSP reads %s state %u", name, (uint32_t) state);
+		sprintf(read_name, "READ_DSP reads %s state %lu", name, (uint32_t) state);
 		if (!test_check(read_name, submit_runtime_command(0, 33, read_parameters, ARRAY_SIZE(read_parameters))))
 			return false;
-		tfp_sprintf(state_name, "%s stores state %u", name, (uint32_t) state);
+		sprintf(state_name, "%s stores state %lu", name, (uint32_t) state);
 		if (!test_eq_u32(state_name, state, DSP_SHARED_MEMORY[result_offset]))
 			return false;
 	}
 
 	parameters[0] = 0;
-	tfp_sprintf(command_name, "%s restores off state", name);
+	sprintf(command_name, "%s restores off state", name);
 	return test_check(command_name, submit_runtime_command(0, command, parameters, ARRAY_SIZE(parameters)));
 }
 
@@ -490,10 +490,10 @@ static void test_runtime_read(const char *name, uint16_t source, uint16_t result
 	char read_name[80];
 	char contents_name[80];
 
-	tfp_sprintf(read_name, "READ_DSP reads %s", name);
+	sprintf(read_name, "READ_DSP reads %s", name);
 	if (!test_check(read_name, submit_runtime_command(0, 33, parameters, ARRAY_SIZE(parameters))))
 		return;
-	tfp_sprintf(contents_name, "%s has expected contents", name);
+	sprintf(contents_name, "%s has expected contents", name);
 	test_eq_memory(contents_name, expected, DSP_SHARED_MEMORY + result_offset, words * sizeof(uint16_t));
 }
 
@@ -712,7 +712,7 @@ int main(void) {
 		return test_finish();
 
 	uint16_t mask_id = DSP_SHARED_MEMORY[0];
-	printf("# DSP mask ID: %04X\n", (uint32_t) mask_id);
+	printf("# DSP mask ID: %04lX\n", (uint32_t) mask_id);
 	uint16_t mask_family = mask_id & DSP_MASK_ID_FAMILY_MASK;
 	if (!test_check("DSP Mask ROM family matches the CPU", mask_family == DSP_MASK_ID_FAMILY))
 		return test_finish();

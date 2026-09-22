@@ -136,7 +136,7 @@ static bool run_segment(size_t index) {
 	dsp_hw_shared_memory[RESPONSE_OFFSET] = 0;
 	dsp_hw_shared_memory[REQUEST_OFFSET] = request;
 	if (!test_check("burst runner completes the segment", dsp_hw_wait_shared(RESPONSE_OFFSET, request, 1000))) {
-		printf("# runner request=%04X response=%04X status=%04X count=%04X irq=%04X\n",
+		printf("# runner request=%04lX response=%04lX status=%04lX count=%04lX irq=%04lX\n",
 			(uint32_t) dsp_hw_shared_memory[REQUEST_OFFSET], (uint32_t) dsp_hw_shared_memory[RESPONSE_OFFSET],
 			(uint32_t) dsp_hw_shared_memory[DONE_STATUS_OFFSET],
 			(uint32_t) dsp_hw_shared_memory[DONE_COUNT_OFFSET],
@@ -161,8 +161,8 @@ static bool run_segment(size_t index) {
 		hash_words(SOUT_OUTPUT_OFFSET, 128));
 	test_eq_u32("latency RAM matches the hardware burst vector", segment->latency_hash,
 		hash_words(ELAT_OUTPUT_OFFSET, 64));
-	printf("# EQ-BURST segment=%u side=%s count=%u scale=%04X metrics=%08X paths=%08X "
-		"hard=%08X soft=%08X latency=%08X\n",
+	printf("# EQ-BURST segment=%lu side=%s count=%lu scale=%04lX metrics=%08lX paths=%08lX "
+		"hard=%08lX soft=%08lX latency=%08lX\n",
 		(uint32_t) index, segment->right ? "right" : "left", (uint32_t) segment->count,
 		(uint32_t) segment->scale, (uint32_t) hash_words(w2_metric_offset, 16),
 		(uint32_t) hash_words(w2_path_offset, 16), (uint32_t) hash_words(HOUT_OUTPUT_OFFSET, 64),

@@ -56,7 +56,7 @@ static bool scan_channels(void) {
 	if (!gsm_l1_scan_channels(candidates, ARRAY_SIZE(candidates), &candidate_count, CHANNEL_SCAN_TIMEOUT_MS))
 		return false;
 
-	printf("# GSM_SCAN,candidates=%u\n", (uint32_t) candidate_count);
+	printf("# GSM_SCAN,candidates=%lu\n", (uint32_t) candidate_count);
 	return true;
 }
 
@@ -76,8 +76,8 @@ static bool search_fcch(void) {
 			continue;
 
 		detected_candidates++;
-		printf("# FCCH,candidate=%u,band=%s,arfcn=%u,rx_level_dbm=%d,gain_state=%04X,windows=%u,status=%u,start=%u,"
-			"quality=%u,rms=%d,frequency=%d,phase_tick=%u,afc_frequency=%d,com=%04X\n", (uint32_t) i + 1,
+		printf("# FCCH,candidate=%lu,band=%s,arfcn=%lu,rx_level_dbm=%ld,gain_state=%04lX,windows=%lu,status=%lu,start=%lu,"
+			"quality=%lu,rms=%ld,frequency=%ld,phase_tick=%lu,afc_frequency=%ld,com=%04lX\n", (uint32_t) i + 1,
 			gsm_band_get_name(candidate->band), (uint32_t) candidate->arfcn,
 			round_dbm_x16(candidate->rx_level_dbm_x16), (uint32_t) candidate->gain_state, result->attempt_count,
 			(uint32_t) result->status,
@@ -91,15 +91,15 @@ static bool search_fcch(void) {
 		const struct gsm_l1_candidate *candidate = &candidates[i];
 		const struct gsm_l1_fcch_result *result = &fcch_results[i];
 
-		printf("# FCCH_MISS,candidate=%u,band=%s,arfcn=%u,rx_level_dbm=%d,gain_state=%04X,windows=%u,status=%u,"
-			"start=%u,quality=%u,rms=%d,frequency=%d,com=%04X\n", (uint32_t) i + 1,
+		printf("# FCCH_MISS,candidate=%lu,band=%s,arfcn=%lu,rx_level_dbm=%ld,gain_state=%04lX,windows=%lu,status=%lu,"
+			"start=%lu,quality=%lu,rms=%ld,frequency=%ld,com=%04lX\n", (uint32_t) i + 1,
 			gsm_band_get_name(candidate->band), (uint32_t) candidate->arfcn,
 			round_dbm_x16(candidate->rx_level_dbm_x16), (uint32_t) candidate->gain_state, result->attempt_count,
 			(uint32_t) result->status, (uint32_t) result->start, (uint32_t) result->quality, (int32_t) result->rms,
 			(int32_t) result->frequency, (uint32_t) result->communication_flags);
 	}
 
-	printf("# FCCH_STATS,candidates=%u,windows=%u,detected_candidates=%u\n",
+	printf("# FCCH_STATS,candidates=%lu,windows=%lu,detected_candidates=%lu\n",
 		(uint32_t) candidate_count, windows, detected_candidates);
 	return true;
 }
@@ -117,7 +117,7 @@ static bool probe_maximum_gain_fcch(void) {
 		if (!gsm_l1_search_fcch(&candidate, &result, FCCH_CANDIDATE_TIMEOUT_MS))
 			return false;
 
-		printf("# FCCH_GAIN_PROBE,band=%s,arfcn=%u,gain_state=%04X,detected=%u,windows=%u,status=%u,rms=%d\n",
+		printf("# FCCH_GAIN_PROBE,band=%s,arfcn=%lu,gain_state=%04lX,detected=%lu,windows=%lu,status=%lu,rms=%ld\n",
 			gsm_band_get_name(candidate.band), (uint32_t) candidate.arfcn, (uint32_t) candidate.gain_state,
 			(uint32_t) result.detected, result.attempt_count, (uint32_t) result.status, (int32_t) result.rms);
 		return true;
@@ -149,8 +149,8 @@ static bool decode_sch(void) {
 			continue;
 
 		decoded_candidates++;
-		printf("# SCH,candidate=%u,band=%s,arfcn=%u,attempts=%u,refinement_attempts=%u,status=%u,"
-			"metric=%u,data=%08X,position=%d,bsic=%u,ncc=%u,bcc=%u,frame=%u,com=%04X\n", (uint32_t) i + 1,
+		printf("# SCH,candidate=%lu,band=%s,arfcn=%lu,attempts=%lu,refinement_attempts=%lu,status=%lu,"
+			"metric=%lu,data=%08lX,position=%ld,bsic=%lu,ncc=%lu,bcc=%lu,frame=%lu,com=%04lX\n", (uint32_t) i + 1,
 			gsm_band_get_name(candidate->band), (uint32_t) candidate->arfcn, result.attempt_count,
 			result.refinement_attempt_count, (uint32_t) result.status, (uint32_t) result.metric, result.data,
 			(int32_t) result.equalizer_position, (uint32_t) result.bsic, (uint32_t) (result.bsic >> 3),
@@ -160,14 +160,14 @@ static bool decode_sch(void) {
 	if (decoded_candidates == 0 && attempted_candidates != 0) {
 		const struct gsm_l1_candidate *candidate = &candidates[last_candidate];
 
-		printf("# SCH_MISS,candidate=%u,band=%s,arfcn=%u,attempts=%u,refinement_attempts=%u,status=%u,"
-			"metric=%u,position=%d,com=%04X\n", (uint32_t) last_candidate + 1, gsm_band_get_name(candidate->band),
+		printf("# SCH_MISS,candidate=%lu,band=%s,arfcn=%lu,attempts=%lu,refinement_attempts=%lu,status=%lu,"
+			"metric=%lu,position=%ld,com=%04lX\n", (uint32_t) last_candidate + 1, gsm_band_get_name(candidate->band),
 			(uint32_t) candidate->arfcn, last_result.attempt_count, last_result.refinement_attempt_count,
 			(uint32_t) last_result.status, (uint32_t) last_result.metric, (int32_t) last_result.equalizer_position,
 			(uint32_t) last_result.communication_flags);
 	}
 
-	printf("# SCH_STATS,candidates=%u,decoded_candidates=%u\n", attempted_candidates, decoded_candidates);
+	printf("# SCH_STATS,candidates=%lu,decoded_candidates=%lu\n", attempted_candidates, decoded_candidates);
 	return decoded_candidates != 0;
 }
 
@@ -186,13 +186,13 @@ int main(void) {
 	if (receiver_ready)
 		transceiver_ready = test_check("RF transceiver initializes through TPU control RAM", gsm_l1_trx_init());
 
-	printf("# STAGE_TIME,stage=receiver_setup,elapsed_ms=%u\n", stopwatch_elapsed_ms(receiver_setup_start));
+	printf("# STAGE_TIME,stage=receiver_setup,elapsed_ms=%lu\n", stopwatch_elapsed_ms(receiver_setup_start));
 
 	test_category("GSM channel scan");
 	stopwatch_t channel_scan_start = stopwatch_get();
 	bool scan_completed = transceiver_ready && scan_channels();
 	test_check("All supported GSM bands scan", scan_completed);
-	printf("# STAGE_TIME,stage=channel_scan,elapsed_ms=%u\n", stopwatch_elapsed_ms(channel_scan_start));
+	printf("# STAGE_TIME,stage=channel_scan,elapsed_ms=%lu\n", stopwatch_elapsed_ms(channel_scan_start));
 
 	test_category("FCCH and AFC");
 	stopwatch_t fcch_scan_start = stopwatch_get();
@@ -200,13 +200,13 @@ int main(void) {
 	test_check("FCCH scan completes", fcch_completed);
 	bool gain_probe_completed = fcch_completed && probe_maximum_gain_fcch();
 	test_check("Maximum-gain FCCH probe completes", gain_probe_completed);
-	printf("# STAGE_TIME,stage=fcch_scan,elapsed_ms=%u\n", stopwatch_elapsed_ms(fcch_scan_start));
+	printf("# STAGE_TIME,stage=fcch_scan,elapsed_ms=%lu\n", stopwatch_elapsed_ms(fcch_scan_start));
 
 	test_category("SCH and BSIC");
 	stopwatch_t sch_scan_start = stopwatch_get();
 	bool sch_completed = fcch_completed && decode_sch();
 	test_check("SCH decodes for at least one FCCH candidate", sch_completed);
-	printf("# STAGE_TIME,stage=sch_scan,elapsed_ms=%u\n", stopwatch_elapsed_ms(sch_scan_start));
+	printf("# STAGE_TIME,stage=sch_scan,elapsed_ms=%lu\n", stopwatch_elapsed_ms(sch_scan_start));
 
 	gsm_l1_deinit();
 	return test_finish();

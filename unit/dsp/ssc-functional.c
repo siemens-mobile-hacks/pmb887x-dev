@@ -45,11 +45,11 @@ static const uint16_t FIFO_WORDS[] = {
 static uint16_t first_record[RESULT_WORDS];
 
 static void print_record(size_t pass) {
-	printf("# DSPSSC,%u", (uint32_t) pass);
+	printf("# DSPSSC,%lu", (uint32_t) pass);
 	for (size_t address = RESULT_BASE; address <= 0x057F; address++)
-		printf(",%04X", (uint32_t) dsp_hw_shared_memory[address]);
+		printf(",%04lX", (uint32_t) dsp_hw_shared_memory[address]);
 	for (size_t address = FIFO_RESULT_BASE; address <= RESULT_LAST; address++)
-		printf(",%04X", (uint32_t) dsp_hw_shared_memory[address]);
+		printf(",%04lX", (uint32_t) dsp_hw_shared_memory[address]);
 	printf("\n");
 }
 
@@ -63,7 +63,7 @@ static void validate_direct_loopback(void) {
 			char name[72];
 			size_t result = DIRECT_RESULT_BASE + width_index * ARRAY_SIZE(DIRECT_WORDS) + format;
 
-			tfp_sprintf(name, "%u-bit format %u loopback data", width, (uint32_t) format);
+			sprintf(name, "%lu-bit format %lu loopback data", width, (uint32_t) format);
 			test_eq_u32(name, DIRECT_WORDS[format] & mask, dsp_hw_shared_memory[result]);
 		}
 	}
@@ -111,7 +111,7 @@ static void validate_fifo(void) {
 	for (size_t i = 0; i < ARRAY_SIZE(FIFO_WORDS); i++) {
 		char name[56];
 
-		tfp_sprintf(name, "FIFO word %u preserves order", (uint32_t) i);
+		sprintf(name, "FIFO word %lu preserves order", (uint32_t) i);
 		test_eq_u32(name, FIFO_WORDS[i], dsp_hw_shared_memory[FIFO_RESULT_BASE + i]);
 	}
 }
@@ -195,7 +195,7 @@ int main(void) {
 	for (size_t pass = 1; pass <= 2; pass++) {
 		char category[32];
 
-		tfp_sprintf(category, "Independent reset pass %u", (uint32_t) pass);
+		sprintf(category, "Independent reset pass %lu", (uint32_t) pass);
 		test_category(category);
 		if (!run_pass(pass))
 			break;

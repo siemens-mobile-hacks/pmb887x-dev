@@ -81,7 +81,7 @@ int main(void) {
 		return test_finish();
 
 	uint16_t mask_id = DSP_SHARED_MEMORY[0];
-	printf("# transport=mask-rom DREAD mask-id=%04X range=%04X-%04X attempts=%u reset-before-each=yes\n",
+	printf("# transport=mask-rom DREAD mask-id=%04lX range=%04lX-%04lX attempts=%lu reset-before-each=yes\n",
 		(uint32_t) mask_id, (uint32_t) DSP_PERIPHERAL_FIRST, (uint32_t) DSP_PERIPHERAL_LAST,
 		(uint32_t) DSP_PROBE_ATTEMPTS);
 	printf("# DSPDATA,address,status1,value1,status2,value2,classification\n");
@@ -118,13 +118,13 @@ int main(void) {
 			classification = "INCOMPLETE";
 		}
 
-		printf("# DSPDATA,%04X,%s,%04X,%s,%04X,%s\n", address,
+		printf("# DSPDATA,%04lX,%s,%04X,%s,%04X,%s\n", address,
 			probe_status(&results[0]), results[0].value, probe_status(&results[1]), results[1].value,
 			classification);
 		test_watchdog_serve();
 	}
 
-	printf("# summary: completed=%u stable=%u unstable=%u read-timeouts=%u reset-timeouts=%u\n",
+	printf("# summary: completed=%lu stable=%lu unstable=%lu read-timeouts=%lu reset-timeouts=%lu\n",
 		(uint32_t) completed, (uint32_t) stable, (uint32_t) unstable,
 		(uint32_t) read_timeouts, (uint32_t) reset_timeouts);
 	test_check("DSP reset recovers every isolated probe", reset_timeouts == 0);

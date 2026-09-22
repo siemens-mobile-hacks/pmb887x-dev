@@ -126,7 +126,7 @@ static void print_ihex_data(uint32_t address, const volatile uint16_t *words, si
 		*current_upper_address = upper_address;
 	}
 
-	printf(":%02X%04X00", byte_count, lower_address);
+	printf(":%02lX%04X00", byte_count, lower_address);
 	for (size_t i = 0; i < word_count; i++) {
 		uint8_t low = words[i];
 		uint8_t high = words[i] >> 8;
@@ -183,7 +183,7 @@ int main(void) {
 
 	uint16_t mask_id = dsp_shared_memory[0];
 	uint16_t mask_family = mask_id & DSP_MASK_ID_FAMILY_MASK;
-	printf("# DSP mask ID: %04X\n", (uint32_t) mask_id);
+	printf("# DSP mask ID: %04lX\n", (uint32_t) mask_id);
 	if (!test_check("DSP Mask ROM ID is supported",
 		mask_family == DSP_MASK_ID_FAMILY_06XX || mask_family == DSP_MASK_ID_FAMILY_08XX))
 		return test_finish();
@@ -191,8 +191,8 @@ int main(void) {
 		&ROM_LAYOUT_06XX : &ROM_LAYOUT_08XX;
 
 #ifdef DSP_DUMP_DATA_ROM
-	printf("# Convert: rg -a '^:' /tmp/dsp-%04X-data-rom.log > /tmp/dsp-%04X-data-rom.hex && "
-		"objcopy -I ihex -O binary /tmp/dsp-%04X-data-rom.hex ../rom/dsp/%04X-data-rom.bin\n",
+	printf("# Convert: rg -a '^:' /tmp/dsp-%04lX-data-rom.log > /tmp/dsp-%04lX-data-rom.hex && "
+		"objcopy -I ihex -O binary /tmp/dsp-%04lX-data-rom.hex ../rom/dsp/%04lX-data-rom.bin\n",
 		(uint32_t) mask_id, (uint32_t) mask_id, (uint32_t) mask_id, (uint32_t) mask_id);
 	test_category("Data space dump");
 	uint16_t current_upper_address = UINT16_MAX;
@@ -207,7 +207,7 @@ int main(void) {
 		printf(":00000001FF\n");
 		return test_finish();
 	}
-	printf("# DSP fixed data ROM word-wise FNV-1a: %08X\n", fixed_hash);
+	printf("# DSP fixed data ROM word-wise FNV-1a: %08lX\n", fixed_hash);
 
 	for (size_t page = 0; page < layout->data_page_count; page++) {
 		if (!test_check("DLOAD selects data ROM bank", dsp_dload_word(layout->page_address, page))) {
@@ -221,11 +221,11 @@ int main(void) {
 			printf(":00000001FF\n");
 			return test_finish();
 		}
-		printf("# DSP data ROM bank %u word-wise FNV-1a: %08X\n", (uint32_t) page, page_hashes[page]);
+		printf("# DSP data ROM bank %lu word-wise FNV-1a: %08lX\n", (uint32_t) page, page_hashes[page]);
 	}
 #else
-	printf("# Convert: rg -a '^:' /tmp/dsp-%04X-program-rom.log > /tmp/dsp-%04X-program-rom.hex && "
-		"objcopy -I ihex -O binary /tmp/dsp-%04X-program-rom.hex ../rom/dsp/%04X-program-rom.bin\n",
+	printf("# Convert: rg -a '^:' /tmp/dsp-%04lX-program-rom.log > /tmp/dsp-%04lX-program-rom.hex && "
+		"objcopy -I ihex -O binary /tmp/dsp-%04lX-program-rom.hex ../rom/dsp/%04lX-program-rom.bin\n",
 		(uint32_t) mask_id, (uint32_t) mask_id, (uint32_t) mask_id, (uint32_t) mask_id);
 	test_category("Program space dump");
 	uint16_t current_upper_address = UINT16_MAX;
@@ -240,7 +240,7 @@ int main(void) {
 		printf(":00000001FF\n");
 		return test_finish();
 	}
-	printf("# DSP fixed program ROM word-wise FNV-1a: %08X\n", fixed_hash);
+	printf("# DSP fixed program ROM word-wise FNV-1a: %08lX\n", fixed_hash);
 
 	for (size_t page = 0; page < layout->program_page_count; page++) {
 		if (!test_check("DLOAD selects program ROM bank", dsp_dload_word(layout->page_address,
@@ -255,7 +255,7 @@ int main(void) {
 			printf(":00000001FF\n");
 			return test_finish();
 		}
-		printf("# DSP program ROM bank %u word-wise FNV-1a: %08X\n", (uint32_t) page, page_hashes[page]);
+		printf("# DSP program ROM bank %lu word-wise FNV-1a: %08lX\n", (uint32_t) page, page_hashes[page]);
 	}
 	bool banks_distinct = page_hashes[0] != page_hashes[1];
 	if (layout->program_page_count == 3)

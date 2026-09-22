@@ -50,10 +50,10 @@ static void validate_transport(void) {
 static void print_outputs(void) {
 	printf("# Equalizer hard output:");
 	for (size_t i = 0; i < 16; i++)
-		printf(" %04X", (uint32_t) dsp_hw_shared_memory[0x0790 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0790 + i]);
 	printf("\n# Equalizer soft output:");
 	for (size_t i = 0; i < 16; i++)
-		printf(" %04X", (uint32_t) dsp_hw_shared_memory[0x07A0 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x07A0 + i]);
 	printf("\n");
 }
 
@@ -103,7 +103,7 @@ int main(void) {
 	for (size_t pass = 1; pass <= 2; pass++) {
 		char category[32];
 
-		tfp_sprintf(category, "Independent reset pass %u", (uint32_t) pass);
+		sprintf(category, "Independent reset pass %lu", (uint32_t) pass);
 		test_category(category);
 		if (!run_pass())
 			break;

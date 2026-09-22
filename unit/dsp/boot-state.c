@@ -82,7 +82,7 @@ static bool wait_for_boot_command(void) {
 
 static void validate_reset_start(size_t pass, const struct boot_observation *observation) {
 	printf(
-		"# DSP-BOOT,pass=%u,busy=%u,ready=%u,busy_iter=%u,ready_iter=%u,elapsed_us=%u,status=%08X\n",
+		"# DSP-BOOT,pass=%lu,busy=%u,ready=%u,busy_iter=%lu,ready_iter=%lu,elapsed_us=%lu,status=%08lX\n",
 		(uint32_t) pass,
 		observation->busy_seen,
 		observation->ready_seen,
@@ -128,7 +128,7 @@ static void test_boot_dispatcher_wait(void) {
 	for (size_t i = 0; i < ARRAY_SIZE(PROGRAM_ROM_FINGERPRINT); i++) {
 		char name[72];
 
-		tfp_sprintf(name, "boot result word %u remains untouched before the interrupt", (uint32_t) i);
+		sprintf(name, "boot result word %lu remains untouched before the interrupt", (uint32_t) i);
 		test_eq_u32(name, RESULT_SENTINEL, boot_data[BOOT_RESULT_INDEX + i]);
 	}
 	test_eq_u32("test keeps the MCU-to-DSP interrupt deasserted while the command waits", 0, SCU_DSP_INT);
@@ -140,7 +140,7 @@ static void test_boot_dispatcher_wait(void) {
 	for (size_t i = 0; i < ARRAY_SIZE(PROGRAM_ROM_FINGERPRINT); i++) {
 		char name[64];
 
-		tfp_sprintf(name, "PREAD returns Program Mask ROM word %u", (uint32_t) i);
+		sprintf(name, "PREAD returns Program Mask ROM word %lu", (uint32_t) i);
 		test_eq_u32(name, PROGRAM_ROM_FINGERPRINT[i], boot_data[BOOT_RESULT_INDEX + i]);
 	}
 }
@@ -148,7 +148,7 @@ static void test_boot_dispatcher_wait(void) {
 static void run_pass(size_t pass) {
 	char category[64];
 
-	tfp_sprintf(category, "Autonomous Mask ROM boot after DSP reset / pass %u", (uint32_t) pass);
+	sprintf(category, "Autonomous Mask ROM boot after DSP reset / pass %lu", (uint32_t) pass);
 	test_category(category);
 	struct boot_observation observation = reset_and_observe();
 	validate_reset_start(pass, &observation);

@@ -161,15 +161,15 @@ int main(void) {
 		for (size_t i = 0; i < ARRAY_SIZE(probes); i++) {
 			char name[96];
 
-			tfp_sprintf(name, "%s K=1 L=%u Baseband probe completes", signal->name, probes[i].l);
+			sprintf(name, "%s K=1 L=%u Baseband probe completes", signal->name, probes[i].l);
 			if (!test_check(name, run_clock_probe(&probes[i], signal)))
 				break;
-			printf("# TPU_BASEBAND_CLOCK,signal=%s,K=1,L=%u,elapsed_us=%u,falling_pointer=%u,final_pointer=%u\n",
+			printf("# TPU_BASEBAND_CLOCK,signal=%s,K=1,L=%lu,elapsed_us=%lu,falling_pointer=%lu,final_pointer=%lu\n",
 				signal->name, (uint32_t) probes[i].l, (uint32_t) probes[i].elapsed_us,
 				(uint32_t) probes[i].falling_pointer, (uint32_t) probes[i].final_pointer);
-			tfp_sprintf(name, "%s stores the hardware-observed number of Baseband words", signal->name);
+			sprintf(name, "%s stores the hardware-observed number of Baseband words", signal->name);
 			test_eq_u32(name, probes[i].expected_pointer, probes[i].falling_pointer);
-			tfp_sprintf(name, "%s falling-edge and final write pointers match", signal->name);
+			sprintf(name, "%s falling-edge and final write pointers match", signal->name);
 			test_eq_u32(name, probes[i].falling_pointer, probes[i].final_pointer);
 		}
 	}
@@ -181,15 +181,15 @@ int main(void) {
 			struct clock_probe pll_probe = { .l = 4, .expected_pointer = 38 };
 			char name[96];
 
-			tfp_sprintf(name, "%s K=1 L=4 PLL Baseband probe completes", signal->name);
+			sprintf(name, "%s K=1 L=4 PLL Baseband probe completes", signal->name);
 			if (!test_check(name, run_clock_probe(&pll_probe, signal)))
 				continue;
-			printf("# TPU_BASEBAND_PLL,signal=%s,K=1,L=%u,elapsed_us=%u,falling_pointer=%u,final_pointer=%u\n",
+			printf("# TPU_BASEBAND_PLL,signal=%s,K=1,L=%lu,elapsed_us=%lu,falling_pointer=%lu,final_pointer=%lu\n",
 				signal->name, (uint32_t) pll_probe.l, (uint32_t) pll_probe.elapsed_us,
 				(uint32_t) pll_probe.falling_pointer, (uint32_t) pll_probe.final_pointer);
-			tfp_sprintf(name, "%s PLL clock source preserves the Baseband sample rate", signal->name);
+			sprintf(name, "%s PLL clock source preserves the Baseband sample rate", signal->name);
 			test_eq_u32(name, pll_probe.expected_pointer, pll_probe.falling_pointer);
-			tfp_sprintf(name, "%s PLL falling-edge and final write pointers match", signal->name);
+			sprintf(name, "%s PLL falling-edge and final write pointers match", signal->name);
 			test_eq_u32(name, pll_probe.falling_pointer, pll_probe.final_pointer);
 		}
 	}

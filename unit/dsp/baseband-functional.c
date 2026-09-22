@@ -190,7 +190,7 @@ static void cleanup_tpu_signals(void) {
 }
 
 static void print_record(const struct baseband_scenario *scenario, size_t pass) {
-	printf("# BASEBAND,%s,pass=%u,irqs=%04X,ctrl=%04X,status=%04X,pointer=%04X,flags=%04X,br=%04X\n",
+	printf("# BASEBAND,%s,pass=%lu,irqs=%04lX,ctrl=%04lX,status=%04lX,pointer=%04lX,flags=%04lX,br=%04lX\n",
 		scenario->name, (uint32_t) pass, (uint32_t) dsp_hw_shared_memory[IRQ_COUNT_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[FINAL_CTRL_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[FINAL_STATUS_OFFSET],
@@ -198,7 +198,7 @@ static void print_record(const struct baseband_scenario *scenario, size_t pass) 
 		(uint32_t) dsp_hw_shared_memory[FINAL_FLAGS_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[FINAL_BRFILTER_CTRL_OFFSET]);
 	for (size_t i = 0; i < scenario->expected_irqs; i++) {
-		printf("# BASEBAND,event=%u,flags=%04X,status=%04X,pointer=%04X\n", (uint32_t) i,
+		printf("# BASEBAND,event=%lu,flags=%04lX,status=%04lX,pointer=%04lX\n", (uint32_t) i,
 			(uint32_t) dsp_hw_shared_memory[FLAGS_BASE + i],
 			(uint32_t) dsp_hw_shared_memory[STATUS_BASE + i],
 			(uint32_t) dsp_hw_shared_memory[POINTER_BASE + i]);
@@ -235,25 +235,25 @@ static void validate_job_signals(void) {
 		size_t low = high + 2;
 		char name[96];
 
-		tfp_sprintf(name, "job %u rising edge raises BBHI", (uint32_t) job);
+		sprintf(name, "job %lu rising edge raises BBHI", (uint32_t) job);
 		test_eq_u32(name, TEAK_INT_FINTA0_BBHI, dsp_hw_shared_memory[FLAGS_BASE + high]);
-		tfp_sprintf(name, "job %u rising edge exposes its status and RXON", (uint32_t) job);
+		sprintf(name, "job %lu rising edge exposes its status and RXON", (uint32_t) job);
 		test_eq_u32(name, TEAK_BB_STATUS_RXON | JOB_BITS[job], dsp_hw_shared_memory[STATUS_BASE + high]);
-		tfp_sprintf(name, "job %u BBHI observes two words already stored", (uint32_t) job);
+		sprintf(name, "job %lu BBHI observes two words already stored", (uint32_t) job);
 		test_eq_u32(name, NORMAL_BBHI_POINTER, dsp_hw_shared_memory[POINTER_BASE + high]);
 
-		tfp_sprintf(name, "job %u reaches INT_POINTER and raises BB_FULL", (uint32_t) job);
+		sprintf(name, "job %lu reaches INT_POINTER and raises BB_FULL", (uint32_t) job);
 		test_eq_u32(name, TEAK_INT_FINTA0_BB_FULL, dsp_hw_shared_memory[FLAGS_BASE + full]);
-		tfp_sprintf(name, "job %u remains active when BB_FULL is delivered", (uint32_t) job);
+		sprintf(name, "job %lu remains active when BB_FULL is delivered", (uint32_t) job);
 		test_eq_u32(name, TEAK_BB_STATUS_RXON | JOB_BITS[job], dsp_hw_shared_memory[STATUS_BASE + full]);
-		tfp_sprintf(name, "job %u delivers BB_FULL at the programmed write pointer", (uint32_t) job);
+		sprintf(name, "job %lu delivers BB_FULL at the programmed write pointer", (uint32_t) job);
 		test_eq_u32(name, JOB_SCENARIO.interrupt_pointer, dsp_hw_shared_memory[POINTER_BASE + full]);
 
-		tfp_sprintf(name, "job %u falling edge raises BBLO", (uint32_t) job);
+		sprintf(name, "job %lu falling edge raises BBLO", (uint32_t) job);
 		test_eq_u32(name, TEAK_INT_FINTA0_BBLO, dsp_hw_shared_memory[FLAGS_BASE + low]);
-		tfp_sprintf(name, "job %u falling edge clears only the job signal", (uint32_t) job);
+		sprintf(name, "job %lu falling edge clears only the job signal", (uint32_t) job);
 		test_eq_u32(name, TEAK_BB_STATUS_RXON, dsp_hw_shared_memory[STATUS_BASE + low]);
-		tfp_sprintf(name, "job %u stores exactly two words per active TPU tick", (uint32_t) job);
+		sprintf(name, "job %lu stores exactly two words per active TPU tick", (uint32_t) job);
 		test_eq_u32(name, NORMAL_JOB_WORDS, dsp_hw_shared_memory[POINTER_BASE + low]);
 	}
 
@@ -268,7 +268,7 @@ static void validate_job_signals(void) {
 	for (size_t i = 0; i < RAM_SNAPSHOT_WORDS; i++) {
 		char name[80];
 
-		tfp_sprintf(name, "sample RAM word %u is written by the active receive path", (uint32_t) i);
+		sprintf(name, "sample RAM word %lu is written by the active receive path", (uint32_t) i);
 		test_check(name, dsp_hw_shared_memory[RAM_SNAPSHOT_BASE + i] != RAM_SENTINEL);
 	}
 }
@@ -283,7 +283,7 @@ static void validate_stop(void) {
 	for (size_t i = 0; i < RAM_SNAPSHOT_WORDS; i++) {
 		char name[80];
 
-		tfp_sprintf(name, "BB_STOP preserves sample RAM word %u", (uint32_t) i);
+		sprintf(name, "BB_STOP preserves sample RAM word %lu", (uint32_t) i);
 		test_eq_u32(name, RAM_SENTINEL, dsp_hw_shared_memory[RAM_SNAPSHOT_BASE + i]);
 	}
 }
@@ -312,9 +312,9 @@ static void validate_repeat(void) {
 		char name[96];
 		size_t event = crossing + 1;
 
-		tfp_sprintf(name, "crossing %u raises a fresh BB_FULL", (uint32_t) crossing + 1);
+		sprintf(name, "crossing %lu raises a fresh BB_FULL", (uint32_t) crossing + 1);
 		test_eq_u32(name, TEAK_INT_FINTA0_BB_FULL, dsp_hw_shared_memory[FLAGS_BASE + event]);
-		tfp_sprintf(name, "crossing %u occurs at the unchanged interrupt pointer", (uint32_t) crossing + 1);
+		sprintf(name, "crossing %lu occurs at the unchanged interrupt pointer", (uint32_t) crossing + 1);
 		test_eq_u32(name, REPEAT_SCENARIO.interrupt_pointer, dsp_hw_shared_memory[POINTER_BASE + event]);
 	}
 	test_eq_u32("repeated-crossing job falling edge raises BBLO", TEAK_INT_FINTA0_BBLO,
@@ -347,7 +347,7 @@ static void validate_decimation(void) {
 	for (size_t i = 0; i < RAM_SNAPSHOT_WORDS; i++) {
 		char name[80];
 
-		tfp_sprintf(name, "decimation path writes sample RAM word %u", (uint32_t) i);
+		sprintf(name, "decimation path writes sample RAM word %lu", (uint32_t) i);
 		test_check(name, dsp_hw_shared_memory[RAM_SNAPSHOT_BASE + i] != RAM_SENTINEL);
 	}
 }
@@ -419,7 +419,7 @@ int main(void) {
 		for (size_t pass = 1; pass <= 2; pass++) {
 			char category[96];
 
-			tfp_sprintf(category, "%s / independent reset pass %u", scenarios[i]->name, (uint32_t) pass);
+			sprintf(category, "%s / independent reset pass %lu", scenarios[i]->name, (uint32_t) pass);
 			test_category(category);
 			if (!run_scenario(scenarios[i], pass))
 				goto finish;

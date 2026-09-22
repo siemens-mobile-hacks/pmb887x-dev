@@ -95,10 +95,10 @@ static void test_service_requests(void) {
 		cpu_enable_irq(true);
 		*request->source |= MOD_SRC_SETR;
 
-		tfp_sprintf(request_name, "%s SETR raises an IRQ", request->name);
+		sprintf(request_name, "%s SETR raises an IRQ", request->name);
 		test_check(request_name, wait_for_irq());
 		cpu_enable_irq(false);
-		tfp_sprintf(route_name, "%s routes to VIC IRQ %u", request->name, (uint32_t) request->irq);
+		sprintf(route_name, "%s routes to VIC IRQ %lu", request->name, request->irq);
 		test_eq_u32(route_name, request->irq, irq_number);
 		test_eq_u32("interrupt handler clears SRR", 0, *request->source & MOD_SRC_SRR);
 	}

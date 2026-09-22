@@ -128,7 +128,7 @@ static void test_no_action_value(uint16_t decoder) {
 	struct dsp_snapshot snapshot;
 	char category[40];
 
-	tfp_sprintf(category, "Decoder %u performs no action", (uint32_t) decoder);
+	sprintf(category, "Decoder %lu performs no action", (uint32_t) decoder);
 	test_category(category);
 	if (!clear_decoder_state() || !run_events(ACTIVE_EVENTS, ARRAY_SIZE(ACTIVE_EVENTS)) || !take_snapshot(&snapshot))
 		return;
@@ -162,7 +162,7 @@ static void test_receive_set_events(void) {
 		char category[48];
 		uint16_t decoder = event->decoder;
 
-		tfp_sprintf(category, "Decoder %u sets %s", (uint32_t) event->decoder, event->name);
+		sprintf(category, "Decoder %lu sets %s", (uint32_t) event->decoder, event->name);
 		test_category(category);
 		if (!clear_decoder_state() || !run_events(&decoder, 1) || !take_snapshot(&snapshot))
 			continue;

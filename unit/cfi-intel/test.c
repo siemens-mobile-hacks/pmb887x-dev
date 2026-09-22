@@ -15,7 +15,7 @@ static bool write_test_area_found;
 static void scan_flashes(void) {
 	for (uint32_t i = 0; i < FLASH_CHIP_SELECT_COUNT; i++) {
 		uint32_t cs = cfi_chip_selects[i];
-		printf("# probing CS%u\n", cs);
+		printf("# probing CS%lu\n", cs);
 		if (cfi_probe(cs, &flashes[flash_count])) {
 			flash_count++;
 		}
@@ -80,7 +80,7 @@ static bool configure_flash_map(void) {
 			cfi_enter_read_array(base + flash->window_size);
 			cfi_sample_map(flash);
 			printf(
-				"# CS%u+CS%u mapped at %08X..%08X (128 MiB die split into 64 MiB windows)\n",
+				"# CS%lu+CS%lu mapped at %08lX..%08lX (128 MiB die split into 64 MiB windows)\n",
 				flash->cs,
 				flash->high_cs,
 				base,
@@ -88,7 +88,7 @@ static bool configure_flash_map(void) {
 			);
 		} else {
 			cfi_map(flash->cs, base, 27 - flash->size_exponent);
-			printf("# CS%u mapped at %08X..%08X\n", flash->cs, base, base + flash->size - 1);
+			printf("# CS%lu mapped at %08lX..%08lX\n", flash->cs, base, base + flash->size - 1);
 		}
 		base += flash->size;
 	}
@@ -137,7 +137,7 @@ static void test_block_lock_status(const struct flash_device *flash) {
 			test_watchdog_serve();
 		}
 		printf(
-			"# lock region %u: unlocked=%u locked=%u unlocked-down=%u locked-down=%u\n",
+			"# lock region %lu: unlocked=%lu locked=%lu unlocked-down=%lu locked-down=%lu\n",
 			region,
 			states[0],
 			states[1],
@@ -294,7 +294,7 @@ static void test_blank_space(struct flash_device *flash) {
 
 		if (range_size) {
 			printf(
-				"# blank range: %08X..%08X (%u MiB)\n",
+				"# blank range: %08lX..%08lX (%lu MiB)\n",
 				range_base,
 				range_base + range_size - 1,
 				range_size >> 20
@@ -309,7 +309,7 @@ static void test_blank_space(struct flash_device *flash) {
 
 	if (range_size) {
 		printf(
-			"# blank range: %08X..%08X (%u MiB)\n",
+			"# blank range: %08lX..%08lX (%lu MiB)\n",
 			range_base,
 			range_base + range_size - 1,
 			range_size >> 20
@@ -323,7 +323,7 @@ static void test_blank_space(struct flash_device *flash) {
 		write_test_area_found = true;
 		test_check("aligned blank area for write tests is found", true);
 		printf(
-			"# selected write test area: %08X..%08X (%u MiB)\n",
+			"# selected write test area: %08lX..%08lX (%lu MiB)\n",
 			flash->blank_base,
 			flash->blank_base + flash->blank_size - 1,
 			flash->blank_size >> 20
@@ -378,7 +378,7 @@ static uint32_t query_power_of_two(uint32_t value) {
 
 static void print_pri_regions(uint32_t base, uint32_t *cursor, bool st, const char *name) {
 	uint32_t regions = cfi_read_word(base, (*cursor)++);
-	printf("# PRI %s bank regions: %u\n", name, regions);
+	printf("# PRI %s bank regions: %lu\n", name, regions);
 	for (uint32_t region = 0; region < regions; region++) {
 		uint32_t section_size = st ? cfi_read_u16(base, *cursor) : 0;
 		*cursor += st ? 2 : 0;
@@ -389,7 +389,7 @@ static void print_pri_regions(uint32_t base, uint32_t *cursor, bool st, const ch
 		uint32_t while_erase = cfi_read_word(base, (*cursor)++);
 		uint32_t erase_regions = cfi_read_word(base, (*cursor)++);
 		printf(
-			"# PRI %s region %u: banks=%u erase-regions=%u ops=%02X/%02X/%02X section=%u\n",
+			"# PRI %s region %lu: banks=%lu erase-regions=%lu ops=%02lX/%02lX/%02lX section=%lu\n",
 			name,
 			region,
 			banks,
@@ -409,7 +409,7 @@ static void print_pri_regions(uint32_t base, uint32_t *cursor, bool st, const ch
 			uint32_t cell = cfi_read_word(base, (*cursor)++);
 			uint32_t reads = cfi_read_word(base, (*cursor)++);
 			printf(
-				"# PRI %s region %u erase %u: %u x %u KiB, cycles=%u, bits/cell=%u ECC=%u reads=%02X\n",
+				"# PRI %s region %lu erase %lu: %lu x %lu KiB, cycles=%lu, bits/cell=%lu ECC=%u reads=%02lX\n",
 				name,
 				region,
 				erase,
@@ -429,14 +429,14 @@ static void print_pri_information(const struct flash_device *flash, uint32_t fea
 	uint32_t cursor = flash->primary_address + 0xE;
 	if (features & BIT(6)) {
 		uint32_t fields = cfi_read_word(flash->base, cursor++);
-		printf("# PRI OTP fields: %u\n", fields);
+		printf("# PRI OTP fields: %lu\n", fields);
 		for (uint32_t field = 0; field < fields; field++) {
 			if (field == 0) {
 				uint32_t address = cfi_read_u16(flash->base, cursor);
 				cursor += 2;
 				uint32_t factory = query_power_of_two(cfi_read_word(flash->base, cursor++));
 				uint32_t user = query_power_of_two(cfi_read_word(flash->base, cursor++));
-				printf("# PRI OTP%u: address=%04X factory=%u bytes user=%u bytes\n", field, address, factory, user);
+				printf("# PRI OTP%lu: address=%04lX factory=%lu bytes user=%lu bytes\n", field, address, factory, user);
 			} else {
 				uint32_t address = cfi_read_u32(flash->base, cursor);
 				cursor += 4;
@@ -447,7 +447,7 @@ static void print_pri_information(const struct flash_device *flash, uint32_t fea
 				cursor += 2;
 				uint32_t user_size = query_power_of_two(cfi_read_word(flash->base, cursor++));
 				printf(
-					"# PRI OTP%u: address=%08X factory=%u x %u bytes user=%u x %u bytes\n",
+					"# PRI OTP%lu: address=%08lX factory=%lu x %lu bytes user=%lu x %lu bytes\n",
 					field,
 					address,
 					factory_groups,
@@ -461,9 +461,9 @@ static void print_pri_information(const struct flash_device *flash, uint32_t fea
 
 	uint32_t page_size = query_power_of_two(cfi_read_word(flash->base, cursor++));
 	uint32_t synchronous_modes = cfi_read_word(flash->base, cursor++);
-	printf("# PRI read capability: page=%u bytes synchronous-modes=%u", page_size, synchronous_modes);
+	printf("# PRI read capability: page=%lu bytes synchronous-modes=%lu", page_size, synchronous_modes);
 	for (uint32_t mode = 0; mode < synchronous_modes; mode++) {
-		printf(" mode%u=%u", mode, query_power_of_two(cfi_read_word(flash->base, cursor++)));
+		printf(" mode%lu=%lu", mode, query_power_of_two(cfi_read_word(flash->base, cursor++)));
 	}
 	printf("\n");
 
@@ -486,7 +486,7 @@ static void print_cfi_information(const struct flash_device *flash) {
 	uint32_t features = cfi_read_u32(flash->base, flash->primary_address + 5);
 
 	printf(
-		"# CFI: primary=%04X at %04X alternate=%04X at %04X interface=%04X\n",
+		"# CFI: primary=%04lX at %04lX alternate=%04lX at %04lX interface=%04lX\n",
 		primary_set,
 		flash->primary_address,
 		alternate_set,
@@ -516,7 +516,7 @@ static void print_cfi_information(const struct flash_device *flash) {
 		cfi_read_word(flash->base, 0x26)
 	);
 	printf(
-		"# geometry: size=%u MiB write-buffer=%u bytes erase-regions=%u\n",
+		"# geometry: size=%lu MiB write-buffer=%u bytes erase-regions=%lu\n",
 		flash->size >> 20,
 		write_buffer_exponent < 32 ? 1u << write_buffer_exponent : 0,
 		flash->regions
@@ -526,7 +526,7 @@ static void print_cfi_information(const struct flash_device *flash) {
 	for (uint32_t region = 0; region < flash->regions && region < CFI_MAX_ERASE_REGIONS; region++) {
 		uint32_t region_size = flash->erase[region].blocks * flash->erase[region].block_size;
 		printf(
-			"# erase region %u: %08X..%08X, %u blocks x %u KiB = %u KiB\n",
+			"# erase region %lu: %08lX..%08lX, %lu blocks x %lu KiB = %lu KiB\n",
 			region,
 			region_start,
 			region_start + region_size - 1,
@@ -538,7 +538,7 @@ static void print_cfi_information(const struct flash_device *flash) {
 	}
 
 	printf(
-		"# PRI: version=%c.%c features=%08X suspend=%02X block-status=%04X\n",
+		"# PRI: version=%c.%c features=%08lX suspend=%02X block-status=%04lX\n",
 		cfi_read_word(flash->base, flash->primary_address + 3),
 		cfi_read_word(flash->base, flash->primary_address + 4),
 		features,
@@ -627,7 +627,7 @@ static void test_partition_modes(const struct flash_device *flash) {
 	uint16_t second_array[MAP_SAMPLE_WORDS];
 	memcpy(first_array, (const void *) first, sizeof(first_array));
 	memcpy(second_array, (const void *) second, sizeof(second_array));
-	printf("# command partitions: first=%08X second=%08X size=%u KiB\n", first, second, partition_size >> 10);
+	printf("# command partitions: first=%08lX second=%08lX size=%lu KiB\n", first, second, partition_size >> 10);
 
 	cfi_enter_query(first);
 	test_eq_memory("second partition remains in array mode", second_array, (const void *) second, sizeof(second_array));
@@ -753,7 +753,7 @@ int main(void) {
 	test_flash_device_modes();
 
 	for (uint32_t i = 0; i < flash_count; i++) {
-		printf("# testing CS%u at %08X\n", flashes[i].cs, flashes[i].base);
+		printf("# testing CS%lu at %08lX\n", flashes[i].cs, flashes[i].base);
 		test_category("EBU mapping");
 		test_flash_mapping(&flashes[i]);
 		test_category("Identification");

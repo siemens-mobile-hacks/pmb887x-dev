@@ -339,7 +339,7 @@ static void test_repeated_start(void) {
 static void test_polled_protocol_status(void) {
 	uint32_t status = read_polled_protocol_status();
 
-	printf("# polled read protocol status: %02X\n", status);
+	printf("# polled read protocol status: %02lX\n", status);
 	test_check("polled PMIC read is acknowledged", (status & I2C_PIRQSS_NACK) == 0);
 	test_eq_u32(
 		"completed polled read keeps RX asserted with TX_END",
@@ -456,7 +456,7 @@ static void test_pmic_registers(void) {
 #endif
 
 	for (uint32_t row = 0; row < ARRAY_SIZE(registers); row += 16) {
-		printf("# %02X:", row);
+		printf("# %02lX:", row);
 		for (uint32_t column = 0; column < 16; column++)
 			printf(" %02X", registers[row + column]);
 		printf("\n");
@@ -484,7 +484,7 @@ static void test_burst_sizes(void) {
 		test_eq_u32("burst SMBus read completes", I2C_V2_DONE, smbus_read(0, data, sizes[i]));
 		test_eq_u32("burst last packet size", smbus_read_last_packet(sizes[i]), I2C_RPSSTAT & I2C_RPSSTAT_RPS);
 		/* Printed as raw state, not as this transfer's requests - see the skip. */
-		printf("# RXBS=%u size=%u rx_request_status=%02X\n", bursts[i], sizes[i], i2c_v2_state.rx_request_status & 0x0F);
+		printf("# RXBS=%u size=%u rx_request_status=%02lX\n", bursts[i], sizes[i], i2c_v2_state.rx_request_status & 0x0F);
 		test_skip("burst request sequence", SKIP_POLLED_STATE);
 		test_skip("burst read has no controller error IRQ", SKIP_POLLED_STATE);
 	}
@@ -516,7 +516,7 @@ static void test_fifo_modes(void) {
 	test_skip("FIFO OFF reports RX FIFO overflow", SKIP_POLLED_STATE);
 	/* Raw state, not this transfer's requests - see the skips above. */
 	printf(
-		"# FIFO requests: ON=%02X OFF=%02X\n",
+		"# FIFO requests: ON=%02lX OFF=%02lX\n",
 		fifo_on_requests & 0x0F,
 		i2c_v2_state.rx_request_status & 0x0F
 	);
@@ -542,7 +542,7 @@ static void test_scan(void) {
 			pmic_found |= address == PMIC_I2C_ADDR;
 		} else if (result != I2C_V2_NACK) {
 			printf(
-				"# I2C scan failed at 0x%02X: result=%u error=%08X\n",
+				"# I2C scan failed at 0x%02X: result=%u error=%08lX\n",
 				address,
 				result,
 				i2c_v2_state.error_status
@@ -551,7 +551,7 @@ static void test_scan(void) {
 		}
 	}
 
-	printf("# found %u I2C device(s)\n", devices);
+	printf("# found %lu I2C device(s)\n", devices);
 	test_check("I2C scan completes", complete);
 	printf("# expected PMIC at 0x%02X\n", PMIC_I2C_ADDR);
 	test_check("I2C scan finds the PMIC", pmic_found);

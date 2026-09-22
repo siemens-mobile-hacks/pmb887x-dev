@@ -239,7 +239,7 @@ static bool wait_for_completion(void) {
 
 #ifndef DSP_EXPANSION_PROBE
 static int fail_transport(const char *operation, uint16_t opcode) {
-	printf("# DSPPROBE-ERROR %04X %s\n", (uint32_t) opcode, operation);
+	printf("# DSPPROBE-ERROR %04lX %s\n", (uint32_t) opcode, operation);
 	test_check(operation, false);
 	return test_finish();
 }
@@ -285,7 +285,7 @@ int main(void) {
 		}
 
 		if (!done) {
-			printf("# DSPPROBE-TRANSIENT %04X %04X %04X %04X %04X\n", opcode, (uint32_t) entered,
+			printf("# DSPPROBE-TRANSIENT %04lX %04lX %04lX %04lX %04lX\n", opcode, (uint32_t) entered,
 				(uint32_t) trap, (uint32_t) post, (uint32_t) done_marker);
 			entered = UINT16_MAX;
 			trap = UINT16_MAX;
@@ -293,14 +293,14 @@ int main(void) {
 			done_marker = UINT16_MAX;
 		}
 
-		printf("# DSPPROBE %04X %s %04X %04X %04X %04X\n", opcode, outcome, (uint32_t) entered,
+		printf("# DSPPROBE %04lX %s %04lX %04lX %04lX %04lX\n", opcode, outcome, (uint32_t) entered,
 			(uint32_t) trap, (uint32_t) post, (uint32_t) done_marker);
 		test_watchdog_serve();
 		if ((opcode & 0xFF) == 0xFF)
-			printf("# DSPPROBE-PROGRESS %04X\n", opcode);
+			printf("# DSPPROBE-PROGRESS %04lX\n", opcode);
 	}
 
-	printf("# DSPPROBE-SUMMARY %04X %04X complete=%u trap=%u timeout=%u\n", DSP_OPCODE_PROBE_FIRST,
+	printf("# DSPPROBE-SUMMARY %04X %04X complete=%lu trap=%lu timeout=%lu\n", DSP_OPCODE_PROBE_FIRST,
 		DSP_OPCODE_PROBE_LAST, completed, trapped, timed_out);
 	test_check("opcode probe range completed", true);
 	return test_finish();
@@ -363,7 +363,7 @@ static void prepare_expansion_operand(const struct expansion_family *family, uin
 }
 
 static int fail_expansion_transport(const char *operation, uint32_t family, uint16_t expansion) {
-	printf("# DSPEXP-ERROR %u %04X %s\n", family, (uint32_t) expansion, operation);
+	printf("# DSPEXP-ERROR %lu %04lX %s\n", family, (uint32_t) expansion, operation);
 	test_check(operation, false);
 	return test_finish();
 }
@@ -390,19 +390,19 @@ int main(void) {
 	{
 		const struct expansion_family *family = &DSP_EXPANSION_FAMILIES[family_index];
 
-		printf("# DSPEXP-FAMILY %u %04X \"%s\"\n", family_index, (uint32_t) family->first_word, family->name);
+		printf("# DSPEXP-FAMILY %lu %04lX \"%s\"\n", family_index, (uint32_t) family->first_word, family->name);
 		for (uint32_t expansion = DSP_EXPANSION_PROBE_WORD_FIRST;
 			expansion <= DSP_EXPANSION_PROBE_WORD_LAST; expansion++)
 		{
 			if (!expansion_is_safe(family, (uint16_t) expansion)) {
-				printf("# DSPEXP %u %04X unsafe-skip", family_index, expansion);
+				printf("# DSPEXP %lu %04lX unsafe-skip", family_index, expansion);
 				for (size_t i = 0; i < 4 + DSP_EXPANSION_RESULT_WORDS; i++)
 					printf(" FFFF");
 				printf("\n");
 				skipped++;
 				test_watchdog_reset();
 				if ((expansion & 0xFF) == 0xFF)
-					printf("# DSPEXP-PROGRESS %u %04X\n", family_index, expansion);
+					printf("# DSPEXP-PROGRESS %lu %04lX\n", family_index, expansion);
 				continue;
 			}
 
@@ -443,7 +443,7 @@ int main(void) {
 			}
 
 			if (!done) {
-				printf("# DSPEXP-TRANSIENT %u %04X %04X %04X %04X %04X\n", family_index, expansion,
+				printf("# DSPEXP-TRANSIENT %lu %04lX %04lX %04lX %04lX %04lX\n", family_index, expansion,
 					(uint32_t) entered, (uint32_t) trap, (uint32_t) post, (uint32_t) done_marker);
 				entered = UINT16_MAX;
 				trap = UINT16_MAX;
@@ -458,19 +458,19 @@ int main(void) {
 				observed_memory = DSP_SHARED_MEMORY[observation_address & DSP_SHARED_ADDRESS_MASK];
 			results[DSP_EXPANSION_DSP_RESULT_WORDS] = observed_memory;
 
-			printf("# DSPEXP %u %04X %s %04X %04X %04X %04X", family_index, expansion, outcome,
+			printf("# DSPEXP %lu %04lX %s %04lX %04lX %04lX %04lX", family_index, expansion, outcome,
 				(uint32_t) entered, (uint32_t) trap, (uint32_t) post, (uint32_t) done_marker);
 			for (size_t i = 0; i < DSP_EXPANSION_RESULT_WORDS; i++)
-				printf(" %04X", (uint32_t) results[i]);
+				printf(" %04lX", (uint32_t) results[i]);
 			printf("\n");
 			executed++;
 			test_watchdog_serve();
 			if ((expansion & 0xFF) == 0xFF)
-				printf("# DSPEXP-PROGRESS %u %04X\n", family_index, expansion);
+				printf("# DSPEXP-PROGRESS %lu %04lX\n", family_index, expansion);
 		}
 	}
 
-	printf("# DSPEXP-SUMMARY families=%u-%u words=%04X-%04X executed=%u skipped=%u complete=%u trap=%u timeout=%u\n",
+	printf("# DSPEXP-SUMMARY families=%u-%u words=%04X-%04X executed=%lu skipped=%lu complete=%lu trap=%lu timeout=%lu\n",
 		DSP_EXPANSION_PROBE_FAMILY_FIRST, DSP_EXPANSION_PROBE_FAMILY_LAST, DSP_EXPANSION_PROBE_WORD_FIRST,
 		DSP_EXPANSION_PROBE_WORD_LAST, executed, skipped, completed, trapped, timed_out);
 	test_check("expansion probe range completed", true);

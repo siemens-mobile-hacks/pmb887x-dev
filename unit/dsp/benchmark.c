@@ -68,7 +68,7 @@ static void print_score(const char *name, uint32_t elapsed_us) {
 	uint32_t mmac_milli = (uint32_t) ((uint64_t) BENCHMARK_MACS * 1000 / elapsed_us);
 	uint32_t mops_milli = mmac_milli * 2;
 
-	printf("# %s: %u us, %u.%03u MMAC/s, %u.%03u MOPS\n", name, elapsed_us,
+	printf("# %s: %lu us, %lu.%03lu MMAC/s, %lu.%03lu MOPS\n", name, elapsed_us,
 		mmac_milli / 1000, mmac_milli % 1000, mops_milli / 1000, mops_milli % 1000);
 }
 

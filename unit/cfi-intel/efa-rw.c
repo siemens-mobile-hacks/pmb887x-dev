@@ -7,7 +7,7 @@
 
 static bool find_test_flash(struct flash_device *flash) {
 	for (uint32_t i = 0; i < FLASH_CHIP_SELECT_COUNT; i++) {
-		printf("# probing CS%u for EFA\n", cfi_chip_selects[i]);
+		printf("# probing CS%lu for EFA\n", cfi_chip_selects[i]);
 		if (!cfi_probe(cfi_chip_selects[i], flash)) {
 			continue;
 		}
@@ -20,7 +20,7 @@ static bool find_test_flash(struct flash_device *flash) {
 			continue;
 		}
 		printf(
-			"# CS%u %04X:%04X EFA=%u blocks x %u KiB\n",
+			"# CS%lu %04lX:%04lX EFA=%lu blocks x %lu KiB\n",
 			flash->cs,
 			flash->manufacturer,
 			flash->device,
@@ -89,7 +89,7 @@ int main(void) {
 		return test_finish();
 	}
 	test_check("blank EFA block is found", true);
-	printf("# selected EFA block: %08X..%08X\n", address, address + flash.efa_block_size - 1);
+	printf("# selected EFA block: %08lX..%08lX\n", address, address + flash.efa_block_size - 1);
 
 	test_category("Program and cleanup");
 	test_efa_program_and_cleanup(&flash, address);

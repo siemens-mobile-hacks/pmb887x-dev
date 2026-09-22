@@ -226,7 +226,7 @@ int main(void) {
 		test_eq_u32("RINT1 acknowledgement clears CIPH pending", 0,
 			dsp_hw_shared_memory[A53_IRQ_FLAGS_AFTER_ACK] & CIPHER_IRQ);
 		test_check("hardware vector completes", completed);
-		printf("# CIPHER_IRQ,index=%u,latency_us=%u,idle_us=%u,count=%u\n", (uint32_t) i,
+		printf("# CIPHER_IRQ,index=%lu,latency_us=%lu,idle_us=%lu,count=%lu\n", (uint32_t) i,
 			irq_latency_us, idle_us, (uint32_t) dsp_hw_shared_memory[A53_IRQ_COUNT]);
 		if (!completed)
 			continue;
@@ -248,7 +248,7 @@ int main(void) {
 	if (latency_samples == ARRAY_SIZE(vectors)) {
 		uint32_t spread_us = max_irq_latency_us - min_irq_latency_us;
 
-		printf("# CIPHER_IRQ_LATENCY,min_us=%u,max_us=%u,spread_us=%u\n",
+		printf("# CIPHER_IRQ_LATENCY,min_us=%lu,max_us=%lu,spread_us=%lu\n",
 			min_irq_latency_us, max_irq_latency_us, spread_us);
 		test_check("CIPH interrupt latency does not depend on a periodic phase",
 			spread_us <= IRQ_LATENCY_SPREAD_MAX_US);

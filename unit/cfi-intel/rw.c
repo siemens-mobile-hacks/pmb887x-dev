@@ -9,13 +9,13 @@
 
 static bool find_test_flash(struct flash_device *flash) {
 	for (uint32_t i = 0; i < FLASH_CHIP_SELECT_COUNT; i++) {
-		printf("# probing CS%u for a blank block\n", cfi_chip_selects[i]);
+		printf("# probing CS%lu for a blank block\n", cfi_chip_selects[i]);
 		if (!cfi_probe(cfi_chip_selects[i], flash)) {
 			continue;
 		}
 		if (cfi_find_blank_block(flash, SEARCH_ALIGNMENT)) {
 			printf(
-				"# CS%u %04X:%04X block=%08X..%08X buffer=%u bytes\n",
+				"# CS%lu %04lX:%04lX block=%08lX..%08lX buffer=%lu bytes\n",
 				flash->cs,
 				flash->manufacturer,
 				flash->device,

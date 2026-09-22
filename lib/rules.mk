@@ -9,13 +9,16 @@ BOARD ?= SIEMENS_EL71
 
 INCLUDES += $(patsubst %,-I%, . $(LIB_DIR))
 
+LIB_AFILES += $(LIB_DIR)/init/header.S
+LIB_AFILES += $(LIB_DIR)/init/relocate.S
+LIB_AFILES += $(LIB_DIR)/init/signature.S
 LIB_AFILES += $(LIB_DIR)/init/start.S
-LIB_CFILES += $(LIB_DIR)/libc.c
 LIB_CFILES += $(LIB_DIR)/init/reset_handler.c
 LIB_CFILES += $(LIB_DIR)/usart.c
 LIB_CFILES += $(LIB_DIR)/i2c.c
 LIB_CFILES += $(LIB_DIR)/i2c-v2.c
 LIB_CFILES += $(LIB_DIR)/printf.c
+LIB_CFILES += $(LIB_DIR)/../third_party/printf/src/printf/printf.c
 LIB_CFILES += $(LIB_DIR)/wdt.c
 LIB_CFILES += $(LIB_DIR)/stopwatch.c
 LIB_CFILES += $(LIB_DIR)/cpu.c
@@ -35,7 +38,28 @@ ifeq ($(BOOT),flash)
 	LDSCRIPT = $(LIB_DIR)/ld/flash.ld
 endif
 
+ifeq ($(BOOT),tcm)
+	ARCH_FLAGS += -DBOOT_TCM
+	LDSCRIPT = $(LIB_DIR)/ld/tcm.ld
+endif
+
 ARCH_FLAGS += -march=armv5te -mtune=arm926ej-s -msoft-float -mfloat-abi=soft -ffreestanding -DBOARD_$(BOARD)
+ARCH_FLAGS += -fno-builtin-printf
+
+ifeq ($(SECURE_BOOT),1)
+	ARCH_FLAGS += -DSECURE_BOOT
+endif
+
+INCLUDES += -I$(LIB_DIR)/../third_party/printf/src
+TGT_CPPFLAGS += -DPRINTF_ALIAS_STANDARD_FUNCTION_NAMES_HARD=1
+TGT_CPPFLAGS += -DPRINTF_CHECK_FOR_NUL_IN_FORMAT_SPECIFIER=0
+TGT_CPPFLAGS += -DPRINTF_INCLUDE_CONFIG_H=0
+TGT_CPPFLAGS += -DPRINTF_SUPPORT_DECIMAL_SPECIFIERS=0
+TGT_CPPFLAGS += -DPRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS=0
+TGT_CPPFLAGS += -DPRINTF_SUPPORT_LONG_LONG=0
+TGT_CPPFLAGS += -DPRINTF_SUPPORT_MSVC_STYLE_INTEGER_SPECIFIERS=0
+TGT_CPPFLAGS += -DPRINTF_SUPPORT_WRITEBACK_SPECIFIER=0
+TGT_CPPFLAGS += -DPRINTF_USE_DOUBLE_INTERNALLY=0
 
 ############################################################################
 
@@ -97,8 +121,7 @@ ifeq ($(V),99)
 TGT_LDFLAGS += -Wl,--print-gc-sections
 endif
 
-#LDLIBS += -Wl,--start-group -lc_nano -lgcc -lnosys -Wl,--end-group
-LDLIBS += -Wl,--start-group -nostdlib -lgcc -Wl,--end-group
+LDLIBS += --specs=nano.specs --specs=nosys.specs -Wl,--start-group -lc_nano -lgcc -lnosys -Wl,--end-group
 
 # Burn in legacy hell fortran modula pascal yacc idontevenwat
 .SUFFIXES:

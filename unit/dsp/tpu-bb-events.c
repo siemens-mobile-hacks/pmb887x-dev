@@ -110,7 +110,7 @@ static uint32_t expected_count_elapsed_us(void) {
 static uint32_t run_count_pass(size_t pass) {
 	char category[64];
 
-	tfp_sprintf(category, "Repeated MONON timing / pass %u", (uint32_t) pass);
+	sprintf(category, "Repeated MONON timing / pass %lu", (uint32_t) pass);
 	test_category(category);
 	if (!prepare_runner(COUNT_INTERVALS))
 		return 0;
@@ -124,7 +124,7 @@ static uint32_t run_count_pass(size_t pass) {
 	TPU_PARAM = 0;
 	cleanup_tpu_signals();
 
-	printf("# TPU_BB_COUNT,pass=%u,elapsed_us=%u,high=%u,low=%u,flags=%04X,status=%04X\n",
+	printf("# TPU_BB_COUNT,pass=%lu,elapsed_us=%lu,high=%lu,low=%lu,flags=%04lX,status=%04lX\n",
 		(uint32_t) pass, elapsed_us,
 		(uint32_t) dsp_hw_shared_memory[HIGH_COUNT_OFFSET], (uint32_t) dsp_hw_shared_memory[LOW_COUNT_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[LAST_FLAGS_OFFSET],
@@ -168,7 +168,7 @@ static uint32_t run_phase_width(size_t index) {
 	};
 	char category[64];
 
-	tfp_sprintf(category, "MONON edge phase / %u TPU ticks", (uint32_t) width);
+	sprintf(category, "MONON edge phase / %lu TPU ticks", (uint32_t) width);
 	test_category(category);
 	if (!prepare_runner(1))
 		return 0;
@@ -203,7 +203,7 @@ static uint32_t run_phase_width(size_t index) {
 	uint32_t tolerance_us = expected_us * PHASE_TIMING_TOLERANCE_PERCENT / 100 + PHASE_TIMING_TOLERANCE_US;
 	test_check("MONON window duration matches the configured TPU clock",
 		test_u32_in_interval(delta_us, expected_us - tolerance_us, expected_us + tolerance_us));
-	printf("# TPU_BB_PHASE,index=%u,width_ticks=%u,high_us=%u,low_us=%u,delta_us=%u\n",
+	printf("# TPU_BB_PHASE,index=%lu,width_ticks=%lu,high_us=%lu,low_us=%lu,delta_us=%lu\n",
 		(uint32_t) index, (uint32_t) width, high_us, low_us, delta_us);
 	return delta_us;
 }
@@ -221,7 +221,7 @@ static void test_phase_widths(void) {
 		uint32_t tolerance = expected / 10;
 		char name[96];
 
-		tfp_sprintf(name, "%u-tick MONON window lasts twice as long as the previous window",
+		sprintf(name, "%lu-tick MONON window lasts twice as long as the previous window",
 			(uint32_t) PHASE_WIDTHS[i]);
 		test_check(name, test_u32_in_interval(deltas[i], expected - tolerance, expected + tolerance));
 	}

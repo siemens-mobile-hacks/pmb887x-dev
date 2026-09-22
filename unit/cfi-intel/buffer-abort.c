@@ -309,7 +309,7 @@ int main(void) {
 	uint16_t command;
 	if (!buffered_program_command(&flash, &command))
 		return skip_destructive_test("unsupported CFI primary command set");
-	printf("# vendor/device ID: %04X:%04X\n", flash.manufacturer, flash.device);
+	printf("# vendor/device ID: %04lX:%04lX\n", flash.manufacturer, flash.device);
 	printf("# CFI buffer size: %u bytes\n", (unsigned int) flash.write_buffer_size);
 	printf("# erase block size: %u bytes\n", (unsigned int) test_block.size);
 	printf("# buffered-program command: %02X\n", command);
@@ -326,7 +326,7 @@ int main(void) {
 	cfi_enter_read_array(test_block.base);
 	uint32_t test_crc = crc32_block(test_block.base, test_block.size);
 	uint32_t neighbor_crc = crc32_block(neighbor_block.base, neighbor_block.size);
-	printf("# CRC before: test=%08X neighbor=%08X\n", test_crc, neighbor_crc);
+	printf("# CRC before: test=%08lX neighbor=%08lX\n", test_crc, neighbor_crc);
 	test_check("setup buffer is blank before abort trace",
 		range_is_blank(setup_address, flash.write_buffer_size));
 	test_eq_u32("abort word is erased before abort trace", UINT16_MAX, MMIO16(abort_address));
@@ -375,7 +375,7 @@ int main(void) {
 	cfi_enter_read_array(neighbor_block.base);
 	uint32_t test_crc_after = crc32_block(test_block.base, test_block.size);
 	uint32_t neighbor_crc_after = crc32_block(neighbor_block.base, neighbor_block.size);
-	printf("# CRC after: test=%08X neighbor=%08X\n", test_crc_after, neighbor_crc_after);
+	printf("# CRC after: test=%08lX neighbor=%08lX\n", test_crc_after, neighbor_crc_after);
 	test_eq_u32("test block CRC is preserved", test_crc, test_crc_after);
 	test_eq_u32("neighbor block CRC is preserved", neighbor_crc, neighbor_crc_after);
 	test_check("cleanup leaves the setup buffer blank",

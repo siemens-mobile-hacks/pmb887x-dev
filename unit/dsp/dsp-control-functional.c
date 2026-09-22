@@ -62,7 +62,7 @@ static bool check_rom_hash(const char *read_name, const char *hash_name, bool pr
 
 	if (!test_check(read_name, hash_words(program, first, words, &hash)))
 		return false;
-	printf("# %s: %08X\n", hash_name, hash);
+	printf("# %s: %08lX\n", hash_name, hash);
 	return test_eq_u32(hash_name, expected, hash);
 }
 
@@ -179,7 +179,7 @@ int main(void) {
 		dsp_hw_wait_shared(0, COMPLETE_MARKER, 500)))
 		return test_finish();
 	uint32_t resume_ms = stopwatch_elapsed_ms(resume_start);
-	printf("# Timer 2 completion after DSP_CLC enable: %u ms\n", resume_ms);
+	printf("# Timer 2 completion after DSP_CLC enable: %lu ms\n", resume_ms);
 	test_check("Timer 2 was paused rather than only hidden while DSP_CLC was disabled", resume_ms >= 40);
 	test_eq_u32("Shared RAM contents survive DSP_CLC clock off", 0x7777, dsp_hw_shared_memory[0x0047]);
 	test_eq_u32("clock off and resume preserve the PRAM register context", 0xC33C,

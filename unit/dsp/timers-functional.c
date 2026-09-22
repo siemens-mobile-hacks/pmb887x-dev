@@ -28,9 +28,9 @@ static uint16_t result(size_t address) {
 }
 
 static void print_record(size_t pass) {
-	printf("# DSPTIMERS,%u", (uint32_t) pass);
+	printf("# DSPTIMERS,%lu", (uint32_t) pass);
 	for (size_t address = RESULT_BASE; address <= RESULT_LAST; address++)
-		printf(",%04X", (uint32_t) result(address));
+		printf(",%04lX", (uint32_t) result(address));
 	printf("\n");
 }
 
@@ -86,7 +86,7 @@ static void check_timer2(void) {
 	for (size_t address = TIMER2_SAMPLES_BASE; address <= TIMER2_WRAP_SAMPLES_LAST; address++) {
 		char name[72];
 
-		tfp_sprintf(name, "TIMER2 sample %u remains within programmed MAX", (uint32_t) (address - TIMER2_SAMPLES_BASE));
+		sprintf(name, "TIMER2 sample %lu remains within programmed MAX", (uint32_t) (address - TIMER2_SAMPLES_BASE));
 		test_check(name, result(address) <= 4);
 	}
 	test_check("TIMER2 produces the sequence 0 -> 1 -> 2 -> 3 -> MAX -> 0", timer2_has_wrap_sequence());
@@ -108,7 +108,7 @@ static void check_timer2(void) {
 	uint16_t timer2_delta = result(0x033A) - result(0x0338);
 	uint32_t ratio_error = timer2_delta > timer1_delta * 4 ? timer2_delta - timer1_delta * 4 :
 		timer1_delta * 4 - timer2_delta;
-	printf("# TIMER-RATE,TIMER1=%u,TIMER2=%u,ERROR=%u\n", (uint32_t) timer1_delta,
+	printf("# TIMER-RATE,TIMER1=%lu,TIMER2=%lu,ERROR=%lu\n", (uint32_t) timer1_delta,
 		(uint32_t) timer2_delta, ratio_error);
 	test_check("TIMER2 runs at four times the TIMER1 rate", timer1_delta != 0 && ratio_error <= 8);
 }
@@ -136,7 +136,7 @@ static bool run_pass(size_t pass) {
 		for (size_t i = 0; i < RESULT_WORDS; i++) {
 			char name[64];
 
-			tfp_sprintf(name, "result word %u repeats after DSP reset", (uint32_t) i);
+			sprintf(name, "result word %lu repeats after DSP reset", (uint32_t) i);
 			test_eq_u32(name, first_record[i], result(RESULT_BASE + i));
 		}
 	}
@@ -151,7 +151,7 @@ int main(void) {
 	for (size_t pass = 1; pass <= 2; pass++) {
 		char category[32];
 
-		tfp_sprintf(category, "Independent reset pass %u", (uint32_t) pass);
+		sprintf(category, "Independent reset pass %lu", (uint32_t) pass);
 		test_category(category);
 		if (!run_pass(pass))
 			break;

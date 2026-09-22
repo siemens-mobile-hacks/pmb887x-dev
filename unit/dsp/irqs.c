@@ -189,27 +189,27 @@ static void test_latched_source(size_t bit) {
 	DSP_SHARED_MEMORY[DSP_IRQ_READ_AFTER_OFFSET] = 0;
 	DSP_SHARED_MEMORY[DSP_IRQ_READ_AFTER_ZERO_OFFSET] = 0;
 	DSP_SHARED_MEMORY[DSP_IRQ_REQUEST_OFFSET] = BIT(bit);
-	tfp_sprintf(name, "DSP writes INT_TOMCU bit %u", (uint32_t) bit);
+	sprintf(name, "DSP writes INT_TOMCU bit %lu", (uint32_t) bit);
 	test_check(name, wait_for_shared_value(DSP_IRQ_PHASE_OFFSET, BIT(bit)));
-	tfp_sprintf(name, "INT_TOMCU bit %u raises DSP_SRC%u", (uint32_t) bit, (uint32_t) bit);
+	sprintf(name, "INT_TOMCU bit %lu raises DSP_SRC%lu", (uint32_t) bit, (uint32_t) bit);
 	test_eq_u32(name, MOD_SRC_SRR, SCU_DSP_SRC(bit) & MOD_SRC_SRR);
 	SCU_DSP_SRC(bit) = MOD_SRC_CLRR;
-	tfp_sprintf(name, "ARM CLRR clears DSP_SRC%u", (uint32_t) bit);
+	sprintf(name, "ARM CLRR clears DSP_SRC%lu", (uint32_t) bit);
 	test_eq_u32(name, 0, SCU_DSP_SRC(bit) & MOD_SRC_SRR);
 	stopwatch_usleep_wd(1000);
-	tfp_sprintf(name, "DSP_SRC%u stays clear before DSP writes zero to INT_TOMCU", (uint32_t) bit);
+	sprintf(name, "DSP_SRC%lu stays clear before DSP writes zero to INT_TOMCU", (uint32_t) bit);
 	test_eq_u32(name, 0, SCU_DSP_SRC(bit) & MOD_SRC_SRR);
 	DSP_SHARED_MEMORY[DSP_IRQ_CONTINUE_OFFSET] = 1;
-	tfp_sprintf(name, "DSP writes zero to INT_TOMCU after bit %u", (uint32_t) bit);
+	sprintf(name, "DSP writes zero to INT_TOMCU after bit %lu", (uint32_t) bit);
 	test_check(name, wait_for_shared_value(DSP_IRQ_REQUEST_OFFSET, 0));
-	tfp_sprintf(name, "DSP_SRC%u stays clear after DSP writes zero to INT_TOMCU", (uint32_t) bit);
+	sprintf(name, "DSP_SRC%lu stays clear after DSP writes zero to INT_TOMCU", (uint32_t) bit);
 	test_eq_u32(name, 0, SCU_DSP_SRC(bit) & MOD_SRC_SRR);
 	uint16_t read_before = DSP_SHARED_MEMORY[DSP_IRQ_READ_BEFORE_OFFSET];
 	uint16_t read_after_clrr = DSP_SHARED_MEMORY[DSP_IRQ_READ_AFTER_OFFSET];
 	uint16_t read_after_zero = DSP_SHARED_MEMORY[DSP_IRQ_READ_AFTER_ZERO_OFFSET];
 	test_eq_u32("ARM CLRR leaves INT_TOMCU readback unchanged", read_before, read_after_clrr);
 	test_eq_u32("DSP zero write leaves INT_TOMCU readback unchanged", read_before, read_after_zero);
-	printf("# INT_TOMCU bit %u readback: before CLRR=%04X after CLRR=%04X after zero=%04X\n", (uint32_t) bit,
+	printf("# INT_TOMCU bit %lu readback: before CLRR=%04lX after CLRR=%04lX after zero=%04lX\n", (uint32_t) bit,
 		(uint32_t) read_before, (uint32_t) read_after_clrr, (uint32_t) read_after_zero);
 }
 
@@ -222,12 +222,12 @@ static void test_dsp_irq(size_t bit) {
 	prepare_irq(source);
 	DSP_SHARED_MEMORY[DSP_IRQ_CONTINUE_OFFSET] = 1;
 	DSP_SHARED_MEMORY[DSP_IRQ_REQUEST_OFFSET] = BIT(bit);
-	tfp_sprintf(request_name, "DSP INT_TOMCU bit %u raises DSP_SRC%u", (uint32_t) bit, (uint32_t) source);
+	sprintf(request_name, "DSP INT_TOMCU bit %lu raises DSP_SRC%lu", (uint32_t) bit, (uint32_t) source);
 	test_check(request_name, wait_for_irq());
 	cpu_enable_irq(false);
-	tfp_sprintf(consumed_name, "DSP consumes interrupt request bit %u", (uint32_t) bit);
+	sprintf(consumed_name, "DSP consumes interrupt request bit %lu", (uint32_t) bit);
 	test_check(consumed_name, wait_for_shared_value(DSP_IRQ_REQUEST_OFFSET, 0));
-	tfp_sprintf(route_name, "DSP_SRC%u routes to VIC IRQ %u", (uint32_t) source, DSP_IRQS[source]);
+	sprintf(route_name, "DSP_SRC%lu routes to VIC IRQ %lu", (uint32_t) source, DSP_IRQS[source]);
 	test_eq_u32(route_name, DSP_IRQS[source], irq_number);
 }
 
@@ -253,7 +253,7 @@ static void test_reserved_bit(void) {
 	for (size_t i = 0; i < ARRAY_SIZE(DSP_IRQS); i++) {
 		char source_name[64];
 
-		tfp_sprintf(source_name, "INT_TOMCU bit 4 leaves DSP_SRC%u clear", (uint32_t) i);
+		sprintf(source_name, "INT_TOMCU bit 4 leaves DSP_SRC%lu clear", (uint32_t) i);
 		test_eq_u32(source_name, 0, SCU_DSP_SRC(i) & MOD_SRC_SRR);
 	}
 }
@@ -264,7 +264,7 @@ int main(void) {
 	if (!test_check("Mask ROM boot dispatcher becomes ready", reset_dsp()))
 		return test_finish();
 	uint16_t mask_id = DSP_SHARED_MEMORY[0];
-	printf("# DSP mask ID: %04X\n", (uint32_t) mask_id);
+	printf("# DSP mask ID: %04lX\n", (uint32_t) mask_id);
 	const struct dsp_irq_mask_config *mask_config = find_dsp_irq_mask_config(mask_id);
 	if (mask_config == NULL) {
 		test_skip("DSP-generated interrupts", "Mask ID parameters are not known");

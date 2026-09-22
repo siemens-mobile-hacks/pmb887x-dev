@@ -140,12 +140,12 @@ static void check_monitor_events(size_t first, size_t window_count, uint16_t fir
 		if (expected->source == MONITOR_EVENT_PUBLICATION)
 			expected_phase = (first_index + (i - first) / ARRAY_SIZE(MONITOR_EVENT_SEQUENCE) + 1) % MON_VALUE_COUNT;
 
-		printf("# L1MON_EVENT,window=%u,step=%u,source=%s,phase=%u,timer2=%u,delta=%u,delta_ns=%u\n",
+		printf("# L1MON_EVENT,window=%lu,step=%lu,source=%s,phase=%lu,timer2=%lu,delta=%lu,delta_ns=%lu\n",
 			(uint32_t) ((i - first) / ARRAY_SIZE(MONITOR_EVENT_SEQUENCE)), (uint32_t) sequence_index,
 			monitor_event_name(source), (uint32_t) phase, (uint32_t) timestamp, (uint32_t) delta, delta_ns);
-		tfp_sprintf(name, "monitoring event %u has the expected source", (uint32_t) (i - first));
+		sprintf(name, "monitoring event %lu has the expected source", (uint32_t) (i - first));
 		test_eq_u32(name, expected->source, source);
-		tfp_sprintf(name, "monitoring event %u has the expected phase", (uint32_t) (i - first));
+		sprintf(name, "monitoring event %lu has the expected phase", (uint32_t) (i - first));
 		test_eq_u32(name, expected_phase, phase);
 	}
 }
@@ -187,7 +187,7 @@ static bool submit_runtime_command(uint16_t command, const uint16_t *parameters,
 		test_watchdog_serve();
 	bool completed = (DSP_COM_STATUS & BIT(0)) == 0;
 	if (!completed) {
-		printf("# MASK_COMMAND,id=%u,response=%04X,status=%04X\n", (uint32_t) command,
+		printf("# MASK_COMMAND,id=%lu,response=%04lX,status=%04lX\n", (uint32_t) command,
 			(uint32_t) dsp_hw_shared_memory[RUNTIME_PIPE_OFFSET], (uint32_t) DSP_COM_STATUS);
 	}
 
@@ -258,7 +258,7 @@ static void run_window(size_t index) {
 	};
 	char category[64];
 
-	tfp_sprintf(category, "Mask ROM monitoring / %u TPU ticks", (uint32_t) width);
+	sprintf(category, "Mask ROM monitoring / %lu TPU ticks", (uint32_t) width);
 	test_category(category);
 	reset_path_observers();
 	size_t first_event = dsp_hw_shared_memory[EVENT_LOG_COUNT_OFFSET];
@@ -268,8 +268,8 @@ static void run_window(size_t index) {
 	TPU_PARAM = 0;
 	cleanup_tpu();
 
-	printf("# L1MON_PATH,bbhi=%u/%u/%u,bblo=%u/%u/%u,scheduler=%u/%u,monitor=%u,index=%u,"
-		"finta0=%04X,bb_ctrl=%04X\n",
+	printf("# L1MON_PATH,bbhi=%lu/%lu/%lu,bblo=%lu/%lu/%lu,scheduler=%lu/%lu,monitor=%lu,index=%lu,"
+		"finta0=%04lX,bb_ctrl=%04lX\n",
 		(uint32_t) dsp_hw_shared_memory[BBHI_CALLBACK_COUNT_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[BBHI_CALLBACK_ARGUMENT_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[BBHI_WRITE_POINTER_OFFSET],
@@ -312,7 +312,7 @@ static void run_window(size_t index) {
 	uint16_t result = dsp_hw_shared_memory[MON_VALUES_OFFSET + index];
 	int16_t signed_result = (int16_t) result;
 
-	printf("# L1MON_RESULT,index=%u,width_ticks=%u,raw=%04X,signed=%d\n",
+	printf("# L1MON_RESULT,index=%lu,width_ticks=%lu,raw=%04lX,signed=%ld\n",
 		(uint32_t) index, (uint32_t) width, (uint32_t) result, (int32_t) signed_result);
 	test_check("Mask ROM replaces the selected result sentinel", result != MON_SENTINEL_BASE + index);
 	test_check("monitoring result is in the documented RMS range",
@@ -323,7 +323,7 @@ static void run_window(size_t index) {
 	for (size_t i = 0; i < MON_VALUE_COUNT; i++) {
 		char name[80];
 
-		tfp_sprintf(name, "monitoring window %u preserves result slot %u", (uint32_t) index, (uint32_t) i);
+		sprintf(name, "monitoring window %lu preserves result slot %lu", (uint32_t) index, (uint32_t) i);
 		uint16_t expected = i <= index ? isolated_results[i] : MON_SENTINEL_BASE + i;
 		test_eq_u32(name, expected, dsp_hw_shared_memory[MON_VALUES_OFFSET + i]);
 	}
@@ -339,7 +339,7 @@ static void run_burst(void) {
 		char name[72];
 
 		dsp_hw_shared_memory[MON_VALUES_OFFSET + i] = 0xFFFF;
-		tfp_sprintf(name, "ARM writes 0xFFFF to monitoring result slot %u", (uint32_t) i);
+		sprintf(name, "ARM writes 0xFFFF to monitoring result slot %lu", (uint32_t) i);
 		test_eq_u32(name, 0xFFFF, dsp_hw_shared_memory[MON_VALUES_OFFSET + i]);
 	}
 	test_eq_u32("ARM resets the monitoring result ring index", 0, dsp_hw_shared_memory[MON_INDEX_OFFSET]);
@@ -367,7 +367,7 @@ static void run_burst(void) {
 	stopwatch_usleep_wd(1000);
 	cleanup_tpu();
 
-	printf("# L1MON_BURST,bbhi=%u/%u,bblo=%u/%u,scheduler=%u,monitor=%u,index=%u,finta0=%04X\n",
+	printf("# L1MON_BURST,bbhi=%lu/%lu,bblo=%lu/%lu,scheduler=%lu,monitor=%lu,index=%lu,finta0=%04lX\n",
 		(uint32_t) dsp_hw_shared_memory[BBHI_CALLBACK_COUNT_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[BBHI_WRITE_POINTER_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[BBLO_CALLBACK_COUNT_OFFSET],
@@ -407,9 +407,9 @@ static void run_burst(void) {
 		uint16_t result = dsp_hw_shared_memory[MON_VALUES_OFFSET + i];
 		int16_t signed_result = (int16_t) result;
 
-		tfp_sprintf(name, "monitoring burst fills result slot %u", (uint32_t) i);
+		sprintf(name, "monitoring burst fills result slot %lu", (uint32_t) i);
 		test_check(name, result != 0xFFFF);
-		tfp_sprintf(name, "monitoring burst result slot %u is in the documented RMS range", (uint32_t) i);
+		sprintf(name, "monitoring burst result slot %lu is in the documented RMS range", (uint32_t) i);
 		test_check(name, signed_result >= MON_RAW_MIN && signed_result <= MON_RAW_MAX);
 	}
 }
@@ -417,7 +417,7 @@ static void run_burst(void) {
 static void run_pass(size_t pass) {
 	char category[56];
 
-	tfp_sprintf(category, "Independent Mask ROM boot / pass %u", (uint32_t) pass);
+	sprintf(category, "Independent Mask ROM boot / pass %lu", (uint32_t) pass);
 	test_category(category);
 	if (!prepare_runner())
 		return;
@@ -430,7 +430,7 @@ static void run_pass(size_t pass) {
 	for (size_t i = ARRAY_SIZE(MONITOR_WIDTHS); i < MON_VALUE_COUNT; i++) {
 		char name[72];
 
-		tfp_sprintf(name, "unselected monitoring result slot %u remains intact", (uint32_t) i);
+		sprintf(name, "unselected monitoring result slot %lu remains intact", (uint32_t) i);
 		test_eq_u32(name, MON_SENTINEL_BASE + i, dsp_hw_shared_memory[MON_VALUES_OFFSET + i]);
 	}
 }

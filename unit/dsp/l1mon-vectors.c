@@ -64,7 +64,7 @@ static void check_valid_vector(const char *category, uint16_t sample_words, uint
 
 		if (i == initial_index)
 			continue;
-		tfp_sprintf(name, "unselected result slot %u remains intact", (uint32_t) i);
+		sprintf(name, "unselected result slot %lu remains intact", (uint32_t) i);
 		test_eq_u32(name, MON_SENTINEL_BASE + i, dsp_hw_shared_memory[MON_VALUES_OFFSET + i]);
 	}
 	check_transmitter_inactive();
@@ -81,7 +81,7 @@ static void check_invalid_length(const char *category, uint16_t sample_words) {
 	for (size_t i = 0; i < MON_VALUE_COUNT; i++) {
 		char name[72];
 
-		tfp_sprintf(name, "out-of-range window preserves result slot %u", (uint32_t) i);
+		sprintf(name, "out-of-range window preserves result slot %lu", (uint32_t) i);
 		test_eq_u32(name, MON_SENTINEL_BASE + i, dsp_hw_shared_memory[MON_VALUES_OFFSET + i]);
 	}
 	check_transmitter_inactive();
@@ -90,7 +90,7 @@ static void check_invalid_length(const char *category, uint16_t sample_words) {
 static void check_invalid_index(uint16_t index) {
 	char category[64];
 
-	tfp_sprintf(category, "Invalid result index 0x%04X", (uint32_t) index);
+	sprintf(category, "Invalid result index 0x%04lX", (uint32_t) index);
 	test_category(category);
 	initialize_ring(index);
 	if (!test_check("monitoring with an invalid index completes", run_vector(MON_USEFUL_SAMPLE_WORDS)))
@@ -103,7 +103,7 @@ static void check_invalid_index(uint16_t index) {
 	for (size_t i = 1; i < MON_VALUE_COUNT; i++) {
 		char name[72];
 
-		tfp_sprintf(name, "invalid index preserves result slot %u", (uint32_t) i);
+		sprintf(name, "invalid index preserves result slot %lu", (uint32_t) i);
 		test_eq_u32(name, MON_SENTINEL_BASE + i, dsp_hw_shared_memory[MON_VALUES_OFFSET + i]);
 	}
 	check_transmitter_inactive();
@@ -115,7 +115,7 @@ static void check_ring_wrap(void) {
 	for (size_t i = 0; i < MON_VALUE_COUNT; i++) {
 		char name[64];
 
-		tfp_sprintf(name, "monitoring request %u completes", (uint32_t) i + 1);
+		sprintf(name, "monitoring request %lu completes", (uint32_t) i + 1);
 		if (!test_check(name, run_vector(MON_USEFUL_SAMPLE_WORDS)))
 			return;
 	}
@@ -125,7 +125,7 @@ static void check_ring_wrap(void) {
 	for (size_t i = 0; i < MON_VALUE_COUNT; i++) {
 		char name[64];
 
-		tfp_sprintf(name, "monitoring fills result slot %u", (uint32_t) i);
+		sprintf(name, "monitoring fills result slot %lu", (uint32_t) i);
 		test_eq_u32(name, MON_ZERO_RESULT, dsp_hw_shared_memory[MON_VALUES_OFFSET + i]);
 	}
 
@@ -163,7 +163,7 @@ static bool prepare_runner(void) {
 static void run_pass(size_t pass) {
 	char category[48];
 
-	tfp_sprintf(category, "Independent DSP reset pass %u", (uint32_t) pass);
+	sprintf(category, "Independent DSP reset pass %lu", (uint32_t) pass);
 	test_category(category);
 	if (!prepare_runner())
 		return;
