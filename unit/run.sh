@@ -12,5 +12,4 @@ cmake_args=(-B "$build_dir" -DBOARD="$board" -DBOOT=extram -DTEST_COLOR="${TEST_
 cmake "${cmake_args[@]}"
 cmake --build "$build_dir" --target "$test_name"
 
-chaos_args=(--exec="$build_dir/$test_name.bin" --speed=115200)
-perl ../chaos-boot.pl "${chaos_args[@]}" "$@"
+exec ../boot.py "$build_dir/$test_name.bin" "$@"
