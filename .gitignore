@@ -3,6 +3,7 @@
 *.o
 *.elf
 *.bin
+!boot/preloader-*.bin
 */bin/*
 boot/*.hex
 *.d
