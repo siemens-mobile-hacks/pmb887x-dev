@@ -132,19 +132,22 @@ def expect_byte(port, expected, description):
 def wait_for_bootrom(port, ignition):
 	print("Waiting for BootROM...", file=sys.stderr)
 	dtr = False
-	next_toggle = time.monotonic()
+	pulses = 0
+	started = time.monotonic()
+	next_toggle = started
 
 	while True:
-		now = time.monotonic()
-		if ignition and now >= next_toggle:
-			dtr = not dtr
-			port.dtr = dtr
-			next_toggle = now + (0.05 if dtr else 0.15)
-
 		port.write(b"AT")
 		response = port.read(1)
 		cpu = CPUS.get(response[0] & 0xF0) if response else None
 		if cpu is None:
+			now = time.monotonic()
+			if ignition and now >= next_toggle:
+				dtr = not dtr
+				port.dtr = dtr
+				if dtr:
+					pulses += 1
+				next_toggle = now + (1.0 if dtr else 0.5)
 			continue
 
 		if ignition:
@@ -152,7 +155,8 @@ def wait_for_bootrom(port, ignition):
 		if port.read(1) == b"\xC4":
 			read_byte(port, "secure boot chip ID")
 
-		print("CPU detected: %s" % cpu.upper(), file=sys.stderr)
+		print("CPU detected: %s (ignition pulses: %d, %.0f ms)" %
+			(cpu.upper(), pulses, (time.monotonic() - started) * 1000), file=sys.stderr)
 		return cpu
 
 
@@ -330,6 +334,7 @@ def forward_output(port, output):
 			return
 
 		output.write(data)
+		output.flush()
 
 
 def parse_address(value):
