@@ -436,8 +436,8 @@ def main():
 				(args.payload, payload_board, write_address, len(payload)), file=sys.stderr)
 		preloader_write_payload(port, write_address, payload)
 		print("<------- cut here -------", file=sys.stderr)
-		preloader_goto(port, exec_address)
 		port.timeout = 1
+		preloader_goto(port, exec_address)
 		forward_output(port, sys.stdout.buffer)
 	finally:
 		port.close()

@@ -10,6 +10,7 @@ SECTIONS {
 	/* The image is loaded at 0xB0000000; the entry point follows its headers. */
 	.text ORIGIN(extram) : {
 		KEEP(*(.boot.header))
+		_boot_header_end = .;
 		*(.startup)
 		*(.text*)	/* Program code */
 		. = ALIGN(4);
@@ -121,6 +122,6 @@ PROVIDE(start = _start);
 PROVIDE(boot_entry = _start);
 
 ASSERT(
-	start == ORIGIN(extram) || start == ORIGIN(extram) + 0x20,
-	"EXTRAM entry point must follow the boot header"
+	start == ORIGIN(extram) || start == _boot_header_end,
+	"EXTRAM entry point must be the header or the code after it"
 )
