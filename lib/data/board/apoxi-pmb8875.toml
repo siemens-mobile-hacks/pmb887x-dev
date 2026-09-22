@@ -1,0 +1,5 @@
+[board]
+cpu.type = "pmb8875"
+vendor = "Generic"
+model = "APOXI PMB8875"
+platform = "apoxi"

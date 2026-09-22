@@ -1,0 +1,8 @@
+[board]
+cpu.type = "pmb8875"
+vendor = "Generic"
+model = "Siemens PMB8875"
+platform = "siemens"
+
+[gpio.aliases]
+DSPOUT1 = "PM_WADOG"

@@ -1,6 +1,7 @@
 [board]
 vendor = "Panasonic"
 model = "VS7"
+platform = "apoxi"
 cpu.type = "pmb8875"
 cpu.rev = 0x05
 

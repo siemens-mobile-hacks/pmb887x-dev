@@ -2,6 +2,10 @@
 // IWYU pragma: private, include <pmb887x.h>
 
 #define PMB8875
+#define BOARD_NAME "siemens-cx65"
+
+// Software platform
+#define BOARD_PLATFORM_SIEMENS 1
 
 // Peripherals
 #define	BOARD_HAS_FLASH0_CFI_FLASH	1

@@ -1,0 +1,5 @@
+[board]
+cpu.type = "pmb8876"
+vendor = "Generic"
+model = "APOXI PMB8876"
+platform = "apoxi"

@@ -1,4 +1,5 @@
 [board]
+platform = "siemens"
 cpu.type = "pmb8875"
 cpu.rev = 0x05
 

@@ -1,6 +1,7 @@
 [board]
 vendor = "Siemens"
 model = "SK65"
+platform = "siemens"
 cpu.type = "pmb8875"
 cpu.rev = 0x05
 

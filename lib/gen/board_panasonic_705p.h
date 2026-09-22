@@ -2,6 +2,10 @@
 // IWYU pragma: private, include <pmb887x.h>
 
 #define PMB8876
+#define BOARD_NAME "panasonic-705p"
+
+// Software platform
+#define BOARD_PLATFORM_APOXI 1
 
 // Peripherals
 #define	BOARD_HAS_FLASH0_CFI_FLASH	1

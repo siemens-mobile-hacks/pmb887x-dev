@@ -2,6 +2,10 @@
 // IWYU pragma: private, include <pmb887x.h>
 
 #define PMB8876
+#define BOARD_NAME "siemens-s75"
+
+// Software platform
+#define BOARD_PLATFORM_SIEMENS 1
 
 // Hardware platform
 #define BOARD_PLATFORM_SIEMENS_X85 1

@@ -1,6 +1,7 @@
 [board]
 vendor = "Panasonic"
 model = "705p"
+platform = "apoxi"
 cpu.type = "pmb8876"
 cpu.rev = 0x11
 cpu.uid0 = 0x030488E3

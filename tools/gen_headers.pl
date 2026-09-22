@@ -83,7 +83,13 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	my $file = dirname(__FILE__).'/../lib/gen/board_'.$board_file.'.h';
 	my $str = "#pragma once\n$pmb887x_private\n\n";
 	
-	$str .= "#define ".uc($board_meta->cpu()->{name})."\n\n";
+	$str .= "#define ".uc($board_meta->cpu()->{name})."\n";
+	$str .= "#define BOARD_NAME \"$board_meta->{name}\"\n\n";
+
+	if ($board_meta->{platform}) {
+		$str .= "// Software platform\n";
+		$str .= "#define BOARD_PLATFORM_".getMacroName($board_meta->{platform})." 1\n\n";
+	}
 
 	if ($board_meta->{hw_platform}) {
 		$str .= "// Hardware platform\n";
@@ -106,6 +112,7 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	$board_str .= "#include \"board_".$board_file.".h\" // IWYU pragma: export\n";
 	$board_str .= "#endif\n\n";
 	
+	$str =~ s/\n+\z/\n/;
 	open(F, ">$file") or die "open($file): $!";
 	print F $str;
 	close F;

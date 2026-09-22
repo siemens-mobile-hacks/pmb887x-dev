@@ -1,6 +1,7 @@
 [board]
 vendor = "LG"
 model = "KE970"
+platform = "apoxi"
 cpu.type = "pmb8876"
 # cpu.rev = 0x10 # newer units may have 0x11, LG firmware supports both even in V10a
 cpu.rev = 0x11

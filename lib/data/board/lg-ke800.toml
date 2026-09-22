@@ -1,6 +1,7 @@
 [board]
 vendor = "LG"
 model = "KE800"
+platform = "apoxi"
 
 cpu.type = "pmb8876"
 cpu.rev = 0x10

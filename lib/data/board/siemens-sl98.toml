@@ -1,6 +1,7 @@
 [board]
 vendor = "BenQ-Siemens"
 model = "SL98"
+platform = "apoxi"
 cpu.type = "pmb8876"
 cpu.rev = 0x10
 

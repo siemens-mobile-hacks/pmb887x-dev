@@ -111,6 +111,7 @@ sub loadBoard {
 
 	$self->{model} = $cfg->{board}->{model};
 	$self->{vendor} = $cfg->{board}->{vendor};
+	$self->{platform} = $cfg->{board}->{platform};
 	$self->{hw_platform} = $cfg->{board}->{hw_platform};
 	$self->{peripherals} = $cfg->{peripheral} || {};
 	$self->{cpu} = Sie::CpuMetadata->new($cfg->{board}->{cpu}->{type});

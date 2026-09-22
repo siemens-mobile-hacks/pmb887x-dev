@@ -1,6 +1,14 @@
 #pragma once
 // IWYU pragma: private, include <pmb887x.h>
 
+#ifdef BOARD_APOXI_PMB8875
+#include "board_apoxi_pmb8875.h" // IWYU pragma: export
+#endif
+
+#ifdef BOARD_APOXI_PMB8876
+#include "board_apoxi_pmb8876.h" // IWYU pragma: export
+#endif
+
 #ifdef BOARD_GENERIC_PMB8875
 #include "board_generic_pmb8875.h" // IWYU pragma: export
 #endif
@@ -87,6 +95,14 @@
 
 #ifdef BOARD_SIEMENS_ME75
 #include "board_siemens_me75.h" // IWYU pragma: export
+#endif
+
+#ifdef BOARD_SIEMENS_PMB8875
+#include "board_siemens_pmb8875.h" // IWYU pragma: export
+#endif
+
+#ifdef BOARD_SIEMENS_PMB8876
+#include "board_siemens_pmb8876.h" // IWYU pragma: export
 #endif
 
 #ifdef BOARD_SIEMENS_S65
