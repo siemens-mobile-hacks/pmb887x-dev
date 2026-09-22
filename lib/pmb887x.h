@@ -30,6 +30,16 @@
 #define GET_BIT(value, shift, mask)				(((value) >> shift) & mask)
 
 #define __IRQ __attribute__((interrupt))
+#if defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
+#define __SRAM __attribute__((section(".sram")))
+#else
+#define __SRAM
+#endif
+#if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
+#define __TCM __attribute__((section(".tcm")))
+#else
+#define __TCM
+#endif
 
 #include "gen/board.h" // IWYU pragma: export
 #include "gen/cpu.h" // IWYU pragma: export

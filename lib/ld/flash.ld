@@ -1,21 +1,21 @@
-ENTRY(_start)
+ENTRY(start)
 
 MEMORY {
-	/* 96k (sram) */
-	ram (rwx) : ORIGIN = 0x00080100, LENGTH = 96k-0x100
-	
-	/* 16M (flash) */
-	rom (rx) : ORIGIN = 0xA0000000, LENGTH = 32M
+	flash (rx) : ORIGIN = 0xA0000000, LENGTH = 1M
+	sram (rwx) : ORIGIN = 0x00080000, LENGTH = 96K
+	tcm (rwx) : ORIGIN = 0x01000000, LENGTH = 8K
 }
 
 SECTIONS {
-	.text : {
+	/* The flash header starts at 0xA0000000. */
+	.text ORIGIN(flash) : {
+		KEEP(*(.boot.header))
 		*(.startup)
 		*(.text*)	/* Program code */
 		. = ALIGN(4);
 		*(.rodata*)	/* Read-only data */
 		. = ALIGN(4);
-	} >rom
+	} >flash
 
 	/* C++ Static constructors/destructors, also used for
 	 * __attribute__((constructor)) and the likes.
@@ -25,21 +25,21 @@ SECTIONS {
 		__preinit_array_start = .;
 		KEEP (*(.preinit_array))
 		__preinit_array_end = .;
-	} >rom
+	} >flash
 	.init_array : {
 		. = ALIGN(4);
 		__init_array_start = .;
 		KEEP (*(SORT(.init_array.*)))
 		KEEP (*(.init_array))
 		__init_array_end = .;
-	} >rom
+	} >flash
 	.fini_array : {
 		. = ALIGN(4);
 		__fini_array_start = .;
 		KEEP (*(.fini_array))
 		KEEP (*(SORT(.fini_array.*)))
 		__fini_array_end = .;
-	} >rom
+	} >flash
 
 	/*
 	 * Another section used by C++ stuff, appears when using newlib with
@@ -47,21 +47,24 @@ SECTIONS {
 	 */
 	.ARM.extab : {
 		*(.ARM.extab*)
-	} >rom
+	} >flash
 	.ARM.exidx : {
 		__exidx_start = .;
 		*(.ARM.exidx*)
 		__exidx_end = .;
-	} >rom
+	} >flash
 
 	. = ALIGN(4);
 	_etext = .;
 
-	/* ram, but not cleared on reset, eg boot/app comms */
-	.noinit (NOLOAD) : {
-		*(.noinit*)
-	} >ram
-	. = ALIGN(4);
+	.sram ORIGIN(sram) + 0x4000 : {
+		_sram_start = .;
+		*(.sram)
+		*(.sram.*)
+		. = ALIGN(4);
+		_sram_end = .;
+	} >sram AT>flash
+	_sram_loadaddr = LOADADDR(.sram);
 
 	.data : {
 		_data = .;
@@ -69,15 +72,33 @@ SECTIONS {
 		*(.ramtext*)	/* "text" functions to run in ram */
 		. = ALIGN(4);
 		_edata = .;
-	} >ram AT >rom
+	} >sram AT>flash
 	_data_loadaddr = LOADADDR(.data);
 
-	.bss : {
+	.tcm : {
+		_tcm_start = .;
+		*(.tcm)
+		*(.tcm.*)
+		. = ALIGN(4);
+		_tcm_end = .;
+	} >tcm AT>flash
+	_tcm_loadaddr = LOADADDR(.tcm);
+
+	.signature : {
+		KEEP(*(.signature))
+	} >flash
+
+	.bss (NOLOAD) : {
 		*(.bss*)	/* Read-write zero initialized data */
 		*(COMMON)
 		. = ALIGN(4);
 		_ebss = .;
-	} >ram
+	} >sram
+
+	/* ram, but not cleared on reset, eg boot/app comms */
+	.noinit (NOLOAD) : {
+		*(.noinit*)
+	} >sram
 
 	/*
 	 * The .eh_frame section appears to be used for C++ exception handling.
@@ -89,5 +110,11 @@ SECTIONS {
 	end = .;
 }
 
-PROVIDE(_stack_sys = ORIGIN(ram) + LENGTH(ram) - 0x4000);
-PROVIDE(_stack_irq = ORIGIN(ram) + LENGTH(ram));
+PROVIDE(_stack_irq = ORIGIN(sram) + 0x4000);
+PROVIDE(_stack_fiq = _stack_irq - 0x1000);
+PROVIDE(_stack_abt = _stack_fiq - 0x1000);
+PROVIDE(_stack_und = _stack_abt - 0x400);
+PROVIDE(_stack_svc = _stack_und - 0x400);
+PROVIDE(_stack_sys = _stack_svc - 0x400);
+PROVIDE(start = _start);
+PROVIDE(boot_entry = _start);

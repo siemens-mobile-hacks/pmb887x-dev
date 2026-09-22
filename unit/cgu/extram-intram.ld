@@ -84,5 +84,11 @@ SECTIONS {
 	end = .;
 }
 
-PROVIDE(_stack_sys = ORIGIN(intram) + LENGTH(intram) - 0x4000);
 PROVIDE(_stack_irq = ORIGIN(intram) + LENGTH(intram));
+PROVIDE(_stack_fiq = _stack_irq - 0x1000);
+PROVIDE(_stack_abt = _stack_fiq - 0x1000);
+PROVIDE(_stack_und = _stack_abt - 0x400);
+PROVIDE(_stack_svc = _stack_und - 0x400);
+PROVIDE(_stack_sys = _stack_svc - 0x400);
+
+ASSERT(_ebss <= _stack_sys - 0x1000, "image leaves less than 4 KiB for SYS stack")

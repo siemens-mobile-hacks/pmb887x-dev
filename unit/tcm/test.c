@@ -7,11 +7,29 @@
 #define TCM_REGION_ENABLE BIT(0)
 #define ITCM_BASE 0x01000000
 #define DTCM_BASE 0x01002000
+#define SRAM_CODE_BASE 0x00084000
+#define SRAM_END 0x00098000
 #define ITCM_REMAP_BASE 0x01004000
 #define DTCM_REMAP_BASE 0x01006000
 #define DTCM_OVERLAY_BASE 0xA8100000
 #define ITCM_OVERLAY_BASE 0xA8120000
 #define OVERLAY_DATA_OFFSET 0x100
+
+#if defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
+static __SRAM __attribute__((noinline)) uint32_t execute_linked_sram(uint32_t value) {
+	return value ^ 0x5A3C6996;
+}
+#endif
+
+#if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
+static __TCM __attribute__((noinline)) uint32_t execute_linked_tcm(uint32_t value) {
+	return value ^ 0xA5C39669;
+}
+#endif
+
+#ifdef BOOT_FLASH
+static volatile uint32_t initialized_sram_data = 0xC35A6996;
+#endif
 
 uint32_t tcm_execute_with_resume(uint32_t address);
 
@@ -63,7 +81,7 @@ static void fill_tcm(uint32_t base, uint32_t seed) {
 static bool check_tcm(uint32_t base, uint32_t seed) {
 	for (uint32_t offset = 0; offset < TCM_SIZE; offset += sizeof(uint32_t)) {
 		if (MMIO32(base + offset) != (seed ^ offset)) {
-			printf("# mismatch at %08X: expected=%08X actual=%08X\n", base + offset, seed ^ offset,
+			printf("# mismatch at %08lX: expected=%08lX actual=%08lX\n", base + offset, seed ^ offset,
 				MMIO32(base + offset));
 			return false;
 		}
@@ -121,13 +139,32 @@ static void test_itcm_overlay(void) {
 int main(void) {
 	test_start("ARM TCM test");
 	test_category("Reset values");
+#if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
+	test_eq_u32("ITCM startup region", ITCM_BASE | TCM_REGION_SIZE_8K | TCM_REGION_ENABLE, read_itcm());
+#else
 	test_eq_u32("ITCM region reset value", TCM_REGION_SIZE_8K, read_itcm());
+#endif
 	test_eq_u32("DTCM region reset value", TCM_REGION_SIZE_8K, read_dtcm());
+
+#if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
+	test_category("Linked section");
+	test_eq_u32("linked TCM function address", ITCM_BASE, (uint32_t) execute_linked_tcm);
+	test_eq_u32("linked TCM function result", 0x12345678 ^ 0xA5C39669, execute_linked_tcm(0x12345678));
+#endif
+#if defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
+	test_eq_u32("linked SRAM function address", SRAM_CODE_BASE, (uint32_t) execute_linked_sram);
+	test_eq_u32("linked SRAM function result", 0x12345678 ^ 0x5A3C6996, execute_linked_sram(0x12345678));
+#endif
+#ifdef BOOT_FLASH
+	uint32_t data_address = (uint32_t) &initialized_sram_data;
+	test_check("initialized data is in SRAM", data_address >= SRAM_CODE_BASE && data_address < SRAM_END);
+	test_eq_u32("initialized SRAM value", 0xC35A6996, initialized_sram_data);
+#endif
 
 	test_category("Identification");
 	uint32_t main_id = read_main_id();
 	uint32_t tcm_type = read_tcm_type();
-	printf("# MIDR=%08X TCMTR=%08X\n", main_id, tcm_type);
+	printf("# MIDR=%08lX TCMTR=%08lX\n", main_id, tcm_type);
 	test_eq_u32("CPU implementer is Arm", 0x41, main_id >> 24);
 	test_eq_u32("CPU core is ARM926", 0x926, (main_id >> 4) & 0xFFF);
 	test_eq_u32("one ITCM is present", 1, tcm_type & 0x7);

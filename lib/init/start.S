@@ -1,80 +1,63 @@
 .global _start
 .arm
-.section .startup
+.section .startup, "ax"
 
-#ifdef BOOT_FLASH
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xFFFFFFFF
-.int 0xA0000040
-.int 0xFFFFFFFF
-.int 0xA0000040
-.int 0x544B4A43
-#endif
+.equ PSR_MODE_FIQ, 0x11
+.equ PSR_MODE_IRQ, 0x12
+.equ PSR_MODE_SVC, 0x13
+.equ PSR_MODE_ABT, 0x17
+.equ PSR_MODE_UND, 0x1B
+.equ PSR_MODE_SYS, 0x1F
+.equ PSR_MASKED, 0xC0
 
 _start:
-	#ifdef BOOT_EXTRAM
-	/* chaos bootloader specific */
-	ldr	r0, =_last_wdt_serve_from_boot
-	str r11, [r0]
-	#endif
-	
-	mrs r0, cpsr
-	
-	/* stack for fiq mode */
-	bic r1, r0, #0x1f
-	orr r1, r1, #0x11
-	msr cpsr, r1
-	ldr sp, =_stack_irq
-	
-	/* stack for irq mode */
-	bic r1, r0, #0x1f
-	orr r1, r1, #0x12
-	msr cpsr, r1
-	ldr sp, =_stack_irq
-	
-	/* stack for sys mode */
-	msr cpsr, r0
-	ldr sp, =_stack_sys
-	
-	mov r12, lr
-	b reset_handler
+	msr	cpsr_c, #(PSR_MODE_FIQ | PSR_MASKED)
+	ldr	sp, =_stack_fiq
+	msr	cpsr_c, #(PSR_MODE_IRQ | PSR_MASKED)
+	ldr	sp, =_stack_irq
+	msr	cpsr_c, #(PSR_MODE_ABT | PSR_MASKED)
+	ldr	sp, =_stack_abt
+	msr	cpsr_c, #(PSR_MODE_UND | PSR_MASKED)
+	ldr	sp, =_stack_und
+	msr	cpsr_c, #(PSR_MODE_SVC | PSR_MASKED)
+	ldr	sp, =_stack_svc
+	msr	cpsr_c, #(PSR_MODE_SYS | PSR_MASKED)
+	ldr	sp, =_stack_sys
+
+#if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
+	@ Enable 8 KiB ITCM at 0x01000000
+	ldr	r0, =0x01000011
+	mcr	p15, 0, r0, c9, c1, 1
+#endif
+
+	b	reset_handler
 
 .global _vectors_table_start
-.global _vectors_table_handlers
 .global _vectors_table_end
 
 _vectors_table_start:
-	ldr pc, reset_addr    @ Reset handler
-	ldr pc, undef_addr	  @ Undefined instruction handler
-	ldr pc, swi_addr	  @ Software interrupt handler
-	ldr pc, prefetch_addr @ Prefetch abort handler
-	ldr pc, abort_addr	  @ Data abort handler
-	ldr pc, reserved_addr @ Reserved
-	ldr pc, irq_addr	  @ IRQ (Interrupt request) handler
-	ldr pc, fiq_addr	  @ FIQ (Fast interrupt request) handler
-_vectors_table_handlers:
-	reset_addr:     .word 0
-	undef_addr:     .word 0
-	swi_addr:       .word 0
-	prefetch_addr:  .word 0
-	abort_addr:     .word 0
-	reserved_addr:  .word 0
-	irq_addr:       .word 0
-	fiq_addr:       .word 0
+	ldr	pc, reset_addr		@ Reset handler
+	ldr	pc, undef_addr		@ Undefined instruction handler
+	ldr	pc, swi_addr		@ Software interrupt handler
+	ldr	pc, prefetch_addr	@ Prefetch abort handler
+	ldr	pc, abort_addr		@ Data abort handler
+	ldr	pc, reserved_addr	@ Reserved
+	ldr	pc, irq_addr		@ IRQ handler
+	ldr	pc, fiq_addr		@ FIQ handler
+reset_addr:
+	.word	reset_handler
+undef_addr:
+	.word	undef_handler
+swi_addr:
+	.word	swi_handler
+prefetch_addr:
+	.word	prefetch_abort_handler
+abort_addr:
+	.word	data_abort_handler
+reserved_addr:
+	.word	reserved_handler
+irq_addr:
+	.word	irq_handler
+fiq_addr:
+	.word	fiq_handler
 _vectors_table_end:
-
-#ifdef BOOT_EXTRAM
-.global _last_wdt_serve_from_boot
-_last_wdt_serve_from_boot:
-.int 0
-#endif

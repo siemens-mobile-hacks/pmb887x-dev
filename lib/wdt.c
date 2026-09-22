@@ -92,15 +92,9 @@ void wdt_init_custom(uint32_t interval) {
 	wdt_off = false;
 
 #ifdef GPIO_PM_WADOG
-#ifdef BOOT_EXTRAM
-	extern uint32_t _last_wdt_serve_from_boot;
-	last_wdt_serve = _last_wdt_serve_from_boot << 16;
-	wdt_serve();
-#else
 	cpu_wdt_disable();
 	GPIO_PIN(GPIO_PM_WADOG) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
 	last_wdt_serve = stopwatch_get();
-#endif
 #else
 	last_wdt_serve = stopwatch_get();
 	// WDTREL is 0xFFFC out of reset (~2.5 ms): enabling the watchdog without programming a
