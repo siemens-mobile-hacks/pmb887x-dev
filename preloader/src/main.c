@@ -115,20 +115,28 @@ static void cmd_ram_write(void) {
 	usart_read(USART0, &address, sizeof(address));
 	uint32_t size;
 	usart_read(USART0, &size, sizeof(size));
-	uint32_t crc = CRC32_INITIAL_VALUE;
 	uint8_t *data = (uint8_t *) address;
 	uint32_t offset = 0;
 
 	while (offset < size) {
 		uint32_t batch_size = MIN(size - offset, 256);
 		usart_read(USART0, data + offset, batch_size);
-		crc = crc32_update(crc, data + offset, batch_size);
 		offset += batch_size;
 		wdt_serve();
 	}
 
 	uint32_t received_crc;
 	usart_read(USART0, &received_crc, sizeof(received_crc));
+
+	uint32_t crc = CRC32_INITIAL_VALUE;
+	offset = 0;
+	while (offset < size) {
+		uint32_t batch_size = MIN(size - offset, 256);
+		crc = crc32_update(crc, data + offset, batch_size);
+		offset += batch_size;
+		wdt_serve();
+	}
+
 	if (received_crc != ~crc) {
 		usart_putc(USART0, STATUS_FAILURE);
 		return;
