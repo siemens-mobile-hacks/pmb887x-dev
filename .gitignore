@@ -1,5 +1,6 @@
 lib/data_eg/
 .cache
+/docs/
 .clangd
 *.o
 *.elf
