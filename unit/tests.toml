@@ -1,11 +1,23 @@
 [stm]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
+
+[stm-clock]
+devices = ["siemens-cx75", "siemens-el71"]
 
 [dmac]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dmac-clock]
+devices = ["siemens-cx75", "siemens-el71"]
+
 [dsp]
 devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-clock]
+devices = ["siemens-cx75", "siemens-el71"]
+
+[dsp-timer-clock]
+devices = ["siemens-cx75", "siemens-el71"]
 
 [dsp-handshake]
 devices = ["generic-pmb8875", "generic-pmb8876"]
@@ -139,6 +151,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [ebu]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[ebu-clock]
+devices = ["siemens-cx75", "siemens-el71"]
+
 [gpio]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
@@ -159,7 +174,7 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 devices = ["generic-pmb8876", "siemens-c81"]
 
 [scu]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
 
 [scu-reset]
 devices = ["generic-pmb8875", "generic-pmb8876"]
@@ -167,44 +182,80 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [scu-wdt-reset]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[scu-wdt-clock]
+devices = ["siemens-cx75", "siemens-el71"]
+
 [adc]
 devices = ["siemens-cx75", "siemens-el71"]
 
 [afc]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[cgu]
+[cgu-ahb]
 devices = ["siemens-cx75", "siemens-el71"]
 
+[cgu-pll]
+devices = ["siemens-cx75", "siemens-el71"]
+
+[cgu-fsys]
+devices = ["siemens-cx75", "siemens-el71"]
+
+[cgu-cpu]
+devices = ["siemens-cx75", "siemens-el71"]
+
+[capcom]
+devices = ["siemens-el71"]
+
+[capcom-clock]
+devices = ["siemens-el71"]
+
 [rtc]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
+
+[rtc-clock]
+devices = ["siemens-cx75", "siemens-el71"]
 
 [vic]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [gptu]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
+
+[gptu-clock]
+devices = ["siemens-cx75", "siemens-el71"]
 
 [sccu]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
+
+[sccu-clock]
+devices = ["siemens-cx75", "siemens-el71"]
 
 [tpu]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
 
 [tpu-gp]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
 
 [tpu-ram]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
 
 [tpu-rf-ssc]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [tpu-baseband-clock]
-devices = ["generic-pmb8876"]
+devices = ["generic-pmb8876", "siemens-el71"]
+
+[tpu-frame-timing]
+devices = ["siemens-el71"]
 
 [tcm]
 devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[mmci-clock]
+devices = ["siemens-el71"]
+
+[usif-clock]
+devices = ["siemens-el71"]
 
 [usb]
 devices = ["generic-pmb8875", "generic-pmb8876"]
@@ -244,6 +295,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [usart-dma]
 devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[usart-clock]
+devices = ["siemens-cx75", "siemens-el71"]
 
 [dif-v2]
 devices = ["generic-pmb8876"]

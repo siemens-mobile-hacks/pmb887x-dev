@@ -106,12 +106,14 @@ static void test_decoder_requests(void) {
 		stopwatch_usleep_wd(100);
 		test_eq_u32("enabling GP route does not raise IRQ", 0, irq_count);
 		TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
-		test_check("timer event raises selected GP IRQ", wait_for_irq());
+		bool received = wait_for_irq();
 		TPU_PARAM = 0;
 		cpu_enable_irq(false);
+		uint32_t request = TPU_GP_SRC(index) & MOD_SRC_SRR;
+		test_check("timer event raises selected GP IRQ", received);
 		test_eq_u32("GP event reaches expected VIC line", expected_irq, irq_number);
 		test_only_gp_request(index);
-		test_eq_u32("GP IRQ handler clears request", 0, TPU_GP_SRC(index) & MOD_SRC_SRR);
+		test_eq_u32("GP IRQ handler clears request", 0, request);
 		VIC_CON(expected_irq) = 0;
 		TPU_GP_SRC(index) = MOD_SRC_CLRR;
 	}
@@ -143,9 +145,14 @@ int main(void) {
 }
 
 __IRQ void irq_handler(void) {
-	irq_number = VIC_IRQ_CURRENT;
-	irq_count++;
-	if (irq_number >= TPU_GP_VIC_BASE && irq_number < TPU_GP_VIC_BASE + TPU_GP_COUNT)
-		TPU_GP_SRC(irq_number - TPU_GP_VIC_BASE) = MOD_SRC_CLRR;
+	uint32_t irq = VIC_IRQ_CURRENT;
+
+	if (irq >= TPU_GP_VIC_BASE && irq < TPU_GP_VIC_BASE + TPU_GP_COUNT) {
+		irq_number = irq;
+		irq_count++;
+		/* Keep the next frame from reasserting SRR before the test reads it. */
+		TPU_PARAM = 0;
+		TPU_GP_SRC(irq - TPU_GP_VIC_BASE) = MOD_SRC_CLRR;
+	}
 	VIC_IRQ_ACK = 1;
 }

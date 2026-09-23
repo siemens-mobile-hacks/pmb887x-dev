@@ -26,35 +26,17 @@
  */
 
 #define TPU_COUNTER_FREQUENCY 2166666
-#define TPU_MEASURE_US 2000
 #define TPU_TIMEOUT_MS 100
 
 /* Firmware: 4.61538 ms frame * 2 166 666.7 Hz = 10 000.0 ticks (exact). */
 #define TPU_FRAME_TICKS 10000
 #define TPU_FRAME_US 4615
 
-/*
- * Tolerances come from the instrument, not from comfort.
- *
- * Every rate in this file is a counter delta divided by a stopwatch interval,
- * and stopwatch_elapsed_us() reports whole microseconds.  One count of the
- * ruler is therefore:
- *
- *   counter rate over TPU_MEASURE_US = 2000 us -> 1 us / 2000 us = 0.05%
- *   frame period at 4615 us                    -> 1 us / 4615 us = 0.022%
- *
- * Each measurement reads the ruler twice (start and end), so both bands are
- * that quantum doubled and rounded up: 1000 ppm (0.1%).  They are 50x tighter
- * than the 5% band they replace, and 4x tighter than the 0.4% offset a wrong
- * stopwatch rate produces - which is the smallest error this suite exists to
- * see.  The bands are NOT widened to accommodate a measurement that misses
- * them; a miss means the two clocks disagree by more than quantization.
- */
+/* Compare raw counters over 10 ms and average frame periods across 16 wraps. */
 #define TPU_TOLERANCE_PPM 1000
-
-/* Two hardware clocks off one crystal owe each other ppm, not a percentage. */
 #define TPU_CROSSCHECK_PPM 1000
 #define TPU_CROSSCHECK_US 10000
+#define TPU_FRAME_PERIODS 16
 /* TPU_CLC.RMC = 1, GSMCLK1.K = 1, GSMCLK2.L = 2 -> fcounter = fSYS / 12. */
 #define TPU_CROSSCHECK_TPU_DIVISOR 12
 
@@ -107,12 +89,22 @@ static void tpu_configure_frame(const char *events_name) {
 
 static uint32_t measure_wrap_us(void) {
 	uint32_t previous = TPU_COUNTER;
+	uint32_t wraps = 0;
+	stopwatch_t first = 0;
 	stopwatch_t start = stopwatch_get();
 
 	while (stopwatch_elapsed_ms(start) < TPU_TIMEOUT_MS) {
 		uint32_t current = TPU_COUNTER;
-		if (current < previous)
-			return stopwatch_elapsed_us(start);
+		if (current < previous) {
+			stopwatch_t now = stopwatch_get();
+			if (wraps == 0)
+				first = now;
+			if (wraps == TPU_FRAME_PERIODS) {
+				uint64_t elapsed_ticks = now - first;
+				return elapsed_ticks * 1000000 / (TPU_FRAME_PERIODS * stopwatch_ticks_per_s());
+			}
+			wraps++;
+		}
 		previous = current;
 		test_watchdog_serve();
 	}
@@ -170,10 +162,6 @@ static bool value_matches_ppm(uint64_t actual, uint64_t expected, uint32_t toler
 	return actual + tolerance >= expected && actual <= expected + tolerance;
 }
 
-static bool frequency_matches(uint32_t actual, uint32_t expected) {
-	return value_matches_ppm(actual, expected, TPU_TOLERANCE_PPM);
-}
-
 /*
  * Read EAPT back, letting the write settle, and report how many reads it took.
  *
@@ -195,21 +183,6 @@ static uint32_t probe_readback(uint32_t expected, uint32_t *reads) {
 	return value;
 }
 
-static uint32_t measure_frequency(void) {
-	TPU_PARAM = 0;
-	tpu_configure_clock(1, 1, 2);
-	TPU_OVERFLOW = TPU_OVERFLOW_VALUE;
-	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
-	stopwatch_t start = stopwatch_get();
-	uint32_t first = TPU_COUNTER;
-	stopwatch_usleep_wd(TPU_MEASURE_US);
-	uint32_t last = TPU_COUNTER;
-	uint32_t elapsed_us = stopwatch_elapsed_us(start);
-	TPU_PARAM = 0;
-
-	return (uint32_t) ((uint64_t) (last - first) * 1000000 / elapsed_us);
-}
-
 __IRQ void irq_handler(void) {
 	uint32_t irq = VIC_IRQ_CURRENT;
 
@@ -228,15 +201,6 @@ __IRQ void irq_handler(void) {
 	}
 
 	VIC_IRQ_ACK = 1;
-}
-
-static void test_counter_rate(void) {
-	test_category("Frame counter rate");
-
-	uint32_t frequency = measure_frequency();
-	printf("# TPU counter: %u Hz (expected %u Hz)\n",
-		(unsigned int) frequency, (unsigned int) TPU_COUNTER_FREQUENCY);
-	test_check("counter runs at 13 MHz / 6", frequency_matches(frequency, TPU_COUNTER_FREQUENCY));
 }
 
 /*
@@ -264,8 +228,7 @@ static void test_counter_rate(void) {
  * crystal owe each other, and a disagreement is a constant or a divider, never
  * noise.  What this cannot see is an absolute crystal error - all three scale
  * together and cancel.  The RTC's 32.768 kHz crystal is the only reference in
- * the part that could see that, and cgu/test.c already calibrates the STM
- * against it (benchmark_stm_ticks / stm_ticks_to_khz).
+ * the part that could see that; cgu-fsys checks the fSYS rate against it.
  */
 static void gptu0_counter_start(void) {
 	GPTU_CLC(GPTU0) = 1 << MOD_CLC_RMC_SHIFT;
@@ -614,10 +577,8 @@ static void test_compare_lines(void) {
 
 int main(void) {
 	test_start("TPU frame timing test");
-	wdt_set_max_execution_time(UINT32_MAX);
 
 	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
-	test_counter_rate();
 	test_clock_agreement();
 	uint32_t unarmed_us = test_frame_period();
 	test_event_table(unarmed_us);

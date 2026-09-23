@@ -1,5 +1,6 @@
 #include <pmb887x.h>
 
+#include "cgu/clock.h"
 #include "dsp/baseband-functional-8876.inc"
 #include "dsp/dsp-hw.h"
 #include "test.h"
@@ -14,8 +15,6 @@
 #define TPU_DECODER_RECEIVE_CLEAR 5
 #define TPU_DECODER_RXON_SET 6
 #define TPU_DECODER_RXON_CLEAR 7
-
-#define CGU_TIMEOUT_MS 20
 
 #define DSP_READY_MARKER 0xA55A
 #define DSP_COMPLETE_MARKER 0x5AA5
@@ -127,22 +126,6 @@ static bool run_clock_probe(struct clock_probe *probe, const struct baseband_sig
 	return completed;
 }
 
-static bool configure_pll_clock(void) {
-	CGU_OSC = 3 << CGU_OSC_NDIV_SHIFT;
-	CGU_OSC |= CGU_OSC_PLL_POWER_UP;
-
-	stopwatch_t start = stopwatch_get();
-	while ((CGU_STAT & CGU_STAT_LOCK) == 0 && stopwatch_elapsed_ms(start) < CGU_TIMEOUT_MS)
-		test_watchdog_serve();
-	if ((CGU_STAT & CGU_STAT_LOCK) == 0)
-		return false;
-
-	CGU_OSC |= CGU_OSC_PLL_BYPASS_N;
-	USART_CLC(USART0) = 2 << MOD_CLC_RMC_SHIFT;
-	CGU_CON1 = CGU_CON1_FPI1_CLKSEL_PLL_DIV_2 | CGU_CON1_FSYS_CLKSEL_PLL | CGU_CON1_AHB_CLKSEL_PLL;
-	return true;
-}
-
 int main(void) {
 	test_start("TPU and Baseband clock relationship");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
@@ -175,23 +158,23 @@ int main(void) {
 	}
 
 	test_category("104 MHz PLL clock source");
-	if (test_check("PLL locks and leaves bypass mode", configure_pll_clock())) {
-		for (size_t i = 0; i < ARRAY_SIZE(SIGNALS); i++) {
-			const struct baseband_signal *signal = &SIGNALS[i];
-			struct clock_probe pll_probe = { .l = 4, .expected_pointer = 38 };
-			char name[96];
+	cgu_pll_set(3, 0);
+	cgu_fsys_select(CGU_FSYS_PLL);
+	for (size_t i = 0; i < ARRAY_SIZE(SIGNALS); i++) {
+		const struct baseband_signal *signal = &SIGNALS[i];
+		struct clock_probe pll_probe = { .l = 4, .expected_pointer = 38 };
+		char name[96];
 
-			sprintf(name, "%s K=1 L=4 PLL Baseband probe completes", signal->name);
-			if (!test_check(name, run_clock_probe(&pll_probe, signal)))
-				continue;
-			printf("# TPU_BASEBAND_PLL,signal=%s,K=1,L=%lu,elapsed_us=%lu,falling_pointer=%lu,final_pointer=%lu\n",
-				signal->name, (uint32_t) pll_probe.l, (uint32_t) pll_probe.elapsed_us,
-				(uint32_t) pll_probe.falling_pointer, (uint32_t) pll_probe.final_pointer);
-			sprintf(name, "%s PLL clock source preserves the Baseband sample rate", signal->name);
-			test_eq_u32(name, pll_probe.expected_pointer, pll_probe.falling_pointer);
-			sprintf(name, "%s PLL falling-edge and final write pointers match", signal->name);
-			test_eq_u32(name, pll_probe.falling_pointer, pll_probe.final_pointer);
-		}
+		sprintf(name, "%s K=1 L=4 PLL Baseband probe completes", signal->name);
+		if (!test_check(name, run_clock_probe(&pll_probe, signal)))
+			continue;
+		printf("# TPU_BASEBAND_PLL,signal=%s,K=1,L=%lu,elapsed_us=%lu,falling_pointer=%lu,final_pointer=%lu\n",
+			signal->name, (uint32_t) pll_probe.l, (uint32_t) pll_probe.elapsed_us,
+			(uint32_t) pll_probe.falling_pointer, (uint32_t) pll_probe.final_pointer);
+		sprintf(name, "%s PLL clock source preserves the Baseband sample rate", signal->name);
+		test_eq_u32(name, pll_probe.expected_pointer, pll_probe.falling_pointer);
+		sprintf(name, "%s PLL falling-edge and final write pointers match", signal->name);
+		test_eq_u32(name, pll_probe.falling_pointer, pll_probe.final_pointer);
 	}
 
 	TPU_PARAM = 0;

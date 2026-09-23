@@ -241,14 +241,13 @@ static void test_watchdog(void) {
 	uint32_t restored_con0 = SCU_WDTCON0;
 	uint32_t restored_con1 = SCU_WDTCON1;
 	uint32_t restored_status = SCU_WDT_SR;
-	uint32_t system_frequency = cpu_get_sys_freq();
-	uint32_t expected_slow = system_frequency / 16384;
-	uint32_t expected_fast = system_frequency / 256;
+	uint32_t expected_slow = CPU_OSC_FREQ / 16384;
+	uint32_t expected_fast = CPU_OSC_FREQ / 256;
 	printf(
-		"# Watchdog: WDTIR=0 %u Hz, WDTIR=1 %u Hz, fSYS=%u Hz\n",
-		(unsigned int) slow.frequency,
-		(unsigned int) fast.frequency,
-		(unsigned int) system_frequency
+		"# Watchdog: WDTIR=0 %lu Hz, WDTIR=1 %lu Hz, OSC=%lu Hz\n",
+		slow.frequency,
+		fast.frequency,
+		(uint32_t) CPU_OSC_FREQ
 	);
 
 	test_check("watchdog password access unlocks WDTCON0", (
@@ -261,8 +260,8 @@ static void test_watchdog(void) {
 	test_check("watchdog counter advances", slow.counter_advanced && fast.counter_advanced);
 	test_eq_u32("WDTIR selects slow clock", 0, slow.status & SCU_WDT_SR_WDTIS);
 	test_eq_u32("WDTIR selects fast clock", SCU_WDT_SR_WDTIS, fast.status & SCU_WDT_SR_WDTIS);
-	test_check("slow watchdog frequency is fSYS / 16384", frequency_matches(slow.frequency, expected_slow));
-	test_check("fast watchdog frequency is fSYS / 256", frequency_matches(fast.frequency, expected_fast));
+	test_check("slow watchdog frequency is OSC / 16384", frequency_matches(slow.frequency, expected_slow));
+	test_check("fast watchdog frequency is OSC / 256", frequency_matches(fast.frequency, expected_fast));
 	test_eq_u32(
 		"watchdog mode is restored",
 		initial_status & SCU_WDT_SR_WDTDS,

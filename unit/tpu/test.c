@@ -112,17 +112,20 @@ static void test_clock(void) {
 	test_category("Counter clock");
 	uint32_t base = measure_frequency(1, 1, 2);
 	uint32_t divided_rmc = measure_frequency(2, 1, 2);
+	uint32_t quarter_rmc = measure_frequency(4, 1, 2);
 	uint32_t divided_fractional = measure_frequency(1, 1, 4);
 	uint32_t multiplied_fractional = measure_frequency(1, 2, 4);
 	printf(
-		"# counter: base %lu Hz, RMC/2 %lu Hz, L/2 %lu Hz, K*2 %lu Hz\n",
+		"# counter: base %lu Hz, RMC/2 %lu Hz, RMC/4 %lu Hz, L/2 %lu Hz, K*2 %lu Hz\n",
 		(uint32_t) base,
 		(uint32_t) divided_rmc,
+		(uint32_t) quarter_rmc,
 		(uint32_t) divided_fractional,
 		(uint32_t) multiplied_fractional
 	);
 	test_check("K/L divider produces GSM counter clock", frequency_matches(base, TPU_COUNTER_FREQUENCY));
 	test_check("RMC divides counter clock", frequency_matches(divided_rmc, TPU_COUNTER_FREQUENCY / 2));
+	test_check("RMC/4 quarters the counter clock", frequency_matches(quarter_rmc, TPU_COUNTER_FREQUENCY / 4));
 	test_check("fractional denominator divides counter clock", frequency_matches(divided_fractional, TPU_COUNTER_FREQUENCY / 2));
 	test_check("fractional numerator multiplies counter clock", frequency_matches(multiplied_fractional, TPU_COUNTER_FREQUENCY));
 	test_eq_u32("GSMCLK LOAD and INIT are self-clearing", 0, TPU_GSMCLK3);
