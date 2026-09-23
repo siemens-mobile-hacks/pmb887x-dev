@@ -2098,25 +2098,25 @@
 #define	CAPCOM_WHBCSEE_CLRSEE7_CLR				0x80
 
 #define	CAPCOM_T0(base)							MMIO32((base) + 0x40)
-#define	CAPCOM_T0_T0							GENMASK(30, 0)
+#define	CAPCOM_T0_T0							GENMASK(15, 0)
 #define	CAPCOM_T0_T0_SHIFT						0
 #define	CAPCOM_T0_OVF0							BIT(31)
 #define	CAPCOM_T0_OVF0_CLEARED					0x0
 #define	CAPCOM_T0_OVF0_SET						0x80000000
 
 #define	CAPCOM_T0REL(base)						MMIO32((base) + 0x44)
-#define	CAPCOM_T0REL_T0REL						GENMASK(30, 0)
+#define	CAPCOM_T0REL_T0REL						GENMASK(15, 0)
 #define	CAPCOM_T0REL_T0REL_SHIFT				0
 
 #define	CAPCOM_T1(base)							MMIO32((base) + 0x48)
-#define	CAPCOM_T1_T1							GENMASK(30, 0)
+#define	CAPCOM_T1_T1							GENMASK(15, 0)
 #define	CAPCOM_T1_T1_SHIFT						0
 #define	CAPCOM_T1_OVF1							BIT(31)
 #define	CAPCOM_T1_OVF1_CLEARED					0x0
 #define	CAPCOM_T1_OVF1_SET						0x80000000
 
 #define	CAPCOM_T1REL(base)						MMIO32((base) + 0x4C)
-#define	CAPCOM_T1REL_T1REL						GENMASK(30, 0)
+#define	CAPCOM_T1REL_T1REL						GENMASK(15, 0)
 #define	CAPCOM_T1REL_T1REL_SHIFT				0
 
 #define	CAPCOM_CC(base, n)						MMIO32(base + 0x50 + ((n) * 0x4))
