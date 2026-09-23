@@ -2,8 +2,8 @@
 
 #include "cpu.h"
 
-// The watchdog counts up at f_sys/16384 (WDTCON1.WDTIR would select /256) and resets the CPU
-// when it wraps past 0xFFFF, so the timeout is (0x10000 - WDTREL) input clocks.
+// With FSTM_DIV disabled, the watchdog counts at f_osc/16384 (or /256 with WDTIR).
+// It resets the CPU after (0x10000 - WDTREL) input clocks.
 #define WDT_CLOCK_DIVIDER	16384
 #define WDT_MAX_TICKS		0x10000
 #define WDT_MIN_TICKS		4
@@ -17,8 +17,8 @@ static uint32_t wdt_interval;
 static bool wdt_off;
 
 static uint32_t cpu_wdt_reload_for_ms(uint32_t ms) {
-	uint32_t clock = cpu_get_sys_freq() / WDT_CLOCK_DIVIDER;
-	uint32_t ticks = clock != 0 && ms < 60000 ? clock * ms / 1000 : WDT_MAX_TICKS;
+	uint32_t clock = CPU_OSC_FREQ / WDT_CLOCK_DIVIDER;
+	uint32_t ticks = ms < 60000 ? clock * ms / 1000 : WDT_MAX_TICKS;
 
 	if (ticks < WDT_MIN_TICKS)
 		ticks = WDT_MIN_TICKS;

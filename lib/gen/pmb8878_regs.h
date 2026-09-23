@@ -1088,7 +1088,7 @@
 #define	CGU_CON1_AHB_CLKSEL_PHASE3			0x500000
 #define	CGU_CON1_AHB_CLKSEL_PHASE4			0x600000
 #define	CGU_CON1_FSTM_DIV_EN				BIT(25)					 // Enable fSTM divider
-#define	CGU_CON1_FSTM_DIV					GENMASK(29, 28)			 // fSTM divider: divide fOSC by 4 * 2^n
+#define	CGU_CON1_FSTM_DIV					GENMASK(29, 28)			 // fSTM divider: divide selected PLL output by 4 * 2^n
 #define	CGU_CON1_FSTM_DIV_SHIFT				28
 #define	CGU_CON1_FSTM_DIV_4					0x0
 #define	CGU_CON1_FSTM_DIV_8					0x10000000

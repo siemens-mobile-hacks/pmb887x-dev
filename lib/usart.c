@@ -30,7 +30,7 @@ void usart_init(uint32_t usart, uint32_t baud_rate) {
 }
 
 void usart_set_speed(uint32_t usart, uint32_t baud_rate) {
-	uint32_t max_baud_rate = (cpu_get_sys_freq() >> 4);
+	uint32_t max_baud_rate = (cpu_get_fpi1_freq() >> 4);
 	uint32_t divider = MIN(max_baud_rate / baud_rate, USART_BAUD_DIVIDER_MAX);
 	uint64_t scaled_baud_rate = (uint64_t) baud_rate * divider * USART_FDV_SCALE;
 	uint32_t fractional_divider = (scaled_baud_rate + max_baud_rate / 2) / max_baud_rate;

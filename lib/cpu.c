@@ -9,15 +9,21 @@ static uint32_t phase_freq(uint32_t pll_freq, uint32_t k1, uint32_t k2) {
 	return (pll_freq / divider) * 12 + ((pll_freq % divider) * 12) / divider;
 }
 
-uint32_t cpu_get_pll_freq(void) {
-	if ((CGU_OSC & CGU_OSC_PLL_BYPASS_N) == 0)
-		return CPU_OSC_FREQ;
+static uint32_t get_pll_core_freq(void) {
 	if ((CGU_OSC & CGU_OSC_PLL_POWER_UP) == 0 || (CGU_STAT & CGU_STAT_LOCK) == 0)
 		return 0;
 
 	uint32_t ndiv = (CGU_OSC & CGU_OSC_NDIV) >> CGU_OSC_NDIV_SHIFT;
 	uint32_t mdiv = (CGU_OSC & CGU_OSC_MDIV) >> CGU_OSC_MDIV_SHIFT;
 	return CPU_OSC_FREQ * (ndiv + 1) / (mdiv + 1);
+}
+
+/* Bypass affects the selected output, not the PLL core feeding phase dividers. */
+uint32_t cpu_get_pll_freq(void) {
+	if ((CGU_OSC & CGU_OSC_PLL_BYPASS_N) == 0)
+		return CPU_OSC_FREQ;
+
+	return get_pll_core_freq();
 }
 
 uint32_t cpu_get_phase_freq(uint32_t phase) {
@@ -55,13 +61,12 @@ uint32_t cpu_get_phase_freq(uint32_t phase) {
 			return 0;
 	}
 
-	uint32_t pll_freq = cpu_get_pll_freq();
 	if ((CGU_OSC & bypass_n) == 0)
-		return pll_freq;
+		return cpu_get_pll_freq();
 	if ((CGU_OSC & power_up) == 0)
 		return 0;
 
-	return phase_freq(pll_freq, k1, k2);
+	return phase_freq(get_pll_core_freq(), k1, k2);
 }
 
 uint32_t cpu_get_sys_freq(void) {
@@ -80,7 +85,7 @@ uint32_t cpu_get_stm_freq(void) {
 		return CPU_OSC_FREQ;
 
 	uint32_t divider = (CGU_CON1 & CGU_CON1_FSTM_DIV) >> CGU_CON1_FSTM_DIV_SHIFT;
-	return CPU_OSC_FREQ >> (divider + 2);
+	return cpu_get_pll_freq() >> (divider + 2);
 }
 
 uint32_t cpu_get_ahb_freq(void) {
