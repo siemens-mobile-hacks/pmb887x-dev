@@ -1,0 +1,297 @@
+[stm]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dmac]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-handshake]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-instructions]
+devices = ["generic-pmb8876"]
+
+[dsp-opcode-aliases]
+devices = ["generic-pmb8876"]
+
+[dsp-opcode-probe]
+devices = ["generic-pmb8876"]
+
+[dsp-expansion-probe]
+devices = ["generic-pmb8876"]
+
+[dsp-irqs]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-mask-rom-commands]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-peripheral-map]
+devices = ["generic-pmb8876"]
+
+[dsp-peripherals-registers]
+devices = ["generic-pmb8876"]
+
+[dsp-benchmark]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-irq-shared-benchmark]
+devices = ["generic-pmb8876"]
+
+[dsp-timers-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-mcs-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-delay-slot-functional]
+devices = ["generic-pmb8876"]
+
+[dsp-interrupt-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-interrupt-sources]
+devices = ["generic-pmb8876"]
+
+[dsp-ssc-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-cipher-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-cipher-a53-vectors]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-cipher-kgcore-vectors]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-channel-decoder-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-channel-decoder-vectors]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-equalizer-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-equalizer-vectors]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-equalizer-gmsk-vectors]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-equalizer-output]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-equalizer-burst]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-i2s1-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-i2s2-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-i2s3-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-afe-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-modulator-functional]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-baseband-functional]
+devices = ["generic-pmb8876"]
+
+[dsp-tpu-events]
+devices = ["generic-pmb8876"]
+
+[dsp-tpu-bb-events]
+devices = ["generic-pmb8876"]
+
+[dsp-l1mon-vectors]
+devices = ["generic-pmb8876"]
+
+[dsp-l1mon-functional]
+devices = ["generic-pmb8876"]
+
+[dsp-gsm-channel-scan]
+devices = ["siemens-el71"]
+
+[dsp-boot-state]
+devices = ["generic-pmb8876"]
+
+[dsp-control-functional]
+devices = ["generic-pmb8876"]
+
+[dsp-io-functional]
+devices = ["generic-pmb8876"]
+
+[dsp-rom-dump]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-data-rom-dump]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[ebu]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[gpio]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[gpio-mon]
+devices = ["generic-pmb8876"]
+timeout = 360
+
+[gprscu]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[keypad]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[mod]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[mmicif]
+devices = ["generic-pmb8876", "siemens-c81"]
+
+[scu]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[scu-reset]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[scu-wdt-reset]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[adc]
+devices = ["siemens-cx75", "siemens-el71"]
+
+[afc]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[cgu]
+devices = ["siemens-cx75", "siemens-el71"]
+
+[rtc]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[vic]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[gptu]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[sccu]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[tpu]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[tpu-gp]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[tpu-ram]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[tpu-rf-ssc]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[tpu-baseband-clock]
+devices = ["generic-pmb8876"]
+
+[tcm]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[usb]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[i2c-v1]
+devices = ["siemens-cx75"]
+
+[i2c-v2]
+devices = ["siemens-el71", "lg-ke970"]
+
+[i2c-v2-dma]
+devices = ["siemens-el71", "lg-ke970"]
+
+[i2c-fm-radio]
+devices = ["siemens-e71"]
+
+[ssc]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[ssc-dma]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dif-v1]
+devices = ["generic-pmb8875"]
+
+[dif-v1-dma]
+devices = ["generic-pmb8875"]
+
+[dif-v1-lcd]
+devices = ["siemens-cx75"]
+
+[dif-v1-lcd-if]
+devices = ["siemens-cx75"]
+
+[usart]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[usart-dma]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dif-v2]
+devices = ["generic-pmb8876"]
+
+[dif-v2-dma]
+devices = ["generic-pmb8876"]
+
+[dif-v2-lcd]
+devices = ["siemens-e71", "siemens-el71", "lg-ke970"]
+
+[dif-v2-lcd-if]
+devices = ["siemens-e71", "siemens-el71", "lg-ke970"]
+
+[sim]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[sim-dma]
+devices = ["generic-pmb8876"]
+
+[sim-card]
+devices = ["generic-pmb8876"]
+
+[sim-card-dma]
+devices = ["generic-pmb8876"]
+
+[sim-card-timers]
+devices = ["generic-pmb8876"]
+
+[sim-card-info]
+devices = ["generic-pmb8876"]
+
+[sim-no-card]
+devices = ["generic-pmb8876"]
+emulator_args = ["--sim", "none"]
+
+[cfi-intel]
+devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
+emulator_args = ["--siemens-esn", "12345678", "--siemens-imei", "490154203237518"]
+
+[cfi-intel-rw]
+devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
+
+[cfi-intel-buffer-abort]
+devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
+
+[cfi-intel-efa-rw]
+devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
+
+[cfi-intel-otp-rw]
+devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
+emulator_args = ["--flash-otp1", "FFFF"]
