@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -o pipefail
 set -x
 
 test_name="$1"
@@ -12,4 +13,4 @@ cmake_args=(-B "$build_dir" -DBOARD="$board" -DBOOT=extram -DTEST_COLOR="${TEST_
 cmake "${cmake_args[@]}"
 cmake --build "$build_dir" --target "$test_name"
 
-exec ../boot.py "$build_dir/$test_name.bin" "$@"
+../boot.py "$build_dir/$test_name.bin" "$@" | awk -f tap-result.awk

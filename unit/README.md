@@ -6,6 +6,11 @@ Run a test on real hardware:
 ./run.sh <test>
 ```
 
+The runner streams the entire output and succeeds only after the final TAP
+result is `PASS (0 failed)`. The `scu-reset` and `scu-wdt-reset` tests intentionally
+reset the phone without emitting that result; `run.sh` cannot confirm their
+success.
+
 ## Tests
 
 | Test | Coverage |
