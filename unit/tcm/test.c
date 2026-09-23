@@ -16,13 +16,13 @@
 #define OVERLAY_DATA_OFFSET 0x100
 
 #if defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
-static __SRAM __attribute__((noinline)) uint32_t execute_linked_sram(uint32_t value) {
+static __SRAM uint32_t execute_linked_sram(uint32_t value) {
 	return value ^ 0x5A3C6996;
 }
 #endif
 
 #if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
-static __TCM __attribute__((noinline)) uint32_t execute_linked_tcm(uint32_t value) {
+static __TCM uint32_t execute_linked_tcm(uint32_t value) {
 	return value ^ 0xA5C39669;
 }
 #endif

@@ -1,13 +1,14 @@
-ENTRY(cgu_loader)
+ENTRY(start)
 
 MEMORY {
-	extram (rwx) : ORIGIN = 0xA8000000, LENGTH = 8M
-	intram (rwx) : ORIGIN = 0x00082000, LENGTH = 96k-0x2000
+	extram (rwx) : ORIGIN = 0xB0000000, LENGTH = 32M
+	intram (rwx) : ORIGIN = 0x00082000, LENGTH = 96K - 0x2000
 }
 
 SECTIONS {
-	.cgu_loader : {
-		KEEP(*(.cgu_loader))
+	.timers_loader : {
+		KEEP(*(.boot.header))
+		KEEP(*(.timers_loader))
 		. = ALIGN(4);
 	} >extram
 
@@ -39,7 +40,6 @@ SECTIONS {
 		. = ALIGN(4);
 		__fini_array_start = .;
 		KEEP(*(.fini_array))
-		KEEP(*(SORT(.fini_array.*)))
 		__fini_array_end = .;
 	} >intram AT>extram
 
@@ -83,6 +83,15 @@ SECTIONS {
 	. = ALIGN(4);
 	end = .;
 }
+
+/* The suite has no separately linked SRAM or TCM sections. */
+_sram_start = 0x00084000;
+_sram_end = _sram_start;
+_sram_loadaddr = _sram_start;
+_tcm_start = 0x01000000;
+_tcm_end = _tcm_start;
+_tcm_loadaddr = _tcm_start;
+boot_entry = timers_loader;
 
 PROVIDE(_stack_irq = ORIGIN(intram) + LENGTH(intram));
 PROVIDE(_stack_fiq = _stack_irq - 0x1000);

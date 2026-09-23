@@ -31,12 +31,12 @@
 
 #define __IRQ __attribute__((interrupt))
 #if defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
-#define __SRAM __attribute__((section(".sram")))
+#define __SRAM __attribute__((section(".sram"), noinline))
 #else
 #define __SRAM
 #endif
 #if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
-#define __TCM __attribute__((section(".tcm")))
+#define __TCM __attribute__((section(".tcm"), noinline))
 #else
 #define __TCM
 #endif

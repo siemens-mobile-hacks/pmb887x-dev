@@ -2,15 +2,13 @@
 
 #include "test.h"
 
-#define ITCM_BASE 0x01000000
-#define TCM_REGION_SIZE_8K (4 << 2)
-#define TCM_REGION_ENABLE BIT(0)
 #define CGU_MEASURE_NOPS 512
 #define CGU_MEASURE_ITERATIONS 1000
 #define CGU_DIVIDER_MEASURE_ITERATIONS 1000
 #define EBU_FLASH_BASE 0xA0000000
 #define EBU_FLASH_PROBE_WORDS 32768
 #define EBU_CLOCK_WAIT_ITERATIONS 100000
+#define PLL_LOCK_TIMEOUT_MS 20
 #define AHB_PER_PROBE_READS 32768
 #define MCI_TIMEOUT_TARGET_HZ 200
 #define MCI_TIMEOUT_MIN_CYCLES 512
@@ -40,28 +38,13 @@ enum ebu_source_index {
 	EBU_SOURCE_COUNT,
 };
 
-uint32_t cgu_execute_itcm(uint32_t address, uint32_t iterations);
-void cgu_execute_itcm_source(uint32_t address, uint32_t iterations, uint32_t selected_con1, uint32_t restore_con1);
-void cgu_execute_itcm_cpu_div(uint32_t address, uint32_t iterations, uint32_t selected_con2, uint32_t restore_con2);
-extern const uint32_t cgu_cpu_div_itcm_template_start[];
-extern const uint32_t cgu_cpu_div_itcm_template_end[];
+void cgu_itcm_loop(void);
+void cgu_itcm_source_loop(void);
+void cgu_itcm_cpu_div_loop(void);
+void cgu_execute_itcm(void (*loop)(void), uint32_t iterations);
+void cgu_execute_itcm_source(void (*loop)(void), uint32_t iterations, uint32_t selected_con1, uint32_t restore_con1);
+void cgu_execute_itcm_cpu_div(void (*loop)(void), uint32_t iterations, uint32_t selected_con2, uint32_t restore_con2);
 static void test_measured_frequency(const char *name, uint32_t expected_khz, uint32_t measured_khz);
-
-static uint32_t read_itcm(void) {
-	uint32_t value;
-	__asm__ volatile("mrc p15, 0, %0, c9, c1, 1" : "=r" (value));
-	return value;
-}
-
-static void write_itcm(uint32_t value) {
-	__asm__ volatile("mcr p15, 0, %0, c9, c1, 1" : : "r" (value) : "memory");
-}
-
-static void sync_code(void) {
-	uint32_t value = 0;
-	__asm__ volatile("mcr p15, 0, %0, c7, c10, 4" : : "r" (value) : "memory");
-	__asm__ volatile("mcr p15, 0, %0, c7, c5, 0" : : "r" (value) : "memory");
-}
 
 static bool wait_for_irq(void) {
 	stopwatch_t start = stopwatch_get();
@@ -72,11 +55,10 @@ static bool wait_for_irq(void) {
 	return irq_count != 0;
 }
 
-static bool wait_for_pll_lock(void) {
-	stopwatch_t start = stopwatch_get();
+static __SRAM bool wait_for_pll_lock(void) {
+	uint32_t start = STM_TIM0;
 
-	while ((CGU_STAT & CGU_STAT_LOCK) == 0 && stopwatch_elapsed_ms(start) < 20)
-		test_watchdog_serve();
+	while ((CGU_STAT & CGU_STAT_LOCK) == 0 && STM_TIM0 - start < (CPU_OSC_FREQ / 1000) * PLL_LOCK_TIMEOUT_MS);
 
 	return (CGU_STAT & CGU_STAT_LOCK) != 0;
 }
@@ -90,7 +72,7 @@ static bool wait_for_pll_unlock(void) {
 	return (CGU_STAT & CGU_STAT_LOCK) == 0;
 }
 
-static bool wait_for_ebu_clock_transition(void) {
+static __SRAM bool wait_for_ebu_clock_transition(void) {
 	for (uint32_t index = 0; index < EBU_CLOCK_WAIT_ITERATIONS; index++)
 		if ((SCU_EBUCLC2 & SCU_EBUCLC2_READY) != 0)
 			return true;
@@ -98,7 +80,7 @@ static bool wait_for_ebu_clock_transition(void) {
 	return false;
 }
 
-static bool apply_pll_osc(uint32_t value) {
+static __SRAM bool apply_pll_osc(uint32_t value) {
 	CGU_OSC = value & ~(CGU_OSC_PLL_POWER_UP | CGU_OSC_PLL_BYPASS_N);
 	if ((value & CGU_OSC_PLL_POWER_UP) == 0)
 		return true;
@@ -151,7 +133,7 @@ static void init_fsys_tpu(void) {
 	TPU_SRC(1) = MOD_SRC_CLRR;
 }
 
-static void benchmark_example_clocks(uint32_t *tpu_frames, uint32_t *stm_ticks) {
+static __SRAM void benchmark_example_clocks(uint32_t *tpu_frames, uint32_t *stm_ticks) {
 	test_watchdog_serve();
 	uint32_t start = RTC_CNT + 1;
 	while (RTC_CNT < start)
@@ -359,12 +341,9 @@ static void test_fpi1_pll_div_2_dependency(void) {
 		CGU_OSC == initial_osc && CGU_CON1 == initial_con1);
 }
 
-static void test_fsys_frequencies(void) {
+static __SRAM void test_fsys_frequencies(void) {
 	uint32_t initial_osc = CGU_OSC;
-	uint32_t initial_con0 = CGU_CON0;
 	uint32_t initial_con1 = CGU_CON1;
-	uint32_t initial_con2 = CGU_CON2;
-	uint32_t initial_con3 = CGU_CON3;
 	uint32_t initial_tpu_vic = VIC_CON(VIC_TPU_INT0_IRQ);
 	bool irq_was_disabled = cpu_enable_irq(false);
 
@@ -381,18 +360,12 @@ static void test_fsys_frequencies(void) {
 		{ CGU_CON1_FSYS_CLKSEL_BYPASS, "fSYS bypass selects the oscillator" },
 		{ CGU_CON1_FSYS_CLKSEL_PLL, "fSYS PLL source divides PLL by two" },
 	};
-	CGU_OSC =
-		(3 << CGU_OSC_NDIV_SHIFT) |
-		CGU_OSC_PLL_POWER_UP |
-		CGU_OSC_PHASE1_POWER_UP |
-		CGU_OSC_PLL_BYPASS_N |
-		CGU_OSC_PHASE1_BYPASS_N;
-	CGU_CON0 = (1 << CGU_CON0_PHASE1_K1_SHIFT) | (1 << CGU_CON0_PHASE1_K2_SHIFT);
-	CGU_CON2 = (1 << CGU_CON2_CPU_DIV_SHIFT) | CGU_CON2_CPU_DIV_EN;
-	bool locked = wait_for_pll_lock();
+	uint32_t selected_osc = (initial_osc & ~(CGU_OSC_NDIV | CGU_OSC_MDIV)) |
+		(3 << CGU_OSC_NDIV_SHIFT) | CGU_OSC_PLL_POWER_UP | CGU_OSC_PLL_BYPASS_N;
+	bool locked = apply_pll_osc(selected_osc);
 
 	for (uint32_t index = 0; index < ARRAY_SIZE(FSYS_SOURCES); index++) {
-		CGU_CON1 = CGU_CON1_AHB_CLKSEL_PHASE1 | FSYS_SOURCES[index].clksel;
+		CGU_CON1 = (initial_con1 & ~CGU_CON1_FSYS_CLKSEL) | FSYS_SOURCES[index].clksel;
 		uint32_t model_hz = cpu_get_sys_freq();
 		uint32_t tpu_frames = 0;
 		uint32_t stm_ticks = 0;
@@ -405,9 +378,6 @@ static void test_fsys_frequencies(void) {
 	}
 
 	CGU_CON1 = initial_con1;
-	CGU_CON0 = initial_con0;
-	CGU_CON2 = initial_con2;
-	CGU_CON3 = initial_con3;
 	bool restored = apply_pll_osc(initial_osc);
 
 	cpu_enable_irq(false);
@@ -420,41 +390,7 @@ static void test_fsys_frequencies(void) {
 
 	test_check("PLL locks for fSYS measurements", locked);
 	test_check("fSYS measurements restore CGU registers", restored && CGU_OSC == initial_osc &&
-		CGU_CON0 == initial_con0 && CGU_CON1 == initial_con1 && CGU_CON2 == initial_con2 &&
-		CGU_CON3 == initial_con3);
-}
-
-static void write_itcm_measurement_loop(void) {
-	for (uint32_t index = 0; index < CGU_MEASURE_NOPS; index++)
-		MMIO32(ITCM_BASE + index * sizeof(uint32_t)) = 0xE1A00000;
-
-	MMIO32(ITCM_BASE + CGU_MEASURE_NOPS * sizeof(uint32_t)) = 0xE2500001;
-	uint32_t branch_offset = (uint32_t) (-(CGU_MEASURE_NOPS + 3)) & 0x00FFFFFF;
-	MMIO32(ITCM_BASE + (CGU_MEASURE_NOPS + 1) * sizeof(uint32_t)) = 0x1A000000 | branch_offset;
-	MMIO32(ITCM_BASE + (CGU_MEASURE_NOPS + 2) * sizeof(uint32_t)) = 0xE12FFF14;
-	sync_code();
-}
-
-static void write_itcm_source_measurement_loop(void) {
-	MMIO32(ITCM_BASE) = 0xE5831000;
-	MMIO32(ITCM_BASE + sizeof(uint32_t)) = 0xE593C000;
-	for (uint32_t index = 0; index < CGU_MEASURE_NOPS; index++)
-		MMIO32(ITCM_BASE + (index + 2) * sizeof(uint32_t)) = 0xE1A00000;
-
-	MMIO32(ITCM_BASE + (CGU_MEASURE_NOPS + 2) * sizeof(uint32_t)) = 0xE2500001;
-	uint32_t branch_offset = (uint32_t) (-(CGU_MEASURE_NOPS + 3)) & 0x00FFFFFF;
-	MMIO32(ITCM_BASE + (CGU_MEASURE_NOPS + 3) * sizeof(uint32_t)) = 0x1A000000 | branch_offset;
-	MMIO32(ITCM_BASE + (CGU_MEASURE_NOPS + 4) * sizeof(uint32_t)) = 0xE5832000;
-	MMIO32(ITCM_BASE + (CGU_MEASURE_NOPS + 5) * sizeof(uint32_t)) = 0xE593C000;
-	MMIO32(ITCM_BASE + (CGU_MEASURE_NOPS + 6) * sizeof(uint32_t)) = 0xE12FFF14;
-	sync_code();
-}
-
-static void write_itcm_cpu_div_measurement_loop(void) {
-	uint32_t words = (uint32_t) (cgu_cpu_div_itcm_template_end - cgu_cpu_div_itcm_template_start);
-	for (uint32_t index = 0; index < words; index++)
-		MMIO32(ITCM_BASE + index * sizeof(uint32_t)) = cgu_cpu_div_itcm_template_start[index];
-	sync_code();
+		CGU_CON1 == initial_con1);
 }
 
 static uint32_t measured_frequency_khz(uint32_t elapsed_ticks, uint32_t iterations) {
@@ -466,7 +402,7 @@ static uint32_t measure_ahb_source_khz(uint32_t selected_con1, uint32_t restore_
 	test_watchdog_serve();
 	bool irq_was_disabled = cpu_enable_irq(false);
 	stopwatch_t start = stopwatch_get();
-	cgu_execute_itcm_source(ITCM_BASE, CGU_MEASURE_ITERATIONS, selected_con1, restore_con1);
+	cgu_execute_itcm_source(cgu_itcm_source_loop, CGU_MEASURE_ITERATIONS, selected_con1, restore_con1);
 	uint32_t elapsed_ticks = (uint32_t) stopwatch_elapsed(start);
 	cpu_enable_irq(!irq_was_disabled);
 
@@ -477,7 +413,7 @@ static uint32_t measure_cpu_divider_khz(uint32_t selected_con2, uint32_t restore
 	test_watchdog_serve();
 	bool irq_was_disabled = cpu_enable_irq(false);
 	stopwatch_t start = stopwatch_get();
-	cgu_execute_itcm_cpu_div(ITCM_BASE, CGU_DIVIDER_MEASURE_ITERATIONS, selected_con2, restore_con2);
+	cgu_execute_itcm_cpu_div(cgu_itcm_cpu_div_loop, CGU_DIVIDER_MEASURE_ITERATIONS, selected_con2, restore_con2);
 	uint32_t elapsed_ticks = (uint32_t) stopwatch_elapsed(start);
 	cpu_enable_irq(!irq_was_disabled);
 
@@ -490,17 +426,16 @@ static void test_measured_frequency(const char *name, uint32_t expected_khz, uin
 	test_check(name, test_u32_in_interval(measured_khz, expected_khz * 98 / 100, expected_khz * 102 / 100));
 }
 
-static uint32_t benchmark_ebu_flash_reads(uint32_t *checksum) {
-	/* cgu_loader copies the test into internal RAM before any EBU clock changes. */
+static __SRAM uint32_t benchmark_ebu_flash_reads(uint32_t *checksum) {
 	const volatile uint32_t *flash = (const volatile uint32_t *) EBU_FLASH_BASE;
 	uint32_t value = 0;
-	stopwatch_t start = stopwatch_get();
+	uint32_t start = STM_TIM0;
 
 	for (uint32_t index = 0; index < EBU_FLASH_PROBE_WORDS; index++)
 		value ^= flash[index];
 
 	*checksum = value;
-	return (uint32_t) stopwatch_elapsed(start);
+	return STM_TIM0 - start;
 }
 
 #ifdef PMB8876
@@ -664,7 +599,8 @@ static void test_mmci_source_frequencies(void) {
 	MCI_ITIP = MCI_ITIP_DATIN | MCI_ITIP_CMDIN;
 
 	bool frequencies_match = locked;
-	bool slowest_mode_stopped = false;
+	bool slowest_data_timer_matches = false;
+	bool slowest_command_stopped = false;
 	for (size_t source = 0; source < ARRAY_SIZE(SOURCES); source++) {
 		for (size_t divider = 0; divider < ARRAY_SIZE(DIVIDERS); divider++) {
 			CGU_CON3 = (initial_con3 & ~(CGU_CON3_MMCI_CLKSEL | CGU_CON3_MMCI_CLKDIV)) |
@@ -692,7 +628,10 @@ static void test_mmci_source_frequencies(void) {
 				bool command_completed = probe_mci_command_progress(&command_ticks);
 				printf("# MCI CLK32K DIV8 command progress: completed=%u elapsed=%u STM ticks\n",
 					command_completed ? 1U : 0U, (unsigned int) command_ticks);
-				slowest_mode_stopped = !measured && !command_completed;
+				uint32_t tolerance_hz = expected_hz / 50;
+				slowest_data_timer_matches = measured &&
+					test_u32_in_interval(measured_hz, expected_hz - tolerance_hz, expected_hz + tolerance_hz);
+				slowest_command_stopped = !command_completed;
 				continue;
 			}
 			uint32_t tolerance_hz = expected_hz / 50;
@@ -719,7 +658,8 @@ static void test_mmci_source_frequencies(void) {
 	bool restored = apply_pll_osc(initial_osc);
 
 	test_check("MMCI source and divider frequencies match the CGU model", frequencies_match);
-	test_check("MMCI CLK32K DIV8 stops the MCI core", slowest_mode_stopped);
+	test_check("MMCI CLK32K DIV8 data timer follows the CGU model", slowest_data_timer_matches);
+	test_check("MMCI CLK32K DIV8 command engine stalls", slowest_command_stopped);
 	test_check("MMCI frequency measurement restores PLL and module registers", restored && CGU_OSC == initial_osc &&
 		CGU_CON0 == initial_con0 && CGU_CON3 == initial_con3 && MMCI_CLC == initial_mmci_clc);
 }
@@ -862,7 +802,7 @@ static void test_ahb_per_pll_div_2_dependency(void) {
 }
 #endif
 
-static void test_ebu_source_frequencies(void) {
+static __SRAM void test_ebu_source_frequencies(void) {
 	if (test_is_qemu()) {
 		test_skip("asynchronous EBU clock transition becomes ready", "QEMU does not model EBU access timing");
 		test_skip("all EBU sources read identical flash data", "QEMU does not model EBU access timing");
@@ -874,6 +814,16 @@ static void test_ebu_source_frequencies(void) {
 	uint32_t initial_con0 = CGU_CON0;
 	uint32_t initial_con2 = CGU_CON2;
 	uint32_t initial_ebuclc2 = SCU_EBUCLC2;
+	uint32_t ebu_sources[EBU_SOURCE_COUNT] = {
+		CGU_CON2_EBU_CLKSEL_PLL,
+		CGU_CON2_EBU_CLKSEL_PHASE1,
+		CGU_CON2_EBU_CLKSEL_PHASE2,
+		CGU_CON2_EBU_CLKSEL_PHASE3,
+		CGU_CON2_EBU_CLKSEL_PHASE4,
+		CGU_CON2_EBU_CLKSEL_OSC,
+	};
+	uint32_t checksums[EBU_SOURCE_COUNT] = { 0 };
+	uint32_t ticks[EBU_SOURCE_COUNT] = { 0 };
 	uint32_t selected_osc =
 		(initial_osc & ~(CGU_OSC_NDIV | CGU_OSC_MDIV)) |
 		CGU_OSC_PLL_POWER_UP |
@@ -904,19 +854,9 @@ static void test_ebu_source_frequencies(void) {
 	SCU_EBUCLC2 = initial_ebuclc2 | (1 << SCU_EBUCLC2_FLAG1_SHIFT);
 	bool transition_ready = wait_for_ebu_clock_transition();
 
-	static const uint32_t EBU_SOURCES[EBU_SOURCE_COUNT] = {
-		CGU_CON2_EBU_CLKSEL_PLL,
-		CGU_CON2_EBU_CLKSEL_PHASE1,
-		CGU_CON2_EBU_CLKSEL_PHASE2,
-		CGU_CON2_EBU_CLKSEL_PHASE3,
-		CGU_CON2_EBU_CLKSEL_PHASE4,
-		CGU_CON2_EBU_CLKSEL_OSC,
-	};
-	uint32_t checksums[EBU_SOURCE_COUNT] = { 0 };
-	uint32_t ticks[EBU_SOURCE_COUNT] = { 0 };
 	if (pll_locked && transition_ready) {
-		for (uint32_t index = 0; index < ARRAY_SIZE(EBU_SOURCES); index++) {
-			CGU_CON2 = con2_base | EBU_SOURCES[index];
+		for (uint32_t index = 0; index < ARRAY_SIZE(ebu_sources); index++) {
+			CGU_CON2 = con2_base | ebu_sources[index];
 			ticks[index] = benchmark_ebu_flash_reads(&checksums[index]);
 		}
 	}
@@ -932,7 +872,7 @@ static void test_ebu_source_frequencies(void) {
 	if (pll_locked && transition_ready) {
 		bool data_matches = true;
 		bool source_order = true;
-		for (uint32_t index = 1; index < ARRAY_SIZE(EBU_SOURCES); index++) {
+		for (uint32_t index = 1; index < ARRAY_SIZE(ebu_sources); index++) {
 			data_matches = data_matches && checksums[index] == checksums[EBU_SOURCE_PLL];
 			source_order = source_order && ticks[index - 1] < ticks[index];
 		}
@@ -960,28 +900,22 @@ static void test_ahb_frequency_measurement(void) {
 		return;
 	}
 
-	uint32_t initial_itcm = read_itcm();
 	bool can_measure =
 		(CGU_CON1 & CGU_CON1_AHB_CLKSEL) == CGU_CON1_AHB_CLKSEL_BYPASS &&
 		(CGU_CON1 & CGU_CON1_FSTM_DIV_EN) == 0 &&
-		(CGU_CON2 & CGU_CON2_CPU_DIV_EN) == 0 &&
-		(initial_itcm & TCM_REGION_ENABLE) == 0;
+		(CGU_CON2 & CGU_CON2_CPU_DIV_EN) == 0;
 
 	if (!can_measure) {
-		test_skip("ITCM timing measures the 26 MHz AHB clock", "boot clock or ITCM configuration is incompatible");
+		test_skip("ITCM timing measures the 26 MHz AHB clock", "boot clock configuration is incompatible");
 		return;
 	}
 
-	write_itcm(ITCM_BASE | TCM_REGION_SIZE_8K | TCM_REGION_ENABLE);
-	write_itcm_measurement_loop();
 	test_watchdog_serve();
 	bool irq_was_disabled = cpu_enable_irq(false);
 	stopwatch_t start = stopwatch_get();
-	cgu_execute_itcm(ITCM_BASE, CGU_MEASURE_ITERATIONS);
+	cgu_execute_itcm(cgu_itcm_loop, CGU_MEASURE_ITERATIONS);
 	uint32_t elapsed_ticks = (uint32_t) stopwatch_elapsed(start);
 	cpu_enable_irq(!irq_was_disabled);
-	write_itcm(initial_itcm);
-	sync_code();
 
 	uint32_t measured_khz = measured_frequency_khz(elapsed_ticks, CGU_MEASURE_ITERATIONS);
 	test_measured_frequency("AHB frequency matches the CGU model", cpu_get_ahb_freq() / 1000, measured_khz);
@@ -994,7 +928,6 @@ static void test_pll_source_frequencies(void) {
 		return;
 	}
 
-	uint32_t initial_itcm = read_itcm();
 	uint32_t initial_osc = CGU_OSC;
 	uint32_t initial_con0 = CGU_CON0;
 	uint32_t initial_con1 = CGU_CON1;
@@ -1002,21 +935,18 @@ static void test_pll_source_frequencies(void) {
 		(initial_con1 & CGU_CON1_AHB_CLKSEL) == CGU_CON1_AHB_CLKSEL_BYPASS &&
 		(initial_con1 & CGU_CON1_FSYS_CLKSEL) == CGU_CON1_FSYS_CLKSEL_BYPASS &&
 		(initial_con1 & CGU_CON1_FSTM_DIV_EN) == 0 &&
-		(CGU_CON2 & CGU_CON2_CPU_DIV_EN) == 0 &&
-		(initial_itcm & TCM_REGION_ENABLE) == 0;
+		(CGU_CON2 & CGU_CON2_CPU_DIV_EN) == 0;
 
 	if (!can_measure) {
 		test_skip("PLL frequency follows N/M divider", "boot clock configuration is incompatible");
-		test_skip("phase 1 frequency follows K1/K2 divider", "boot clock or ITCM configuration is incompatible");
-		test_skip("phase 2 frequency follows K1/K2 divider", "boot clock or ITCM configuration is incompatible");
-		test_skip("phase 3 frequency follows K1/K2 divider", "boot clock or ITCM configuration is incompatible");
-		test_skip("phase 4 frequency follows K1/K2 divider", "boot clock or ITCM configuration is incompatible");
-		test_skip("phase 1 K1=0 K2=2 selects fPLL/8", "boot clock or ITCM configuration is incompatible");
+		test_skip("phase 1 frequency follows K1/K2 divider", "boot clock configuration is incompatible");
+		test_skip("phase 2 frequency follows K1/K2 divider", "boot clock configuration is incompatible");
+		test_skip("phase 3 frequency follows K1/K2 divider", "boot clock configuration is incompatible");
+		test_skip("phase 4 frequency follows K1/K2 divider", "boot clock configuration is incompatible");
+		test_skip("phase 1 K1=0 K2=2 selects fPLL/8", "boot clock configuration is incompatible");
 		return;
 	}
 
-	write_itcm(ITCM_BASE | TCM_REGION_SIZE_8K | TCM_REGION_ENABLE);
-	write_itcm_source_measurement_loop();
 	uint32_t safe_con1 = initial_con1;
 	bool irq_was_disabled = cpu_enable_irq(false);
 	CGU_CON0 = 0x22222222;
@@ -1047,9 +977,7 @@ static void test_pll_source_frequencies(void) {
 			(ndiv << CGU_OSC_NDIV_SHIFT) |
 			(mdiv << CGU_OSC_MDIV_SHIFT);
 		divider_locked[index] = apply_pll_osc(osc);
-		CGU_CON1 = selected_con1;
-		divider_calculated_hz[index] = cpu_get_ahb_freq();
-		CGU_CON1 = safe_con1;
+		divider_calculated_hz[index] = cpu_get_pll_freq();
 		divider_measured_khz[index] = divider_locked[index]
 			? measure_ahb_source_khz(selected_con1, safe_con1)
 			: 0;
@@ -1095,9 +1023,7 @@ static void test_pll_source_frequencies(void) {
 			uint32_t config_shift = phase2 ? CGU_CON0_PHASE2_CONFIG_SHIFT : CGU_CON0_PHASE1_CONFIG_SHIFT;
 			CGU_CON0 = (CGU_CON0 & ~config_mask) | (PHASE_CONFIGS[index] << config_shift);
 			selected_con1 = (safe_con1 & ~CGU_CON1_AHB_CLKSEL) | PHASE_SOURCES[index];
-			CGU_CON1 = selected_con1;
-			phase_calculated_hz[index] = cpu_get_ahb_freq();
-			CGU_CON1 = safe_con1;
+			phase_calculated_hz[index] = cpu_get_phase_freq(phase2 ? 2 : 1);
 			/* The K1=0 case is measured last and may stop the core: if the phase
 			 * shaper has no output for K1=0, selecting it as the AHB source leaves
 			 * the ARM with no clock and the watchdog resets the phone before the
@@ -1111,8 +1037,6 @@ static void test_pll_source_frequencies(void) {
 
 	CGU_CON0 = initial_con0;
 	bool restore_locked = apply_pll_osc(initial_osc);
-	write_itcm(initial_itcm);
-	sync_code();
 	cpu_enable_irq(!irq_was_disabled);
 
 	for (uint32_t index = 0; index < ARRAY_SIZE(PLL_DIVIDERS); index++) {
@@ -1144,20 +1068,16 @@ static void test_cpu_divider_frequencies(void) {
 		return;
 	}
 
-	uint32_t initial_itcm = read_itcm();
 	uint32_t initial_con1 = CGU_CON1;
 	uint32_t initial_con2 = CGU_CON2;
 	bool can_measure =
 		(initial_con1 & CGU_CON1_AHB_CLKSEL) == CGU_CON1_AHB_CLKSEL_BYPASS &&
-		(initial_con1 & CGU_CON1_FSTM_DIV_EN) == 0 &&
-		(initial_itcm & TCM_REGION_ENABLE) == 0;
+		(initial_con1 & CGU_CON1_FSTM_DIV_EN) == 0;
 	if (!can_measure) {
-		test_skip("CPU divider frequencies match the CGU model", "boot clock or ITCM is incompatible");
+		test_skip("CPU divider frequencies match the CGU model", "boot clock configuration is incompatible");
 		return;
 	}
 
-	write_itcm(ITCM_BASE | TCM_REGION_SIZE_8K | TCM_REGION_ENABLE);
-	write_itcm_cpu_div_measurement_loop();
 	uint32_t selected_con2 = initial_con2 & ~(CGU_CON2_CPU_DIV | CGU_CON2_CPU_DIV_EN);
 	CGU_CON2 = selected_con2;
 	uint32_t model_khz = cpu_get_freq() / 1000;
@@ -1178,9 +1098,6 @@ static void test_cpu_divider_frequencies(void) {
 			(unsigned int) divider + 1);
 		test_measured_frequency("CPU divider frequency matches the CGU model", model_khz, measured_khz);
 	}
-
-	write_itcm(initial_itcm);
-	sync_code();
 }
 
 static void test_stm_divider_frequencies(void) {

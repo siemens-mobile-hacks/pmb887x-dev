@@ -1,10 +1,10 @@
 .arm
-.section .cgu_loader, "ax"
+.section .timers_loader, "ax"
 .align 2
 
-.global cgu_loader
-.type cgu_loader, %function
-cgu_loader:
+.global timers_loader
+.type timers_loader, %function
+timers_loader:
 	ldr r0, =_intram_loadaddr
 	ldr r1, =_intram_start
 	ldr r2, =_intram_loadend

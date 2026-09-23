@@ -93,7 +93,10 @@ void wdt_init_custom(uint32_t interval) {
 
 #ifdef GPIO_PM_WADOG
 	cpu_wdt_disable();
-	GPIO_PIN(GPIO_PM_WADOG) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
+	uint32_t pin = GPIO_PIN(GPIO_PM_WADOG);
+	// Keep the preloader's output level; changing it here can reset the PMIC.
+	if ((pin & (GPIO_PS | GPIO_DIR)) != (GPIO_PS_MANUAL | GPIO_DIR_OUT))
+		GPIO_PIN(GPIO_PM_WADOG) = GPIO_PS_MANUAL | GPIO_DIR_OUT | GPIO_DATA_HIGH;
 	last_wdt_serve = stopwatch_get();
 #else
 	last_wdt_serve = stopwatch_get();
