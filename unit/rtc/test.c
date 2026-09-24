@@ -10,6 +10,10 @@
 	(RTC_ISNRC_T14 | RTC_ISNRC_RTC0 | RTC_ISNRC_RTC1 | RTC_ISNRC_RTC2 | RTC_ISNRC_RTC3 | RTC_ISNRC_ALARM)
 /* 512 ticks with PRE give enough time to enter WFI before the 125 ms deadline. */
 #define RTC_WFI_T14_RELOAD 0xFE00
+/* SL98 encodes day/hour/minute/second reloads in the 10/6/6/10-bit counter sections. */
+#define RTC_CALENDAR_365_REL 0xA4E813C4
+#define RTC_CALENDAR_366_REL 0xA4A813C4
+#define RTC_T14_MEASUREMENT_STM_TICKS (CPU_OSC_FREQ / 10)
 #define RTC_CLOCK_CONTROL \
 	(RTC_CTRL_RTCOUTEN | RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN)
 #define RTC_SYNC_CONTROL \
@@ -116,63 +120,116 @@ static void test_counter(void) {
 	test_eq_u32("counter stops when RUN is clear", stopped, RTC_CNT);
 }
 
-static void test_t14_adjustment(void) {
+static bool rtc_t14_adjustment_execute(uint32_t command, uint32_t *count) {
 	stop_and_clear();
 	RTC_T14 = (0x4000 << RTC_T14_CNT_SHIFT) | (0x8000 << RTC_T14_REL_SHIFT);
-	RTC_CON = RTC_CON_RUN | RTC_CON_T14INC;
-	stopwatch_usleep_wd(100);
+	RTC_CON = RTC_CON_RUN | command;
+	stopwatch_t start = stopwatch_get();
+	while ((RTC_CON & command) != 0 && stopwatch_elapsed_ms(start) < 100)
+		test_watchdog_serve();
+	bool completed = (RTC_CON & command) == 0;
 	RTC_CON = 0;
-	test_check("T14 increment advances the counter", ((RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT) > 0x4000);
-	test_check("T14 increment command clears itself", (RTC_CON & RTC_CON_T14INC) == 0);
+	*count = (RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT;
 
-	RTC_T14 = (0x4000 << RTC_T14_CNT_SHIFT) | (0x8000 << RTC_T14_REL_SHIFT);
-	RTC_CON = RTC_CON_RUN | RTC_CON_T14DEC;
-	stopwatch_usleep_wd(100);
-	RTC_CON = 0;
-	test_check("T14 decrement is applied before counting", ((RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT) >= 0x4000);
-	test_check("T14 decrement command clears itself", (RTC_CON & RTC_CON_T14DEC) == 0);
+	return completed;
 }
 
-static uint32_t measure_t14(bool prescaler) {
+static void test_t14_adjustment(void) {
+	uint32_t incremented;
+	bool increment_completed = rtc_t14_adjustment_execute(RTC_CON_T14INC, &incremented);
+	test_check("T14INC clears itself after the next count event", increment_completed);
+	test_check("T14INC adds one count", test_u32_in_interval(incremented, 0x4002, 0x4003));
+
+	uint32_t decremented;
+	bool decrement_completed = rtc_t14_adjustment_execute(RTC_CON_T14DEC, &decremented);
+	test_check("T14DEC clears itself after the next count event", decrement_completed);
+	test_check("T14DEC subtracts one count", test_u32_in_interval(decremented, 0x4000, 0x4001));
+}
+
+static uint32_t rtc_t14_measure(bool prescaler, uint32_t *stm_ticks) {
 	stop_and_clear();
 	RTC_T14 = 0;
 	RTC_CON = RTC_CON_RUN | (prescaler ? RTC_CON_PRE : 0);
 	RTC_CTRL = RTC_CLOCK_CONTROL;
-	stopwatch_usleep_wd(10000);
+	uint32_t first_t14 = (RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT;
+	uint32_t first_stm = STM_TIM0;
+	while (STM_TIM0 - first_stm < RTC_T14_MEASUREMENT_STM_TICKS)
+		test_watchdog_serve();
+	uint32_t last_t14 = (RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT;
+	*stm_ticks = STM_TIM0 - first_stm;
 	RTC_CTRL = RTC_SYNC_CONTROL;
 	wait_for_access();
 	RTC_CON = RTC_CON_PRE;
 
-	return (RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT;
+	return (last_t14 - first_t14) & 0xFFFF;
 }
 
 static void test_prescaler(void) {
-	uint32_t divided = measure_t14(true);
-	uint32_t direct = measure_t14(false);
+	uint32_t direct_stm_ticks;
+	uint32_t direct = rtc_t14_measure(false, &direct_stm_ticks);
+	uint32_t direct_expected = (uint64_t) direct_stm_ticks * CPU_CLK32K_FREQ / CPU_OSC_FREQ;
+	printf("# T14 without PRE: %lu/%lu ticks\n", direct, direct_expected);
+	test_check(
+		"T14 uses the 32768 Hz clock without PRE",
+		test_u32_in_interval(direct, direct_expected * 98 / 100, direct_expected * 102 / 100)
+	);
 
-	test_check("T14 advances with prescaler enabled", divided != 0);
-	test_check("PRE divides the T14 clock by approximately eight", direct > divided * 4 && direct < divided * 12);
+	uint32_t divided_stm_ticks;
+	uint32_t divided = rtc_t14_measure(true, &divided_stm_ticks);
+	uint32_t divided_expected = (uint64_t) divided_stm_ticks * CPU_CLK32K_FREQ / CPU_OSC_FREQ / 8;
+	printf("# T14 with PRE: %lu/%lu ticks\n", divided, divided_expected);
+	test_check(
+		"PRE divides the T14 clock by eight",
+		test_u32_in_interval(divided, divided_expected * 98 / 100, divided_expected * 102 / 100)
+	);
 }
 
-static void test_section_reload(void) {
+static uint32_t rtc_section_reload_execute(uint32_t count, uint32_t reload) {
 	stop_and_clear();
-	RTC_T14 = (0xFFFE << RTC_T14_CNT_SHIFT) | (0xFFFE << RTC_T14_REL_SHIFT);
-	RTC_CNT = 0xFFFFFFFF;
-	RTC_REL = (0x155 << 22) | (0x15 << 16) | (0x2A << 10) | 0x155;
+	RTC_T14 = 0xFFFF << RTC_T14_CNT_SHIFT;
+	RTC_CNT = count;
+	RTC_REL = reload;
 	RTC_CON = RTC_CON_RUN;
 	RTC_CTRL = RTC_CLOCK_CONTROL;
 	stopwatch_t start = stopwatch_get();
-	while (RTC_CNT == 0xFFFFFFFF && stopwatch_elapsed_ms(start) < 100)
+	while (RTC_CNT == count && stopwatch_elapsed_ms(start) < 100)
 		test_watchdog_serve();
 	RTC_CTRL = RTC_SYNC_CONTROL;
-	test_check("counter is accessible after section reload", wait_for_access());
+	wait_for_access();
 	RTC_CON = RTC_CON_PRE;
-	uint32_t reloaded = RTC_CNT;
-	test_eq_u32("upper counter sections reload from RTC_REL", RTC_REL & ~0x3FF, reloaded & ~0x3FF);
-	test_check(
-		"low counter section continues from its reload value",
-		(reloaded & 0x3FF) >= (RTC_REL & 0x3FF) && (reloaded & 0x3FF) < 0x3FF
-	);
+
+	return RTC_CNT;
+}
+
+static void test_section_reload(void) {
+	static const struct {
+		const char *name;
+		uint32_t count;
+		uint32_t reload;
+		uint32_t expected;
+	} cases[] = {
+		{
+			"calendar minute rollover reloads seconds and minutes before carrying hours",
+			0x1928FFFF,
+			RTC_CALENDAR_365_REL,
+			0x192913C4,
+		},
+		{
+			"365-day calendar reloads all counter sections",
+			0xFFFFFFFF,
+			RTC_CALENDAR_365_REL,
+			RTC_CALENDAR_365_REL,
+		},
+		{
+			"366-day calendar reloads all counter sections",
+			0xFFFFFFFF,
+			RTC_CALENDAR_366_REL,
+			RTC_CALENDAR_366_REL,
+		},
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(cases); i++)
+		test_eq_u32(cases[i].name, cases[i].expected, rtc_section_reload_execute(cases[i].count, cases[i].reload));
 }
 
 static void test_section_flags(void) {
@@ -495,9 +552,9 @@ __IRQ void irq_handler(void) {
 	RTC_CTRL = RTC_SYNC_CONTROL | RTC_CTRL_CLR_RTCINT;
 	for (unsigned int i = 0; i < 1000 && (RTC_CON & RTC_CON_ACCPOS) == 0; i++) {
 	}
-	if (keep_irq_requests)
+	if (keep_irq_requests) {
 		RTC_ISNC = irq_isnc & RTC_INTERRUPT_FLAGS;
-	else {
+	} else {
 		RTC_ISNC = 0;
 		RTC_ISNRC = RTC_CLEAR_REQUESTS;
 	}
