@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import os
 import struct
 import sys
@@ -321,14 +322,142 @@ def preloader_goto(port, address):
 	expect_byte(port, STATUS_SUCCESS, "GOTO status")
 
 
+def parse_host_command(line):
+	prefix = b"# HOST-CMD: "
+	if not line.startswith(prefix):
+		return None
+
+	command, _, argument = line[len(prefix):].partition(b" ")
+	return command, argument
+
+
+def send_host_data(port, data, command):
+	start = time.monotonic()
+	written = port.write(data)
+	port.flush()
+	if written != len(data):
+		raise ProtocolError("HOST-CMD %s wrote only %d of %d bytes" % (command, written, len(data)))
+	parity_bits = 0 if port.parity == serial.PARITY_NONE else 1
+	frame_bits = 1 + port.bytesize + parity_bits + port.stopbits
+	remaining = len(data) * frame_bits / port.baudrate - (time.monotonic() - start)
+	if remaining > 0:
+		time.sleep(remaining)
+
+
+def generate_xorshift32(length, seed):
+	data = bytearray(length)
+	state = seed
+	for offset in range(length):
+		state ^= (state << 13) & 0xFFFFFFFF
+		state ^= state >> 17
+		state ^= (state << 5) & 0xFFFFFFFF
+		state &= 0xFFFFFFFF
+		data[offset] = state & 0xFF
+	return data
+
+
+def execute_host_command(port, command, argument, restore_configuration=None):
+	if command == b"BAUDRATE":
+		if not argument:
+			raise ProtocolError("HOST-CMD BAUDRATE has no argument")
+		baud_rate = int(argument)
+		if baud_rate <= 0:
+			raise ProtocolError("HOST-CMD BAUDRATE must be positive")
+		port.baudrate = baud_rate
+	elif command == b"FORMAT":
+		formats = {
+			b"7E1": (serial.SEVENBITS, serial.PARITY_EVEN, serial.STOPBITS_ONE),
+			b"7O1": (serial.SEVENBITS, serial.PARITY_ODD, serial.STOPBITS_ONE),
+			b"8N1": (serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE),
+			b"8E1": (serial.EIGHTBITS, serial.PARITY_EVEN, serial.STOPBITS_ONE),
+			b"8O1": (serial.EIGHTBITS, serial.PARITY_ODD, serial.STOPBITS_ONE),
+		}
+		if argument not in formats:
+			raise ProtocolError("HOST-CMD FORMAT must be 7E1, 7O1, 8N1, 8E1, or 8O1")
+		port.bytesize, port.parity, port.stopbits = formats[argument]
+	elif command == b"SEND":
+		if not argument:
+			raise ProtocolError("HOST-CMD SEND has no argument")
+		data = json.loads(argument)
+		if not isinstance(data, str):
+			raise ProtocolError("HOST-CMD SEND argument must be a string")
+		send_host_data(port, data.encode("utf-8"), "SEND")
+	elif command == b"SEND_XORSHIFT32":
+		fields = argument.split()
+		if len(fields) != 3:
+			raise ProtocolError("HOST-CMD SEND_XORSHIFT32 requires length, seed, and CRC32")
+		length, seed, expected_crc = (int(field, 0) for field in fields)
+		if length <= 0 or length > 1024 * 1024:
+			raise ProtocolError("HOST-CMD SEND_XORSHIFT32 length must be between 1 and 1048576")
+		if seed <= 0 or seed > 0xFFFFFFFF:
+			raise ProtocolError("HOST-CMD SEND_XORSHIFT32 seed must be a nonzero 32-bit value")
+		if expected_crc < 0 or expected_crc > 0xFFFFFFFF:
+			raise ProtocolError("HOST-CMD SEND_XORSHIFT32 CRC32 must be a 32-bit value")
+		data = generate_xorshift32(length, seed)
+		actual_crc = zlib.crc32(data)
+		if actual_crc != expected_crc:
+			raise ProtocolError(
+				"HOST-CMD SEND_XORSHIFT32 CRC32 is 0x%08X, expected 0x%08X" %
+				(actual_crc, expected_crc)
+			)
+		send_host_data(port, data, "SEND_XORSHIFT32")
+	elif command == b"WAIT":
+		if not argument:
+			raise ProtocolError("HOST-CMD WAIT has no argument")
+		delay_ms = int(argument)
+		if delay_ms < 0:
+			raise ProtocolError("HOST-CMD WAIT must not be negative")
+		time.sleep(delay_ms / 1000)
+	elif command == b"RESTORE":
+		if argument or restore_configuration is None:
+			raise ProtocolError("invalid HOST-CMD RESTORE")
+		port.baudrate, port.bytesize, port.parity, port.stopbits = restore_configuration
+	else:
+		raise ProtocolError("unknown HOST-CMD: %s" % command.decode("ascii", "replace"))
+
+
 def forward_output(port, output):
+	pending = b""
+	command_block = None
 	while True:
 		data = port.read(port.in_waiting or 1)
 		if not data:
 			continue
 
+		lines = (pending + data).split(b"\n")
+		pending = lines.pop()
+		for line in lines:
+			parsed = parse_host_command(line)
+			if parsed is None:
+				continue
+			command, argument = parsed
+			if command == b"BEGIN":
+				if argument or command_block is not None:
+					raise ProtocolError("invalid HOST-CMD BEGIN")
+				command_block = {
+					"commands": [],
+					"configuration": (port.baudrate, port.bytesize, port.parity, port.stopbits),
+				}
+			elif command == b"END":
+				if argument or command_block is None:
+					raise ProtocolError("invalid HOST-CMD END")
+				for queued_command, queued_argument in command_block["commands"]:
+					execute_host_command(
+						port,
+						queued_command,
+						queued_argument,
+						command_block["configuration"],
+					)
+				command_block = None
+			elif command_block is None:
+				execute_host_command(port, command, argument)
+			else:
+				command_block["commands"].append((command, argument))
+
 		terminator = data.find(b"\0")
 		if terminator >= 0:
+			if command_block is not None:
+				raise ProtocolError("unfinished HOST-CMD block")
 			output.write(data[:terminator])
 			output.flush()
 			return
