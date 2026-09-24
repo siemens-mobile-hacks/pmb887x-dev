@@ -49,6 +49,12 @@ struct burst_segment {
 	uint32_t latency_hash;
 };
 
+enum equalizer_initialize_mode {
+	EQUALIZER_INITIALIZE_NONE,
+	EQUALIZER_INITIALIZE_ALL,
+	EQUALIZER_INITIALIZE_OPERATION,
+};
+
 static const struct burst_segment segments[] = {
 	{ false, 20, 0x0008, UINT32_C(0x1806A79C), UINT32_C(0xB9EC788D), UINT32_C(0xB8AB0F37),
 		UINT32_C(0xC98B46C8), UINT32_C(0x66029B7D) },
@@ -120,19 +126,17 @@ static uint32_t hash_words(size_t offset, size_t words) {
 	return hash;
 }
 
-static bool run_segment(size_t index) {
+static bool run_segment(size_t index, enum equalizer_initialize_mode initialize, uint16_t request) {
 	const struct burst_segment *segment = &segments[index];
 	size_t w1_path_offset = segment->right ? W1_EPR_OUTPUT_OFFSET : W1_EPL_OUTPUT_OFFSET;
 	size_t w2_metric_offset = segment->right ? W2_EMR_OUTPUT_OFFSET : W2_EML_OUTPUT_OFFSET;
 	size_t w2_path_offset = segment->right ? W2_EPR_OUTPUT_OFFSET : W2_EPL_OUTPUT_OFFSET;
-	uint16_t request = index + 1;
-
 	load_segment_inputs(index);
 	dsp_hw_shared_memory[COUNT_OFFSET] = segment->count;
 	dsp_hw_shared_memory[FLAGS_OFFSET] = TEAK_EQ_CONF2_EQ_EDGE |
 		(segment->right ? TEAK_EQ_CONF2_EQ_RIGHT : 0);
 	dsp_hw_shared_memory[SCALE_OFFSET] = segment->scale;
-	dsp_hw_shared_memory[INITIALIZE_OFFSET] = index == 0;
+	dsp_hw_shared_memory[INITIALIZE_OFFSET] = initialize;
 	dsp_hw_shared_memory[RESPONSE_OFFSET] = 0;
 	dsp_hw_shared_memory[REQUEST_OFFSET] = request;
 	if (!test_check("burst runner completes the segment", dsp_hw_wait_shared(RESPONSE_OFFSET, request, 1000))) {
@@ -170,6 +174,19 @@ static bool run_segment(size_t index) {
 	return true;
 }
 
+static bool start_runner(void) {
+	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
+		return false;
+	DSP_COM_CLEAR = UINT16_MAX;
+	if (!test_check("boot commands load equalizer burst runner",
+		dsp_hw_load_image(DSP_EQUALIZER_BURST_RUNNER, sizeof(DSP_EQUALIZER_BURST_RUNNER)))) {
+		return false;
+	}
+	if (!test_check("BRANCH starts equalizer burst runner", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
+		return false;
+	return test_check("equalizer burst runner becomes ready", dsp_hw_wait_shared(0, READY_MARKER, 100));
+}
+
 int main(void) {
 	uint16_t completed[2] = { 0, 0 };
 
@@ -177,26 +194,37 @@ int main(void) {
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 
 	test_category("Equalizer / firmware-style six-segment EDGE burst");
-	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
-		return test_finish();
-	DSP_COM_CLEAR = UINT16_MAX;
-	if (!test_check("boot commands load equalizer burst runner",
-		dsp_hw_load_image(DSP_EQUALIZER_BURST_RUNNER, sizeof(DSP_EQUALIZER_BURST_RUNNER))))
-		return test_finish();
-	if (!test_check("BRANCH starts equalizer burst runner", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
-		return test_finish();
-	if (!test_check("equalizer burst runner becomes ready", dsp_hw_wait_shared(0, READY_MARKER, 100)))
+	if (!start_runner())
 		return test_finish();
 
 	initialize_burst();
 	for (size_t segment = 0; segment < ARRAY_SIZE(segments); segment++) {
-		if (!run_segment(segment))
+		enum equalizer_initialize_mode initialize = segment == 0 ?
+			EQUALIZER_INITIALIZE_ALL : EQUALIZER_INITIALIZE_NONE;
+
+		if (!run_segment(segment, initialize, segment + 1))
 			break;
 		completed[segments[segment].right] += segments[segment].count;
 	}
 	test_eq_u32("left half completes all 58 equalized symbols", 58, completed[false]);
 	test_eq_u32("right half completes all 58 equalized symbols", 58, completed[true]);
 
+	test_category("Equalizer / RES_EQ restarts accumulated symbol state");
+	if (!start_runner())
+		return test_finish();
+	for (size_t side = 0; side < 2; side++) {
+		for (size_t pass = 0; pass < 5; pass++) {
+			enum equalizer_initialize_mode initialize = pass == 0 && side == 0 ?
+				EQUALIZER_INITIALIZE_ALL : EQUALIZER_INITIALIZE_OPERATION;
+			uint16_t request = side * 5 + pass + 1;
+
+			initialize_burst();
+			if (!run_segment(side, initialize, request))
+				goto finish;
+		}
+	}
+
+finish:
 	DSP_COM_CLEAR = UINT16_MAX;
 	(void) dsp_hw_reset();
 	return test_finish();

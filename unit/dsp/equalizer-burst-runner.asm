@@ -15,13 +15,17 @@ mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0006)] a0
 cmp 0x0000u8 a0
 br 0x0000$01A0 eq
 
-// Initialize both half slots once per burst.
+// A value of one performs a complete peripheral reset. Any nonzero value
+// restarts the current operation through RES_EQ and reloads both half slots.
+cmp 0x0001u8 a0
+br 0x0000$0140 neq
 mov 0x$0101 a0l
 mov a0l [0x$TEAK_EQ_CONF2]
 nop
 nop
 nop
 nop
+segment p 0140
 mov 0x$0003 a0l
 mov a0l [0x$TEAK_EQ_CONF2]
 nop
