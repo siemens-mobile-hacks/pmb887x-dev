@@ -3740,28 +3740,30 @@
 
 // STM [MOD_NUM=0000, MOD_REV=02, MOD_32BIT=C0]
 // System Timer (see STM in TC1766 datasheet)
-#define	STM_BASE	0xF4B00000
+#define	STM_BASE			0xF4B00000
 /* Clock Control Register */
-#define	STM_CLC		MMIO32(STM_BASE + 0x00)
+#define	STM_CLC				MMIO32(STM_BASE + 0x00)
+#define	STM_CLC_RMC2		GENMASK(23, 16)			 // Additional PLL-source divider; total divisor is RMC + RMC2
+#define	STM_CLC_RMC2_SHIFT	16
 
 /* Module Identifier Register */
-#define	STM_ID		MMIO32(STM_BASE + 0x08)
+#define	STM_ID				MMIO32(STM_BASE + 0x08)
 
-#define	STM_TIM0	MMIO32(STM_BASE + 0x10)
+#define	STM_TIM0			MMIO32(STM_BASE + 0x10)
 
-#define	STM_TIM1	MMIO32(STM_BASE + 0x14)
+#define	STM_TIM1			MMIO32(STM_BASE + 0x14)
 
-#define	STM_TIM2	MMIO32(STM_BASE + 0x18)
+#define	STM_TIM2			MMIO32(STM_BASE + 0x18)
 
-#define	STM_TIM3	MMIO32(STM_BASE + 0x1C)
+#define	STM_TIM3			MMIO32(STM_BASE + 0x1C)
 
-#define	STM_TIM4	MMIO32(STM_BASE + 0x20)
+#define	STM_TIM4			MMIO32(STM_BASE + 0x20)
 
-#define	STM_TIM5	MMIO32(STM_BASE + 0x24)
+#define	STM_TIM5			MMIO32(STM_BASE + 0x24)
 
-#define	STM_TIM6	MMIO32(STM_BASE + 0x28)
+#define	STM_TIM6			MMIO32(STM_BASE + 0x28)
 
-#define	STM_CAP		MMIO32(STM_BASE + 0x2C)
+#define	STM_CAP				MMIO32(STM_BASE + 0x2C)
 
 
 // ADC [MOD_NUM=F024, MOD_REV=10, MOD_32BIT=C0]

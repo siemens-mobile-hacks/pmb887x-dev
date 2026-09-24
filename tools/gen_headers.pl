@@ -364,37 +364,39 @@ sub genModuleHeader {
 			}
 		}
 		
-		if (!$reg->{common}) {
-			for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
-				my $field = $reg->{fields}->{$field_name};
-				
-				my $field_name_prepared = $reg->{field_format};
-				$field_name_prepared =~ s/{reg}/$reg_name/g;
-				$field_name_prepared =~ s/{field}/$field_name/g;
-				
-				my $descr = "";
-				
-				if ($field->{descr}) {
-					$descr = " // ".$field->{descr};
-				}
-				
-				if ($field->{size} > 1) {
-					push @header, ["#define", $prefix.$field_name_prepared, "GENMASK(".($field->{start} + $field->{size} - 1).", ".$field->{start}.")", $descr];
-					push @header, ["#define", $prefix.$field_name_prepared."_SHIFT", $field->{start}];
-				} else {
-					push @header, ["#define", $prefix.$field_name_prepared, "BIT(".$field->{start}.")", $descr];
-				}
-				
-				for my $val_name (getSortedKeys($field->{values})) {
-					my $val = $field->{values}->{$val_name};
-					
-					my $val_name_prepared = $reg->{enum_format};
-					$val_name_prepared =~ s/{reg}/$reg_name/g;
-					$val_name_prepared =~ s/{field}/$field_name/g;
-					$val_name_prepared =~ s/{value}/$val_name/g;
-					
-					push @header, ["#define", $prefix.$val_name_prepared, sprintf("0x%X", $val << $field->{start})];
-				}
+		for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
+			if ($reg->{common} && exists $cpu_meta->{common}->{$reg->{common}}->{fields}->{$field_name}) {
+				next;
+			}
+
+			my $field = $reg->{fields}->{$field_name};
+
+			my $field_name_prepared = $reg->{field_format};
+			$field_name_prepared =~ s/{reg}/$reg_name/g;
+			$field_name_prepared =~ s/{field}/$field_name/g;
+
+			my $descr = "";
+
+			if ($field->{descr}) {
+				$descr = " // ".$field->{descr};
+			}
+
+			if ($field->{size} > 1) {
+				push @header, ["#define", $prefix.$field_name_prepared, "GENMASK(".($field->{start} + $field->{size} - 1).", ".$field->{start}.")", $descr];
+				push @header, ["#define", $prefix.$field_name_prepared."_SHIFT", $field->{start}];
+			} else {
+				push @header, ["#define", $prefix.$field_name_prepared, "BIT(".$field->{start}.")", $descr];
+			}
+
+			for my $val_name (getSortedKeys($field->{values})) {
+				my $val = $field->{values}->{$val_name};
+
+				my $val_name_prepared = $reg->{enum_format};
+				$val_name_prepared =~ s/{reg}/$reg_name/g;
+				$val_name_prepared =~ s/{field}/$field_name/g;
+				$val_name_prepared =~ s/{value}/$val_name/g;
+
+				push @header, ["#define", $prefix.$val_name_prepared, sprintf("0x%X", $val << $field->{start})];
 			}
 		}
 		push @header, [];

@@ -316,9 +316,11 @@ sub genModuleHeader {
 			my @fields;
 			for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
 				my $field = $reg->{fields}->{$field_name};
-				
-				my $field_name_prepared = ($reg->{common} ? "" : $module->{name}."_").$reg->{field_format};
-				$field_name_prepared =~ s/{reg}/$reg_name_prefix/g;
+				my $is_common_field = $reg->{common} &&
+					exists $cpu_meta->{common}->{$reg->{common}}->{fields}->{$field_name};
+				my $field_name_prepared = ($is_common_field ? "" : $module->{name}."_").$reg->{field_format};
+				my $field_reg_name = $is_common_field ? $reg_name_prefix : $reg_name;
+				$field_name_prepared =~ s/{reg}/$field_reg_name/g;
 				$field_name_prepared =~ s/{field}/$field_name/g;
 				
 				my $values_var = lc($module->{name})."_".lc($field_name_prepared)."_values";
