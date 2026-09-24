@@ -81,11 +81,15 @@ uint32_t cpu_get_sys_freq(void) {
 }
 
 uint32_t cpu_get_stm_freq(void) {
-	uint32_t frequency = cpu_get_fpi2_freq();
-	if ((CGU_CON1 & CGU_CON1_FPI2_CLKSEL) == CGU_CON1_FPI2_CLKSEL_PLL)
-		return frequency / 2;
+	uint32_t divider = (STM_CLC & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT;
+	if (divider == 0)
+		return 0;
 
-	return frequency;
+	/* RMC2 extends the local STM divider only when FPI2 selects the PLL. */
+	if ((CGU_CON1 & CGU_CON1_FPI2_CLKSEL) == CGU_CON1_FPI2_CLKSEL_PLL)
+		divider += (STM_CLC & STM_CLC_RMC2) >> STM_CLC_RMC2_SHIFT;
+
+	return cpu_get_fpi2_freq() / divider;
 }
 
 uint32_t cpu_get_ahb_freq(void) {

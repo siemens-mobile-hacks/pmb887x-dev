@@ -5,6 +5,7 @@
 typedef unsigned long long int stopwatch_t;
 
 void stopwatch_init(void);
+void stopwatch_update(void);
 
 void stopwatch_usleep(uint32_t us);
 void stopwatch_usleep_wd(uint32_t us);

@@ -221,7 +221,7 @@ __IRQ void irq_handler(void) {
  *
  *   GPTU0 T0   fSYS / GPTU_CLC.RMC                    (RMC = 1 -> fSYS)
  *   TPU        fSYS / TPU_CLC.RMC / 6L * K            (= fSYS / 12 here)
- *   STM        fSTM / STM_CLC.RMC
+ *   STM        register-derived STM counter clock
  *
  * The ratios they must hold are fixed by register programming, so the
  * observable is the DISAGREEMENT: agreement to ppm is what clocks off one
@@ -275,7 +275,6 @@ static void test_clock_agreement(void) {
 	uint64_t stm_ticks = (uint64_t) (stm_last - stm_first);
 	uint64_t tpu_ticks = tpu_last - tpu_first;
 	uint64_t gptu_ticks = gptu_last - gptu_first;
-	uint32_t stm_rmc = (STM_CLC & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT;
 	uint32_t f_sys = cpu_get_sys_freq();
 	uint32_t f_stm = cpu_get_stm_freq();
 	/* The stopwatch's own constant is the only unit here; the raw ratios above
@@ -293,7 +292,7 @@ static void test_clock_agreement(void) {
 	printf("# cross-check rates in the stopwatch's own unit: STM=%u Hz, TPU=%u Hz, GPTU0=%u Hz\n",
 		(unsigned int) stm_hz, (unsigned int) tpu_hz, (unsigned int) gptu_hz);
 
-	if (stm_ticks == 0 || tpu_ticks == 0 || gptu_ticks == 0 || stm_rmc == 0) {
+	if (stm_ticks == 0 || tpu_ticks == 0 || gptu_ticks == 0 || f_stm == 0) {
 		test_check("the three counters all ran for the whole window", false);
 		return;
 	}
@@ -302,9 +301,9 @@ static void test_clock_agreement(void) {
 	test_check("the TPU counter is exactly fSYS/12 of the GPTU T0 counter",
 		value_matches_ppm(tpu_ticks * TPU_CROSSCHECK_TPU_DIVISOR, gptu_ticks, TPU_CROSSCHECK_PPM));
 
-	/* The STM chain against the CGU's own model of fSTM and fSYS. */
-	test_check("the STM counter is fSTM / STM_CLC.RMC of the GPTU T0 counter",
-		value_matches_ppm(stm_ticks * f_sys * stm_rmc, gptu_ticks * f_stm, TPU_CROSSCHECK_PPM));
+	/* The STM chain against the register-derived STM and fSYS frequencies. */
+	test_check("the STM counter agrees with the register-derived frequency",
+		value_matches_ppm(stm_ticks * f_sys, gptu_ticks * f_stm, TPU_CROSSCHECK_PPM));
 
 	/* The headline: the two constants the phone disagreed about, compared with
 	   each other rather than each against its nominal. */
