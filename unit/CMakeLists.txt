@@ -173,6 +173,10 @@ add_peripheral_test(
 add_peripheral_test(usart usart/test.c usart/usart.c)
 add_peripheral_test(usart-dma usart/test-dma.c usart/usart.c)
 add_peripheral_test(usart-clock usart/clock.c cgu/clock.c)
+add_peripheral_test(usart-autobaud usart/autobaud.c)
+add_peripheral_test(usart-host-rx usart/host-rx.c)
+add_peripheral_test(usart-irq-rx usart/irq-rx.c)
+add_peripheral_test(usart-flow-control usart/flow-control.c)
 add_peripheral_test(dif-v2 dif-v2/test.c dif-v2/dif-v2.c)
 add_peripheral_test(dif-v2-dma dif-v2/test-dma.c dif-v2/dif-v2.c)
 add_peripheral_test(

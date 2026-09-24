@@ -305,6 +305,18 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [usart-clock]
 devices = ["siemens-cx75", "siemens-el71"]
 
+[usart-autobaud]
+devices = ["siemens-el71"]
+
+[usart-host-rx]
+devices = ["siemens-el71"]
+
+[usart-irq-rx]
+devices = ["siemens-el71"]
+
+[usart-flow-control]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dif-v2]
 devices = ["generic-pmb8876"]
 

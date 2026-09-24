@@ -64,6 +64,10 @@ success.
 | `dif-v1-dma` | DIFv1 full-duplex FIFO DMA, bursts, LLI, widths, statuses, and interrupts |
 | `usart` | USART loopback, frame modes, FIFO, interrupts, and timeout |
 | `usart-dma` | USART loopback transfers through DMA |
+| `usart-autobaud` | Host-driven baud and frame detection, controls, rejection, and normal-RX handoff |
+| `usart-host-rx` | Host receive gating and pseudorandom payload integrity at representative baud rates |
+| `usart-irq-rx` | Firmware-style bounded RX FIFO draining and software IRQ retrigger |
+| `usart-flow-control` | Loopback CTS gating and automatic RTS threshold, plus physical GPIO levels on hardware |
 | `sim-card-dma` | Complete hardware T=0 SELECT through DMA, including data, T0END, and SW1/SW2 |
 | `sim-card-timers` | Hardware T=0 character timeout; BWT is skipped without a T=1 card |
 | `dif-v2` | DIFv2 IRQ loopback, serial modes, FIFO alignment and bursts, BSCONF, LCD reads, and conversion |

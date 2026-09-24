@@ -342,6 +342,9 @@ static void test_registers(void) {
 
 static void test_reset_values(void) {
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_USART1;
+	SCU_RST_REQ &= ~SCU_RST_REQ_USART1;
+
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, USART_CLC(USART1));
 	USART_CLC(USART1) = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("PISEL reset value", 0, USART_PISEL(USART1));
@@ -456,6 +459,44 @@ static void test_fifo_thresholds(void) {
 	test_check("transparent FIFO byte transmits", send_without_reading(0xA5));
 	test_check("transparent FIFO ignores trigger level", (USART_RIS(USART1) & USART_RIS_RX) != 0);
 	test_eq_u32("transparent FIFO contains one byte", 1, USART_FSTAT(USART1) & USART_FSTAT_RXFFL);
+}
+
+static void test_tx_fifo_thresholds(void) {
+	static const uint8_t levels[] = { 3, 6 };
+
+	for (uint32_t i = 0; i < ARRAY_SIZE(levels); i++) {
+		configure_usart(USART_CON_M_ASYNC_8BIT);
+		USART_RXFCON(USART1) = (
+			USART_RXFCON_RXFEN | USART_RXFCON_RXFFLU |
+			(8 << USART_RXFCON_RXFITL_SHIFT)
+		);
+		USART_TXFCON(USART1) = (
+			USART_TXFCON_TXFEN | USART_TXFCON_TXFFLU |
+			(levels[i] << USART_TXFCON_TXFITL_SHIFT)
+		);
+		for (uint32_t byte = 0; byte < USART_FIFO_SIZE; byte++)
+			USART_TXB(USART1) = 0x60 + byte;
+
+		uint32_t initial_level = usart_get_tx_fifo_level(USART1);
+		USART_ICR(USART1) = USART_ICR_TX | USART_ICR_TB;
+		bool inactive_above_threshold = (USART_RIS(USART1) & (USART_RIS_TX | USART_RIS_TB)) == 0;
+		bool request_raised = wait_for_status(USART_RIS_TX | USART_RIS_TB);
+		uint32_t request_level = usart_get_tx_fifo_level(USART1);
+
+		test_check("TX FIFO starts above trigger", initial_level > levels[i]);
+		test_check("TX/TBUF stay inactive above trigger", inactive_above_threshold);
+		test_check("TX/TBUF activate after crossing trigger", request_raised);
+		test_check("TX/TBUF request is at or below trigger", request_level <= levels[i]);
+
+		stopwatch_t start = stopwatch_get();
+		while (usart_get_rx_fifo_level(USART1) < USART_FIFO_SIZE &&
+			stopwatch_elapsed_ms(start) < USART_TIMEOUT_MS)
+		{
+			test_watchdog_serve();
+		}
+		test_eq_u32("TX threshold transfer reaches RX FIFO", USART_FIFO_SIZE, usart_get_rx_fifo_level(USART1));
+		USART_RXFCON(USART1) |= USART_RXFCON_RXFFLU;
+	}
 }
 
 static void test_fifo_errors(void) {
@@ -831,6 +872,8 @@ int usart_test(void) {
 	test_fifo();
 	test_category("FIFO thresholds");
 	test_fifo_thresholds();
+	test_category("TX FIFO thresholds");
+	test_tx_fifo_thresholds();
 	test_category("FIFO errors");
 	test_fifo_errors();
 	test_category("Large blocks");
