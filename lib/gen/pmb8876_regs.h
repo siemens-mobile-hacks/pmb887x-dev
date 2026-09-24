@@ -640,15 +640,14 @@
 #define	USART_WHBABSTAT_SETDETWAIT		BIT(9)					 // Set autobaud detection waiting flag
 
 #define	USART_FCCON(base)				MMIO32((base) + 0x5C)
-#define	USART_FCCON_CTSEN				BIT(0)					 // RTS enbled (0: disable; 1: enable)
-#define	USART_FCCON_RTSEN				BIT(1)					 // CTS enable (0: disable; 1: enable)
+#define	USART_FCCON_RTSEN				BIT(0)					 // RTS enable (0: disable; 1: enable)
+#define	USART_FCCON_CTSEN				BIT(1)					 // CTS enable (0: disable; 1: enable)
 #define	USART_FCCON_RTS					BIT(4)					 // RTS control bit
 #define	USART_FCCON_RTS_TRIGGER			GENMASK(13, 8)			 // RTS receive FIFO trigger level
 #define	USART_FCCON_RTS_TRIGGER_SHIFT	8
 
 #define	USART_FCSTAT(base)				MMIO32((base) + 0x60)
 #define	USART_FCSTAT_CTS				BIT(0)					 // CTS Status (0: inactive; 1: active)
-#define	USART_FCSTAT_RTS				BIT(1)					 // RTS Status (0: inactive; 1: active)
 
 #define	USART_IMSC(base)				MMIO32((base) + 0x64)
 #define	USART_IMSC_TX					BIT(0)					 // Transmit interrupt mask
