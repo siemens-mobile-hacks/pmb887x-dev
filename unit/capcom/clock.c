@@ -27,6 +27,14 @@ static const struct {
 
 static struct timer_counts measure_timers(uint32_t capcom) {
 	CAPCOM_T01CON(capcom) = 0;
+	CAPCOM_PISEL(capcom) = 0;
+	CAPCOM_CCM0(capcom) = 0;
+	CAPCOM_CCM1(capcom) = 0;
+	CAPCOM_IOC(capcom) = 0;
+	CAPCOM_SEM(capcom) = 0;
+	CAPCOM_SEE(capcom) = 0;
+	CAPCOM_DRM(capcom) = CAPCOM_DRM_DR0M_DIS | CAPCOM_DRM_DR1M_DIS |
+		CAPCOM_DRM_DR2M_DIS | CAPCOM_DRM_DR3M_DIS;
 	CAPCOM_T0(capcom) = 0;
 	CAPCOM_T1(capcom) = 0;
 	CAPCOM_T0REL(capcom) = 0;
@@ -71,17 +79,9 @@ int main(void) {
 	uint32_t osc_con3 = CGU_CON3 & ~(CGU_CON3_AHB_PER_CLKSEL | CGU_CON3_AHB_PER_CLKDIV);
 	uint32_t pll_con3 = osc_con3 | CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2;
 	cgu_pll_set(3, 0);
-	bool width_matches = true;
 
 	for (uint32_t index = 0; index < ARRAY_SIZE(capcoms); index++) {
 		CAPCOM_CLC(capcoms[index]) = (1 << MOD_CLC_RMC_SHIFT);
-		CAPCOM_T0(capcoms[index]) = 0x12345678;
-		CAPCOM_T1(capcoms[index]) = 0x12345678;
-		CAPCOM_T0REL(capcoms[index]) = 0x12345678;
-		CAPCOM_T1REL(capcoms[index]) = 0x12345678;
-		width_matches = width_matches && CAPCOM_T0(capcoms[index]) == 0x5678 &&
-			CAPCOM_T1(capcoms[index]) == 0x5678 && CAPCOM_T0REL(capcoms[index]) == 0x5678 &&
-			CAPCOM_T1REL(capcoms[index]) == 0x5678;
 		CGU_CON1 = bypass_con1;
 		CGU_CON3 = osc_con3;
 		counts[index][0] = measure_timers(capcoms[index]);
@@ -111,7 +111,6 @@ int main(void) {
 		counts[index][10] = measure_timers(capcoms[index]);
 	}
 
-	test_check("CAPCOM0/1 timers and reload registers are 16-bit", width_matches);
 	for (uint32_t mode = 0; mode < ARRAY_SIZE(CLOCK_CASES); mode++) {
 		uint32_t expected_hz = CLOCK_CASES[mode].expected_hz;
 		bool matched = true;

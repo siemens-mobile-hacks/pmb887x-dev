@@ -204,10 +204,19 @@ devices = ["siemens-cx75", "siemens-el71"]
 devices = ["siemens-cx75", "siemens-el71"]
 
 [capcom]
-devices = ["siemens-el71"]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[capcom-capture]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[capcom-compare]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[capcom-interrupts]
+devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [capcom-clock]
-devices = ["siemens-el71"]
+devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [rtc]
 devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
