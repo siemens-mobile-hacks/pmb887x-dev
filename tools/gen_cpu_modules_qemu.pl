@@ -19,20 +19,19 @@ print qq|#include "hw/arm/pmb887x/gen/cpu_modules.h"
 
 |;
 
-for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
-	my $cpu_meta = Sie::CpuMetadata->new($cpu);
+my @cpus = map { Sie::CpuMetadata->new($_) } @{Sie::CpuMetadata::getCpus()};
+for my $cpu_meta (@cpus) {
 	print genCpuModulesList($cpu_meta);
 }
 
-print qq|const pmb887x_cpu_t *pmb887x_cpu_get(int cpu_id) {
-	switch (cpu_id) {
-		case CPU_PMB8875:
-			return &pmb8875_cpu;
-
-		case CPU_PMB8876:
-			return &pmb8876_cpu;
-
-		default:
+print "const pmb887x_cpu_t *pmb887x_cpu_get(int cpu_id) {\n";
+print "\tswitch (cpu_id) {\n";
+for my $cpu_meta (@cpus) {
+	my $cpu = $cpu_meta->{name};
+	print "\t\tcase CPU_".uc($cpu).":\n";
+	print "\t\t\treturn &${cpu}_cpu;\n\n";
+}
+print qq|		default:
 			hw_error("Invalid CPU type: \%d", cpu_id);
 	}
 	return NULL;
@@ -42,7 +41,8 @@ print qq|const pmb887x_cpu_t *pmb887x_cpu_get(int cpu_id) {
 sub genCpuModulesList {
 	my ($cpu_meta) = @_;
 
-	my $str = genDspConfig($cpu_meta);
+	my $dsp_config = genDspConfig($cpu_meta);
+	my $str = $dsp_config // "";
 
 	my @modules;
 	for my $module_id (@{$cpu_meta->getModuleNames()}) {
@@ -55,6 +55,8 @@ sub genCpuModulesList {
 
 		my @module_irqs;
 		for my $irq_name (@{$module->{irqs_needed}}) {
+			next if !exists $module->{irqs}->{$irq_name};
+
 			my $full_irq_name = uc($cpu_meta->{name}."_".$module->{name}.($irq_name ? "_".$irq_name : "")."_IRQ");
 			push @module_irqs, $full_irq_name;
 		}
@@ -142,7 +144,7 @@ sub genCpuModulesList {
 	$str .= "static const pmb887x_cpu_t ".$cpu_meta->{name}."_cpu = {\n";
 	$str .= "\t.modules = ".$cpu_meta->{name}."_modules,\n";
 	$str .= "\t.modules_count = ARRAY_SIZE(".$cpu_meta->{name}."_modules),\n";
-	$str .= "\t.dsp_config = &".$cpu_meta->{name}."_dsp_config,\n";
+	$str .= "\t.dsp_config = ".(defined($dsp_config) ? "&".$cpu_meta->{name}."_dsp_config" : "NULL").",\n";
 	$str .= "};\n\n";
 
 	return $str;
@@ -186,6 +188,9 @@ sub getPageMask {
 
 sub genDspConfig {
 	my ($cpu_meta) = @_;
+	return undef if !defined($cpu_meta->dspRomVersion()) && !@{$cpu_meta->dspMemory()} &&
+		!keys %{$cpu_meta->dspModules()};
+
 	my $cpu = $cpu_meta->{name};
 	my $prefix = uc($cpu)."_TEAK_";
 	getDspMemory($cpu_meta, "P", "PROM_FIXED");

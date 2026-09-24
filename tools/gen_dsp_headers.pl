@@ -50,6 +50,7 @@ sub getDspModules {
 
 sub appendCpuMap {
 	my ($header, $cpu_meta, $prefix) = @_;
+	return if !@{$cpu_meta->dspMemory()} && !keys %{$cpu_meta->dspModules()};
 
 	push @$header, "// ".uc($cpu_meta->{name})." TeakLite memory map";
 	for my $memory (@{$cpu_meta->dspMemory()}) {
