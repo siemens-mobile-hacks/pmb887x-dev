@@ -12,7 +12,6 @@ the DSP after reset; they do not contain the factory Mask ROM.
 Each revision directory contains:
 
 - `container.bin`: exact ARM-side boot stream;
-- `firmware.dsp1`: PLOAD and DLOAD payloads in DSP1 format;
 - `firmware.txt`: Teakra instruction listing;
 - `pram.bin` and `dram.bin`: sparse little-endian memory images;
 - `records/` and `map.tsv`: individual records and their addresses.

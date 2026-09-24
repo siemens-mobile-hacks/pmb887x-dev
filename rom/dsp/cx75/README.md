@@ -12,7 +12,6 @@ the DSP after reset; they do not contain the factory Mask ROM.
 Each revision directory contains:
 
 - `container.bin`: exact ARM-side boot stream;
-- `firmware.dsp1`: PLOAD and DLOAD payloads in DSP1 format;
 - `firmware.txt`: Teakra instruction listing;
 - `pram.bin` and `dram.bin`: sparse little-endian memory images;
 - `records/` and `map.tsv`: individual records and their addresses.
@@ -26,8 +25,8 @@ perl bsp/tools/dsp/extract_dsp_firmware.pl \
   /path/to/CX75.bin
 ```
 
-The legacy flat `0602-container.bin`, `0602.bin`, `0602.dsp1`, and `0602.txt`
-files are byte-identical to the corresponding files under `0602/`.
+The legacy flat `0602-container.bin`, `0602.bin`, and `0602.txt` files are
+byte-identical to the corresponding files under `0602/`.
 
 ## Runtime-command routes
 

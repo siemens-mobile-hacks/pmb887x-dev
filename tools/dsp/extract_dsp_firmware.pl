@@ -6,8 +6,6 @@ use Getopt::Long qw(GetOptions);
 use File::Path qw(make_path);
 use File::Spec;
 use FindBin;
-use lib $FindBin::Bin;
-use Dsp1 qw(build_dsp1);
 
 sub usage {
 	my ($exit_code) = @_;
@@ -41,7 +39,6 @@ Pass one address per invocation.
 
 The script writes:
   container.bin  Original ARM-side PLOAD/DLOAD/BRANCH stream
-  firmware.dsp1  PLOAD/DLOAD segments in DSP1 format
   pram.bin       Sparse 16-bit program-space image, little-endian
   dram.bin       Sparse 16-bit data-space image, little-endian
   records/       Exact payload of every load record
@@ -159,55 +156,6 @@ sub build_sparse_image {
 	return ($image, $word_count);
 }
 
-sub build_dsp1_segments {
-	my ($records) = @_;
-	my @segments;
-
-	for my $space (
-		{ record_type => 'PLOAD', memory_type => 0 },
-		{ record_type => 'DLOAD', memory_type => 2 },
-	) {
-		my @space_records = grep { $_->{type} eq $space->{record_type} } @$records;
-		my @ranges;
-
-		for my $record (sort { $a->{destination} <=> $b->{destination} } @space_records) {
-			my $start = $record->{destination};
-			my $end = $start + $record->{length};
-
-			if (@ranges && $start <= $ranges[-1]->{end}) {
-				$ranges[-1]->{end} = $end if $end > $ranges[-1]->{end};
-			} else {
-				push @ranges, { start => $start, end => $end };
-			}
-		}
-
-		for my $range (@ranges) {
-			my $data = "\xFF\xFF" x ($range->{end} - $range->{start});
-
-			for my $record (@space_records) {
-				my $start = $record->{destination} > $range->{start}
-					? $record->{destination} : $range->{start};
-				my $record_end = $record->{destination} + $record->{length};
-				my $end = $record_end < $range->{end} ? $record_end : $range->{end};
-				next if $start >= $end;
-
-				my $length = ($end - $start) * 2;
-				my $source_offset = ($start - $record->{destination}) * 2;
-				my $target_offset = ($start - $range->{start}) * 2;
-				substr($data, $target_offset, $length, substr($record->{payload}, $source_offset, $length));
-			}
-
-			push @segments, {
-				address     => $range->{start},
-				memory_type => $space->{memory_type},
-				data        => $data,
-			};
-		}
-	}
-
-	return \@segments;
-}
-
 sub extract_container {
 	my ($fh, $file_size, $output_root, $base, $address) = @_;
 	my $offset = $address - $base;
@@ -217,8 +165,6 @@ sub extract_container {
 
 	my $container = join('', map { $_->{raw} } @$records);
 	write_file(File::Spec->catfile($output_root, 'container.bin'), $container);
-	my $dsp1_segments = build_dsp1_segments($records);
-	write_file(File::Spec->catfile($output_root, 'firmware.dsp1'), build_dsp1($dsp1_segments));
 
 	my ($pram, $pram_words) = build_sparse_image($records, 'PLOAD');
 	my ($dram, $dram_words) = build_sparse_image($records, 'DLOAD');
@@ -253,7 +199,6 @@ sub extract_container {
 		$address, $offset, $container_size, $program_words, $data_words, $branch;
 	printf "          pram.bin=%d words, dram.bin=%d words, output=%s\n",
 		$pram_words, $dram_words, $output_root;
-	printf "          firmware.dsp1=%d segments\n", scalar @$dsp1_segments;
 }
 
 my $base_text = '0xA0000000';

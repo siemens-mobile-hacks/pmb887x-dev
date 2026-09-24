@@ -9,8 +9,8 @@ sent after reset; they do not contain the factory Mask ROM.
 | `0603` | `0xA06F450C` | 3723 words | 593 words | `P:0020` | `b671fb794504faccec1a154f2e36f09f8d01d11d78091e608c0492d781ce3dd8` |
 | `0604` | `0xA06F342A` | 1506 words | 617 words | `P:0020` | `9ee6d8b158072a70ef2f4ec59ce2f60da43837315482c45c6533c086cf40ab6e` |
 
-Each revision directory contains the exact container, DSP1 conversion, Teakra
-listing, sparse P/D images, individual record payloads, and `map.tsv`.
+Each revision directory contains the exact native container, Teakra listing,
+sparse P/D images, individual record payloads, and `map.tsv`.
 
 Regenerate an extraction from a raw VS7 image with:
 

@@ -1,4 +1,4 @@
-# Generated from 0801.dsp1 one segment at a time.
+# PMB8876 DSP Mask ROM 0801 disassembly.
 # P:FFFF contains E149 but its expansion word is outside the dumped bank.
 
 >>>>>>>> Segment <<<<<<<<
@@ -631,14 +631,14 @@
 00002271  01CD ^^^
 00002272  A683         add    [page:0x0083u8]    a0
 00002273  5740         brr    0xfff4    always
-00002274  5B14         mov    [ERROR]36    a0
+00002274  5B14         mov    ext0    a0
 00002275  3886         mov    a0l    [page:0x0086u8]
 00002276  56E0         brr    0xffee    always
-00002277  5B15         mov    [ERROR]37    a0
+00002277  5B15         mov    ext1    a0
 00002278  57C0         brr    0xfffc    always
-00002279  5B16         mov    [ERROR]38    a0
+00002279  5B16         mov    ext2    a0
 0000227A  57A0         brr    0xfffa    always
-0000227B  5B17         mov    [ERROR]39    a0
+0000227B  5B17         mov    ext3    a0
 0000227C  5780         brr    0xfff8    always
 0000227D  6086         mov    [page:0x0086u8]    r0
 0000227E  718B         mov    [page:0x008bu8]    a0
@@ -650,13 +650,13 @@
 00002284  01CD ^^^
 00002285  A683         add    [page:0x0083u8]    a0
 00002286  5610         brr    0xffe1    always
-00002287  5A80         mov    r0    [ERROR]36
+00002287  5A80         mov    r0    ext0
 00002288  55C0         brr    0xffdc    always
-00002289  5AA0         mov    r0    [ERROR]37
+00002289  5AA0         mov    r0    ext1
 0000228A  55A0         brr    0xffda    always
-0000228B  5AC0         mov    r0    [ERROR]38
+0000228B  5AC0         mov    r0    ext2
 0000228C  5580         brr    0xffd8    always
-0000228D  5AE0         mov    r0    [ERROR]39
+0000228D  5AE0         mov    r0    ext3
 0000228E  5560         brr    0xffd6    always
 0000228F  5550         brr    0xffd5    always
 00002290  5E18         mov    0x0200    a0
@@ -724,7 +724,7 @@
 000022CE  013A         movs    a0l    b1
 000022CF  0146         movs    r7    a0
 000022D0  0149         movs    st1    a0
-000022D1  0155         movs    [ERROR]37    a0
+000022D1  0155         movs    ext1    a0
 000022D2  0161         movs    r1    a1
 000022D3  016D         movs    sp    a1
 000022D4  017D         movs    a1h    a1
@@ -737,8 +737,8 @@
 000022DB  01C9         movs    [r1++]    a0
 000022DC  01C6         movs    [r6]    a0
 000022DD  01CB         movs    [r3++]    a0
-000022DE  0174         movs    [ERROR]36    a1
-000022DF  0177         movs    [ERROR]39    a1
+000022DE  0174         movs    ext0    a1
+000022DF  0177         movs    ext3    a1
 000022E0  0179         movs    a1    a1
 000022E1  017B         movs    a1l    a1
 000022E2  0187         movs    [r7]    b0
@@ -15162,7 +15162,7 @@
 00005B34  04E7 ^^^
 00005B35  5D1A         bkrep    a0l    0x00005b38
 00005B36  5B38 ^^^
-00005B37  5B16         mov    [ERROR]38    a0
+00005B37  5B16         mov    ext2    a0
 00005B38  1B48         mov    a0l    [r0++]
 00005B39  6760         clr    a0    always
 00005B3A  D4BC         mov    a0l    [0xde13]
@@ -15187,7 +15187,7 @@
 00005B4D  5D1A         bkrep    a0l    0x00005b50
 00005B4E  5B50 ^^^
 00005B4F  1F08         mov    [r0++]    a0
-00005B50  5ADA         mov    a0l    [ERROR]38
+00005B50  5ADA         mov    a0l    ext2
 00005B51  6760         clr    a0    always
 00005B52  D4BC         mov    a0l    [0xde13]
 00005B53  DE13 ^^^
@@ -39047,7 +39047,7 @@
 0000B87E  5D01         bkrep    r1    0x0000b881
 0000B87F  B881 ^^^
 0000B880  1F4C         mov    [r4++]    a0l
-0000B881  5A9A         mov    a0l    [ERROR]36
+0000B881  5A9A         mov    a0l    ext0
 0000B882  5E03         mov    0xde55    r3
 0000B883  DE55 ^^^
 0000B884  5C07         bkrep    0x0007u8    0x0000b887
@@ -39082,7 +39082,7 @@
 0000B8A1  0001 ^^^
 0000B8A2  5D02         bkrep    r2    0x0000b8a5
 0000B8A3  B8A5 ^^^
-0000B8A4  5B14         mov    [ERROR]36    a0
+0000B8A4  5B14         mov    ext0    a0
 0000B8A5  1B48         mov    a0l    [r0++]
 0000B8A6  4580         ret    always
 0000B8A7  D4B8         mov    [0x77a5]    a0
@@ -39122,7 +39122,7 @@
 0000B8C9  0001 ^^^
 0000B8CA  5D02         bkrep    r2    0x0000b8cd
 0000B8CB  B8CD ^^^
-0000B8CC  5B14         mov    [ERROR]36    a0
+0000B8CC  5B14         mov    ext0    a0
 0000B8CD  1B48         mov    a0l    [r0++]
 0000B8CE  4580         ret    always
 0000B8CF  D4B8         mov    [0x77a5]    a0
@@ -39149,9 +39149,9 @@
 0000B8E4  5D02         bkrep    r2    0x0000b8e9
 0000B8E5  B8E9 ^^^
 0000B8E6  1F08         mov    [r0++]    a0
-0000B8E7  5A9A         mov    a0l    [ERROR]36
+0000B8E7  5A9A         mov    a0l    ext0
 0000B8E8  1F18         mov    [r0++s]    a0
-0000B8E9  5A9A         mov    a0l    [ERROR]36
+0000B8E9  5A9A         mov    a0l    ext0
 0000B8EA  5801         mov    r1    r0
 0000B8EB  87E0         addv    0x0002    r0
 0000B8EC  0002 ^^^
@@ -39169,8 +39169,8 @@
 0000B8F8  5D02         bkrep    r2    0x0000b8fc
 0000B8F9  B8FC ^^^
 0000B8FA  1F18         mov    [r0++s]    a0
-0000B8FB  5A9A         mov    a0l    [ERROR]36
-0000B8FC  5A9B         mov    a1l    [ERROR]36
+0000B8FB  5A9A         mov    a0l    ext0
+0000B8FC  5A9B         mov    a1l    ext0
 0000B8FD  8FE0         subv    0x0002    r0
 0000B8FE  0002 ^^^
 0000B8FF  5E18         mov    0x4005    a0
@@ -39201,9 +39201,9 @@
 0000B918  5D02         bkrep    r2    0x0000b91d
 0000B919  B91D ^^^
 0000B91A  1F08         mov    [r0++]    a0
-0000B91B  5A9A         mov    a0l    [ERROR]36
+0000B91B  5A9A         mov    a0l    ext0
 0000B91C  1F08         mov    [r0++]    a0
-0000B91D  5A9A         mov    a0l    [ERROR]36
+0000B91D  5A9A         mov    a0l    ext0
 0000B91E  5E18         mov    0x0001    a0
 0000B91F  0001 ^^^
 0000B920  D4BC         mov    a0l    [0xde51]
@@ -39214,7 +39214,7 @@
 0000B925  DE50 ^^^
 0000B926  6760         clr    a0    always
 0000B927  0D02         rep    r2
-0000B928  5A9A         mov    a0l    [ERROR]36
+0000B928  5A9A         mov    a0l    ext0
 0000B929  5E18         mov    0x4005    a0
 0000B92A  4005 ^^^
 0000B92B  80A3         or    r3    a0
@@ -39245,9 +39245,9 @@
 0000B944  5D02         bkrep    r2    0x0000b949
 0000B945  B949 ^^^
 0000B946  1F08         mov    [r0++]    a0
-0000B947  5A9A         mov    a0l    [ERROR]36
+0000B947  5A9A         mov    a0l    ext0
 0000B948  1F18         mov    [r0++s]    a0
-0000B949  5A9A         mov    a0l    [ERROR]36
+0000B949  5A9A         mov    a0l    ext0
 0000B94A  5801         mov    r1    r0
 0000B94B  87E0         addv    0x0002    r0
 0000B94C  0002 ^^^
@@ -39266,8 +39266,8 @@
 0000B959  B95D ^^^
 0000B95A  1F08         mov    [r0++]    a0
 0000B95B  8698         add    [r0++s]    a0
-0000B95C  5A9A         mov    a0l    [ERROR]36
-0000B95D  5A9B         mov    a1l    [ERROR]36
+0000B95C  5A9A         mov    a0l    ext0
+0000B95D  5A9B         mov    a1l    ext0
 0000B95E  8FE0         subv    0x0002    r0
 0000B95F  0002 ^^^
 0000B960  5E18         mov    0x4005    a0
@@ -39301,11 +39301,11 @@
 0000B97C  B984 ^^^
 0000B97D  1F18         mov    [r0++s]    a0
 0000B97E  8690         add    [r0--]    a0
-0000B97F  5A9A         mov    a0l    [ERROR]36
+0000B97F  5A9A         mov    a0l    ext0
 0000B980  0090         modr    [r0--]
 0000B981  1F18         mov    [r0++s]    a0
 0000B982  8698         add    [r0++s]    a0
-0000B983  5A9A         mov    a0l    [ERROR]36
+0000B983  5A9A         mov    a0l    ext0
 0000B984  0090         modr    [r0--]
 0000B985  5801         mov    r1    r0
 0000B986  87E0         addv    0x0002    r0
@@ -39323,8 +39323,8 @@
 0000B992  B996 ^^^
 0000B993  1F18         mov    [r0++s]    a0
 0000B994  8698         add    [r0++s]    a0
-0000B995  5A9A         mov    a0l    [ERROR]36
-0000B996  5A9B         mov    a1l    [ERROR]36
+0000B995  5A9A         mov    a0l    ext0
+0000B996  5A9B         mov    a1l    ext0
 0000B997  8FE0         subv    0x0002    r0
 0000B998  0002 ^^^
 0000B999  5E18         mov    0x4005    a0
@@ -39358,9 +39358,9 @@
 0000B9B5  B9BA ^^^
 0000B9B6  1F08         mov    [r0++]    a0
 0000B9B7  8688         add    [r0++]    a0
-0000B9B8  5A9A         mov    a0l    [ERROR]36
+0000B9B8  5A9A         mov    a0l    ext0
 0000B9B9  1F18         mov    [r0++s]    a0
-0000B9BA  5A9A         mov    a0l    [ERROR]36
+0000B9BA  5A9A         mov    a0l    ext0
 0000B9BB  5801         mov    r1    r0
 0000B9BC  87E0         addv    0x0003    r0
 0000B9BD  0003 ^^^
@@ -39379,8 +39379,8 @@
 0000B9CA  B9CE ^^^
 0000B9CB  1F08         mov    [r0++]    a0
 0000B9CC  8698         add    [r0++s]    a0
-0000B9CD  5A9A         mov    a0l    [ERROR]36
-0000B9CE  5A9B         mov    a1l    [ERROR]36
+0000B9CD  5A9A         mov    a0l    ext0
+0000B9CE  5A9B         mov    a1l    ext0
 0000B9CF  8FE0         subv    0x0003    r0
 0000B9D0  0003 ^^^
 0000B9D1  5E18         mov    0x4005    a0
@@ -40823,16 +40823,16 @@
 0000BF6E  589A         mov    a0l    r4
 0000BF6F  1F6A         mov    [r2++]    a1l
 0000BF70  1F04         mov    [r4]    a0
-0000BF71  5ADA         mov    a0l    [ERROR]38
+0000BF71  5ADA         mov    a0l    ext2
 0000BF72  87A0         add    r0    a1
 0000BF73  589B         mov    a1l    r4
 0000BF74  1F4A         mov    [r2++]    a0l
 0000BF75  1F24         mov    [r4]    a1
 0000BF76  86A0         add    r0    a0
 0000BF77  589A         mov    a0l    r4
-0000BF78  5ADB         mov    a1l    [ERROR]38
+0000BF78  5ADB         mov    a1l    ext2
 0000BF79  1F04         mov    [r4]    a0
-0000BF7A  5ADA         mov    a0l    [ERROR]38
+0000BF7A  5ADA         mov    a0l    ext2
 0000BF7B  5E18         mov    0x0000    a0
 0000BF7C  0000 ^^^
 0000BF7D  D4BC         mov    a0l    [0xde13]
@@ -42075,7 +42075,7 @@
 0000C452  008A         modr    [r2++]
 0000C453  5D05         bkrep    r5    0x0000c45a
 0000C454  C45A ^^^
-0000C455  5B16         mov    [ERROR]38    a0
+0000C455  5B16         mov    ext2    a0
 0000C456  8681         add    [r1]    a0
 0000C457  01EA         movs    [r2++]    a1
 0000C458  83A6         and    r7    a1
@@ -42449,7 +42449,7 @@
 0000C5C8  5D01         bkrep    r1    0x0000c5cb
 0000C5C9  C5CB ^^^
 0000C5CA  1F08         mov    [r0++]    a0
-0000C5CB  5ADA         mov    a0l    [ERROR]38
+0000C5CB  5ADA         mov    a0l    ext2
 0000C5CC  5E18         mov    0x0000    a0
 0000C5CD  0000 ^^^
 0000C5CE  D4BC         mov    a0l    [0xde13]
@@ -103668,7 +103668,7 @@
 0000F4E5  5C0F         bkrep    0x000fu8    0x0000f4e8
 0000F4E6  F4E8 ^^^
 0000F4E7  1F08         mov    [r0++]    a0
-0000F4E8  5ABA         mov    a0l    [ERROR]37
+0000F4E8  5ABA         mov    a0l    ext1
 0000F4E9  5802         mov    r2    r0
 0000F4EA  5E1A         mov    0xd8f0    a0l
 0000F4EB  D8F0 ^^^
@@ -103686,7 +103686,7 @@
 0000F4F7  5C07         bkrep    0x0007u8    0x0000f4fa
 0000F4F8  F4FA ^^^
 0000F4F9  1F08         mov    [r0++]    a0
-0000F4FA  5ABA         mov    a0l    [ERROR]37
+0000F4FA  5ABA         mov    a0l    ext1
 0000F4FB  5802         mov    r2    r0
 0000F4FC  6760         clr    a0    always
 0000F4FD  5C07         bkrep    0x0007u8    0x0000f501
@@ -103721,7 +103721,7 @@
 0000F51A  5C0F         bkrep    0x000fu8    0x0000f51d
 0000F51B  F51D ^^^
 0000F51C  1F08         mov    [r0++]    a0
-0000F51D  5ABA         mov    a0l    [ERROR]37
+0000F51D  5ABA         mov    a0l    ext1
 0000F51E  5802         mov    r2    r0
 0000F51F  5E1A         mov    0xd8f0    a0l
 0000F520  D8F0 ^^^
@@ -103739,7 +103739,7 @@
 0000F52C  5C07         bkrep    0x0007u8    0x0000f52f
 0000F52D  F52F ^^^
 0000F52E  1F08         mov    [r0++]    a0
-0000F52F  5ABA         mov    a0l    [ERROR]37
+0000F52F  5ABA         mov    a0l    ext1
 0000F530  4180         br    0x0000f59e    always
 0000F531  F59E ^^^
 0000F532  5E18         mov    0x0006    a0
@@ -103786,7 +103786,7 @@
 0000F55B  5C0F         bkrep    0x000fu8    0x0000f55e
 0000F55C  F55E ^^^
 0000F55D  1F09         mov    [r1++]    a0
-0000F55E  5ABA         mov    a0l    [ERROR]37
+0000F55E  5ABA         mov    a0l    ext1
 0000F55F  5822         mov    r2    r1
 0000F560  5E1A         mov    0xd8f0    a0l
 0000F561  D8F0 ^^^
@@ -103805,7 +103805,7 @@
 0000F56E  5C0F         bkrep    0x000fu8    0x0000f571
 0000F56F  F571 ^^^
 0000F570  1F08         mov    [r0++]    a0
-0000F571  5ABA         mov    a0l    [ERROR]37
+0000F571  5ABA         mov    a0l    ext1
 0000F572  5802         mov    r2    r0
 0000F573  5E01         mov    0x8878    r1
 0000F574  8878 ^^^
@@ -103830,7 +103830,7 @@
 0000F587  5C0F         bkrep    0x000fu8    0x0000f58a
 0000F588  F58A ^^^
 0000F589  1F09         mov    [r1++]    a0
-0000F58A  5ABA         mov    a0l    [ERROR]37
+0000F58A  5ABA         mov    a0l    ext1
 0000F58B  5822         mov    r2    r1
 0000F58C  5E1A         mov    0xd8f0    a0l
 0000F58D  D8F0 ^^^
@@ -103849,7 +103849,7 @@
 0000F59A  5C0F         bkrep    0x000fu8    0x0000f59d
 0000F59B  F59D ^^^
 0000F59C  1F08         mov    [r0++]    a0
-0000F59D  5ABA         mov    a0l    [ERROR]37
+0000F59D  5ABA         mov    a0l    ext1
 0000F59E  41C0         call    0x0000f753    always
 0000F59F  F753 ^^^
 0000F5A0  D4BC         mov    a0l    [0xde45]
@@ -103901,8 +103901,8 @@
 0000F5CE  D190         msu    [r4]    [r0--]    a1
 0000F5CF  D248         mac    [r4--]    [r0++]    a0
 0000F5D0  D188         msu    [r4]    [r0++]    a1
-0000F5D1  5ABC         mov    a0h    [ERROR]37
-0000F5D2  5ABD         mov    a1h    [ERROR]37
+0000F5D1  5ABC         mov    a0h    ext1
+0000F5D2  5ABD         mov    a1h    ext1
 0000F5D3  0091         modr    [r1--]
 0000F5D4  502C         brr    0x0002    nr
 0000F5D5  D078         mpy    [r4++s]    [r0++s]    a0
@@ -103961,10 +103961,10 @@
 0000F60A  F610 ^^^
 0000F60B  1F29         mov    [r1++]    a1
 0000F60C  8780         add    [r0]    a1
-0000F60D  5ABB         mov    a1l    [ERROR]37
+0000F60D  5ABB         mov    a1l    ext1
 0000F60E  1F2B         mov    [r3++]    a1
 0000F60F  8782         add    [r2]    a1
-0000F610  5ABB         mov    a1l    [ERROR]37
+0000F610  5ABB         mov    a1l    ext1
 0000F611  0088         modr    [r0++]
 0000F612  008A         modr    [r2++]
 0000F613  0094         modr    [r4--]
@@ -103997,9 +103997,9 @@
 0000F62E  5D06         bkrep    r7    0x0000f633
 0000F62F  F633 ^^^
 0000F630  1F08         mov    [r0++]    a0
-0000F631  5ABA         mov    a0l    [ERROR]37
+0000F631  5ABA         mov    a0l    ext1
 0000F632  1F18         mov    [r0++s]    a0
-0000F633  5ABA         mov    a0l    [ERROR]37
+0000F633  5ABA         mov    a0l    ext1
 0000F634  5B00         mov    r0    a0
 0000F635  D4BC         mov    a0l    [0x7f22]
 0000F636  7F22 ^^^
@@ -104012,9 +104012,9 @@
 0000F63D  5D06         bkrep    r7    0x0000f642
 0000F63E  F642 ^^^
 0000F63F  1F08         mov    [r0++]    a0
-0000F640  5ABA         mov    a0l    [ERROR]37
+0000F640  5ABA         mov    a0l    ext1
 0000F641  1F08         mov    [r0++]    a0
-0000F642  5ABA         mov    a0l    [ERROR]37
+0000F642  5ABA         mov    a0l    ext1
 0000F643  5B00         mov    r0    a0
 0000F644  D4BC         mov    a0l    [0x7f23]
 0000F645  7F23 ^^^
@@ -104076,7 +104076,7 @@
 0000F67D  7925         mov    [page:0x0025u8]    a1
 0000F67E  5022         brr    0x0002    neq
 0000F67F  0C08         rep    0x0008u8
-0000F680  5B55         mov    [ERROR]37    a0l
+0000F680  5B55         mov    ext1    a0l
 0000F681  5E18         mov    0x000a    a0
 0000F682  000A ^^^
 0000F683  AE1C         sub    [page:0x001cu8]    a0
@@ -104091,7 +104091,7 @@
 0000F68C  58DB         mov    a1l    r7
 0000F68D  5D06         bkrep    r7    0x0000f690
 0000F68E  F690 ^^^
-0000F68F  5B15         mov    [ERROR]37    a0
+0000F68F  5B15         mov    ext1    a0
 0000F690  1B58         mov    a0l    [r0++s]
 0000F691  5E18         mov    0x000a    a0
 0000F692  000A ^^^
@@ -104152,7 +104152,7 @@
 0000F6C9  5021         brr    0x0002    eq
 0000F6CA  5E01         mov    0x01f3    r1
 0000F6CB  01F3 ^^^
-0000F6CC  5B55         mov    [ERROR]37    a0l
+0000F6CC  5B55         mov    ext1    a0l
 0000F6CD  5ED8         mov?    a0    b0
 0000F6CE  82C0         and    0x00ff    a0
 0000F6CF  00FF ^^^
@@ -104161,7 +104161,7 @@
 0000F6D2  82C0         and    0x00ff    a0
 0000F6D3  00FF ^^^
 0000F6D4  1B49         mov    a0l    [r1++]
-0000F6D5  5B55         mov    [ERROR]37    a0l
+0000F6D5  5B55         mov    ext1    a0l
 0000F6D6  82C0         and    0x00ff    a0
 0000F6D7  00FF ^^^
 0000F6D8  1B49         mov    a0l    [r1++]
@@ -104175,7 +104175,7 @@
 0000F6E0  0000         nop
 0000F6E1  0000         nop
 0000F6E2  0C15         rep    0x0015u8
-0000F6E3  5B15         mov    [ERROR]37    a0
+0000F6E3  5B15         mov    ext1    a0
 0000F6E4  4180         br    0x0000f70b    always
 0000F6E5  F70B ^^^
 0000F6E6  ED24         cmpv    0x0000    [page:0x0024u8]
@@ -104183,19 +104183,19 @@
 0000F6E8  5021         brr    0x0002    eq
 0000F6E9  5E01         mov    0x01f4    r1
 0000F6EA  01F4 ^^^
-0000F6EB  5B55         mov    [ERROR]37    a0l
+0000F6EB  5B55         mov    ext1    a0l
 0000F6EC  82C0         and    0x00ff    a0
 0000F6ED  00FF ^^^
 0000F6EE  1B49         mov    a0l    [r1++]
-0000F6EF  5B55         mov    [ERROR]37    a0l
+0000F6EF  5B55         mov    ext1    a0l
 0000F6F0  82C0         and    0x00ff    a0
 0000F6F1  00FF ^^^
 0000F6F2  1B49         mov    a0l    [r1++]
-0000F6F3  5B55         mov    [ERROR]37    a0l
+0000F6F3  5B55         mov    ext1    a0l
 0000F6F4  82C0         and    0x00ff    a0
 0000F6F5  00FF ^^^
 0000F6F6  1B49         mov    a0l    [r1++]
-0000F6F7  5B55         mov    [ERROR]37    a0l
+0000F6F7  5B55         mov    ext1    a0l
 0000F6F8  82C0         and    0x00ff    a0
 0000F6F9  00FF ^^^
 0000F6FA  1B49         mov    a0l    [r1++]
@@ -104209,31 +104209,31 @@
 0000F702  F015         tstb    [page:0x0015u8]    0x0000
 0000F703  5042         brr    0x0004    neq
 0000F704  0C0A         rep    0x000au8
-0000F705  5B55         mov    [ERROR]37    a0l
+0000F705  5B55         mov    ext1    a0l
 0000F706  4180         br    0x0000f70b    always
 0000F707  F70B ^^^
 0000F708  0C0B         rep    0x000bu8
-0000F709  5B55         mov    [ERROR]37    a0l
+0000F709  5B55         mov    ext1    a0l
 0000F70A  5ED8         mov?    a0    b0
 0000F70B  ED0D         cmpv    0x0001    [page:0x000du8]
 0000F70C  0001 ^^^
 0000F70D  50A1         brr    0x000a    eq
 0000F70E  5D06         bkrep    r7    0x0000f716
 0000F70F  F716 ^^^
-0000F710  5B15         mov    [ERROR]37    a0
+0000F710  5B15         mov    ext1    a0
 0000F711  1B58         mov    a0l    [r0++s]
-0000F712  5B15         mov    [ERROR]37    a0
+0000F712  5B15         mov    ext1    a0
 0000F713  1B58         mov    a0l    [r0++s]
-0000F714  5B15         mov    [ERROR]37    a0
+0000F714  5B15         mov    ext1    a0
 0000F715  1B58         mov    a0l    [r0++s]
-0000F716  5B15         mov    [ERROR]37    a0
+0000F716  5B15         mov    ext1    a0
 0000F717  51D0         brr    0x001d    always
 0000F718  F015         tstb    [page:0x0015u8]    0x0000
 0000F719  5062         brr    0x0006    neq
 0000F71A  5D06         bkrep    r7    0x0000f71e
 0000F71B  F71E ^^^
-0000F71C  5B15         mov    [ERROR]37    a0
-0000F71D  5B15         mov    [ERROR]37    a0
+0000F71C  5B15         mov    ext1    a0
+0000F71D  5B15         mov    ext1    a0
 0000F71E  1B58         mov    a0l    [r0++s]
 0000F71F  5150         brr    0x0015    always
 0000F720  ED24         cmpv    0x0002    [page:0x0024u8]
@@ -104254,8 +104254,8 @@
 0000F72F  1B58         mov    a0l    [r0++s]
 0000F730  5D06         bkrep    r7    0x0000f734
 0000F731  F734 ^^^
-0000F732  5B15         mov    [ERROR]37    a0
-0000F733  5B15         mov    [ERROR]37    a0
+0000F732  5B15         mov    ext1    a0
+0000F733  5B15         mov    ext1    a0
 0000F734  1B58         mov    a0l    [r0++s]
 0000F735  5E1A         mov    0x01ee    a0l
 0000F736  01EE ^^^
