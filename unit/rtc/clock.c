@@ -58,7 +58,7 @@ int main(void) {
 	test_start("CGU RTC clock test");
 
 	CGU_CON1 &= ~(CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV);
-	STM_CLC = (1 << MOD_CLC_RMC_SHIFT);
+	STM_CLC = (1 << MOD_CLC_RMC_SHIFT) | (1 << STM_CLC_RMC2_SHIFT);
 	configure_rtc();
 
 	test_category("RTC prescaler");

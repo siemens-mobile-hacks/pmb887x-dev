@@ -3,11 +3,6 @@
 #include "cgu/clock.h"
 #include "test.h"
 
-#define RTC_T14_RELOAD 61440
-#define RTC_T14_PERIOD (65536 - RTC_T14_RELOAD)
-#define RTC_MEASURE_COUNTS 512
-#define RTC_POLL_LIMIT 10000000
-
 static const struct {
 	const char *name;
 	uint32_t ndiv;
@@ -35,18 +30,9 @@ static bool has_clock_rates(struct clock_measurement result, uint32_t gptu_hz, u
 		test_u32_in_interval(result.stm_hz, stm_hz * 98 / 100, stm_hz * 102 / 100);
 }
 
-static void configure_rtc(void) {
-	SCU_RTCIF = 0xAA;
-	RTC_CLC = (1 << MOD_CLC_RMC_SHIFT);
-	RTC_CTRL |= RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN;
-	RTC_CON |= RTC_CON_PRE;
-	RTC_T14 = (RTC_T14_RELOAD << RTC_T14_CNT_SHIFT) | (RTC_T14_RELOAD << RTC_T14_REL_SHIFT);
-	RTC_REL = 0;
-	RTC_ALARM = 0;
-	RTC_SRC = 0;
-	RTC_ISNC = 0;
-	RTC_CTRL |= RTC_CTRL_CLK_SEL | RTC_CTRL_CLR_RTCBAD | RTC_CTRL_CLR_RTCINT;
-	RTC_CON |= RTC_CON_RUN;
+static uint32_t stm_clc_with_rmc(uint32_t clc, uint32_t rmc) {
+	return (clc & ~(MOD_CLC_RMC | STM_CLC_RMC2)) |
+		(rmc << MOD_CLC_RMC_SHIFT) | (rmc << STM_CLC_RMC2_SHIFT);
 }
 
 static struct clock_measurement measure_gptu(uint32_t gptu, uint32_t rmc) {
@@ -61,21 +47,14 @@ static struct clock_measurement measure_gptu(uint32_t gptu, uint32_t rmc) {
 	GPTU_T2CON(gptu) = 0;
 	GPTU_T2RCCON(gptu) = 0;
 	GPTU_T2(gptu) = 0;
-	uint32_t first_t14 = ((RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT) - RTC_T14_RELOAD;
+	test_rtc_init();
 	uint32_t first_stm = STM_TIM0;
 	GPTU_T012RUN(gptu) = GPTU_T012RUN_T0ARUN | GPTU_T012RUN_T0BRUN |
 		GPTU_T012RUN_T0CRUN | GPTU_T012RUN_T0DRUN | GPTU_T012RUN_T1ARUN |
 		GPTU_T012RUN_T1BRUN | GPTU_T012RUN_T1CRUN | GPTU_T012RUN_T1DRUN |
 		GPTU_T012RUN_T2ASETR;
 
-	uint32_t elapsed_t14;
-	uint32_t polls = 0;
-	do {
-		uint32_t current_t14 = ((RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT) - RTC_T14_RELOAD;
-		elapsed_t14 = (current_t14 - first_t14) & (RTC_T14_PERIOD - 1);
-		test_watchdog_serve();
-		polls++;
-	} while (elapsed_t14 < RTC_MEASURE_COUNTS && polls < RTC_POLL_LIMIT);
+	test_rtc_wait_second();
 	GPTU_T012RUN(gptu) = GPTU_T012RUN_T2ACLRR | GPTU_T012RUN_T2BCLRR;
 	uint32_t elapsed_stm = STM_TIM0 - first_stm;
 	uint32_t elapsed_t0 = GPTU_T0DCBA(gptu);
@@ -83,13 +62,11 @@ static struct clock_measurement measure_gptu(uint32_t gptu, uint32_t rmc) {
 	uint32_t elapsed_t2 = GPTU_T2(gptu);
 	GPTU_T012RUN(gptu) = 0;
 	GPTU_CLC(gptu) = initial_clc;
-	if (elapsed_t14 < RTC_MEASURE_COUNTS)
-		return result;
 
-	result.t0_hz = (uint64_t) elapsed_t0 * RTC_T14_PERIOD / elapsed_t14;
-	result.t1_hz = (uint64_t) elapsed_t1 * RTC_T14_PERIOD / elapsed_t14;
-	result.t2_hz = (uint64_t) elapsed_t2 * RTC_T14_PERIOD / elapsed_t14;
-	result.stm_hz = (uint64_t) elapsed_stm * RTC_T14_PERIOD / elapsed_t14;
+	result.t0_hz = elapsed_t0;
+	result.t1_hz = elapsed_t1;
+	result.t2_hz = elapsed_t2;
+	result.stm_hz = elapsed_stm;
 	return result;
 }
 
@@ -97,7 +74,6 @@ int main(void) {
 	test_start("CGU GPTU clock source test");
 
 	uint32_t initial_stm_clc = STM_CLC;
-	configure_rtc();
 	struct clock_measurement gptu0[ARRAY_SIZE(CLOCK_CASES)] = { 0 };
 	struct clock_measurement gptu1[ARRAY_SIZE(CLOCK_CASES)] = { 0 };
 	for (uint32_t index = 0; index < ARRAY_SIZE(CLOCK_CASES); index++) {
@@ -117,7 +93,7 @@ int main(void) {
 	struct clock_measurement divided_osc_gptu1 = measure_gptu(GPTU1, 1);
 	struct clock_measurement divided_rmc_gptu0 = measure_gptu(GPTU0, 4);
 	struct clock_measurement divided_rmc_gptu1 = measure_gptu(GPTU1, 4);
-	STM_CLC = (initial_stm_clc & ~MOD_CLC_RMC) | (4 << MOD_CLC_RMC_SHIFT);
+	STM_CLC = stm_clc_with_rmc(initial_stm_clc, 4);
 	struct clock_measurement divided_stm_gptu0 = measure_gptu(GPTU0, 1);
 	struct clock_measurement divided_stm_gptu1 = measure_gptu(GPTU1, 1);
 	STM_CLC = initial_stm_clc;
@@ -164,8 +140,8 @@ int main(void) {
 		divided_stm_gptu1.t1_hz, divided_stm_gptu1.t2_hz,
 		divided_stm_gptu0.stm_hz, divided_stm_gptu1.stm_hz);
 	test_check("STM module divider does not change GPTU timer clocks",
-		has_clock_rates(divided_stm_gptu0, CPU_OSC_FREQ / 16, CPU_OSC_FREQ / 80) &&
-		has_clock_rates(divided_stm_gptu1, CPU_OSC_FREQ / 16, CPU_OSC_FREQ / 80));
+		has_clock_rates(divided_stm_gptu0, CPU_OSC_FREQ / 16, CPU_OSC_FREQ / 128) &&
+		has_clock_rates(divided_stm_gptu1, CPU_OSC_FREQ / 16, CPU_OSC_FREQ / 128));
 
 	printf("# PLL 156 /16: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n",
 		divided_pll_gptu0.t0_hz, divided_pll_gptu0.t1_hz,

@@ -7,6 +7,10 @@
 #define PHONE_INFO_STRING_SIZE 16
 #define TEST_TIMEOUT_MS 3000
 #define TEST_HEARTBEAT_MS 100
+#define RTC_T14_RELOAD 61440
+#define RTC_SECOND_COUNTER 0x3FF
+#define RTC_CLOCK_CONTROL (RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN)
+#define RTC_SYNC_CONTROL (RTC_CLOCK_CONTROL | RTC_CTRL_CLK_SEL)
 
 #if TEST_COLOR
 #define COLOR_RESET "\x1B[0m"
@@ -26,9 +30,6 @@ static struct test_state {
 	unsigned int assertions;
 	unsigned int failures;
 } state;
-
-/* Set by test_watchdog_disable(): nothing re-arms a budget after that. */
-static bool watchdog_disabled;
 
 typedef struct test_fault_jmp {
 	uint32_t r4, r5, r6, r7, r8, r9, r10, r11;
@@ -233,11 +234,40 @@ static void print_hardware(void) {
 }
 
 static void reset_timeout(void) {
-	if (watchdog_disabled)
-		return;
-
+	stopwatch_update();
 	wdt_set_max_execution_time(TEST_TIMEOUT_MS);
 	wdt_serve();
+}
+
+void test_rtc_init(void) {
+	reset_timeout();
+
+	SCU_RTCIF = 0xAA;
+	RTC_CLC = (1 << MOD_CLC_RMC_SHIFT);
+	RTC_CTRL = RTC_SYNC_CONTROL | RTC_CTRL_CLR_RTCBAD | RTC_CTRL_CLR_RTCINT;
+	while ((RTC_CON & RTC_CON_ACCPOS) == 0)
+		;
+	RTC_CON = RTC_CON_PRE;
+	RTC_T14 = (RTC_T14_RELOAD << RTC_T14_CNT_SHIFT) | (RTC_T14_RELOAD << RTC_T14_REL_SHIFT);
+	RTC_CNT = RTC_SECOND_COUNTER;
+	RTC_REL = 0;
+	RTC_ALARM = 0;
+	RTC_SRC = 0;
+	RTC_ISNC = RTC_ISNC_RTC0IE;
+	RTC_ISNRC = RTC_ISNRC_RTC0;
+	RTC_CON |= RTC_CON_RUN;
+	RTC_CTRL = RTC_CLOCK_CONTROL | RTC_CTRL_CLR_RTCINT;
+}
+
+bool test_rtc_second_elapsed(void) {
+	return (RTC_CTRL & RTC_CTRL_RTCINT) != 0;
+}
+
+void test_rtc_wait_second(void) {
+	while (!test_rtc_second_elapsed())
+		test_spin(1000);
+
+	test_watchdog_serve();
 }
 
 static bool report(const char *name, bool passed) {
@@ -379,14 +409,11 @@ bool test_is_qemu(void) {
 
 uint32_t test_stm_ticks_per_ms(void) {
 	uint32_t hz = cpu_get_stm_freq();
-	uint32_t rmc = (STM_CLC & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT;
 
-	if (rmc == 0)
-		rmc = 1;
 	if (hz == 0)
 		hz = 26000000;
 
-	return hz / rmc / 1000;
+	return hz / 1000;
 }
 
 bool test_elapsed_bound_ms(uint64_t start, uint32_t ms) {
@@ -416,14 +443,6 @@ void test_watchdog_serve(void) {
 
 void test_watchdog_reset(void) {
 	reset_timeout();
-}
-
-void test_watchdog_disable(void) {
-	watchdog_disabled = true;
-	wdt_set_max_execution_time(0);
-#ifndef GPIO_PM_WADOG
-	wdt_disable();
-#endif
 }
 
 void test_spin(unsigned int iterations) {

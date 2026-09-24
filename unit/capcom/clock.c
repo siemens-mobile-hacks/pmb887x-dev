@@ -3,15 +3,9 @@
 #include "cgu/clock.h"
 #include "test.h"
 
-#define RTC_T14_RELOAD 61440
-#define RTC_T14_PERIOD (65536 - RTC_T14_RELOAD)
-#define RTC_MEASURE_COUNTS 128
-#define RTC_POLL_LIMIT 1000000
-
 struct timer_counts {
 	uint32_t t0;
 	uint32_t t1;
-	uint32_t rtc_ticks;
 };
 
 static const struct {
@@ -31,65 +25,39 @@ static const struct {
 	{ "CAPCOM RMC/4 divides the selected FPI2 PLL /4 clock", 812500 },
 };
 
-static void configure_rtc(void) {
-	SCU_RTCIF = 0xAA;
-	RTC_CLC = (1 << MOD_CLC_RMC_SHIFT);
-	RTC_CTRL |= RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN;
-	RTC_CON |= RTC_CON_PRE;
-	RTC_T14 = (RTC_T14_RELOAD << RTC_T14_CNT_SHIFT) | (RTC_T14_RELOAD << RTC_T14_REL_SHIFT);
-	RTC_REL = 0;
-	RTC_ALARM = 0;
-	RTC_SRC = 0;
-	RTC_ISNC = 0;
-	RTC_CTRL |= RTC_CTRL_CLK_SEL | RTC_CTRL_CLR_RTCBAD | RTC_CTRL_CLR_RTCINT;
-	RTC_CON |= RTC_CON_RUN;
-}
-
 static struct timer_counts measure_timers(uint32_t capcom) {
 	CAPCOM_T01CON(capcom) = 0;
 	CAPCOM_T0(capcom) = 0;
 	CAPCOM_T1(capcom) = 0;
 	CAPCOM_T0REL(capcom) = 0;
 	CAPCOM_T1REL(capcom) = 0;
-	uint32_t first_t14 = ((RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT) - RTC_T14_RELOAD;
+	test_rtc_init();
 	CAPCOM_T01CON(capcom) = CAPCOM_T01CON_T0R_ENABLED | CAPCOM_T01CON_T1R_ENABLED;
-	uint32_t elapsed_t14;
-	uint32_t polls = 0;
 	/* Count 16-bit overflows during the RTC measurement window. */
 	uint32_t previous_t0 = 0;
 	uint32_t previous_t1 = 0;
 	uint32_t wraps_t0 = 0;
 	uint32_t wraps_t1 = 0;
-	do {
+	while (!test_rtc_second_elapsed()) {
 		uint32_t t0 = CAPCOM_T0(capcom) & CAPCOM_T0_T0;
 		uint32_t t1 = CAPCOM_T1(capcom) & CAPCOM_T1_T1;
 		wraps_t0 += t0 < previous_t0;
 		wraps_t1 += t1 < previous_t1;
 		previous_t0 = t0;
 		previous_t1 = t1;
-		uint32_t current_t14 = ((RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT) - RTC_T14_RELOAD;
-		elapsed_t14 = (current_t14 - first_t14) & (RTC_T14_PERIOD - 1);
-		test_watchdog_serve();
-		polls++;
-	} while (elapsed_t14 < RTC_MEASURE_COUNTS && polls < RTC_POLL_LIMIT);
+	}
 	CAPCOM_T01CON(capcom) = 0;
 	uint32_t t0 = CAPCOM_T0(capcom) & CAPCOM_T0_T0;
 	uint32_t t1 = CAPCOM_T1(capcom) & CAPCOM_T1_T1;
 	wraps_t0 += t0 < previous_t0;
 	wraps_t1 += t1 < previous_t1;
+	test_watchdog_serve();
+
 	struct timer_counts counts = {
 		(wraps_t0 << 16) | t0,
 		(wraps_t1 << 16) | t1,
-		elapsed_t14,
 	};
 	return counts;
-}
-
-static uint32_t rtc_ticks_to_capcom_hz(uint32_t timer_ticks, uint32_t rtc_ticks) {
-	if (rtc_ticks == 0)
-		return 0;
-
-	return (uint64_t) timer_ticks * RTC_T14_PERIOD / rtc_ticks;
 }
 
 int main(void) {
@@ -103,7 +71,6 @@ int main(void) {
 	uint32_t osc_con3 = CGU_CON3 & ~(CGU_CON3_AHB_PER_CLKSEL | CGU_CON3_AHB_PER_CLKDIV);
 	uint32_t pll_con3 = osc_con3 | CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2;
 	cgu_pll_set(3, 0);
-	configure_rtc();
 	bool width_matches = true;
 
 	for (uint32_t index = 0; index < ARRAY_SIZE(capcoms); index++) {
@@ -150,12 +117,11 @@ int main(void) {
 		bool matched = true;
 		for (uint32_t index = 0; index < ARRAY_SIZE(capcoms); index++) {
 			struct timer_counts result = counts[index][mode];
-			uint32_t t0_hz = rtc_ticks_to_capcom_hz(result.t0, result.rtc_ticks);
-			uint32_t t1_hz = rtc_ticks_to_capcom_hz(result.t1, result.rtc_ticks);
+			uint32_t t0_hz = result.t0;
+			uint32_t t1_hz = result.t1;
 			printf("# CAPCOM%lu %s: T0=%lu Hz T1=%lu Hz\n", index,
 				CLOCK_CASES[mode].name, t0_hz, t1_hz);
-			matched = matched && result.rtc_ticks >= RTC_MEASURE_COUNTS &&
-				test_u32_in_interval(t0_hz, expected_hz * 97 / 100, expected_hz * 103 / 100) &&
+			matched = matched && test_u32_in_interval(t0_hz, expected_hz * 97 / 100, expected_hz * 103 / 100) &&
 				test_u32_in_interval(t1_hz, expected_hz * 97 / 100, expected_hz * 103 / 100);
 		}
 		test_check(CLOCK_CASES[mode].name, matched);

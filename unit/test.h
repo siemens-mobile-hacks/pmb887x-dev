@@ -21,11 +21,13 @@ bool test_u32_in_interval(uint32_t value, uint32_t first, uint32_t last);
 bool test_is_qemu(void);
 uint32_t test_stm_ticks_per_ms(void);
 bool test_elapsed_bound_ms(uint64_t start, uint32_t ms);
+void test_rtc_init(void);
+bool test_rtc_second_elapsed(void);
+void test_rtc_wait_second(void);
 void test_heartbeat(void);
 void test_heartbeat_end(void);
 void test_watchdog_serve(void);
 void test_watchdog_reset(void);
-void test_watchdog_disable(void);
 void test_fault_decode(uint32_t pc, uint32_t far);
 /* Arm fault recovery around a guarded body; 1 if a fault was recovered at this call. */
 int test_fault_guard(void);

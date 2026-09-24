@@ -3,8 +3,6 @@
 #include "clock.h"
 #include "test.h"
 
-#define RTC_T14_PRESCALER 8
-#define RTC_MEASURE_TICKS 1024
 #define TPU_FRAME_CYCLES 6000
 
 static const struct {
@@ -20,21 +18,6 @@ static const struct {
 };
 
 static volatile uint32_t tpu_frames;
-
-static void configure_rtc(void) {
-	SCU_RTCIF = 0xAA;
-	RTC_CLC = (1 << MOD_CLC_RMC_SHIFT);
-	RTC_CTRL |= RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN;
-	RTC_CON |= RTC_CON_PRE;
-	RTC_T14 = 0;
-	RTC_REL = 0;
-	RTC_ALARM = 0;
-	RTC_SRC = 0;
-	RTC_ISNC = 0;
-	RTC_CTRL |= RTC_CTRL_CLK_SEL | RTC_CTRL_CLR_RTCBAD | RTC_CTRL_CLR_RTCINT;
-	RTC_CON |= RTC_CON_RUN;
-	RTC_CTRL &= ~RTC_CTRL_CLK_SEL;
-}
 
 static void configure_tpu(void) {
 	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
@@ -52,15 +35,10 @@ static void configure_tpu(void) {
 	TPU_SRC(1) = MOD_SRC_CLRR;
 }
 
-static __SRAM uint32_t get_t14_count(void) {
-	return (RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT;
-}
-
 static __SRAM uint32_t count_tpu_frames(void) {
-	uint32_t first_t14 = get_t14_count();
+	test_rtc_init();
 	uint32_t first_frame = tpu_frames;
-	while (((get_t14_count() - first_t14) & 0xFFFF) < RTC_MEASURE_TICKS)
-		test_watchdog_serve();
+	test_rtc_wait_second();
 	return tpu_frames - first_frame;
 }
 
@@ -68,7 +46,6 @@ static __SRAM void test_fsys(void) {
 	uint32_t initial_tpu_vic = VIC_CON(VIC_TPU_INT0_IRQ);
 	bool irq_was_disabled = cpu_enable_irq(false);
 
-	configure_rtc();
 	configure_tpu();
 	tpu_frames = 0;
 	VIC_CON(VIC_TPU_INT0_IRQ) = 1;
@@ -79,9 +56,8 @@ static __SRAM void test_fsys(void) {
 	uint32_t modeled_hz = cpu_get_sys_freq();
 
 	/* K=L=1 and OVERFLOW=999 give one TPU frame per 6000 fSYS cycles. */
-	uint32_t expected_frames = (uint64_t) CPU_OSC_FREQ * RTC_MEASURE_TICKS * RTC_T14_PRESCALER /
-		(TPU_FRAME_CYCLES * CPU_CLK32K_FREQ);
-	printf("# OSC: %lu TPU frames per 250 ms, model=%lu Hz\n", frames, modeled_hz);
+	uint32_t expected_frames = CPU_OSC_FREQ / TPU_FRAME_CYCLES;
+	printf("# OSC: %lu TPU frames per second, model=%lu Hz\n", frames, modeled_hz);
 	test_check("fSYS bypass selects the 26 MHz oscillator",
 		modeled_hz == CPU_OSC_FREQ &&
 		test_u32_in_interval(frames, expected_frames * 98 / 100, expected_frames * 102 / 100));
@@ -92,9 +68,8 @@ static __SRAM void test_fsys(void) {
 		frames = count_tpu_frames();
 		modeled_hz = cpu_get_sys_freq();
 
-		expected_frames = (uint64_t) PLL_CONFIGS[index].fsys_hz * RTC_MEASURE_TICKS * RTC_T14_PRESCALER /
-			(TPU_FRAME_CYCLES * CPU_CLK32K_FREQ);
-		printf("# N=%lu M=%lu: expected=%lu measured=%lu TPU frames per 250 ms, model=%lu Hz\n",
+		expected_frames = PLL_CONFIGS[index].fsys_hz / TPU_FRAME_CYCLES;
+		printf("# N=%lu M=%lu: expected=%lu measured=%lu TPU frames per second, model=%lu Hz\n",
 			PLL_CONFIGS[index].ndiv, PLL_CONFIGS[index].mdiv, expected_frames, frames, modeled_hz);
 		test_check(PLL_CONFIGS[index].name,
 			modeled_hz == PLL_CONFIGS[index].fsys_hz &&
