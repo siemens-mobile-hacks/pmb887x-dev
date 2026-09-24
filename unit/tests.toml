@@ -221,6 +221,12 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [gptu]
 devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
 
+[gptu-firmware]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
+
+[gptu-interrupts]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
+
 [gptu-clock]
 devices = ["siemens-cx75", "siemens-el71"]
 
