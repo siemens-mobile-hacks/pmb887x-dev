@@ -24,6 +24,7 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [dsp-instructions]
 devices = ["generic-pmb8876"]
+timeout = 300
 
 [dsp-opcode-aliases]
 devices = ["generic-pmb8876"]
@@ -84,6 +85,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [dsp-channel-decoder-vectors]
 devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-sch-decoder-vectors]
+devices = ["generic-pmb8876"]
 
 [dsp-equalizer-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]

@@ -466,6 +466,18 @@ for my $register (0 .. 5) {
 	}
 }
 
+{
+	my @setup = base_setup();
+	push @setup,
+		'mov 0x$D600 r0',
+		'mov 0x$A55A r1',
+		'mov r1 [r0]',
+		'mov 0x$D600 r4',
+		'load +0x0001 stepi';
+	add_case('mov indirect r4++ to sv', \@setup,
+		'mov [r4++] sv');
+}
+
 # X/Y writes are buffered. Seed and read back through the same address register,
 # with idle instructions between the tested store and its observation.
 for my $register (0 .. 5) {

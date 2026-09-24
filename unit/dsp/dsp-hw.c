@@ -87,6 +87,12 @@ bool dsp_hw_read_program(uint16_t address, uint16_t *values, size_t words) {
 	return read_words(DSP_BOOT_PREAD, address, values, words);
 }
 
+bool dsp_hw_write_data(uint16_t address, const uint16_t *values, size_t words) {
+	if (words > DSP_HW_BOOT_MAX_WORDS)
+		return false;
+	return load_words(DSP_BOOT_DLOAD, address, values, words);
+}
+
 bool dsp_hw_write_reg(uint16_t address, uint16_t value) {
 	return load_words(DSP_BOOT_DLOAD, address, &value, 1);
 }

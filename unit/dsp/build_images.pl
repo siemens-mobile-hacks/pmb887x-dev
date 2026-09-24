@@ -46,6 +46,7 @@ my @images = (
 	[ 'channel-decoder-functional.asm', 'channel-decoder-functional-8876.inc', 'DSP_CHANNEL_DECODER_IMAGE_8876', 'pmb8876' ],
 	[ 'channel-decoder-vector-runner.asm', 'channel-decoder-vector-runner-8875.inc', 'DSP_CHANNEL_DECODER_VECTOR_RUNNER_8875', 'pmb8875' ],
 	[ 'channel-decoder-vector-runner.asm', 'channel-decoder-vector-runner-8876.inc', 'DSP_CHANNEL_DECODER_VECTOR_RUNNER_8876', 'pmb8876' ],
+	[ 'sch-decoder-vector-runner.asm', 'sch-decoder-vector-runner-8876.inc', 'DSP_SCH_DECODER_VECTOR_RUNNER_8876', 'pmb8876' ],
 	[ 'equalizer-functional.asm', 'equalizer-functional-8875.inc', 'DSP_EQUALIZER_IMAGE_8875', 'pmb8875' ],
 	[ 'equalizer-functional.asm', 'equalizer-functional-8876.inc', 'DSP_EQUALIZER_IMAGE_8876', 'pmb8876' ],
 	[ 'equalizer-vector-runner.asm', 'equalizer-vector-runner-8875.inc', 'DSP_EQUALIZER_VECTOR_RUNNER_8875', 'pmb8875' ],
