@@ -12,7 +12,7 @@ segment p 0100
 mov 0x$0001 st0
 mov 0x$007D st1
 mov 0x$0000 st2
-data 4F90 // mov #0x10,icr: standard Mask ROM startup interrupt context.
+mov 0x0010 icr // standard Mask ROM startup interrupt context.
 mov 0x$7C14 sp
 call 0x0000$2783 always // Initialize fixed Mask ROM scheduler and Baseband state.
 
@@ -80,7 +80,7 @@ br 0x0000$0200 always
 
 segment p 0300
 // BBHI observer.
-data 5E41 // push r1
+push r1
 mov [0x$7000] a0
 mov a0l r1
 mov 0x$0001 a0l
@@ -90,7 +90,7 @@ mov [0x$TEAK_TMR2_CNT] a0
 mov a0l [r1++]
 mov r1 a0l
 mov a0l [0x$7000]
-data 5E61 // pop r1
+pop r1
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)]
@@ -103,7 +103,7 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x002A)]
 ret always
 
 // BBLO observer.
-data 5E41 // push r1
+push r1
 mov [0x$7000] a0
 mov a0l r1
 mov 0x$0002 a0l
@@ -113,7 +113,7 @@ mov [0x$TEAK_TMR2_CNT] a0
 mov a0l [r1++]
 mov r1 a0l
 mov a0l [0x$7000]
-data 5E61 // pop r1
+pop r1
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)]
@@ -126,7 +126,7 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x002B)]
 ret always
 
 // Monitoring algorithm observer.
-data 5E41 // push r1
+push r1
 mov [0x$7000] a0
 mov a0l r1
 mov 0x$0003 a0l
@@ -136,7 +136,7 @@ mov [0x$TEAK_TMR2_CNT] a0
 mov a0l [r1++]
 mov r1 a0l
 mov a0l [0x$7000]
-data 5E61 // pop r1
+pop r1
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)]
@@ -146,7 +146,7 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0024)]
 ret always
 
 // Scheduler insertion observer.
-data 5E41 // push r1
+push r1
 mov [0x$7000] a0
 mov a0l r1
 mov 0x$0004 a0l
@@ -156,7 +156,7 @@ mov [0x$TEAK_TMR2_CNT] a0
 mov a0l [r1++]
 mov r1 a0l
 mov a0l [0x$7000]
-data 5E61 // pop r1
+pop r1
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)]

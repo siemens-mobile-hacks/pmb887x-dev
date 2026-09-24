@@ -314,13 +314,13 @@ br 0x0000$0120 always
 segment p 0800
 bkrep r1 0x0000$0803
 mov [r0++] a0
-data 5ABA // mov a0l,ext1
+mov a0l ext1
 ret always
 
 // Read r1+1 ext1 halfwords to shared RAM.
 segment p 0820
 bkrep r1 0x0000$0823
-data 5B55 // mov ext1,a0l
+mov ext1 a0l
 mov a0l [r0++]
 ret always
 
@@ -343,7 +343,7 @@ ret always
 segment p 0880
 bkrep r1 0x0000$0883
 clr a0 always
-data 5ABA // mov a0l,ext1
+mov a0l ext1
 ret always
 
 // Combined SOUT is already byte-packed and must bypass the normal RAM2 byte unpacker.

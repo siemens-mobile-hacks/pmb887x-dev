@@ -16,7 +16,7 @@ segment p 0100
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_MCS_CFR]
 dint
-data 4F80 // mov #0,icr: keep the interrupted register bank visible at the vector.
+mov 0x0000 icr // keep the interrupted register bank visible at the vector.
 clr a0 always
 mov a0l [0x$7001]
 mov a0l [0x$7002]
@@ -167,7 +167,7 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0016)]
 mov [0x$7002] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0017)]
 dint
-data 4F8E // mov #0x0E,icr: preserve mainline state for sustained and external IRQs.
+mov 0x000e icr // preserve mainline state for sustained and external IRQs.
 mov 0x$0001 a0l
 mov a0l [0x$7003]
 eint
@@ -286,5 +286,5 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0004)]
 mov [0x$7003] a0
 cmp 0x$0000 a0
 br 0x0000$0820 neq
-data 45C0 // reti always: entry probe runs without context switching.
-data 45D0 // reti always,context.
+reti true // entry probe runs without context switching.
+retic true

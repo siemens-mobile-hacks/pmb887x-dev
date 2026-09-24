@@ -13,7 +13,7 @@ segment p 0100
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_MCS_CFR]
 dint
-data 4F8E // mov #0x0E,icr: context switching for INT0, INT1, and INT2.
+mov 0x000e icr // context switching for INT0, INT1, and INT2.
 set 0x$000C st0
 set 0x$0040 st2
 clr a0 always
@@ -310,7 +310,7 @@ mov a0l [0x$TEAK_INT_RINTA0]
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0403)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0403)]
-data 45D0 // reti always,context.
+retic true
 
 // INT1 handler.
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0402)] a0
@@ -325,7 +325,7 @@ mov a0l [0x$TEAK_INT_RINT1]
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0404)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0404)]
-data 45D0 // reti always,context.
+retic true
 
 // INT2 handler.
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0402)] a0
@@ -340,7 +340,7 @@ mov a0l [0x$TEAK_INT_RINT2]
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0405)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0405)]
-data 45D0 // reti always,context.
+retic true
 
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0403)] a0
 cmp 0x$0002 a0
@@ -372,7 +372,7 @@ inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0436)]
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_INT_RINTA0]
-data 45D0 // reti always,context.
+retic true
 
 // INT1 vector dispatcher and nesting initiator.
 segment p 0920
@@ -400,7 +400,7 @@ mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0436)] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x043A)]
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0436)]
-data 45D0 // reti always,context.
+retic true
 
 // INT2 vector dispatcher and nested-priority observer.
 segment p 0960
@@ -413,4 +413,4 @@ inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0436)]
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_INT_RINT2]
-data 45D0 // reti always,context.
+retic true

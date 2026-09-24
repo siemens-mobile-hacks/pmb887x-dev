@@ -202,18 +202,18 @@ br 0x0000$0900 always
 segment p 0600
 bkrep r1 0x0000$0603
 mov [r0++] a0
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 ret always
 
 segment p 0610
 bkrep r1 0x0000$0613
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
 ret always
 
 segment p 0620
 bkrep r1 0x0000$0624
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 nop
 nop
 ret always

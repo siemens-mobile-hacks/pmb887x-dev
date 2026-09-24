@@ -1,5 +1,6 @@
 #include <pmb887x.h>
 
+#include "dsp-container.h"
 #include "test.h"
 
 #define DSP_BOOT_PLOAD 0
@@ -16,12 +17,6 @@
 #define DSP_IRQ_READ_BEFORE_OFFSET 0x0304
 #define DSP_IRQ_READ_AFTER_OFFSET 0x0305
 #define DSP_IRQ_READ_AFTER_ZERO_OFFSET 0x0306
-#define DSP1_HEADER_SIZE 0x300
-#define DSP1_FILE_SIZE_OFFSET 0x104
-#define DSP1_SEGMENT_COUNT_OFFSET 0x10E
-#define DSP1_SEGMENT_TABLE_OFFSET 0x120
-#define DSP1_SEGMENT_ENTRY_SIZE 0x30
-#define DSP1_MAX_SEGMENTS 10
 
 static volatile uint16_t *const DSP_SHARED_MEMORY = (volatile uint16_t *) DSP_RAM_BASE;
 
@@ -102,36 +97,23 @@ static bool load_words(uint16_t command, uint16_t destination, const uint16_t *v
 	return submit_boot_command();
 }
 
-static uint32_t read_le32(const uint8_t *data) {
-	return data[0] | (uint32_t) data[1] << 8 | (uint32_t) data[2] << 16 | (uint32_t) data[3] << 24;
-}
-
-static bool load_dsp1_image(const uint8_t *image, size_t image_size) {
-	if (image_size < DSP1_HEADER_SIZE || image[0x100] != 'D' || image[0x101] != 'S' || image[0x102] != 'P' ||
-		image[0x103] != '1' || read_le32(image + DSP1_FILE_SIZE_OFFSET) != image_size ||
-		image[DSP1_SEGMENT_COUNT_OFFSET] > DSP1_MAX_SEGMENTS)
-		return false;
-
+static bool load_dsp_image(const uint8_t *image, size_t image_size) {
 	uint16_t payload[DSP_BOOT_MAX_WORDS];
-	size_t segments = image[DSP1_SEGMENT_COUNT_OFFSET];
-	for (size_t i = 0; i < segments; i++) {
-		const uint8_t *entry = image + DSP1_SEGMENT_TABLE_OFFSET + i * DSP1_SEGMENT_ENTRY_SIZE;
-		uint32_t offset = read_le32(entry);
-		uint32_t address = read_le32(entry + 4);
-		uint32_t size = read_le32(entry + 8);
-		uint8_t memory_type = entry[0x0F];
-		size_t words = size / sizeof(uint16_t);
+	dsp_container_reader_t reader = dsp_container_reader_init(image, image_size);
+	dsp_container_record_t record;
 
-		if (size == 0 || (size & 1) != 0 || words > DSP_BOOT_MAX_WORDS || address > UINT16_MAX ||
-			offset > image_size || size > image_size - offset || memory_type > 2)
+	while (dsp_container_next(&reader, &record)) {
+		if (record.command == DSP_CONTAINER_BRANCH)
+			return true;
+		if (record.words > DSP_BOOT_MAX_WORDS)
 			return false;
-		for (size_t j = 0; j < words; j++)
-			payload[j] = image[offset + j * 2] | (uint16_t) image[offset + j * 2 + 1] << 8;
-		if (!load_words(memory_type == 2 ? DSP_BOOT_DLOAD : DSP_BOOT_PLOAD, (uint16_t) address, payload, words))
+		for (size_t i = 0; i < record.words; i++)
+			payload[i] = dsp_container_read_u16(record.data + i * sizeof(uint16_t));
+		if (!load_words(record.command, record.destination, payload, record.words))
 			return false;
 	}
 
-	return true;
+	return false;
 }
 
 static bool branch_to(uint16_t destination) {
@@ -270,7 +252,7 @@ int main(void) {
 		test_skip("DSP-generated interrupts", "Mask ID parameters are not known");
 		return test_finish();
 	}
-	bool loaded = load_dsp1_image(mask_config->image, mask_config->image_size);
+	bool loaded = load_dsp_image(mask_config->image, mask_config->image_size);
 	if (!test_check("boot commands load DSP interrupt generator", loaded))
 		return test_finish();
 	DSP_SHARED_MEMORY[DSP_IRQ_REQUEST_OFFSET] = 0;

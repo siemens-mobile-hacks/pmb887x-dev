@@ -9,9 +9,9 @@ use File::Temp qw(tempdir);
 use FindBin qw($RealBin);
 use lib $RealBin;
 use DspAsm qw(expand_teak_constants);
+use TeakTools qw(find_teak_tools);
 
-my $makedsp1 = $ENV{MAKEDSP1} // '/home/azq2/build/teakra/build/src/makedsp1/makedsp1';
-my $dsp1_reader = $ENV{DSP1_READER} // '/home/azq2/build/teakra/build/src/dsp1_reader/dsp1_reader';
+my ($teak_assembler, $teak_disassembler) = find_teak_tools();
 my $cache_dir = $ENV{DSP_IMAGE_CACHE} // '/tmp/pmb887x-dsp-images';
 my @images = (
 	[ 'commands-0602.asm', 'commands-0602.inc', 'DSP_TEST_IMAGE_0602', 'pmb8875' ],
@@ -121,31 +121,31 @@ sub build_image {
 	my $asm_path = File::Spec->catfile($RealBin, $asm_name);
 	my $output_path = File::Spec->catfile($RealBin, $output_name);
 	my $expanded = expand_teak_constants($cpu, read_file($asm_path));
-	my $cache_key = sha256_hex(join("\0", 'v1', $cpu, $expanded, tool_identity($makedsp1), tool_identity($dsp1_reader)));
-	my $cached_dsp1 = File::Spec->catfile($cache_dir, "$cache_key.dsp1");
-	my $cache_hit = -f $cached_dsp1;
+	my $cache_key = sha256_hex(join("\0", 'v3', $cpu, $expanded,
+		tool_identity($teak_assembler), tool_identity($teak_disassembler)));
+	my $cached_image = File::Spec->catfile($cache_dir, "$cache_key.bin");
+	my $cache_hit = -f $cached_image;
 
 	if (!$cache_hit) {
 		my $temp_dir = tempdir('dsp-image-XXXXXX', TMPDIR => 1, CLEANUP => 1);
 		my $expanded_path = File::Spec->catfile($temp_dir, "$output_name.asm");
-		my $dsp1_path = File::Spec->catfile($temp_dir, "$output_name.dsp1");
+		my $image_path = File::Spec->catfile($temp_dir, "$output_name.bin");
 		my $dis_path = File::Spec->catfile($temp_dir, "$output_name.dis");
 
 		open my $expanded_file, '>', $expanded_path or die "Cannot write $expanded_path: $!\n";
 		print {$expanded_file} $expanded;
 		close $expanded_file or die "Cannot close $expanded_path: $!\n";
-		run_tool($makedsp1, $expanded_path, $dsp1_path);
-		run_tool($dsp1_reader, $dsp1_path, $dis_path);
-		copy($dsp1_path, $cached_dsp1) or die "Cannot cache $dsp1_path: $!\n";
+		run_tool($teak_assembler, '--entry', '0100', $expanded_path, $image_path);
+		run_tool($teak_disassembler, $image_path, $dis_path);
+		die "$asm_name contains an invalid instruction\n" if read_file($dis_path) =~ /\[ERROR\]/;
+		copy($image_path, $cached_image) or die "Cannot cache $image_path: $!\n";
 	}
 
-	write_image($output_path, $array_name, read_file($cached_dsp1));
+	write_image($output_path, $array_name, read_file($cached_image));
 	print "$array_name: ".($cache_hit ? 'cached' : 'rebuilt')."\n";
 }
 
 die "Usage: $0\n" if @ARGV;
-die "makedsp1 is not executable: $makedsp1\n" if !-x $makedsp1;
-die "dsp1_reader is not executable: $dsp1_reader\n" if !-x $dsp1_reader;
 make_path($cache_dir);
 my $jobs = $ENV{DSP_JOBS} // cpu_count();
 $jobs = 1 if $jobs < 1;

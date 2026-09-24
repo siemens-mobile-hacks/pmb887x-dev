@@ -14,17 +14,17 @@ mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0002 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$0000 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$0001 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$7FFF a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$8000 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$A55A a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$5AA5 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$0801 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0002 a0l
@@ -42,13 +42,13 @@ mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0004 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$1357 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$2468 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$369C a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$47AD a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$0801 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0004 a0l
@@ -66,17 +66,17 @@ mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0002 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$0000 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$007F a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$0080 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$00FF a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$0055 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$00AA a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$2801 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0002 a0l
@@ -94,13 +94,13 @@ mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0080 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$1122 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$3344 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$5566 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$7788 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$1801 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0080 a0l
@@ -118,13 +118,13 @@ mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0081 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$89AB a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$CDEF a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$0F1E a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$2D3C a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$1801 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0081 a0l
@@ -152,13 +152,13 @@ mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0080 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$1357 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$8ACE a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$2468 a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$9BDF a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$0801 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0080 a0l
@@ -172,7 +172,7 @@ call 0x0000$0820 always
 
 // Run a 16-state decode with an artificial reference table and a noiseless K=5 stream.
 dint
-data 4F8E // mov #0x0E,icr: enable context switching for INT0/INT1/INT2.
+mov 0x000e icr // enable context switching for INT0/INT1/INT2.
 set 0x$000C st0
 set 0x$0040 st2
 clr a0 always
@@ -202,7 +202,7 @@ mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0008 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$A55A a0l
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$0801 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
 mov 0x$0008 a0l
@@ -211,7 +211,7 @@ nop
 nop
 nop
 nop
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x068F)]
 // Load 16 old metrics in RAMW1, clear the ping-pong RAMW2 bank, then program eight references.
 mov 0x$1001 a0l
@@ -220,12 +220,12 @@ mov 0x$0080 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$0780 r0
 rep 0x000fu8
-data 1E88 // mov (r0++),ext0
+mov [r0++] ext0
 mov 0x$0081 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 clr a0 always
 rep 0x000fu8
-data 5A9A // mov a0l,ext0
+mov a0l ext0
 mov 0x$6CA0 a0l
 mov a0l [0x$TEAK_CHDEC_REF_BR_BFLY0]
 mov 0x$0AC6 a0l
@@ -261,12 +261,12 @@ mov 0x$0002 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$0700 r0
 rep 0x001fu8
-data 1E88 // mov (r0++),ext0
+mov [r0++] ext0
 mov 0x$0004 a0l
 mov a0l [0x$TEAK_CHDEC_CONF1]
 mov 0x$0740 r0
 rep 0x001fu8
-data 1E88 // mov (r0++),ext0
+mov [r0++] ext0
 
 mov 0x$000F a0l
 mov a0l [0x$TEAK_CHDEC_CONF_CNT]
@@ -318,29 +318,29 @@ br 0x0000$0900 always
 
 // Copy six ext0 values to shared RAM.
 segment p 0800
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
 ret always
 
 // Copy four ext0 values to shared RAM.
 segment p 0820
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
-data 5B54 // mov ext0,a0l
+mov ext0 a0l
 mov a0l [r0++]
 ret always
 
@@ -363,7 +363,7 @@ inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0684)]
 mov 0x$0100 a0l
 mov a0l [0x$TEAK_INT_RINTA0]
-data 45D0 // reti always,context.
+retic true
 
 // Asymmetric signed soft inputs avoid branch-metric ties at every timestamp.
 segment d 0700

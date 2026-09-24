@@ -1,23 +1,18 @@
 #include <pmb887x.h>
 
+#include "dsp-container.h"
 #include "test.h"
 
 #define DSP_BOOT_PLOAD 0
 #define DSP_BOOT_DLOAD 1
 #define DSP_BOOT_BRANCH 2
 #define DSP_BOOT_DATA_OFFSET 2
+#define DSP_BOOT_MAX_WORDS 507
 #define DSP_WAIT_ITERATIONS 1000000
 #define DSP_EXPECTED_MASK_ID 0x0801
 #define DSP_STARTUP_ADDRESS 0x0100
 #define DSP_DONE_OFFSET 0x0300
 #define DSP_DONE_VALUE 0xA55A
-#define DSP1_SEGMENT_COUNT_OFFSET 0x10E
-#define DSP1_SEGMENT_TABLE_OFFSET 0x120
-#define DSP1_SEGMENT_ENTRY_SIZE 0x30
-#define DSP1_SEGMENT_ADDRESS_OFFSET 4
-#define DSP1_SEGMENT_SIZE_OFFSET 8
-#define DSP1_SEGMENT_MEMORY_TYPE_OFFSET 0x0F
-#define DSP1_DATA_MEMORY_TYPE 2
 
 static volatile uint16_t *const DSP_SHARED_MEMORY = (volatile uint16_t *) DSP_RAM_BASE;
 
@@ -53,7 +48,7 @@ static void unpack_lzss_block(lzss_decoder_t *decoder, const uint8_t *input, uin
 			}
 		} else {
 			size_t length = (control & 0x7F) + 3;
-			uint16_t distance = input[0] | (uint16_t) input[1] << 8;
+			uint16_t distance = (uint16_t) input[0] | ((uint16_t) input[1] << 8);
 			uint16_t source = decoder->position - distance;
 			input += 2;
 			for (size_t i = 0; i < length; i++) {
@@ -129,30 +124,25 @@ static bool load_words(uint16_t command, uint16_t destination, const uint8_t *da
 	boot_data[1] = destination;
 	boot_data[2] = (uint16_t) words;
 	for (size_t i = 0; i < words; i++)
-		boot_data[3 + i] = data[i * 2] | (uint16_t) data[i * 2 + 1] << 8;
+		boot_data[3 + i] = (uint16_t) data[i * 2] | ((uint16_t) data[i * 2 + 1] << 8);
 
 	return submit_boot_command();
 }
 
-static uint32_t read_le32(const uint8_t *data) {
-	return data[0] | (uint32_t) data[1] << 8 | (uint32_t) data[2] << 16 | (uint32_t) data[3] << 24;
-}
+static bool load_dsp_image(const uint8_t *image, size_t image_size) {
+	dsp_container_reader_t reader = dsp_container_reader_init(image, image_size);
+	dsp_container_record_t record;
 
-static bool load_dsp1_image(const uint8_t *image) {
-	size_t segments = image[DSP1_SEGMENT_COUNT_OFFSET];
-
-	for (size_t i = 0; i < segments; i++) {
-		const uint8_t *entry = image + DSP1_SEGMENT_TABLE_OFFSET + i * DSP1_SEGMENT_ENTRY_SIZE;
-		uint32_t offset = read_le32(entry);
-		uint16_t address = (uint16_t) read_le32(entry + DSP1_SEGMENT_ADDRESS_OFFSET);
-		size_t words = read_le32(entry + DSP1_SEGMENT_SIZE_OFFSET) / sizeof(uint16_t);
-		uint16_t command = entry[DSP1_SEGMENT_MEMORY_TYPE_OFFSET] == DSP1_DATA_MEMORY_TYPE ? DSP_BOOT_DLOAD : DSP_BOOT_PLOAD;
-
-		if (!load_words(command, address, image + offset, words))
+	while (dsp_container_next(&reader, &record)) {
+		if (record.command == DSP_CONTAINER_BRANCH)
+			return true;
+		if (record.words > DSP_BOOT_MAX_WORDS)
+			return false;
+		if (!load_words(record.command, record.destination, record.data, record.words))
 			return false;
 	}
 
-	return true;
+	return false;
 }
 
 static bool branch_to_test(void) {
@@ -224,7 +214,7 @@ int main(void) {
 #else
 		const uint8_t *image = DSP_INSTRUCTION_IMAGES[shard];
 #endif
-		if (!test_check(name, load_dsp1_image(image)))
+		if (!test_check(name, load_dsp_image(image, DSP_INSTRUCTION_IMAGES_SIZES[shard])))
 			return test_finish();
 		sprintf(name, "BRANCH starts instruction corpus shard %lu", (uint32_t) shard);
 		if (!test_check(name, branch_to_test()))

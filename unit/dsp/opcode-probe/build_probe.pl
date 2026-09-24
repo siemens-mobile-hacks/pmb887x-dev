@@ -7,9 +7,9 @@ use File::Temp qw(tempdir);
 use FindBin qw($RealBin);
 use lib "$RealBin/..";
 use DspAsm qw(expand_teak_constants);
+use TeakTools qw(find_teak_tools);
 
-my $makedsp1 = $ENV{MAKEDSP1} // '/home/azq2/build/teakra/build/src/makedsp1/makedsp1';
-my $dsp1_reader = $ENV{DSP1_READER} // '/home/azq2/build/teakra/build/src/dsp1_reader/dsp1_reader';
+my ($teak_assembler, $teak_disassembler) = find_teak_tools();
 my ($asm_name, $output_name, $array_name, $mode) = @ARGV;
 $asm_name //= 'probe.asm';
 $output_name //= 'probe-image.inc';
@@ -61,7 +61,7 @@ sub expansion_capture {
 		'mov a0h [page:0x001cu8]',
 		'mov st0 r1',
 		'mov r1 [page:0x001du8]',
-		'data 5B0B // mov p,a0; PDF Table 4-4',
+		'mov p* a0',
 		'mov a0l [page:0x001eu8]',
 		'mov a0h [page:0x001fu8]',
 		'mov [0x$D6A0] a0',
@@ -124,11 +124,9 @@ sub expand_asm {
 	return join("\n", @output) . "\n";
 }
 
-die "makedsp1 is not executable: $makedsp1\n" unless -x $makedsp1;
-die "dsp1_reader is not executable: $dsp1_reader\n" unless -x $dsp1_reader;
 my $dsp_asm_path = File::Spec->catfile($RealBin, '..', 'DspAsm.pm');
 my $cache_key = sha256_hex($mode, read_file(__FILE__), read_file($dsp_asm_path), read_file($asm_path),
-	read_file($makedsp1), read_file($dsp1_reader));
+	read_file($teak_assembler), read_file($teak_disassembler));
 if (-f $output_path && read_file($output_path) =~ m{^// DSP image \Q$array_name\E cache key: \Q$cache_key\E$}m) {
 	print "$array_name: cached\n";
 	exit 0;
@@ -136,14 +134,15 @@ if (-f $output_path && read_file($output_path) =~ m{^// DSP image \Q$array_name\
 
 my $temp_dir = tempdir('dsp-opcode-probe-XXXXXX', TMPDIR => 1, CLEANUP => !$ENV{DSP_KEEP_TEMP});
 my $expanded_asm_path = File::Spec->catfile($temp_dir, 'probe.asm');
-my $dsp1_path = File::Spec->catfile($temp_dir, 'probe.dsp1');
+my $image_path = File::Spec->catfile($temp_dir, 'probe.bin');
 my $dis_path = File::Spec->catfile($temp_dir, 'probe.dis');
 open my $expanded_asm, '>', $expanded_asm_path or die "Cannot write $expanded_asm_path: $!\n";
 print {$expanded_asm} expand_teak_constants('pmb8876', expand_asm(read_file($asm_path)));
 close $expanded_asm or die "Cannot close $expanded_asm_path: $!\n";
-run_tool($makedsp1, $expanded_asm_path, $dsp1_path);
-run_tool($dsp1_reader, $dsp1_path, $dis_path);
-my $image = read_file($dsp1_path);
+run_tool($teak_assembler, '--entry', '0100', $expanded_asm_path, $image_path);
+run_tool($teak_disassembler, $image_path, $dis_path);
+die "$asm_name contains an invalid instruction\n" if read_file($dis_path) =~ /\[ERROR\]/;
+my $image = read_file($image_path);
 
 open my $output, '>', $output_path or die "Cannot write $output_path: $!\n";
 print {$output} "// DSP image $array_name cache key: $cache_key\n";

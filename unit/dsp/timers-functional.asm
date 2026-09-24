@@ -13,7 +13,7 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0302)]
 mov 0x$000E a0l
 mov a0l [0x$TEAK_INT_RINT1]
 mov a0l [0x$TEAK_INT_EINT1]
-data 4F84 // mov #4,icr: enable context switching for INT1.
+mov 0x0004 icr // enable context switching for INT1.
 set 0x$0008 st0
 eint
 mov 0x$FFFF r0
@@ -505,7 +505,7 @@ mov a0l [0x$TEAK_INT_RINT1]
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0301)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0301)]
-data 45D0 // reti always,context.
+retic true
 
 segment p 0720
 br 0x0000$0720 always

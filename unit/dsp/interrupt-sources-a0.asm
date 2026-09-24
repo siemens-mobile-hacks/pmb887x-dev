@@ -6,7 +6,7 @@ segment p 0100
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_MCS_CFR]
 dint
-data 4F8E // mov #0x0E,icr: context switching for INT0, INT1, and INT2.
+mov 0x000e icr // context switching for INT0, INT1, and INT2.
 set 0x$000C st0
 set 0x$0040 st2
 clr a0 always
@@ -63,4 +63,4 @@ rep 0x000fu8
 nop
 mov [0x$TEAK_INT_FINTA0] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0507)]
-data 45D0 // reti always,context.
+retic true

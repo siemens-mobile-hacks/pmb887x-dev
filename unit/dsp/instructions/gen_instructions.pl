@@ -57,7 +57,7 @@ sub base_setup {
 		'mov 0x$0000 lc',
 		'mov r0 mixp',
 		'mov 0x$0000 r0',
-		'data 8040 // mpy y0,r0; deterministic p baseline from PDF Table 4-4',
+		'mpy y0 r0 a0 // deterministic p baseline',
 		'nop',
 		'mov 0x$0011 r0',
 	);
@@ -565,7 +565,7 @@ for my $ps (0 .. 3) {
 		add_case(
 			sprintf('pacr a0 ps%u value %04X', $ps, $value),
 			\@setup,
-			[ 'data 8040 // mpy y0,r0; PDF Table 4-4', 'nop', 'pacr a0 always' ],
+			[ 'mpy y0 r0 a0', 'nop', 'pacr a0 always' ],
 		);
 	}
 }
@@ -923,7 +923,7 @@ for my $ps (0 .. 3) {
 		my @setup = base_setup();
 		push @setup,
 			'mov 0x$0003 r0',
-			'data 8040 // mpy y0,r0; seed previous product',
+			'mpy y0 r0 a0 // seed previous product',
 			'nop',
 			'clr a0 always',
 			sprintf('load 0x%04X ps', $ps),
@@ -937,11 +937,11 @@ for my $factor (0x0001, 0x7FFF, 0x8000, 0xFFFF) {
 	for my $gap (0 .. 2) {
 		my @setup = accumulator_setup(0x0000, 0x0000, 0x0000);
 		push @setup, sprintf('mov 0x$%04X r0', $factor), 'mov 0x$0003 r1';
-		my @body = ('data 8040 // mpy y0,r0; pipeline producer', ('nop') x $gap,
+		my @body = ('mpy y0 r0 a0', ('nop') x $gap,
 			'data 8241 // mac y0,r1; consume previous product');
 		add_case(sprintf('mpy mac pipeline factor %04X gap %u', $factor, $gap), \@setup, \@body);
 
-		@body = ('data 8040 // mpy y0,r0; pipeline producer', ('nop') x $gap,
+		@body = ('mpy y0 r0 a0', ('nop') x $gap,
 			'data 5B0B // mov p,a0; PDF Table 4-4');
 		add_case(sprintf('mpy mov p pipeline factor %04X gap %u', $factor, $gap), \@setup, \@body);
 	}
@@ -1137,7 +1137,7 @@ for my $destination (qw(a0 a1)) {
 			for my $gap (@gaps) {
 				my @setup = four_accumulator_setup();
 				push @setup, sprintf('load 0x%04X ps', $ps), sprintf('mov 0x$%04X r0', $factor);
-				my @body = ('data 8040 // mpy y0,r0; pipeline producer', ('nop') x $gap,
+				my @body = ('mpy y0 r0 a0', ('nop') x $gap,
 					"pacr $destination always");
 				add_case(sprintf('mpy pacr %s ps%u factor %04X gap %u', $destination, $ps, $factor, $gap),
 					\@setup, \@body);
@@ -1151,7 +1151,7 @@ for my $operation (qw(msu sqra)) {
 		for my $gap (0 .. 2) {
 			my @setup = four_accumulator_setup();
 			push @setup, sprintf('mov 0x$%04X r0', $factor), 'mov 0x$0003 r1';
-			my @body = ('data 8040 // mpy y0,r0; pipeline producer', ('nop') x $gap, "$operation r1 a0");
+			my @body = ('mpy y0 r0 a0', ('nop') x $gap, "$operation r1 a0");
 			add_case(sprintf('mpy %s pipeline factor %04X gap %u', $operation, $factor, $gap), \@setup, \@body);
 		}
 	}
@@ -1237,7 +1237,7 @@ for my $operation (qw(msu sqra)) {
 		for my $gap (0 .. 2) {
 			my @setup = four_accumulator_setup();
 			push @setup, sprintf('mov 0x$%04X r0', $factor), 'mov 0x$0003 r1';
-			my @body = ('data 8040 // mpy y0,r0; pipeline producer', ('nop') x $gap, "$operation r1 a1");
+			my @body = ('mpy y0 r0 a0', ('nop') x $gap, "$operation r1 a1");
 			add_case(sprintf('mpy %s a1 pipeline factor %04X gap %u', $operation, $factor, $gap), \@setup, \@body);
 		}
 	}
@@ -1396,7 +1396,7 @@ for my $consumer (@long_product_consumers) {
 		for my $gap (3, 4, 7) {
 			my @setup = four_accumulator_setup();
 			push @setup, sprintf('mov 0x$%04X r0', $factor), 'mov 0x$0003 r1';
-			my @body = ('data 8040 // mpy y0,r0; pipeline producer', ('nop') x $gap, $instruction);
+			my @body = ('mpy y0 r0 a0', ('nop') x $gap, $instruction);
 			add_case(sprintf('mpy long gap %s factor %04X gap %u', $name, $factor, $gap), \@setup, \@body);
 		}
 	}
@@ -1500,7 +1500,7 @@ for my $unsigned_transition (0, 1) {
 						'data 5B0B // mov p,a0; PDF Table 4-4' :
 						'data 5B2B // mov p,a1; PDF Table 4-4';
 					my @body = (
-						'data 8040 // mpy y0,r0; signed pipeline producer',
+						'mpy y0 r0 a0',
 						('nop') x $gaps->[0],
 						"$first_consumer y0 r1 $path->[0]",
 						('nop') x $gaps->[1],
@@ -2189,12 +2189,12 @@ my @bank_registers = qw(cfgi r4 r1 r0);
 for my $mask (0 .. 15) {
 	my @setup = four_accumulator_setup();
 	push @setup,
-		'data 4B8F // banke r0,r1,r4,cfgi; select alternative bank; PDF Table 4-4',
+		'banke r0 r1 r4 cfgi // select alternative bank',
 		'mov 0x$A001 r0',
 		'mov 0x$B112 r1',
 		'mov 0x$C445 r4',
 		'mov 0x$0555 cfgi',
-		'data 4B8F // banke r0,r1,r4,cfgi; restore primary bank; PDF Table 4-4';
+		'banke r0 r1 r4 cfgi // restore primary bank';
 	my @selected = map { $bank_registers[$_] } grep { $mask & 1 << $_ } 0 .. $#bank_registers;
 	add_case('banke ' . (@selected ? join('-', @selected) : 'none'), \@setup,
 		sprintf('data %04X // banke %s; PDF Table 4-4', 0x4B80 | $mask, join(',', @selected)));
@@ -2296,7 +2296,7 @@ add_case('retid executes delayed instructions and returns', [ accumulator_setup(
 		'mov 0x$0551 st0',
 		'mov 0x$0300 st1',
 		'mov 0x$005A st2',
-		'data D380 // cntx s; establish context shadows before context-switching RETI',
+		'cntx s // establish context shadows before context-switching RETI',
 		accumulator_value_setup('a1', 0x3131, 0x3030, 3),
 		accumulator_value_setup('a0', 0x4141, 0x4040, 4),
 		'mov a0 b1';
@@ -2456,12 +2456,12 @@ sub select_alias_cases {
 	add_alias_family('exp register r0 sv', '1001010.01000000', \@base, [], []);
 	add_alias_family('exp b0 sv', '1001010.011....0', \@base, [], []);
 	add_alias_family('mov b0 a0', '1101001011010...', \@base, [], []);
-	add_alias_family('mov a0l dvm', '1101101010.11...', \@base, [], [ 'data D4B1 // mov dvm,a1' ]);
+	add_alias_family('mov a0l dvm', '1101101010.11...', \@base, [], [ 'mov dvm a1' ]);
 	add_alias_family('mov a0l x', '1101101011.11...', \@base, [], []);
 	add_alias_family('mov r0 mixp', '0101111010.00000', \@base, [], []);
 	add_alias_family('mov repc a0', '1101010.11010.00', \@base, [], []);
-	add_alias_family('mov dvm a0', '1101010.11010.01', [ @base, 'data D298 // mov a0l,dvm' ], [], []);
-	add_alias_family('mov icr a0', '1101010.11010.10', [ @base, 'data 4F80 // mov #0,icr' ], [], []);
+	add_alias_family('mov dvm a0', '1101010.11010.01', [ @base, 'mov a0l dvm' ], [], []);
+	add_alias_family('mov icr a0', '1101010.11010.10', [ @base, 'mov 0x0000 icr' ], [], []);
 	add_alias_family('mov x a0', '1101010.11010.11', \@base, [], []);
 	add_alias_family('mov indirect r0 b0', '1001100011.00000', \@memory, [], []);
 	add_alias_family('mov long direct a0', '11010100101110..', \@memory, [],
@@ -2477,8 +2477,8 @@ sub select_alias_cases {
 	add_alias_family('mov long immediate b0', '01011110001.....', \@base, [],
 		[ 'data 8001 // long immediate expansion' ]);
 	add_alias_family('mov r0 icr', '0100111111.00000', [ @base, 'mov 0x$0001 r0' ], [],
-		[ 'data D4D2 // mov icr,a0' ]);
-	add_alias_family('mov immediate icr', '0100111110.00000', \@base, [], [ 'data D4D2 // mov icr,a0' ]);
+		[ 'mov icr a0' ]);
+	add_alias_family('mov immediate icr', '0100111110.00000', \@base, [], [ 'mov icr a0' ]);
 	add_alias_family('mov rb long offset a0', '11010100100110..', [ @memory, 'mov 0x$D600 r7' ], [],
 		[ 'data 0000 // rb long offset expansion' ]);
 	add_alias_family('mov a0l rb long offset', '11010100100111..', [ @memory, 'mov 0x$D600 r7' ], [], [
@@ -2696,14 +2696,14 @@ sub capture_lines {
 		$store->('r0', $slot);
 	}
 
-	push @lines, 'data 47C0 // mov mixp,r0; PDF Table 4-4';
+	push @lines, 'mov mixp r0';
 	$store->('r0', 24);
 	push @lines, 'mov repc a0';
 	$store->('a0l', 25);
 	push @lines, 'mov x0 a1';
 	$store->('a1l', 9);
 	$store->('a1h', 10);
-	push @lines, 'data 5B2B // mov p,a1; makedsp1 cannot parse TeakLite I p';
+	push @lines, 'mov p* a1';
 	$store->('a1l', 7);
 	$store->('a1h', 8);
 	for my $accumulator ([ 'b0', 29 ], [ 'b1', 32 ]) {
@@ -2737,14 +2737,13 @@ sub write_assembly {
 	my $asm_path = File::Spec->catfile($generated_dir, "instructions-$shard.asm");
 	my $program_address = 0x0100;
 	my $segment_words = 4;
-	my $segment_count = 2;
 
 	open my $asm, '>', $asm_path or die "open($asm_path): $!";
 	print {$asm} "// Generated by gen_instructions.pl.\n";
 	print {$asm} "segment p 0002\n";
-	print {$asm} "data D4D1 // mov dvm,a0; TRAP vector handler; PDF Table 4-4\n";
+	print {$asm} "mov dvm a0 // TRAP vector handler.\n";
 	print {$asm} "mov a0l [0x\$D681]\n";
-	print {$asm} "data 45C0 // reti always; TRAP vector handler; PDF Table 4-4\n";
+	print {$asm} "reti true // TRAP vector handler.\n";
 	printf {$asm} "\nsegment p %04X\n", $program_address;
 	print {$asm} "mov 0x\$0001 a0l\n";
 	print {$asm} "mov a0l [0x\$DE92]\n";
@@ -2758,7 +2757,6 @@ sub write_assembly {
 			$program_address += $segment_words;
 			printf {$asm} "\nsegment p %04X\n", $program_address;
 			$segment_words = 0;
-			$segment_count++;
 		}
 
 		printf {$asm} "\n// Case %u: %s\n", $index, $case->{name};
@@ -2786,7 +2784,6 @@ sub write_assembly {
 		$program_address += $segment_words;
 		printf {$asm} "\nsegment p %04X\n", $program_address;
 		$segment_words = 0;
-		$segment_count++;
 	}
 	print {$asm} "\n// Completion marker.\n";
 	print {$asm} "mov 0x\$A55A a0l\n";
@@ -2795,8 +2792,6 @@ sub write_assembly {
 	printf {$asm} "br 0x0000\$%04X always\n", $branch_address;
 	die sprintf("main program overlaps helpers at %04X\n", $control_helper_address)
 		if $branch_address + 2 > $control_helper_address;
-	die "DSP1 shard needs more than ten segments\n" if $segment_count + 1 > 10;
-
 	my @helper_blocks = (
 		[ $control_helper_address, 'mov 0x0002u8 a0l', 'mov a0l [0x$D681]', 'ret always' ],
 		[ $control_helper_address + 0x10, 'mov 0x0002u8 a0l', 'retd', 'mov a0l [0x$D681]' ],
@@ -2804,11 +2799,10 @@ sub write_assembly {
 		[ $control_helper_address + 0x28, 'mov 0x0002u8 a0l', 'mov a0l [0x$D681]', 'rets 0x0001u8' ],
 		[ $control_helper_address + 0x30, 'mov 0x0002u8 a0l', 'mov a0l [0x$D681]', 'rets 0x0003u8' ],
 		[ $control_helper_address + 0x38, 'mov 0x0002u8 a0l', 'mov a0l [0x$D681]', 'rets 0x00ffu8' ],
-		[ $control_helper_address + 0x40, 'data D7C0 // retid; PDF Table 4-4', 'mov 0x0002u8 a0l',
+		[ $control_helper_address + 0x40, 'retid', 'mov 0x0002u8 a0l',
 			'mov a0l [0x$D681]' ],
-		[ $control_helper_address + 0x50, 'data 45C0 // reti always; PDF Table 4-4' ],
-		[ $control_helper_address + 0x60,
-			'data 45D0 // reti with context switch,always; PDF Table 4-4' ],
+		[ $control_helper_address + 0x50, 'reti true' ],
+		[ $control_helper_address + 0x60, 'retic true' ],
 		[ $program_fixture_address,
 			'data 4380 // general movp fixture; also a valid eint opcode',
 			'data 0000 // safe st0 movp fixture; also a valid nop opcode',
@@ -2883,6 +2877,11 @@ for my $shard (0 .. $shard_count - 1) {
 print {$images} "\nstatic const uint8_t *const DSP_INSTRUCTION_IMAGES[] = {\n";
 for my $shard (0 .. $shard_count - 1) {
 	print {$images} "\tDSP_INSTRUCTIONS_IMAGE_$shard,\n";
+}
+print {$images} "};\n";
+print {$images} "static const uint16_t DSP_INSTRUCTION_IMAGES_SIZES[] = {\n";
+for my $shard (0 .. $shard_count - 1) {
+	print {$images} "\tsizeof(DSP_INSTRUCTIONS_IMAGE_$shard),\n";
 }
 print {$images} "};\n";
 close $images or die "close($images_path): $!";

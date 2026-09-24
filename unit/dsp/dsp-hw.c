@@ -1,6 +1,7 @@
 #include <pmb887x.h>
 #include <stopwatch.h>
 
+#include "dsp-container.h"
 #include "dsp-hw.h"
 #include "test.h"
 
@@ -12,12 +13,6 @@
 #define DSP_BOOT_DATA_OFFSET 2
 #define DSP_BOOT_RESULT_OFFSET (DSP_BOOT_DATA_OFFSET + 3)
 #define DSP_WAIT_ITERATIONS 1000000
-#define DSP1_HEADER_SIZE 0x300
-#define DSP1_FILE_SIZE_OFFSET 0x104
-#define DSP1_SEGMENT_COUNT_OFFSET 0x10E
-#define DSP1_SEGMENT_TABLE_OFFSET 0x120
-#define DSP1_SEGMENT_ENTRY_SIZE 0x30
-#define DSP1_MAX_SEGMENTS 10
 
 volatile uint16_t *const dsp_hw_shared_memory = (volatile uint16_t *) DSP_RAM_BASE;
 
@@ -69,14 +64,6 @@ static bool read_words(uint16_t command, uint16_t source, uint16_t *values, size
 	return true;
 }
 
-static uint32_t read_le32(const uint8_t *data) {
-	return data[0] | (uint32_t) data[1] << 8 | (uint32_t) data[2] << 16 | (uint32_t) data[3] << 24;
-}
-
-static uint16_t read_le16(const uint8_t *data) {
-	return data[0] | (uint16_t) data[1] << 8;
-}
-
 bool dsp_hw_reset(void) {
 	DSP_COM_CLEAR = 0xFFFF;
 	SCU_DSP_INT = 0;
@@ -104,78 +91,31 @@ bool dsp_hw_write_reg(uint16_t address, uint16_t value) {
 	return load_words(DSP_BOOT_DLOAD, address, &value, 1);
 }
 
-bool dsp_hw_load_image(const uint8_t *image, size_t image_size) {
-	if (image_size < DSP1_HEADER_SIZE)
-		return false;
-	if (image[0x100] != 'D' || image[0x101] != 'S' || image[0x102] != 'P' || image[0x103] != '1')
-		return false;
-	if (read_le32(image + DSP1_FILE_SIZE_OFFSET) != image_size)
-		return false;
-	if (image[DSP1_SEGMENT_COUNT_OFFSET] > DSP1_MAX_SEGMENTS)
-		return false;
-
+static bool dsp_hw_load(const uint8_t *image, size_t image_size, bool execute_branch) {
 	uint16_t payload[DSP_HW_BOOT_MAX_WORDS];
-	size_t segments = image[DSP1_SEGMENT_COUNT_OFFSET];
-	for (size_t i = 0; i < segments; i++) {
-		const uint8_t *entry = image + DSP1_SEGMENT_TABLE_OFFSET + i * DSP1_SEGMENT_ENTRY_SIZE;
-		uint32_t offset = read_le32(entry);
-		uint32_t address = read_le32(entry + 4);
-		uint32_t size = read_le32(entry + 8);
-		uint8_t memory_type = entry[0x0F];
-		size_t words = size / sizeof(uint16_t);
+	dsp_container_reader_t reader = dsp_container_reader_init(image, image_size);
+	dsp_container_record_t record;
 
-		if (size == 0 || (size & 1) != 0 || address > UINT16_MAX)
+	while (dsp_container_next(&reader, &record)) {
+		if (record.command == DSP_CONTAINER_BRANCH)
+			return !execute_branch || dsp_hw_branch(record.destination);
+		if (record.words > DSP_HW_BOOT_MAX_WORDS)
 			return false;
-		if (offset > image_size || size > image_size - offset || memory_type > 2)
+		for (size_t i = 0; i < record.words; i++)
+			payload[i] = dsp_container_read_u16(record.data + i * sizeof(uint16_t));
+		if (!load_words(record.command, record.destination, payload, record.words))
 			return false;
-		if (words > (size_t) UINT16_MAX - address + 1)
-			return false;
-
-		for (size_t first = 0; first < words; first += DSP_HW_BOOT_MAX_WORDS) {
-			size_t count = MIN(words - first, DSP_HW_BOOT_MAX_WORDS);
-
-			for (size_t j = 0; j < count; j++) {
-				size_t source = offset + (first + j) * sizeof(uint16_t);
-				payload[j] = image[source] | (uint16_t) image[source + 1] << 8;
-			}
-			uint16_t destination = (uint16_t) (address + first);
-			uint16_t command = memory_type == 2 ? DSP_BOOT_DLOAD : DSP_BOOT_PLOAD;
-			if (!load_words(command, destination, payload, count))
-				return false;
-		}
-	}
-
-	return true;
-}
-
-bool dsp_hw_load_container(const uint8_t *container, size_t container_size) {
-	uint16_t payload[DSP_HW_BOOT_MAX_WORDS];
-	size_t offset = 0;
-
-	while (container_size - offset >= 4) {
-		uint16_t command = read_le16(container + offset);
-		uint16_t destination = read_le16(container + offset + 2);
-
-		if (command == DSP_BOOT_BRANCH)
-			return offset + 4 == container_size && dsp_hw_branch(destination);
-		if (command != DSP_BOOT_PLOAD && command != DSP_BOOT_DLOAD)
-			return false;
-		if (container_size - offset < 6)
-			return false;
-
-		size_t words = read_le16(container + offset + 4);
-		size_t payload_size = words * sizeof(uint16_t);
-
-		if (words > DSP_HW_BOOT_MAX_WORDS || payload_size > container_size - offset - 6)
-			return false;
-		for (size_t i = 0; i < words; i++)
-			payload[i] = read_le16(container + offset + 6 + i * sizeof(uint16_t));
-		if (!load_words(command, destination, payload, words))
-			return false;
-		offset += 6 + payload_size;
 	}
 
 	return false;
+}
+
+bool dsp_hw_load_image(const uint8_t *image, size_t image_size) {
+	return dsp_hw_load(image, image_size, false);
+}
+
+bool dsp_hw_load_container(const uint8_t *container, size_t container_size) {
+	return dsp_hw_load(container, container_size, true);
 }
 
 bool dsp_hw_branch(uint16_t destination) {

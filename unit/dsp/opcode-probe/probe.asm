@@ -35,24 +35,24 @@ load +0x0000 stepj
 load 0x0000u8 page
 load 0x0000 ps
 // Reset does not clear the regular or alternative register banks.
-data 4B8F // banke r0,r1,r4,cfgi
+banke r0 r1 r4 cfgi
 mov 0x$D6A0 r0
 mov 0x$D6B0 r1
 mov 0x$D6E0 r4
 mov 0x$0000 cfgi
-data 4B8F // banke r0,r1,r4,cfgi
+banke r0 r1 r4 cfgi
 // Clear block-repeat state, context switching, and the non-reset core registers.
-data 4F90 // mov #0x10,icr; clear LP and all block-repeat levels
+mov 0x0010 icr // clear LP and all block-repeat levels
 nop
-data 4F80 // mov #0,icr
+mov 0x0000 icr
 nop
 mov 0x$0000 a0l
-data D298 // mov b0l,dvm
+mov b0l dvm
 mov a0l x0
 mov a0l y0
 mov a0 b0
 mov a0 b1
-data 8040 // mpy y0,r0; establish a deterministic zero product
+mpy y0 r0 a0 // establish a deterministic zero product
 nop
 rep 0x0000u8
 nop
