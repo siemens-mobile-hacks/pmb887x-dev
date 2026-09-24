@@ -36,6 +36,9 @@ int main(void) {
 
 	test_module_id("module ID", 0x0000C000, STM_ID);
 	test_module_clock("module clock is enabled", STM_CLC);
+	test_eq_u32("module divider reset value",
+		(1 << MOD_CLC_RMC_SHIFT) | (1 << STM_CLC_RMC2_SHIFT),
+		STM_CLC & (MOD_CLC_RMC | STM_CLC_RMC2));
 
 	uint32_t start = STM_TIM0;
 	test_spin(1024);

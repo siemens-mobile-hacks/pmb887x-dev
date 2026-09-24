@@ -26,7 +26,7 @@ function(add_peripheral_test name)
 endfunction()
 
 add_peripheral_test(stm stm/test.c)
-add_peripheral_test(stm-clock stm/clock.c)
+add_peripheral_test(stm-clock stm/clock.c cgu/clock.c)
 add_peripheral_test(dmac dmac/test.c)
 add_peripheral_test(dmac-clock dmac/clock.c)
 add_peripheral_test(dsp dsp/test.c)
