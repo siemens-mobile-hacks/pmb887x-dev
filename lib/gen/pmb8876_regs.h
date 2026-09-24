@@ -2351,13 +2351,16 @@
 #define	CGU_CON1_AHB_CLKSEL_PHASE2			0x400000
 #define	CGU_CON1_AHB_CLKSEL_PHASE3			0x500000
 #define	CGU_CON1_AHB_CLKSEL_PHASE4			0x600000
-#define	CGU_CON1_FSTM_DIV_EN				BIT(25)					 // Enable fSTM divider
-#define	CGU_CON1_FSTM_DIV					GENMASK(29, 28)			 // fSTM divider: divide selected PLL output by 4 * 2^n
-#define	CGU_CON1_FSTM_DIV_SHIFT				28
-#define	CGU_CON1_FSTM_DIV_4					0x0
-#define	CGU_CON1_FSTM_DIV_8					0x10000000
-#define	CGU_CON1_FSTM_DIV_16				0x20000000
-#define	CGU_CON1_FSTM_DIV_32				0x30000000
+#define	CGU_CON1_FPI2_OSC_DISABLE			BIT(24)					 // Disable the oscillator source for FPI2
+#define	CGU_CON1_FPI2_CLKSEL				BIT(25)					 // Source clock for FPI2; PLL takes priority over FPI2_OSC_DISABLE
+#define	CGU_CON1_FPI2_CLKSEL_OSC			0x0
+#define	CGU_CON1_FPI2_CLKSEL_PLL			0x2000000
+#define	CGU_CON1_FPI2_CLKDIV				GENMASK(29, 28)			 // FPI2 divider after the fixed PLL divide-by-two stage
+#define	CGU_CON1_FPI2_CLKDIV_SHIFT			28
+#define	CGU_CON1_FPI2_CLKDIV_DIV1			0x0
+#define	CGU_CON1_FPI2_CLKDIV_DIV2			0x10000000
+#define	CGU_CON1_FPI2_CLKDIV_DIV4			0x20000000
+#define	CGU_CON1_FPI2_CLKDIV_DIV8			0x30000000
 
 /* Clock Generation Unit Control Register 5 (CGU_CTL5) */
 #define	CGU_CON2							MMIO32(CGU_BASE + 0xAC)

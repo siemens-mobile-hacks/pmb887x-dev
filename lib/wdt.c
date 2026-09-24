@@ -2,7 +2,7 @@
 
 #include "cpu.h"
 
-// With FSTM_DIV disabled, the watchdog counts at f_osc/16384 (or /256 with WDTIR).
+// With the oscillator selected for FPI2, the watchdog counts at f_osc/16384 (or /256 with WDTIR).
 // It resets the CPU after (0x10000 - WDTREL) input clocks.
 #define WDT_CLOCK_DIVIDER	16384
 #define WDT_MAX_TICKS		0x10000

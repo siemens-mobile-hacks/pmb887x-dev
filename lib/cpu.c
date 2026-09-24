@@ -81,11 +81,11 @@ uint32_t cpu_get_sys_freq(void) {
 }
 
 uint32_t cpu_get_stm_freq(void) {
-	if ((CGU_CON1 & CGU_CON1_FSTM_DIV_EN) == 0)
-		return CPU_OSC_FREQ;
+	uint32_t frequency = cpu_get_fpi2_freq();
+	if ((CGU_CON1 & CGU_CON1_FPI2_CLKSEL) == CGU_CON1_FPI2_CLKSEL_PLL)
+		return frequency / 2;
 
-	uint32_t divider = (CGU_CON1 & CGU_CON1_FSTM_DIV) >> CGU_CON1_FSTM_DIV_SHIFT;
-	return cpu_get_pll_freq() >> (divider + 2);
+	return frequency;
 }
 
 uint32_t cpu_get_ahb_freq(void) {
@@ -164,6 +164,18 @@ uint32_t cpu_get_fpi1_freq(void) {
 
 	uint32_t divider = (CGU_CON1 & CGU_CON1_FPI1_CLKDIV) >> CGU_CON1_FPI1_CLKDIV_SHIFT;
 	return frequency >> divider;
+}
+
+uint32_t cpu_get_fpi2_freq(void) {
+	if ((CGU_CON1 & CGU_CON1_FPI2_CLKSEL) == CGU_CON1_FPI2_CLKSEL_PLL) {
+		uint32_t divider = (CGU_CON1 & CGU_CON1_FPI2_CLKDIV) >> CGU_CON1_FPI2_CLKDIV_SHIFT;
+
+		return cpu_get_pll_freq() >> (divider + 1);
+	}
+	if ((CGU_CON1 & CGU_CON1_FPI2_OSC_DISABLE) != 0)
+		return 0;
+
+	return CPU_OSC_FREQ;
 }
 
 uint32_t cpu_get_ahb_per_freq(void) {

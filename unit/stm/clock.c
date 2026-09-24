@@ -9,14 +9,14 @@
 
 static const struct {
 	const char *name;
-	uint32_t fstm_div;
-	uint32_t fstm_selector;
+	uint32_t source_divider;
+	uint32_t fpi2_divider;
 	uint32_t rmc;
 } COMBINED_CASES[] = {
-	{ "FSTM /8 with STM RMC /2", 8, CGU_CON1_FSTM_DIV_8, 2 },
-	{ "FSTM /8 with STM RMC /4", 8, CGU_CON1_FSTM_DIV_8, 4 },
-	{ "FSTM /8 with STM RMC /8", 8, CGU_CON1_FSTM_DIV_8, 8 },
-	{ "FSTM /16 with STM RMC /4", 16, CGU_CON1_FSTM_DIV_16, 4 },
+	{ "FPI2 PLL /4 with STM RMC /2", 8, CGU_CON1_FPI2_CLKDIV_DIV2, 2 },
+	{ "FPI2 PLL /4 with STM RMC /4", 8, CGU_CON1_FPI2_CLKDIV_DIV2, 4 },
+	{ "FPI2 PLL /4 with STM RMC /8", 8, CGU_CON1_FPI2_CLKDIV_DIV2, 8 },
+	{ "FPI2 PLL /8 with STM RMC /4", 16, CGU_CON1_FPI2_CLKDIV_DIV4, 4 },
 };
 
 static void rtc_init(void) {
@@ -56,26 +56,27 @@ int main(void) {
 
 	uint32_t initial_con1 = CGU_CON1;
 	uint32_t initial_clc = STM_CLC;
-	uint32_t base_con1 = initial_con1 & ~(CGU_CON1_FSTM_DIV | CGU_CON1_FSTM_DIV_EN);
+	uint32_t base_con1 = initial_con1 &
+		~(CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV);
 
-	test_category("Divider disabled");
-	CGU_CON1 = base_con1 | (3 << CGU_CON1_FSTM_DIV_SHIFT);
+	test_category("Oscillator source");
+	CGU_CON1 = base_con1 | CGU_CON1_FPI2_CLKDIV_DIV8;
 	uint32_t bypass_khz = measure_stm_khz();
 	CGU_CON1 = initial_con1;
 	printf("# bypass: %lu kHz\n", bypass_khz);
-	test_check("disabled divider keeps the oscillator rate",
+	test_check("FPI2 divider does not affect the oscillator source",
 		test_u32_in_interval(bypass_khz, CPU_OSC_FREQ / 1000 * 98 / 100, CPU_OSC_FREQ / 1000 * 102 / 100));
 
-	test_category("Divider enabled");
+	test_category("PLL source");
 	for (uint32_t divider = 0; divider < 4; divider++) {
-		CGU_CON1 = base_con1 | CGU_CON1_FSTM_DIV_EN | (divider << CGU_CON1_FSTM_DIV_SHIFT);
+		CGU_CON1 = base_con1 | CGU_CON1_FPI2_CLKSEL_PLL | (divider << CGU_CON1_FPI2_CLKDIV_SHIFT);
 		uint32_t measured_khz = measure_stm_khz();
 		CGU_CON1 = initial_con1;
 		uint32_t expected_khz = (CPU_OSC_FREQ >> (divider + 2)) / 1000;
 
 		printf("# DIV=%lu: expected=%lu kHz measured=%lu kHz\n",
 			divider, expected_khz, measured_khz);
-		test_check("STM divider selects the expected rate",
+		test_check("FPI2 divider selects the expected STM rate",
 			test_u32_in_interval(measured_khz, expected_khz * 98 / 100, expected_khz * 102 / 100));
 	}
 
@@ -97,13 +98,13 @@ int main(void) {
 
 	test_category("Combined dividers");
 	for (uint32_t index = 0; index < ARRAY_SIZE(COMBINED_CASES); index++) {
-		CGU_CON1 = base_con1 | CGU_CON1_FSTM_DIV_EN | COMBINED_CASES[index].fstm_selector;
+		CGU_CON1 = base_con1 | CGU_CON1_FPI2_CLKSEL_PLL | COMBINED_CASES[index].fpi2_divider;
 		STM_CLC = (initial_clc & ~MOD_CLC_RMC) | (COMBINED_CASES[index].rmc << MOD_CLC_RMC_SHIFT);
 		uint32_t combined_khz = measure_stm_khz();
 		STM_CLC = initial_clc;
 		CGU_CON1 = initial_con1;
 		uint32_t expected_khz = (uint64_t) CPU_OSC_FREQ * 2 /
-			(COMBINED_CASES[index].fstm_div * (COMBINED_CASES[index].rmc + 1)) / 1000;
+			(COMBINED_CASES[index].source_divider * (COMBINED_CASES[index].rmc + 1)) / 1000;
 		printf("# %s: expected=%lu kHz measured=%lu kHz\n", COMBINED_CASES[index].name,
 			expected_khz, combined_khz);
 		test_check(COMBINED_CASES[index].name,

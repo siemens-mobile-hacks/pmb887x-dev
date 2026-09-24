@@ -110,8 +110,9 @@ int main(void) {
 
 	cgu_fsys_select(CGU_FSYS_OSC);
 	CGU_OSC &= ~CGU_OSC_PLL_BYPASS_N;
-	CGU_CON1 = (CGU_CON1 & ~(CGU_CON1_FSTM_DIV | CGU_CON1_FSTM_DIV_EN)) |
-		CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_32;
+	uint32_t fpi2_mask = CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV;
+	CGU_CON1 = (CGU_CON1 & ~fpi2_mask) |
+		CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV8;
 	struct clock_measurement divided_osc_gptu0 = measure_gptu(GPTU0, 1);
 	struct clock_measurement divided_osc_gptu1 = measure_gptu(GPTU1, 1);
 	struct clock_measurement divided_rmc_gptu0 = measure_gptu(GPTU0, 4);
@@ -124,7 +125,11 @@ int main(void) {
 	CGU_OSC |= CGU_OSC_PLL_BYPASS_N;
 	struct clock_measurement divided_pll_gptu0 = measure_gptu(GPTU0, 1);
 	struct clock_measurement divided_pll_gptu1 = measure_gptu(GPTU1, 1);
+	uint32_t modeled_fpi2_hz = cpu_get_fpi2_freq();
 	uint32_t modeled_stm_hz = cpu_get_stm_freq();
+	CGU_CON1 |= CGU_CON1_FPI2_OSC_DISABLE;
+	struct clock_measurement disabled_osc_gptu0 = measure_gptu(GPTU0, 1);
+	struct clock_measurement disabled_osc_gptu1 = measure_gptu(GPTU1, 1);
 
 	for (uint32_t index = 0; index < ARRAY_SIZE(CLOCK_CASES); index++) {
 		printf("# %s: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n", CLOCK_CASES[index].name,
@@ -137,7 +142,7 @@ int main(void) {
 			has_clock_rates(gptu1[index], CPU_OSC_FREQ, CPU_OSC_FREQ));
 	}
 
-	printf("# OSC /32: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n",
+	printf("# bypassed PLL /16: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n",
 		divided_osc_gptu0.t0_hz, divided_osc_gptu0.t1_hz,
 		divided_osc_gptu0.t2_hz, divided_osc_gptu1.t0_hz,
 		divided_osc_gptu1.t1_hz, divided_osc_gptu1.t2_hz,
@@ -145,7 +150,7 @@ int main(void) {
 	test_check("GPTU follows divided oscillator at twice the STM rate",
 		has_clock_rates(divided_osc_gptu0, CPU_OSC_FREQ / 16, CPU_OSC_FREQ / 32) &&
 		has_clock_rates(divided_osc_gptu1, CPU_OSC_FREQ / 16, CPU_OSC_FREQ / 32));
-	printf("# OSC /32 with GPTU RMC /4: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n",
+	printf("# bypassed PLL /16 with GPTU RMC /4: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n",
 		divided_rmc_gptu0.t0_hz, divided_rmc_gptu0.t1_hz,
 		divided_rmc_gptu0.t2_hz, divided_rmc_gptu1.t0_hz,
 		divided_rmc_gptu1.t1_hz, divided_rmc_gptu1.t2_hz,
@@ -153,7 +158,7 @@ int main(void) {
 	test_check("GPTU module divider scales its timers without changing STM",
 		has_clock_rates(divided_rmc_gptu0, CPU_OSC_FREQ / 64, CPU_OSC_FREQ / 32) &&
 		has_clock_rates(divided_rmc_gptu1, CPU_OSC_FREQ / 64, CPU_OSC_FREQ / 32));
-	printf("# OSC /32 with STM RMC /4: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n",
+	printf("# bypassed PLL /16 with STM RMC /4: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n",
 		divided_stm_gptu0.t0_hz, divided_stm_gptu0.t1_hz,
 		divided_stm_gptu0.t2_hz, divided_stm_gptu1.t0_hz,
 		divided_stm_gptu1.t1_hz, divided_stm_gptu1.t2_hz,
@@ -162,7 +167,7 @@ int main(void) {
 		has_clock_rates(divided_stm_gptu0, CPU_OSC_FREQ / 16, CPU_OSC_FREQ / 80) &&
 		has_clock_rates(divided_stm_gptu1, CPU_OSC_FREQ / 16, CPU_OSC_FREQ / 80));
 
-	printf("# PLL 156 /32: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n",
+	printf("# PLL 156 /16: GPTU0 T0/T1/T2=%lu/%lu/%lu Hz GPTU1=%lu/%lu/%lu Hz STM=%lu/%lu Hz\n",
 		divided_pll_gptu0.t0_hz, divided_pll_gptu0.t1_hz,
 		divided_pll_gptu0.t2_hz, divided_pll_gptu1.t0_hz,
 		divided_pll_gptu1.t1_hz, divided_pll_gptu1.t2_hz,
@@ -170,6 +175,10 @@ int main(void) {
 	test_check("GPTU follows divided PLL at twice the STM rate",
 		has_clock_rates(divided_pll_gptu0, 156000000 / 16, 156000000 / 32) &&
 		has_clock_rates(divided_pll_gptu1, 156000000 / 16, 156000000 / 32));
-	test_eq_u32("fSTM calculation follows the selected PLL output", 156000000 / 32, modeled_stm_hz);
+	test_eq_u32("FPI2 calculation follows the selected PLL output", 156000000 / 16, modeled_fpi2_hz);
+	test_eq_u32("STM calculation follows the selected FPI2 clock", 156000000 / 32, modeled_stm_hz);
+	test_check("PLL selection overrides the disabled FPI2 oscillator source",
+		has_clock_rates(disabled_osc_gptu0, 156000000 / 16, 156000000 / 32) &&
+		has_clock_rates(disabled_osc_gptu1, 156000000 / 16, 156000000 / 32));
 	return test_finish();
 }

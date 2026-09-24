@@ -57,7 +57,7 @@ static uint32_t stm_ticks_to_t14_ticks(uint32_t stm_ticks, uint32_t divider) {
 int main(void) {
 	test_start("CGU RTC clock test");
 
-	CGU_CON1 &= ~(CGU_CON1_FSTM_DIV | CGU_CON1_FSTM_DIV_EN);
+	CGU_CON1 &= ~(CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV);
 	STM_CLC = (1 << MOD_CLC_RMC_SHIFT);
 	configure_rtc();
 

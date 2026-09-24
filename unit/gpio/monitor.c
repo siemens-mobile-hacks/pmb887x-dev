@@ -9,6 +9,8 @@
 #define CGU_PROBE_TIMEOUT_MS 300000
 #define CGU_ACCESS_BENCHMARK_ITERATIONS 32768
 #define CGU_KERNEL_MEASURE_STM_TICKS 260000
+#define CGU_FPI2_MEASURE_32K_EDGES 256
+#define CGU_SIGNAL_CLK_32K_I 0x0802
 #define CGU_SIGNAL_CLK_48M_O 0x080D
 #define CGU_SIGNAL_CLK_CLKOUT2_O 0x081D
 #define CGU_SIGNAL_CLK_DSP_O 0x0808
@@ -40,6 +42,11 @@ struct cgu_phase_probe {
 	uint32_t config_shift;
 	uint32_t power;
 	uint32_t selection;
+};
+
+struct fpi2_measurement {
+	uint32_t frequency_hz;
+	uint32_t gpio_reads;
 };
 
 #define CGU_VALUE_PROBE(probe_name, probe_reg, probe_mask, probe_value) \
@@ -82,7 +89,7 @@ static const struct monitor_signal RESET_SIGNALS[] = {
 static const struct monitor_signal CGU_CLOCK_SIGNALS[] = {
 	{ "CLK32KOUT_O", 0x0817 },
 	{ "CLK_104M_O", 0x081C },
-	{ "CLK_32K_I", 0x0802 },
+	{ "CLK_32K_I", CGU_SIGNAL_CLK_32K_I },
 	{ "CLK_48M_O", CGU_SIGNAL_CLK_48M_O },
 	{ "CLK_6M5_TRIG_O", 0x081A },
 	{ "CLK_AFC_O", 0x0813 },
@@ -314,6 +321,25 @@ static uint32_t count_monitor_transitions(uint32_t selection) {
 	return transitions;
 }
 
+static uint32_t count_gpio_reads_during_32k_edges(uint32_t edges) {
+	volatile uint32_t *pin = &GPIO_PIN(GPIO_KP_OUT0);
+	uint32_t transitions = 0;
+	uint32_t reads = 0;
+
+	GPIO_MON_CR4 = CGU_SIGNAL_CLK_32K_I;
+	test_spin(1000);
+	uint32_t previous = *pin & GPIO_DATA;
+	while (transitions < edges) {
+		uint32_t current = *pin & GPIO_DATA;
+
+		transitions += current != previous;
+		previous = current;
+		reads++;
+	}
+
+	return reads;
+}
+
 static bool read_monitor_level(uint32_t selection) {
 	GPIO_MON_CR4 = selection;
 	test_spin(1000);
@@ -367,6 +393,67 @@ static bool apply_cgu_osc(uint32_t value) {
 
 	CGU_OSC = value;
 	return true;
+}
+
+static struct fpi2_measurement measure_fpi2_clock(uint32_t config) {
+	uint32_t mask = CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV;
+	CGU_CON1 = (CGU_CON1 & ~mask) | config;
+
+	struct fpi2_measurement result = {
+		.frequency_hz = cpu_get_fpi2_freq(),
+		.gpio_reads = count_gpio_reads_during_32k_edges(CGU_FPI2_MEASURE_32K_EDGES),
+	};
+	return result;
+}
+
+static void test_fpi2_clock(void) {
+	uint32_t initial_osc = CGU_OSC;
+	uint32_t initial_con1 = CGU_CON1;
+	uint32_t pll130_osc = (initial_osc & ~(CGU_OSC_NDIV | CGU_OSC_MDIV)) |
+		(4 << CGU_OSC_NDIV_SHIFT) | CGU_OSC_PLL_POWER_UP | CGU_OSC_PLL_BYPASS_N;
+
+	test_category("FPI2 clock");
+	if (!test_check("PLL locks for FPI2 monitor test", apply_cgu_osc(pll130_osc))) {
+		apply_cgu_osc(initial_osc);
+		return;
+	}
+
+	struct fpi2_measurement osc_div1 = measure_fpi2_clock(CGU_CON1_FPI2_CLKDIV_DIV1);
+	struct fpi2_measurement osc_div8 = measure_fpi2_clock(CGU_CON1_FPI2_CLKDIV_DIV8);
+	struct fpi2_measurement pll_div1 = measure_fpi2_clock(
+		CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV1);
+	struct fpi2_measurement pll_div2 = measure_fpi2_clock(
+		CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2);
+	struct fpi2_measurement pll_div4 = measure_fpi2_clock(
+		CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV4);
+	struct fpi2_measurement pll_div8 = measure_fpi2_clock(
+		CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV8);
+	struct fpi2_measurement pll_osc_disabled = measure_fpi2_clock(
+		CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2);
+
+	CGU_CON1 = initial_con1;
+	apply_cgu_osc(initial_osc);
+
+	printf("# FPI2 GPIO reads per %u CLK_32K_I edges: OSC=%lu/%lu PLL=%lu/%lu/%lu/%lu PLL+OSC_OFF=%lu\n",
+		CGU_FPI2_MEASURE_32K_EDGES, osc_div1.gpio_reads, osc_div8.gpio_reads,
+		pll_div1.gpio_reads, pll_div2.gpio_reads, pll_div4.gpio_reads, pll_div8.gpio_reads,
+		pll_osc_disabled.gpio_reads);
+	test_check("FPI2 frequency model decodes the register fields",
+		osc_div1.frequency_hz == CPU_OSC_FREQ && osc_div8.frequency_hz == CPU_OSC_FREQ &&
+		pll_div1.frequency_hz == 65000000 && pll_div2.frequency_hz == 32500000 &&
+		pll_div4.frequency_hz == 16250000 && pll_div8.frequency_hz == 8125000 &&
+		pll_osc_disabled.frequency_hz == 32500000);
+	test_check("FPI2 divider does not affect the oscillator source",
+		test_u32_in_interval(osc_div8.gpio_reads, osc_div1.gpio_reads * 98 / 100,
+			osc_div1.gpio_reads * 102 / 100));
+	test_check("FPI2 PLL divider reduces F4 throughput",
+		pll_div1.gpio_reads > pll_div2.gpio_reads && pll_div2.gpio_reads > pll_div4.gpio_reads &&
+		pll_div4.gpio_reads > pll_div8.gpio_reads);
+	test_check("FPI2 oscillator runs F4 between PLL /4 and PLL /8",
+		pll_div2.gpio_reads > osc_div1.gpio_reads && osc_div1.gpio_reads > pll_div4.gpio_reads);
+	test_check("FPI2 PLL selection overrides the disabled oscillator source",
+		test_u32_in_interval(pll_osc_disabled.gpio_reads, pll_div2.gpio_reads * 98 / 100,
+			pll_div2.gpio_reads * 102 / 100));
 }
 
 static bool apply_cgu_probe_value(const struct cgu_value_probe *probe, uint32_t value) {
@@ -881,6 +968,7 @@ static void probe_cgu_clock_values(void) {
 	printf("\n# CGU UNSAFE PROBES\n");
 	for (uint32_t index = 0; index < ARRAY_SIZE(CGU_UNSAFE_PROBES); index++)
 		probe_cgu_value(&CGU_UNSAFE_PROBES[index]);
+	test_fpi2_clock();
 
 	CGU_CON0 = initial_con0;
 	CGU_CON1 = initial_con1;

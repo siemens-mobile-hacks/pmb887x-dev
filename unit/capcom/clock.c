@@ -21,14 +21,14 @@ static const struct {
 	{ "CAPCOM timers run at oscillator / 8", 3250000 },
 	{ "fSYS PLL does not change CAPCOM timers", 3250000 },
 	{ "AHB_PER PLL/2 does not change CAPCOM timers", 3250000 },
-	{ "fSTM DIV4 selects 6.5 MHz CAPCOM timers", 6500000 },
-	{ "fSTM DIV8 selects 3.25 MHz CAPCOM timers", 3250000 },
-	{ "fSTM DIV16 selects 1.625 MHz CAPCOM timers", 1625000 },
-	{ "fSTM DIV32 selects 812.5 kHz CAPCOM timers", 812500 },
+	{ "FPI2 PLL /2 selects 6.5 MHz CAPCOM timers", 6500000 },
+	{ "FPI2 PLL /4 selects 3.25 MHz CAPCOM timers", 3250000 },
+	{ "FPI2 PLL /8 selects 1.625 MHz CAPCOM timers", 1625000 },
+	{ "FPI2 PLL /16 selects 812.5 kHz CAPCOM timers", 812500 },
 	{ "CAPCOM RMC/2 halves the timer clock", 1625000 },
 	{ "CAPCOM RMC/4 quarters the timer clock", 812500 },
 	{ "CAPCOM RMC/8 divides the timer clock by eight", 406250 },
-	{ "CAPCOM RMC/4 divides the selected fSTM /8 clock", 812500 },
+	{ "CAPCOM RMC/4 divides the selected FPI2 PLL /4 clock", 812500 },
 };
 
 static void configure_rtc(void) {
@@ -98,7 +98,8 @@ int main(void) {
 	uint32_t capcoms[] = { CAPCOM0, CAPCOM1 };
 	struct timer_counts counts[2][ARRAY_SIZE(CLOCK_CASES)] = { 0 };
 	uint32_t bypass_con1 = CGU_CON1 & ~CGU_CON1_FSYS_CLKSEL;
-	uint32_t fstm_con1 = bypass_con1 & ~(CGU_CON1_FSTM_DIV | CGU_CON1_FSTM_DIV_EN);
+	uint32_t fpi2_con1 = bypass_con1 &
+		~(CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV);
 	uint32_t osc_con3 = CGU_CON3 & ~(CGU_CON3_AHB_PER_CLKSEL | CGU_CON3_AHB_PER_CLKDIV);
 	uint32_t pll_con3 = osc_con3 | CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2;
 	cgu_pll_set(3, 0);
@@ -123,13 +124,13 @@ int main(void) {
 		CGU_CON3 = pll_con3;
 		counts[index][2] = measure_timers(capcoms[index]);
 		CGU_CON3 = osc_con3;
-		CGU_CON1 = fstm_con1 | CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_4;
+		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV1;
 		counts[index][3] = measure_timers(capcoms[index]);
-		CGU_CON1 = fstm_con1 | CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_8;
+		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2;
 		counts[index][4] = measure_timers(capcoms[index]);
-		CGU_CON1 = fstm_con1 | CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_16;
+		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV4;
 		counts[index][5] = measure_timers(capcoms[index]);
-		CGU_CON1 = fstm_con1 | CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_32;
+		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV8;
 		counts[index][6] = measure_timers(capcoms[index]);
 		CGU_CON1 = bypass_con1;
 		CAPCOM_CLC(capcoms[index]) = (2 << MOD_CLC_RMC_SHIFT);
@@ -138,7 +139,7 @@ int main(void) {
 		counts[index][8] = measure_timers(capcoms[index]);
 		CAPCOM_CLC(capcoms[index]) = (8 << MOD_CLC_RMC_SHIFT);
 		counts[index][9] = measure_timers(capcoms[index]);
-		CGU_CON1 = fstm_con1 | CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_8;
+		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2;
 		CAPCOM_CLC(capcoms[index]) = (4 << MOD_CLC_RMC_SHIFT);
 		counts[index][10] = measure_timers(capcoms[index]);
 	}

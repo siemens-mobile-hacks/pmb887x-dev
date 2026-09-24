@@ -5,7 +5,7 @@
 #include "test.h"
 
 #define WDT_CLOCK_DIVIDER 16384
-#define WDT_FSTM_DIVIDER 2048
+#define WDT_FPI2_DIVIDER 2048
 #define RTC_T14_RELOAD 61440
 #define RTC_T14_PERIOD 4096
 #define RTC_MEASURE_COUNTS 512
@@ -24,17 +24,17 @@ static const struct {
 
 static const struct {
 	const char *name;
-	uint32_t fstm_selector;
-	uint32_t fstm_div;
+	uint32_t fpi2_config;
+	uint32_t source_divider;
 	uint32_t stm_rmc;
 } DIVIDER_CASES[] = {
-	{ "fSTM bypass", 0, 8, 1 },
-	{ "fSTM bypass with STM RMC /4", 0, 8, 4 },
-	{ "fSTM /4", CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_4, 4, 1 },
-	{ "fSTM /8", CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_8, 8, 1 },
-	{ "fSTM /16", CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_16, 16, 1 },
-	{ "fSTM /32", CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_32, 32, 1 },
-	{ "fSTM /32 with STM RMC /4", CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_32, 32, 4 },
+	{ "FPI2 oscillator", 0, 8, 1 },
+	{ "FPI2 oscillator with STM RMC /4", 0, 8, 4 },
+	{ "FPI2 PLL /2", CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV1, 4, 1 },
+	{ "FPI2 PLL /4", CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2, 8, 1 },
+	{ "FPI2 PLL /8", CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV4, 16, 1 },
+	{ "FPI2 PLL /16", CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV8, 32, 1 },
+	{ "FPI2 PLL /16 with STM RMC /4", CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV8, 32, 4 },
 };
 
 static __TCM uint32_t count_watchdog_ticks(uint32_t selected_con1, uint32_t restore_con1) {
@@ -107,11 +107,12 @@ int main(void) {
 
 	cgu_pll_set(3, 0);
 	configure_rtc();
-	uint32_t base_con1 = bypass_con1 & ~(CGU_CON1_FSTM_DIV | CGU_CON1_FSTM_DIV_EN);
+	uint32_t base_con1 = bypass_con1 &
+		~(CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV);
 	uint32_t rtc_wdt_hz[ARRAY_SIZE(DIVIDER_CASES)];
 	for (uint32_t mode = 0; mode < ARRAY_SIZE(DIVIDER_CASES); mode++) {
 		scu_watchdog_configure(0, 0, true);
-		CGU_CON1 = base_con1 | DIVIDER_CASES[mode].fstm_selector;
+		CGU_CON1 = base_con1 | DIVIDER_CASES[mode].fpi2_config;
 		STM_CLC = (initial_stm_clc & ~MOD_CLC_RMC) |
 			(DIVIDER_CASES[mode].stm_rmc << MOD_CLC_RMC_SHIFT);
 		rtc_wdt_hz[mode] = measure_watchdog_with_rtc();
@@ -122,7 +123,7 @@ int main(void) {
 
 	cgu_pll_set(5, 0);
 	scu_watchdog_configure(0, 0, true);
-	CGU_CON1 = base_con1 | CGU_CON1_FSTM_DIV_EN | CGU_CON1_FSTM_DIV_8;
+	CGU_CON1 = base_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2;
 	uint32_t pll156_wdt_hz = measure_watchdog_with_rtc();
 	CGU_CON1 = bypass_con1;
 	scu_watchdog_configure(SCU_WDTCON1_WDTDR, 0, true);
@@ -141,17 +142,17 @@ int main(void) {
 	test_check("FPI1 clock does not select the watchdog clock",
 		test_u32_in_interval(fpi1_hz, expected_hz * 98 / 100, expected_hz * 102 / 100));
 	for (uint32_t mode = 0; mode < ARRAY_SIZE(DIVIDER_CASES); mode++) {
-		uint32_t selected_hz = CPU_OSC_FREQ / (DIVIDER_CASES[mode].fstm_div * WDT_FSTM_DIVIDER);
+		uint32_t selected_hz = CPU_OSC_FREQ / (DIVIDER_CASES[mode].source_divider * WDT_FPI2_DIVIDER);
 		printf("# WDT %s: expected=%lu Hz measured=%lu Hz\n", DIVIDER_CASES[mode].name,
 			selected_hz, rtc_wdt_hz[mode]);
 		test_check(DIVIDER_CASES[mode].name,
 			test_u32_in_interval(rtc_wdt_hz[mode], selected_hz * 98 / 100, selected_hz * 102 / 100));
 	}
 
-	uint32_t expected_pll156_hz = 156000000 / (4 * 8 * WDT_FSTM_DIVIDER);
-	printf("# WDT fSTM /8 with PLL 156 MHz: expected=%lu Hz measured=%lu Hz\n",
+	uint32_t expected_pll156_hz = 156000000 / (4 * 8 * WDT_FPI2_DIVIDER);
+	printf("# WDT FPI2 PLL /4 with PLL 156 MHz: expected=%lu Hz measured=%lu Hz\n",
 		expected_pll156_hz, pll156_wdt_hz);
-	test_check("WDT fSTM divider follows the selected PLL output",
+	test_check("WDT FPI2 divider follows the selected PLL output",
 		test_u32_in_interval(pll156_wdt_hz, expected_pll156_hz * 98 / 100, expected_pll156_hz * 102 / 100));
 	return test_finish();
 }

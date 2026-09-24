@@ -24,6 +24,7 @@ uint32_t cpu_get_ahb_freq(void);
 uint32_t cpu_get_ebu_freq(void);
 uint32_t cpu_get_dsp_freq(void);
 uint32_t cpu_get_fpi1_freq(void);
+uint32_t cpu_get_fpi2_freq(void);
 uint32_t cpu_get_ahb_per_freq(void);
 uint32_t cpu_get_sys_freq(void);
 uint32_t cpu_get_stm_freq(void);
