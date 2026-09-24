@@ -25,6 +25,10 @@
 #define FINAL_POINTER_OFFSET 0x0022
 #define FINAL_FLAGS_OFFSET 0x0023
 #define FINAL_BRFILTER_CTRL_OFFSET 0x0024
+#define FINAL_PBASE_MSB_OFFSET 0x0025
+#define FINAL_PBASE_LSB_OFFSET 0x0026
+#define FINAL_PADJ_MSB_OFFSET 0x0027
+#define FINAL_PADJ_LSB_OFFSET 0x0028
 #define FLAGS_BASE 0x0100
 #define STATUS_BASE 0x0120
 #define POINTER_BASE 0x0140
@@ -190,13 +194,18 @@ static void cleanup_tpu_signals(void) {
 }
 
 static void print_record(const struct baseband_scenario *scenario, size_t pass) {
-	printf("# BASEBAND,%s,pass=%lu,irqs=%04lX,ctrl=%04lX,status=%04lX,pointer=%04lX,flags=%04lX,br=%04lX\n",
+	printf("# BASEBAND,%s,pass=%lu,irqs=%04lX,ctrl=%04lX,status=%04lX,pointer=%04lX,flags=%04lX,br=%04lX,"
+		"pbase=%04lX%04lX,padj=%04lX%04lX\n",
 		scenario->name, (uint32_t) pass, (uint32_t) dsp_hw_shared_memory[IRQ_COUNT_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[FINAL_CTRL_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[FINAL_STATUS_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[FINAL_POINTER_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[FINAL_FLAGS_OFFSET],
-		(uint32_t) dsp_hw_shared_memory[FINAL_BRFILTER_CTRL_OFFSET]);
+		(uint32_t) dsp_hw_shared_memory[FINAL_BRFILTER_CTRL_OFFSET],
+		(uint32_t) dsp_hw_shared_memory[FINAL_PBASE_MSB_OFFSET],
+		(uint32_t) dsp_hw_shared_memory[FINAL_PBASE_LSB_OFFSET],
+		(uint32_t) dsp_hw_shared_memory[FINAL_PADJ_MSB_OFFSET],
+		(uint32_t) dsp_hw_shared_memory[FINAL_PADJ_LSB_OFFSET]);
 	for (size_t i = 0; i < scenario->expected_irqs; i++) {
 		printf("# BASEBAND,event=%lu,flags=%04lX,status=%04lX,pointer=%04lX\n", (uint32_t) i,
 			(uint32_t) dsp_hw_shared_memory[FLAGS_BASE + i],
@@ -303,6 +312,16 @@ static void validate_wrap(void) {
 		dsp_hw_shared_memory[POINTER_BASE + 2]);
 	test_eq_u32("wrapped pointer remains stable after RXON falls", dsp_hw_shared_memory[POINTER_BASE + 2],
 		dsp_hw_shared_memory[FINAL_POINTER_OFFSET]);
+
+	// The exact value depends on the analog RX input; only estimator liveness is portable.
+	uint32_t adjacent_power = ((uint32_t) dsp_hw_shared_memory[FINAL_PADJ_MSB_OFFSET] << 16) |
+		dsp_hw_shared_memory[FINAL_PADJ_LSB_OFFSET];
+	if (test_is_qemu()) {
+		test_skip("a long RX window updates adjacent-channel power from reset state",
+			"QEMU has no analog RX input");
+	} else {
+		test_check("a long RX window updates adjacent-channel power from reset state", adjacent_power != 0);
+	}
 }
 
 static void validate_repeat(void) {
