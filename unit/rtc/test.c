@@ -8,6 +8,8 @@
 	(RTC_ISNC_T14IR | RTC_ISNC_RTC0IR | RTC_ISNC_RTC1IR | RTC_ISNC_RTC2IR | RTC_ISNC_RTC3IR | RTC_ISNC_ALARMIR)
 #define RTC_CLEAR_REQUESTS \
 	(RTC_ISNRC_T14 | RTC_ISNRC_RTC0 | RTC_ISNRC_RTC1 | RTC_ISNRC_RTC2 | RTC_ISNRC_RTC3 | RTC_ISNRC_ALARM)
+/* 512 ticks with PRE give enough time to enter WFI before the 125 ms deadline. */
+#define RTC_WFI_T14_RELOAD 0xFE00
 #define RTC_CLOCK_CONTROL \
 	(RTC_CTRL_RTCOUTEN | RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN)
 #define RTC_SYNC_CONTROL \
@@ -37,6 +39,12 @@ static bool wait_for_irq(void) {
 		test_watchdog_serve();
 
 	return irq_count != 0;
+}
+
+static void cpu_wait_for_interrupt(void) {
+	uint32_t value = 0;
+
+	__asm__ volatile("mcr p15, 0, %0, c7, c0, 4" : : "r" (value) : "memory");
 }
 
 static void stop_and_clear(void) {
@@ -395,6 +403,61 @@ static void test_masked_alarm(void) {
 	stop_and_clear();
 }
 
+static void rtc_t14_irq_configure(void) {
+	stop_and_clear();
+	RTC_T14 = (RTC_WFI_T14_RELOAD << RTC_T14_CNT_SHIFT) |
+		(RTC_WFI_T14_RELOAD << RTC_T14_REL_SHIFT);
+	RTC_ISNRC = RTC_ISNRC_T14;
+	RTC_ISNC = RTC_ISNC_T14IE;
+	RTC_SRC = MOD_SRC_CLRR | MOD_SRC_SRE;
+	irq_count = 0;
+	irq_number = 0;
+	irq_isnc = 0;
+	irq_ctrl = 0;
+	irq_src = 0;
+	keep_irq_requests = false;
+}
+
+static void rtc_t14_irq_start(void) {
+	RTC_CON = RTC_CON_RUN | RTC_CON_PRE;
+	RTC_CTRL = RTC_CLOCK_CONTROL;
+}
+
+static void test_wfi_wakeup(void) {
+	test_category("WFI wakeup");
+
+	VIC_CON(VIC_RTC_IRQ) = 1;
+	rtc_t14_irq_configure();
+	cpu_enable_irq(true);
+	rtc_t14_irq_start();
+	bool source_ready = wait_for_irq() && irq_number == VIC_RTC_IRQ;
+	cpu_enable_irq(false);
+	test_check("T14 IRQ reaches the core before testing WFI", source_ready);
+	if (!source_ready) {
+		VIC_CON(VIC_RTC_IRQ) = 0;
+		stop_and_clear();
+		return;
+	}
+
+	rtc_t14_irq_configure();
+	uint32_t requests_before = (RTC_ISNC & RTC_INTERRUPT_FLAGS) | (RTC_SRC & MOD_SRC_SRR);
+	cpu_enable_irq(true);
+	rtc_t14_irq_start();
+	cpu_wait_for_interrupt();
+	cpu_enable_irq(false);
+
+	test_eq_u32("RTC requests are clear before entering WFI", 0, requests_before);
+	test_eq_u32("WFI returns after exactly one RTC IRQ", 1, irq_count);
+	test_eq_u32("WFI wake IRQ is routed from RTC", VIC_RTC_IRQ, irq_number);
+	test_check("WFI wake handler observes the T14 request", (irq_isnc & RTC_ISNC_T14IR) != 0);
+	test_check("WFI wake handler observes the RTC SRC request", (irq_src & MOD_SRC_SRR) != 0);
+	test_eq_u32("WFI wake handler clears the T14 request", 0, RTC_ISNC & RTC_ISNC_T14IR);
+	test_eq_u32("WFI wake handler clears the RTC SRC request", 0, RTC_SRC & MOD_SRC_SRR);
+
+	VIC_CON(VIC_RTC_IRQ) = 0;
+	stop_and_clear();
+}
+
 int main(void) {
 	test_start("RTC peripheral test");
 	test_reset_values();
@@ -417,6 +480,7 @@ int main(void) {
 	test_repeated_irq();
 	test_alarm_wrap();
 	test_masked_alarm();
+	test_wfi_wakeup();
 
 	return test_finish();
 }

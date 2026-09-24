@@ -52,6 +52,7 @@
 /* The two live compare lines the firmware uses (INT0 is parked above OVERFLOW). */
 #define TPU_COMPARE0_TICK 2000
 #define TPU_COMPARE1_TICK 7000
+#define TPU_REARM_IRQS 3
 
 /* Event decoder for GP0, the first general-purpose timing output (tpu/gp.c uses
    the same base for GP0..GP4); the decoder occupies event-word bits 6..10. */
@@ -59,7 +60,9 @@
 
 static volatile uint32_t compare_irqs;
 static volatile uint32_t compare_sequence[8];
+static volatile uint32_t compare_request_irqs;
 static volatile bool compare_request_seen;
+static volatile bool compare_rearm;
 
 static void tpu_configure_clock(uint32_t rmc, uint32_t k, uint32_t l) {
 	TPU_CLC = rmc << MOD_CLC_RMC_SHIFT;
@@ -186,7 +189,22 @@ static uint32_t probe_readback(uint32_t expected, uint32_t *reads) {
 __IRQ void irq_handler(void) {
 	uint32_t irq = VIC_IRQ_CURRENT;
 
-	if (irq == VIC_TPU_INT0_IRQ || irq == VIC_TPU_INT1_IRQ) {
+	if (compare_rearm && irq == VIC_TPU_INT0_IRQ) {
+		if (compare_irqs < ARRAY_SIZE(compare_sequence))
+			compare_sequence[compare_irqs] = irq;
+		compare_irqs++;
+		if ((TPU_SRC(0) & MOD_SRC_SRR) != 0)
+			compare_request_irqs++;
+		TPU_PARAM = 0;
+		if (compare_irqs < TPU_REARM_IRQS) {
+			TPU_OVERFLOW = TPU_FRAME_TICKS - 1;
+			TPU_INT(0) = TPU_COMPARE0_TICK;
+			TPU_SRC(0) = MOD_SRC_CLRR | MOD_SRC_SRE;
+			TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
+		} else {
+			TPU_SRC(0) = MOD_SRC_CLRR;
+		}
+	} else if (irq == VIC_TPU_INT0_IRQ || irq == VIC_TPU_INT1_IRQ) {
 		uint32_t index = irq == VIC_TPU_INT0_IRQ ? 0 : 1;
 
 		if (compare_irqs < ARRAY_SIZE(compare_sequence))
@@ -574,6 +592,39 @@ static void test_compare_lines(void) {
 	VIC_CON(VIC_TPU_INT1_IRQ) = 0;
 }
 
+static void test_compare_rearm(void) {
+	test_category("INT0 one-shot re-arm");
+
+	tpu_configure_frame(NULL);
+	TPU_INT(0) = TPU_COMPARE0_TICK;
+	TPU_INT(1) = TPU_FRAME_TICKS;
+	TPU_SRC(0) = MOD_SRC_CLRR | MOD_SRC_SRE;
+	TPU_SRC(1) = MOD_SRC_CLRR;
+	VIC_CON(VIC_TPU_INT0_IRQ) = 1;
+	VIC_CON(VIC_TPU_INT1_IRQ) = 0;
+	compare_irqs = 0;
+	compare_request_irqs = 0;
+	compare_rearm = true;
+	cpu_enable_irq(true);
+	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
+
+	wait_compare_irqs(TPU_REARM_IRQS);
+	cpu_enable_irq(false);
+	compare_rearm = false;
+	TPU_PARAM = 0;
+	TPU_SRC(0) = MOD_SRC_CLRR;
+	uint32_t pending = TPU_SRC(0) & MOD_SRC_SRR;
+	VIC_CON(VIC_TPU_INT0_IRQ) = 0;
+
+	test_eq_u32("INT0 explicit re-arm produces exactly three IRQs", TPU_REARM_IRQS, compare_irqs);
+	test_eq_u32("every re-armed IRQ carries an INT0 request", TPU_REARM_IRQS, compare_request_irqs);
+	bool routed = true;
+	for (uint32_t i = 0; i < TPU_REARM_IRQS; i++)
+		routed &= compare_sequence[i] == VIC_TPU_INT0_IRQ;
+	test_check("every re-armed INT0 is wired to VIC line 119", routed);
+	test_eq_u32("INT0 request is clear after re-arm test", 0, pending);
+}
+
 int main(void) {
 	test_start("TPU frame timing test");
 
@@ -582,6 +633,7 @@ int main(void) {
 	uint32_t unarmed_us = test_frame_period();
 	test_event_table(unarmed_us);
 	test_compare_lines();
+	test_compare_rearm();
 
 	TPU_PARAM = 0;
 	return test_finish();

@@ -156,6 +156,8 @@ sub collectRegisterDefines {
 
 sub renderRegisterHeader {
 	my ($defines, $order, $title) = @_;
+	return "" if !@$order;
+
 	my @header = ("", $title);
 	for my $name (@$order) {
 		my $define = $defines->{$name};

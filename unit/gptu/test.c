@@ -10,6 +10,9 @@
 #define WAIT_ITERATIONS 100000
 #define GPTU_EVENT_TIMEOUT_MS 100
 #define GPTU_IRQ_TIMEOUT_MS 100
+#define GPTU_REPEAT_COUNTS 260000
+#define GPTU_REPEAT_RELOAD (0xFFFFFFFFu - GPTU_REPEAT_COUNTS + 1u)
+#define GPTU_REPEAT_IRQS 3
 
 typedef struct {
 	const char *name;
@@ -18,6 +21,8 @@ typedef struct {
 
 static volatile uint32_t gptu0_src6_irqs;
 static volatile uint32_t gptu0_src7_irqs;
+static volatile uint32_t gptu0_other_irqs;
+static volatile bool gptu0_src6_repeat;
 
 static void gptu_stop(const gptu_t *gptu) {
 	GPTU_T012RUN(gptu->base) = GPTU_T012RUN_T2ACLRR | GPTU_T012RUN_T2BCLRR;
@@ -105,6 +110,13 @@ static bool wait_gptu0_irq(volatile uint32_t *count) {
 		test_watchdog_serve();
 
 	return *count != 0;
+}
+
+static void wait_gptu0_irqs(volatile uint32_t *count, uint32_t expected) {
+	stopwatch_t start = stopwatch_get();
+
+	while (*count < expected && stopwatch_elapsed_ms(start) < GPTU_IRQ_TIMEOUT_MS)
+		test_watchdog_serve();
 }
 
 static void test_reset_values(const gptu_t *gptu) {
@@ -533,6 +545,43 @@ static void test_pending_request_survives_disable(void) {
 	cpu_enable_irq(!irq_was_disabled);
 }
 
+static void test_t2a_repeated_interrupt(void) {
+	uint32_t saved_vic = VIC_CON(VIC_GPTU0_SRC6_IRQ);
+	bool irq_was_disabled = cpu_enable_irq(false);
+
+	test_category("GPTU0 T2A repeated interrupt");
+	GPTU_T012RUN(GPTU0) = GPTU_T012RUN_T2ACLRR | GPTU_T012RUN_T2BCLRR;
+	GPTU_T012RUN(GPTU0) = 0;
+	GPTU_CLC(GPTU0) = 1 << MOD_CLC_RMC_SHIFT;
+	GPTU_T2CON(GPTU0) = 0;
+	GPTU_T2RCCON(GPTU0) = GPTU_T2_RC_RELOAD_OVERFLOW << GPTU_T2RCCON_T2AMRC0_SHIFT;
+	GPTU_T2RC0(GPTU0) = GPTU_REPEAT_RELOAD;
+	GPTU_T2(GPTU0) = GPTU_REPEAT_RELOAD;
+	GPTU_SRSEL(GPTU0) = GPTU_SRSEL_SSR6_OUV_T2A;
+	GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR | MOD_SRC_SRE;
+	GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
+	VIC_CON(VIC_GPTU0_SRC6_IRQ) = 1;
+	gptu0_src6_irqs = 0;
+	gptu0_src7_irqs = 0;
+	gptu0_other_irqs = 0;
+	gptu0_src6_repeat = true;
+	cpu_enable_irq(true);
+	GPTU_T012RUN(GPTU0) = GPTU_T012RUN_T2ASETR;
+
+	wait_gptu0_irqs(&gptu0_src6_irqs, GPTU_REPEAT_IRQS);
+	cpu_enable_irq(false);
+	gptu0_src6_repeat = false;
+	GPTU_T012RUN(GPTU0) = GPTU_T012RUN_T2ACLRR;
+	GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR;
+	uint32_t pending = GPTU_SRC(GPTU0, 6) & MOD_SRC_SRR;
+	VIC_CON(VIC_GPTU0_SRC6_IRQ) = saved_vic;
+	cpu_enable_irq(!irq_was_disabled);
+
+	test_eq_u32("T2A raises exactly three SRC6 IRQs", GPTU_REPEAT_IRQS, gptu0_src6_irqs);
+	test_eq_u32("T2A SRC6 routing raises no other IRQ", 0, gptu0_other_irqs);
+	test_eq_u32("T2A SRC6 request is clear after stop", 0, pending);
+}
+
 static void test_instance(const gptu_t *gptu) {
 	test_category(gptu->name);
 	GPTU_CLC(gptu->base) = GPTU_RMC_MAX << MOD_CLC_RMC_SHIFT;
@@ -560,6 +609,7 @@ int main(void) {
 		test_reset_values(&instances[i]);
 	for (unsigned int i = 0; i < sizeof(instances) / sizeof(instances[0]); i++)
 		test_instance(&instances[i]);
+	test_t2a_repeated_interrupt();
 	test_pending_request_survives_disable();
 
 	return test_finish();
@@ -570,10 +620,17 @@ __IRQ void irq_handler(void) {
 
 	if (irq == VIC_GPTU0_SRC6_IRQ) {
 		gptu0_src6_irqs++;
-		GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR;
+		if (gptu0_src6_repeat && gptu0_src6_irqs < GPTU_REPEAT_IRQS) {
+			GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR | MOD_SRC_SRE;
+		} else {
+			GPTU_T012RUN(GPTU0) = GPTU_T012RUN_T2ACLRR;
+			GPTU_SRC(GPTU0, 6) = MOD_SRC_CLRR;
+		}
 	} else if (irq == VIC_GPTU0_SRC7_IRQ) {
 		gptu0_src7_irqs++;
 		GPTU_SRC(GPTU0, 7) = MOD_SRC_CLRR;
+	} else {
+		gptu0_other_irqs++;
 	}
 	VIC_IRQ_ACK = 1;
 }

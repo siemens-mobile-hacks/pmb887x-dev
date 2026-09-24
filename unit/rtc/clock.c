@@ -3,9 +3,10 @@
 #include "test.h"
 
 #define RTC_T14_PRESCALER 8
-#define RTC_MEASURE_STM_TICKS (CPU_OSC_FREQ / 8)
+#define RTC_MEASURE_STM_TICKS (CPU_OSC_FREQ / 2)
 #define RTC_ENABLE_TIMEOUT_TICKS (CPU_OSC_FREQ / 1000)
 #define RTC_START_TIMEOUT_TICKS (CPU_OSC_FREQ / 100)
+#define RTC_FREQUENCY_TOLERANCE_PERCENT 2
 
 static void configure_rtc(void) {
 	SCU_RTCIF = 0xAA;
@@ -24,10 +25,17 @@ static uint32_t get_t14_count(void) {
 	return (RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT;
 }
 
-static bool configure_t14(bool prescaler) {
+static bool configure_t14(bool synchronous, bool prescaler) {
 	uint32_t control = prescaler ? RTC_CON_PRE : 0;
-	RTC_CON = control;
+	RTC_CTRL = RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN | RTC_CTRL_CLK_SEL;
 	uint32_t start = STM_TIM0;
+	while ((RTC_CON & RTC_CON_ACCPOS) == 0 && STM_TIM0 - start < RTC_START_TIMEOUT_TICKS)
+		test_watchdog_serve();
+	if ((RTC_CON & RTC_CON_ACCPOS) == 0)
+		return false;
+
+	RTC_CON = control;
+	start = STM_TIM0;
 	while ((RTC_CON & RTC_CON_ACCPOS) == 0 && STM_TIM0 - start < RTC_START_TIMEOUT_TICKS)
 		test_watchdog_serve();
 	if ((RTC_CON & RTC_CON_ACCPOS) == 0)
@@ -35,13 +43,17 @@ static bool configure_t14(bool prescaler) {
 
 	RTC_T14 = 0;
 	RTC_CON = control | RTC_CON_RUN;
+	RTC_CTRL = RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN | (synchronous ? RTC_CTRL_CLK_SEL : 0);
 	start = STM_TIM0;
 	while (get_t14_count() == 0 && STM_TIM0 - start < RTC_START_TIMEOUT_TICKS)
 		test_watchdog_serve();
-	return get_t14_count() != 0 && ((RTC_CON & RTC_CON_PRE) != 0) == prescaler;
+	return get_t14_count() != 0 && ((RTC_CON & RTC_CON_PRE) != 0) == prescaler &&
+		((RTC_CTRL & RTC_CTRL_CLK_SEL) != 0) == synchronous;
 }
 
 static uint32_t measure_t14_ticks(uint32_t *stm_ticks) {
+	/* RTC_CNT advances from T14 overflow, so it cannot independently establish
+	   the T14 input rate. All other peripheral clock tests use RTC_CNT. */
 	uint32_t first_t14 = get_t14_count();
 	uint32_t first_stm = STM_TIM0;
 	while (STM_TIM0 - first_stm < RTC_MEASURE_STM_TICKS)
@@ -54,6 +66,21 @@ static uint32_t stm_ticks_to_t14_ticks(uint32_t stm_ticks, uint32_t divider) {
 	return (uint64_t) stm_ticks * CPU_CLK32K_FREQ / CPU_OSC_FREQ / divider;
 }
 
+static bool frequency_matches(uint32_t measured, uint32_t expected) {
+	uint32_t tolerance = expected * RTC_FREQUENCY_TOLERANCE_PERCENT / 100;
+
+	return measured >= expected - tolerance && measured <= expected + tolerance;
+}
+
+static uint32_t measure_t14_hz(bool synchronous, bool prescaler, uint32_t rmc, bool *configured) {
+	RTC_CLC = rmc << MOD_CLC_RMC_SHIFT;
+	*configured = configure_t14(synchronous, prescaler);
+	uint32_t stm_ticks;
+	uint32_t t14_ticks = measure_t14_ticks(&stm_ticks);
+
+	return stm_ticks ? (uint32_t) ((uint64_t) t14_ticks * CPU_OSC_FREQ / stm_ticks) : 0;
+}
+
 int main(void) {
 	test_start("CGU RTC clock test");
 
@@ -61,40 +88,34 @@ int main(void) {
 	STM_CLC = (1 << MOD_CLC_RMC_SHIFT) | (1 << STM_CLC_RMC2_SHIFT);
 	configure_rtc();
 
-	test_category("RTC prescaler");
-	bool direct_selected = configure_t14(false);
-	uint32_t stm_ticks;
-	uint32_t direct_ticks = measure_t14_ticks(&stm_ticks);
-	uint32_t expected_direct = stm_ticks_to_t14_ticks(stm_ticks, 1);
-	bool divided_selected = configure_t14(true);
-	uint32_t divided_ticks = measure_t14_ticks(&stm_ticks);
-	uint32_t expected_divided = stm_ticks_to_t14_ticks(stm_ticks, RTC_T14_PRESCALER);
-	printf("# RTC T14: direct=%lu/%lu prescaled=%lu/%lu ticks\n", direct_ticks,
-		expected_direct, divided_ticks, expected_divided);
-	test_check("RTC T14 uses the 32.768 kHz source without PRE",
-		direct_selected && test_u32_in_interval(direct_ticks, expected_direct * 98 / 100,
-			expected_direct * 102 / 100));
-	test_check("RTC T14 PRE divides the 32.768 kHz source by eight",
-		divided_selected && test_u32_in_interval(divided_ticks, expected_divided * 98 / 100,
-			expected_divided * 102 / 100));
+	test_category("T14 clock source and dividers");
+	for (uint32_t synchronous = 0; synchronous < 2; synchronous++) {
+		for (uint32_t prescaler = 0; prescaler < 2; prescaler++) {
+			for (uint32_t divider = 0; divider < 4; divider++) {
+				uint32_t rmc = 1 << divider;
+				bool configured;
+				uint32_t measured_hz = measure_t14_hz(synchronous, prescaler, rmc, &configured);
+				uint32_t expected_hz = CPU_CLK32K_FREQ /
+					(prescaler ? RTC_T14_PRESCALER : 1);
+				char name[96];
 
-	test_category("RTC module divider");
-	for (uint32_t divider = 1; divider < 4; divider++) {
-		uint32_t rmc = 1 << divider;
-		RTC_CLC = (rmc << MOD_CLC_RMC_SHIFT);
-		uint32_t selected_rmc = (RTC_CLC & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT;
-		uint32_t measured_ticks = measure_t14_ticks(&stm_ticks);
-		uint32_t expected_ticks = stm_ticks_to_t14_ticks(stm_ticks, RTC_T14_PRESCALER);
-		printf("# RTC RMC=%lu: T14=%lu/%lu ticks\n", rmc,
-			measured_ticks, expected_ticks);
-		test_check("RTC module divider does not change T14 rate",
-			selected_rmc == rmc && test_u32_in_interval(measured_ticks, expected_ticks * 98 / 100,
-				expected_ticks * 102 / 100));
+				sprintf(name, "%s mode PRE=%lu RMC=%lu selects %lu Hz T14",
+					synchronous ? "synchronous" : "asynchronous", prescaler, rmc, expected_hz);
+				printf("# %s mode PRE=%lu RMC=%lu: T14=%lu/%lu Hz\n",
+					synchronous ? "synchronous" : "asynchronous", prescaler, rmc,
+					measured_hz, expected_hz);
+				test_check(name, configured &&
+					((RTC_CLC & MOD_CLC_RMC) >> MOD_CLC_RMC_SHIFT) == rmc &&
+					frequency_matches(measured_hz, expected_hz));
+			}
+		}
 	}
 	RTC_CLC = (1 << MOD_CLC_RMC_SHIFT);
+	configure_t14(false, true);
 
 	test_category("CLK32K output enable");
 	CGU_CON2 &= ~CGU_CON2_CLK32K_EN;
+	uint32_t stm_ticks;
 	uint32_t output_off_ticks = measure_t14_ticks(&stm_ticks);
 	uint32_t expected_off_ticks = stm_ticks_to_t14_ticks(stm_ticks, RTC_T14_PRESCALER);
 	CGU_CON2 |= CGU_CON2_CLK32K_EN;
@@ -117,7 +138,8 @@ int main(void) {
 	uint32_t elapsed_stm = STM_TIM0 - first_stm;
 	RTC_CLC = (1 << MOD_CLC_RMC_SHIFT);
 	uint32_t enable_start = STM_TIM0;
-	while ((RTC_CLC & MOD_CLC_DISS) != 0 && STM_TIM0 - enable_start < RTC_ENABLE_TIMEOUT_TICKS);
+	while ((RTC_CLC & MOD_CLC_DISS) != 0 && STM_TIM0 - enable_start < RTC_ENABLE_TIMEOUT_TICKS)
+		test_watchdog_serve();
 	uint32_t enabled_clc = RTC_CLC;
 	uint32_t gated_t14 = get_t14_count();
 	uint32_t gated_ticks = (gated_t14 - first_t14) & 0xFFFF;
