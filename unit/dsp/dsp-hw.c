@@ -27,6 +27,21 @@ static bool wait_for_boot_ready(void) {
 	return false;
 }
 
+static bool wait_for_mask_rom(void) {
+	for (size_t i = 0; i < DSP_WAIT_ITERATIONS; i++) {
+		uint16_t mask_family = dsp_hw_shared_memory[0] & 0xFF00;
+		bool known_mask_rom = mask_family == 0x0600 || mask_family == 0x0800;
+		bool boot_pipe_idle = (DSP_COM_STATUS & BIT(0)) == 0;
+
+		if (known_mask_rom && boot_pipe_idle)
+			return true;
+		if ((i & 0x3FFF) == 0)
+			test_watchdog_serve();
+	}
+
+	return false;
+}
+
 static bool submit_boot_command(void) {
 	DSP_COM_SET = BIT(0);
 	SCU_DSP_INT = BIT(0);
@@ -50,7 +65,7 @@ static bool load_words(uint16_t command, uint16_t destination, const uint16_t *v
 static bool read_words(uint16_t command, uint16_t source, uint16_t *values, size_t words) {
 	volatile uint16_t *boot_data = dsp_hw_shared_memory + DSP_BOOT_DATA_OFFSET;
 
-	if (words > DSP_HW_BOOT_MAX_WORDS)
+	if (words > DSP_HW_BOOT_TRANSFER_WORDS)
 		return false;
 
 	boot_data[0] = command;
@@ -65,14 +80,13 @@ static bool read_words(uint16_t command, uint16_t source, uint16_t *values, size
 }
 
 bool dsp_hw_reset(void) {
-	DSP_COM_CLEAR = 0xFFFF;
+	DSP_COM_CLEAR = UINT16_MAX;
 	SCU_DSP_INT = 0;
+	dsp_hw_shared_memory[0] = 0;
 	SCU_RST_REQ = SCU_RST_REQ_DSP;
-	uint32_t reset_readback = SCU_RST_REQ;
 	SCU_RST_REQ = 0;
-	(void) reset_readback;
 
-	return wait_for_boot_ready();
+	return wait_for_mask_rom();
 }
 
 bool dsp_hw_read_reg(uint16_t address, uint16_t *value) {
@@ -88,7 +102,7 @@ bool dsp_hw_read_program(uint16_t address, uint16_t *values, size_t words) {
 }
 
 bool dsp_hw_write_data(uint16_t address, const uint16_t *values, size_t words) {
-	if (words > DSP_HW_BOOT_MAX_WORDS)
+	if (words > DSP_HW_BOOT_TRANSFER_WORDS)
 		return false;
 	return load_words(DSP_BOOT_DLOAD, address, values, words);
 }
@@ -98,14 +112,14 @@ bool dsp_hw_write_reg(uint16_t address, uint16_t value) {
 }
 
 static bool dsp_hw_load(const uint8_t *image, size_t image_size, bool execute_branch) {
-	uint16_t payload[DSP_HW_BOOT_MAX_WORDS];
+	uint16_t payload[DSP_HW_BOOT_TRANSFER_WORDS];
 	dsp_container_reader_t reader = dsp_container_reader_init(image, image_size);
 	dsp_container_record_t record;
 
 	while (dsp_container_next(&reader, &record)) {
 		if (record.command == DSP_CONTAINER_BRANCH)
 			return !execute_branch || dsp_hw_branch(record.destination);
-		if (record.words > DSP_HW_BOOT_MAX_WORDS)
+		if (record.words > DSP_HW_BOOT_TRANSFER_WORDS)
 			return false;
 		for (size_t i = 0; i < record.words; i++)
 			payload[i] = dsp_container_read_u16(record.data + i * sizeof(uint16_t));

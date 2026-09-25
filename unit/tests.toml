@@ -22,6 +22,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-timer-clock]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-hle-boot-timing]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dsp-lle-instructions]
 devices = ["generic-pmb8876"]
 timeout = 300

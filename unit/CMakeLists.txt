@@ -33,6 +33,7 @@ add_peripheral_test(eeprom-parser eeprom/test.c eeprom.c)
 add_peripheral_test(dsp-lle-core dsp/lle/test.c)
 add_peripheral_test(dsp-lle-clock dsp/lle/clock.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-timer-clock dsp/lle/timer-clock.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-hle-boot-timing dsp/hle/boot-timing.c)
 add_peripheral_test(dsp-lle-instructions dsp/lle/instructions.c)
 add_peripheral_test(dsp-lle-opcode-aliases dsp/lle/instructions.c)
 target_compile_definitions(dsp-lle-opcode-aliases PRIVATE

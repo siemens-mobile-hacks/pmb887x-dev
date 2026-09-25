@@ -4,7 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define DSP_HW_BOOT_MAX_WORDS 507
+// Largest PLOAD record used by the current runtime fixtures; not a Mask ROM limit.
+#define DSP_HW_BOOT_TRANSFER_WORDS 509
 #define DSP_HW_STARTUP_ADDRESS 0x0100
 
 extern volatile uint16_t *const dsp_hw_shared_memory;
