@@ -2701,6 +2701,7 @@
 #define	CGU_CON2							MMIO32(CGU_BASE + 0xAC)
 #define	CGU_CON2_DSP_CLKSEL					GENMASK(2, 0)			 // Source clock for DSP
 #define	CGU_CON2_DSP_CLKSEL_SHIFT			0
+#define	CGU_CON2_DSP_CLKSEL_OSC				0x0
 #define	CGU_CON2_DSP_CLKSEL_PHASE1			0x3
 #define	CGU_CON2_DSP_CLKSEL_DISABLE			0x7
 #define	CGU_CON2_EBU_CLKSEL					GENMASK(6, 4)			 // Source clock for EBU
