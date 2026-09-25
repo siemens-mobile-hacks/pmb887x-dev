@@ -10,6 +10,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dmac-clock]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[eeprom-parser]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dsp-lle-core]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 

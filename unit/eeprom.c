@@ -13,10 +13,19 @@
 #define EEPROM_NSG_HEADER_SIZE 32
 #define EEPROM_SG_EIT_ENTRY_SIZE 16
 #define EEPROM_NSG_EIT_ENTRY_SIZE 32
-#define EEPROM_ENTRY_FREE 0xFFFFFFFF
-#define EEPROM_ENTRY_VALID 0xFFFFFFC0
+#define EEPROM_NSG_DATA_CHUNK_SIZE 0x10
+#define EEPROM_NSG_EELITE_INLINE_MAX 0x10
+#define EEPROM_NSG_EEFULL_INLINE_MAX 0x200
+#define EEPROM_ENTRY_STATE_MASK 0xAAAAAAAA
+#define EEPROM_ENTRY_FREE 0xAAAAAAAA
+#define EEPROM_ENTRY_WRITING 0xAAAAAAA8
+#define EEPROM_ENTRY_VALID 0xAAAAAA80
+#define EEPROM_ENTRY_OBSOLETE 0xAAAAAA00
 #define EEPROM_PARTITION_MARKER 0xFFFFFFF0
 #define EEPROM_EEFULL_BLOCK_ID_BASE 5000
+#define EEPROM_EEFULL_EXTENDED_VERSION_FLAG 0x80
+#define EEPROM_EEFULL_METADATA_SIZE 1
+#define EEPROM_EEFULL_EXTENDED_METADATA_SIZE 6
 
 enum eeprom_layout {
 	EEPROM_LAYOUT_SG,
@@ -40,11 +49,38 @@ static const uint8_t EEPROM_PARTITION_NAMES[EEPROM_PARTITION_COUNT][8] = {
 };
 
 static uint16_t read_u16(const volatile uint8_t *data) {
-	return data[0] | (uint16_t) data[1] << 8;
+	return data[0] | ((uint16_t) data[1] << 8);
 }
 
 static uint32_t read_u32(const volatile uint8_t *data) {
-	return data[0] | (uint32_t) data[1] << 8 | (uint32_t) data[2] << 16 | (uint32_t) data[3] << 24;
+	return data[0] | ((uint32_t) data[1] << 8) | ((uint32_t) data[2] << 16) | ((uint32_t) data[3] << 24);
+}
+
+static bool is_entry_state_valid(uint32_t state) {
+	switch (state) {
+		case EEPROM_ENTRY_FREE:
+		case EEPROM_ENTRY_WRITING:
+		case EEPROM_ENTRY_VALID:
+		case EEPROM_ENTRY_OBSOLETE:
+			return true;
+	}
+
+	return false;
+}
+
+static uint32_t align_nsg_data_offset(uint32_t offset) {
+	if ((offset & EEPROM_NSG_DATA_CHUNK_SIZE) == 0)
+		return offset;
+
+	return offset + EEPROM_NSG_DATA_CHUNK_SIZE * 2 -
+		(offset & (EEPROM_NSG_DATA_CHUNK_SIZE * 2 - 1));
+}
+
+static uint32_t nsg_data_byte_offset(uint32_t offset, uint32_t index) {
+	uint32_t chunk_offset = offset & (EEPROM_NSG_DATA_CHUNK_SIZE - 1);
+
+	return offset + index +
+		((chunk_offset + index) / EEPROM_NSG_DATA_CHUNK_SIZE) * EEPROM_NSG_DATA_CHUNK_SIZE;
 }
 
 static uint32_t find_flash_size(void) {
@@ -110,9 +146,15 @@ static enum eeprom_result decode_sg_block(
 		return EEPROM_RESULT_INVALID;
 
 	if (type == EEPROM_PARTITION_EEFULL) {
+		uint8_t version = partition->data[offset];
+		uint32_t metadata_size = (version & EEPROM_EEFULL_EXTENDED_VERSION_FLAG) != 0 && version != 0xFF ?
+			EEPROM_EEFULL_EXTENDED_METADATA_SIZE : EEPROM_EEFULL_METADATA_SIZE;
+
+		if (stored_size < metadata_size)
+			return EEPROM_RESULT_INVALID;
 		block->data = (const uint8_t *) (partition->data + offset + 1);
-		block->size = stored_size - 1;
-		block->version = partition->data[offset];
+		block->size = stored_size - metadata_size;
+		block->version = version;
 	} else {
 		block->data = (const uint8_t *) (partition->data + offset);
 		block->size = stored_size - 1;
@@ -121,29 +163,78 @@ static enum eeprom_result decode_sg_block(
 	return EEPROM_RESULT_OK;
 }
 
+static enum eeprom_result copy_nsg_inline_block(
+	const struct eeprom_partition *partition,
+	uint32_t stored_offset,
+	uint32_t source_offset,
+	uint32_t size,
+	struct eeprom_block *block
+) {
+	if (size > sizeof(block->inline_data))
+		return EEPROM_RESULT_INVALID;
+
+	for (uint32_t i = 0; i < size; i++) {
+		uint32_t offset = nsg_data_byte_offset(stored_offset, source_offset + i);
+
+		if (offset >= partition->size)
+			return EEPROM_RESULT_INVALID;
+		block->inline_data[i] = partition->data[offset];
+	}
+	block->data = block->inline_data;
+	return EEPROM_RESULT_OK;
+}
+
 static enum eeprom_result decode_nsg_block(
 	const struct eeprom_partition *partition,
 	enum eeprom_partition_type type,
+	uint32_t entry_offset,
 	const volatile uint8_t *entry,
 	struct eeprom_block *block
 ) {
 	uint32_t stored_size = type == EEPROM_PARTITION_EEFULL ? read_u32(entry + 8) : read_u16(entry + 8);
-	uint32_t offset = read_u32(entry + 12);
 	if (stored_size == 0)
 		return EEPROM_RESULT_INVALID;
-	if (offset >= partition->size)
-		return EEPROM_RESULT_INVALID;
-	if (stored_size > partition->size - offset)
-		return EEPROM_RESULT_INVALID;
+
+	uint32_t inline_limit = type == EEPROM_PARTITION_EEFULL ?
+		EEPROM_NSG_EEFULL_INLINE_MAX : EEPROM_NSG_EELITE_INLINE_MAX;
+	bool is_inline = stored_size <= inline_limit;
+	uint32_t stored_offset;
+	if (is_inline) {
+		uint32_t reserved_size = EEPROM_NSG_DATA_CHUNK_SIZE + stored_size +
+			(stored_size & ~(EEPROM_NSG_DATA_CHUNK_SIZE - 1));
+
+		if (entry_offset < reserved_size)
+			return EEPROM_RESULT_INVALID;
+		stored_offset = align_nsg_data_offset(entry_offset - reserved_size);
+	} else {
+		stored_offset = read_u32(entry + 12);
+		if (stored_offset >= partition->size)
+			return EEPROM_RESULT_INVALID;
+		if (stored_size > partition->size - stored_offset)
+			return EEPROM_RESULT_INVALID;
+	}
 
 	if (type == EEPROM_PARTITION_EEFULL) {
-		block->data = (const uint8_t *) (partition->data + offset + 1);
-		block->size = stored_size - 1;
-		block->version = partition->data[offset];
+		uint32_t version_offset = is_inline ? nsg_data_byte_offset(stored_offset, 0) : stored_offset;
+		if (version_offset >= partition->size)
+			return EEPROM_RESULT_INVALID;
+		uint8_t version = partition->data[version_offset];
+		uint32_t metadata_size = (version & EEPROM_EEFULL_EXTENDED_VERSION_FLAG) != 0 && version != 0xFF ?
+			EEPROM_EEFULL_EXTENDED_METADATA_SIZE : EEPROM_EEFULL_METADATA_SIZE;
+
+		if (stored_size < metadata_size)
+			return EEPROM_RESULT_INVALID;
+		block->size = stored_size - metadata_size;
+		block->version = version;
+		if (is_inline)
+			return copy_nsg_inline_block(partition, stored_offset, 1, block->size, block);
+		block->data = (const uint8_t *) (partition->data + stored_offset + 1);
 	} else {
-		block->data = (const uint8_t *) (partition->data + offset);
 		block->size = stored_size;
 		block->version = entry[7];
+		if (is_inline)
+			return copy_nsg_inline_block(partition, stored_offset, 0, block->size, block);
+		block->data = (const uint8_t *) (partition->data + stored_offset);
 	}
 	return EEPROM_RESULT_OK;
 }
@@ -166,29 +257,42 @@ static enum eeprom_result find_partition_block(
 			offset -= entry_size;
 
 		const volatile uint8_t *entry = partition->data + offset;
-		uint32_t flags = read_u32(entry);
-		if (flags == EEPROM_ENTRY_FREE)
+		uint32_t state = read_u32(entry) & EEPROM_ENTRY_STATE_MASK;
+		if (!is_entry_state_valid(state)) {
+			if (partition->layout == EEPROM_LAYOUT_SG)
+				return EEPROM_RESULT_INVALID;
+			continue;
+		}
+		if (partition->layout == EEPROM_LAYOUT_SG && state == EEPROM_ENTRY_FREE)
+			return *matched ? EEPROM_RESULT_OK : EEPROM_RESULT_BLOCK_NOT_FOUND;
+		if (state != EEPROM_ENTRY_VALID)
 			continue;
 
 		bool short_block_id = partition->layout == EEPROM_LAYOUT_NSG && type == EEPROM_PARTITION_EELITE;
 		uint32_t entry_block_id = short_block_id ? read_u16(entry + 4) : read_u32(entry + 4);
-		uint32_t free_block_id = short_block_id ? 0xFFFF : EEPROM_ENTRY_FREE;
-		if (entry_block_id == free_block_id)
+		uint32_t maximum_id = type == EEPROM_PARTITION_EELITE ?
+			EEPROM_EEFULL_BLOCK_ID_BASE - 1 : UINT32_MAX - EEPROM_EEFULL_BLOCK_ID_BASE;
+		if (entry_block_id > maximum_id) {
+			if (partition->layout == EEPROM_LAYOUT_SG)
+				return EEPROM_RESULT_INVALID;
 			continue;
+		}
 		if (type == EEPROM_PARTITION_EEFULL)
 			entry_block_id += EEPROM_EEFULL_BLOCK_ID_BASE;
 		if (entry_block_id != block_id)
 			continue;
-		if (flags != EEPROM_ENTRY_VALID)
-			continue;
 		*matched = true;
 
-		if (partition->layout == EEPROM_LAYOUT_NSG)
-			return decode_nsg_block(partition, type, entry, block);
-		return decode_sg_block(partition, type, entry, block);
+		enum eeprom_result result = partition->layout == EEPROM_LAYOUT_NSG ?
+			decode_nsg_block(partition, type, offset, entry, block) :
+			decode_sg_block(partition, type, entry, block);
+		if (result != EEPROM_RESULT_OK)
+			return result;
+		if (partition->layout == EEPROM_LAYOUT_SG)
+			return EEPROM_RESULT_OK;
 	}
 
-	return EEPROM_RESULT_BLOCK_NOT_FOUND;
+	return *matched ? EEPROM_RESULT_OK : EEPROM_RESULT_BLOCK_NOT_FOUND;
 }
 
 static enum eeprom_result find_flash_block(
@@ -230,30 +334,50 @@ static enum eeprom_result find_flash_block(
 
 		*partition_found = true;
 		enum eeprom_result result = find_partition_block(&partition, type, block_id, block, matched);
-		if (*matched)
+		if (result == EEPROM_RESULT_INVALID)
 			return result;
+		if (*matched)
+			return EEPROM_RESULT_OK;
 	}
 
 	return EEPROM_RESULT_BLOCK_NOT_FOUND;
 }
 
-enum eeprom_result eeprom_find_block(enum eeprom_partition_type type, uint32_t block_id, struct eeprom_block *block) {
+enum eeprom_result eeprom_find_block_in_memory(
+	const volatile uint8_t *data,
+	uint32_t size,
+	enum eeprom_partition_type type,
+	uint32_t block_id,
+	struct eeprom_block *block
+) {
 	if ((uint32_t) type >= EEPROM_PARTITION_COUNT)
 		return EEPROM_RESULT_INVALID;
-
-	uint32_t flash_size = find_flash_size();
-	if (flash_size == 0)
-		return EEPROM_RESULT_FLASH_NOT_MAPPED;
+	if (data == NULL || block == NULL)
+		return EEPROM_RESULT_INVALID;
 
 	struct flash_map flash = {
-		.data = (const volatile uint8_t *) (uintptr_t) FLASH_ADDRESS_MIN,
-		.size = flash_size,
+		.data = data,
+		.size = size,
 	};
 	bool partition_found = false;
 	bool matched;
 	enum eeprom_result result = find_flash_block(&flash, type, block_id, block, &partition_found, &matched);
-	if (matched)
+	if (result == EEPROM_RESULT_INVALID || matched)
 		return result;
 
 	return partition_found ? EEPROM_RESULT_BLOCK_NOT_FOUND : EEPROM_RESULT_PARTITION_NOT_FOUND;
+}
+
+enum eeprom_result eeprom_find_block(enum eeprom_partition_type type, uint32_t block_id, struct eeprom_block *block) {
+	uint32_t flash_size = find_flash_size();
+	if (flash_size == 0)
+		return EEPROM_RESULT_FLASH_NOT_MAPPED;
+
+	return eeprom_find_block_in_memory(
+		(const volatile uint8_t *) (uintptr_t) FLASH_ADDRESS_MIN,
+		flash_size,
+		type,
+		block_id,
+		block
+	);
 }

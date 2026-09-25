@@ -21,6 +21,7 @@ test that loads a purpose-built DSP program.
 | --- | --- |
 | `stm` | System timer registers and counter views |
 | `dmac` | DMA transfers, requests, linked lists, arbitration, and interrupts |
+| `eeprom-parser` | Siemens X65/X85 EELITE and EEFULL layouts, inline blocks, entry states, duplicates, and metadata |
 | `dsp-lle-core` | Communication flags, firmware command handshake, shared RAM access widths, MCU/DSP interrupt requests, and reset |
 | `dsp-lle-irqs` | Real DSP-generated INT_TOMCU requests, VIC routing, and acknowledgement for all four DSP SRC lines |
 | `dsp-lle-interrupt-functional` | DSP interrupt masking, acknowledgement, simultaneous priority, nested arbitration, and repeat delivery |
