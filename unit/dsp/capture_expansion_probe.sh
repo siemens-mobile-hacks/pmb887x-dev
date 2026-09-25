@@ -18,18 +18,18 @@ for ((family = family_first; family <= family_last; family++)); do
 		-DDSP_EXPANSION_PROBE_FAMILY_LAST="$family" \
 		-DDSP_EXPANSION_PROBE_WORD_FIRST=0x0000 \
 		-DDSP_EXPANSION_PROBE_WORD_LAST=0xFFFF
-	cmake --build "$unit_dir/build" --target dsp-expansion-probe -j"$jobs"
+	cmake --build "$unit_dir/build" --target dsp-lle-expansion-probe -j"$jobs"
 
 	for capture in 1 2; do
 		(
 			cd "$unit_dir"
-			BOARD="$board" TEST_COLOR=OFF ./run.sh dsp-expansion-probe --speed="$baudrate"
+			BOARD="$board" TEST_COLOR=OFF ./run.sh dsp-lle-expansion-probe --speed="$baudrate"
 		) | tee "/tmp/dsp-capture-$capture.log"
 	done
 
 	printf -v family_name '%02u' "$family"
-	perl "$script_dir/opcode-probe/merge_expansion_probe.pl" \
-		--output "$script_dir/opcode-probe/expansion-family-$family_name-map.csv" \
+	perl "$script_dir/lle/opcode-probe/merge_expansion_probe.pl" \
+		--output "$script_dir/lle/opcode-probe/expansion-family-$family_name-map.csv" \
 		/tmp/dsp-capture-1.log /tmp/dsp-capture-2.log
-	perl "$script_dir/opcode-probe/pack_maps.pl" --remove-source
+	perl "$script_dir/lle/opcode-probe/pack_maps.pl" --remove-source
 done

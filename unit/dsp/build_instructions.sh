@@ -7,5 +7,5 @@ if (($# != 0)); then
 	exit 2
 fi
 
-perl "$script_dir/instructions/build_instructions.pl"
-perl "$script_dir/instructions/pack_instructions.pl"
+perl "$script_dir/lle/instructions/build_instructions.pl"
+perl "$script_dir/lle/instructions/pack_instructions.pl"

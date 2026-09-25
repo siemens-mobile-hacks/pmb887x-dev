@@ -10,146 +10,143 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dmac-clock]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp]
+[dsp-lle-core]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-clock]
+[dsp-lle-clock]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-timer-clock]
+[dsp-lle-timer-clock]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-handshake]
-devices = ["generic-pmb8875", "generic-pmb8876"]
-
-[dsp-instructions]
+[dsp-lle-instructions]
 devices = ["generic-pmb8876"]
 timeout = 300
 
-[dsp-opcode-aliases]
+[dsp-lle-opcode-aliases]
 devices = ["generic-pmb8876"]
 
-[dsp-opcode-probe]
+[dsp-lle-opcode-probe]
 devices = ["generic-pmb8876"]
 
-[dsp-expansion-probe]
+[dsp-lle-expansion-probe]
 devices = ["generic-pmb8876"]
 
-[dsp-irqs]
+[dsp-lle-irqs]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-mask-rom-commands]
+[dsp-lle-mask-rom-commands]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-peripheral-map]
+[dsp-lle-peripheral-map]
 devices = ["generic-pmb8876"]
 
-[dsp-peripherals-registers]
+[dsp-lle-peripherals-registers]
 devices = ["generic-pmb8876"]
 
-[dsp-benchmark]
+[dsp-lle-benchmark]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-irq-shared-benchmark]
+[dsp-lle-irq-shared-benchmark]
 devices = ["generic-pmb8876"]
 
-[dsp-timers-functional]
+[dsp-lle-timers-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-mcs-functional]
+[dsp-lle-mcs-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-delay-slot-functional]
+[dsp-lle-delay-slot-functional]
 devices = ["generic-pmb8876"]
 
-[dsp-interrupt-functional]
+[dsp-lle-interrupt-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-interrupt-sources]
+[dsp-lle-interrupt-sources]
 devices = ["generic-pmb8876"]
 
-[dsp-ssc-functional]
+[dsp-lle-ssc-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-cipher-functional]
+[dsp-lle-cipher-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-cipher-a53-vectors]
+[dsp-lle-cipher-a53-vectors]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-cipher-kgcore-vectors]
+[dsp-lle-cipher-kgcore-vectors]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-channel-decoder-functional]
+[dsp-lle-channel-decoder-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-channel-decoder-vectors]
+[dsp-lle-channel-decoder-vectors]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-sch-decoder-vectors]
+[dsp-lle-sch-decoder-vectors]
 devices = ["generic-pmb8876"]
 
-[dsp-equalizer-functional]
+[dsp-lle-equalizer-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-equalizer-vectors]
+[dsp-lle-equalizer-vectors]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-equalizer-gmsk-vectors]
+[dsp-lle-equalizer-gmsk-vectors]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-equalizer-output]
+[dsp-lle-equalizer-output]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-equalizer-burst]
+[dsp-lle-equalizer-burst]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-i2s1-functional]
+[dsp-lle-i2s1-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-i2s2-functional]
+[dsp-lle-i2s2-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-i2s3-functional]
+[dsp-lle-i2s3-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-afe-functional]
+[dsp-lle-afe-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-modulator-functional]
+[dsp-lle-modulator-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-baseband-functional]
+[dsp-lle-baseband-functional]
 devices = ["generic-pmb8876"]
 
-[dsp-tpu-events]
+[dsp-lle-tpu-events]
 devices = ["generic-pmb8876"]
 
-[dsp-tpu-bb-events]
+[dsp-lle-tpu-bb-events]
 devices = ["generic-pmb8876"]
 
-[dsp-l1mon-vectors]
+[dsp-lle-l1mon-vectors]
 devices = ["generic-pmb8876"]
 
-[dsp-l1mon-functional]
+[dsp-lle-l1mon-functional]
 devices = ["generic-pmb8876"]
 
-[dsp-gsm-channel-scan]
-devices = ["siemens-el71"]
+[dsp-hle-gsm-channel-scan]
+devices = ["siemens-c81", "siemens-el71"]
 
-[dsp-boot-state]
+[dsp-hle-boot-state]
 devices = ["generic-pmb8876"]
 
-[dsp-control-functional]
+[dsp-lle-control-functional]
 devices = ["generic-pmb8876"]
 
-[dsp-io-functional]
+[dsp-lle-io-functional]
 devices = ["generic-pmb8876"]
 
-[dsp-rom-dump]
+[dsp-hle-rom-dump]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-data-rom-dump]
+[dsp-hle-data-rom-dump]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [ebu]

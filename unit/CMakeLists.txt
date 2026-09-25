@@ -29,13 +29,12 @@ add_peripheral_test(stm stm/test.c)
 add_peripheral_test(stm-clock stm/clock.c cgu/clock.c)
 add_peripheral_test(dmac dmac/test.c)
 add_peripheral_test(dmac-clock dmac/clock.c)
-add_peripheral_test(dsp dsp/test.c)
-add_peripheral_test(dsp-clock dsp/clock.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-timer-clock dsp/timer-clock.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-handshake dsp/handshake.c)
-add_peripheral_test(dsp-instructions dsp/instructions.c)
-add_peripheral_test(dsp-opcode-aliases dsp/instructions.c)
-target_compile_definitions(dsp-opcode-aliases PRIVATE
+add_peripheral_test(dsp-lle-core dsp/lle/test.c)
+add_peripheral_test(dsp-lle-clock dsp/lle/clock.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-timer-clock dsp/lle/timer-clock.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-instructions dsp/lle/instructions.c)
+add_peripheral_test(dsp-lle-opcode-aliases dsp/lle/instructions.c)
+target_compile_definitions(dsp-lle-opcode-aliases PRIVATE
 	DSP_INSTRUCTION_CASES_INCLUDE="opcode-aliases/instructions-cases.inc"
 	DSP_INSTRUCTION_GOLDEN_INCLUDE="opcode-aliases/instructions-golden-packed.inc"
 	DSP_INSTRUCTION_IMAGES_INCLUDE="opcode-aliases/instructions-images-packed.inc"
@@ -43,8 +42,8 @@ target_compile_definitions(dsp-opcode-aliases PRIVATE
 )
 set(DSP_OPCODE_PROBE_FIRST "0x0000" CACHE STRING "First TeakLite opcode included in the raw hardware probe")
 set(DSP_OPCODE_PROBE_LAST "0x00FF" CACHE STRING "Last TeakLite opcode included in the raw hardware probe")
-add_peripheral_test(dsp-opcode-probe dsp/opcode-probe.c)
-target_compile_definitions(dsp-opcode-probe PRIVATE
+add_peripheral_test(dsp-lle-opcode-probe dsp/lle/opcode-probe.c)
+target_compile_definitions(dsp-lle-opcode-probe PRIVATE
 	DSP_OPCODE_PROBE_FIRST=${DSP_OPCODE_PROBE_FIRST}
 	DSP_OPCODE_PROBE_LAST=${DSP_OPCODE_PROBE_LAST}
 )
@@ -52,63 +51,63 @@ set(DSP_EXPANSION_PROBE_FAMILY_FIRST "0" CACHE STRING "First TeakLite two-word f
 set(DSP_EXPANSION_PROBE_FAMILY_LAST "0" CACHE STRING "Last TeakLite two-word family included in the expansion probe")
 set(DSP_EXPANSION_PROBE_WORD_FIRST "0x0000" CACHE STRING "First expansion word included in the expansion probe")
 set(DSP_EXPANSION_PROBE_WORD_LAST "0x00FF" CACHE STRING "Last expansion word included in the expansion probe")
-add_peripheral_test(dsp-expansion-probe dsp/opcode-probe.c)
-target_compile_definitions(dsp-expansion-probe PRIVATE
+add_peripheral_test(dsp-lle-expansion-probe dsp/lle/opcode-probe.c)
+target_compile_definitions(dsp-lle-expansion-probe PRIVATE
 	DSP_EXPANSION_PROBE=1
 	DSP_EXPANSION_PROBE_FAMILY_FIRST=${DSP_EXPANSION_PROBE_FAMILY_FIRST}
 	DSP_EXPANSION_PROBE_FAMILY_LAST=${DSP_EXPANSION_PROBE_FAMILY_LAST}
 	DSP_EXPANSION_PROBE_WORD_FIRST=${DSP_EXPANSION_PROBE_WORD_FIRST}
 	DSP_EXPANSION_PROBE_WORD_LAST=${DSP_EXPANSION_PROBE_WORD_LAST}
 )
-add_peripheral_test(dsp-irqs dsp/irqs.c)
-add_peripheral_test(dsp-mask-rom-commands dsp/commands.c)
-add_peripheral_test(dsp-peripheral-map dsp/peripheral-map.c)
-add_peripheral_test(dsp-peripherals-registers dsp/safe-peripherals.c)
-add_peripheral_test(dsp-benchmark dsp/benchmark.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-irq-shared-benchmark dsp/irq-shared-benchmark.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-timers-functional dsp/timers-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-mcs-functional dsp/mcs-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-delay-slot-functional dsp/delay-slot-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-interrupt-functional dsp/interrupt-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-interrupt-sources dsp/interrupt-sources.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-ssc-functional dsp/ssc-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-cipher-functional dsp/cipher-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-cipher-a53-vectors dsp/cipher-a53-vectors.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-cipher-kgcore-vectors dsp/cipher-kgcore-vectors.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-channel-decoder-functional dsp/channel-decoder-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-channel-decoder-vectors dsp/channel-decoder-vectors.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-sch-decoder-vectors dsp/sch-decoder-vectors.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-equalizer-functional dsp/equalizer-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-equalizer-vectors dsp/equalizer-vectors.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-equalizer-gmsk-vectors dsp/equalizer-gmsk-vectors.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-equalizer-output dsp/equalizer-output.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-equalizer-burst dsp/equalizer-burst.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-irqs dsp/lle/irqs.c)
+add_peripheral_test(dsp-lle-mask-rom-commands dsp/lle/commands.c)
+add_peripheral_test(dsp-lle-peripheral-map dsp/lle/peripheral-map.c)
+add_peripheral_test(dsp-lle-peripherals-registers dsp/lle/safe-peripherals.c)
+add_peripheral_test(dsp-lle-benchmark dsp/lle/benchmark.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-irq-shared-benchmark dsp/lle/irq-shared-benchmark.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-timers-functional dsp/lle/timers-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-mcs-functional dsp/lle/mcs-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-delay-slot-functional dsp/lle/delay-slot-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-interrupt-functional dsp/lle/interrupt-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-interrupt-sources dsp/lle/interrupt-sources.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-ssc-functional dsp/lle/ssc-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-cipher-functional dsp/lle/cipher-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-cipher-a53-vectors dsp/lle/cipher-a53-vectors.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-cipher-kgcore-vectors dsp/lle/cipher-kgcore-vectors.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-channel-decoder-functional dsp/lle/channel-decoder-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-channel-decoder-vectors dsp/lle/channel-decoder-vectors.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-sch-decoder-vectors dsp/lle/sch-decoder-vectors.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-equalizer-functional dsp/lle/equalizer-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-equalizer-vectors dsp/lle/equalizer-vectors.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-equalizer-gmsk-vectors dsp/lle/equalizer-gmsk-vectors.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-equalizer-output dsp/lle/equalizer-output.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-equalizer-burst dsp/lle/equalizer-burst.c dsp/dsp-hw.c)
 foreach(I2S_INSTANCE RANGE 1 3)
-	add_peripheral_test(dsp-i2s${I2S_INSTANCE}-functional dsp/i2s-functional.c dsp/dsp-hw.c)
-	target_compile_definitions(dsp-i2s${I2S_INSTANCE}-functional PRIVATE I2S_INSTANCE=${I2S_INSTANCE})
+	add_peripheral_test(dsp-lle-i2s${I2S_INSTANCE}-functional dsp/lle/i2s-functional.c dsp/dsp-hw.c)
+	target_compile_definitions(dsp-lle-i2s${I2S_INSTANCE}-functional PRIVATE I2S_INSTANCE=${I2S_INSTANCE})
 endforeach()
-add_peripheral_test(dsp-afe-functional dsp/afe-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-modulator-functional dsp/modulator-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-baseband-functional dsp/baseband-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-tpu-events dsp/tpu-events.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-tpu-bb-events dsp/tpu-bb-events.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-l1mon-vectors dsp/l1mon-vectors.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-l1mon-functional dsp/l1mon-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-afe-functional dsp/lle/afe-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-modulator-functional dsp/lle/modulator-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-baseband-functional dsp/lle/baseband-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-tpu-events dsp/lle/tpu-events.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-tpu-bb-events dsp/lle/tpu-bb-events.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-l1mon-vectors dsp/lle/l1mon-vectors.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-l1mon-functional dsp/lle/l1mon-functional.c dsp/dsp-hw.c)
 add_peripheral_test(
-	dsp-gsm-channel-scan
-	dsp/gsm-channel-scan.c
-	dsp/gsm-l1/gsm-l1.c
-	dsp/gsm-l1/board/siemens-x85.c
-	dsp/gsm-l1/board/hd155153np.c
+	dsp-hle-gsm-channel-scan
+	dsp/hle/gsm-channel-scan.c
+	dsp/hle/gsm-l1/gsm-l1.c
+	dsp/hle/gsm-l1/board/siemens-x85.c
+	dsp/hle/gsm-l1/board/hd155153np.c
 	dsp/dsp-hw.c
 	eeprom.c
 )
-add_peripheral_test(dsp-boot-state dsp/boot-state.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-control-functional dsp/dsp-control-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-io-functional dsp/dsp-io-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-rom-dump dsp/rom-dump.c)
-add_peripheral_test(dsp-data-rom-dump dsp/rom-dump.c)
-target_compile_definitions(dsp-data-rom-dump PRIVATE DSP_DUMP_DATA_ROM=1)
+add_peripheral_test(dsp-hle-boot-state dsp/hle/boot-state.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-control-functional dsp/lle/dsp-control-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-io-functional dsp/lle/dsp-io-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-hle-rom-dump dsp/hle/rom-dump.c)
+add_peripheral_test(dsp-hle-data-rom-dump dsp/hle/rom-dump.c)
+target_compile_definitions(dsp-hle-data-rom-dump PRIVATE DSP_DUMP_DATA_ROM=1)
 add_peripheral_test(ebu ebu/test.c)
 add_peripheral_test(ebu-clock ebu/clock.c cgu/clock.c)
 add_peripheral_test(gpio gpio/test.c)

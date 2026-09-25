@@ -13,30 +13,35 @@ success.
 
 ## Tests
 
+DSP sources are split by execution model: `dsp/hle` exercises Mask ROM or a
+startup runtime without loading custom DSP code, while `dsp/lle` contains every
+test that loads a purpose-built DSP program.
+
 | Test | Coverage |
 | --- | --- |
 | `stm` | System timer registers and counter views |
 | `dmac` | DMA transfers, requests, linked lists, arbitration, and interrupts |
-| `dsp` | Communication flags, firmware command handshake, shared RAM access widths, MCU/DSP interrupt requests, and reset |
-| `dsp-irqs` | Real DSP-generated INT_TOMCU requests, VIC routing, and acknowledgement for all four DSP SRC lines |
-| `dsp-interrupt-functional` | DSP interrupt masking, acknowledgement, simultaneous priority, nested arbitration, and repeat delivery |
-| `dsp-interrupt-sources` | All documented DSP interrupt-unit source bits, line routing, masking, coalescing, and acknowledgement |
-| `dsp-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
-| `dsp-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
-| `dsp-peripheral-map` | Reset-isolated, read-only PMB8876 DSP data-space capture for the candidate `DE00`-`DEFF` peripheral window |
-| `dsp-peripherals-safe` | Direct TeakLite reads of documented status, counter, pointer, semaphore, and ID registers without peripheral control writes |
-| `dsp-instructions` | TeakLite I instruction results, including external-register writes, captured from PMB8876 Mask ROM 0801 hardware |
-| `dsp-opcode-aliases` | Noncanonical variants of every documented TeakLite I don't-care opcode field |
-| `dsp-opcode-probe` | Resumable diagnostic sweep of raw TeakLite first-word opcodes with reset and timeout isolation |
-| `dsp-expansion-probe` | Resumable sweep of expansion words for all documented two-word TeakLite I encoding rows |
-| `dsp-tpu-events` | PMB8876 TPU Timer RAM decoder values 0–9 and 15–31 observed through Baseband, modulator, and DSP interrupt state |
-| `dsp-tpu-bb-events` | Hardware timing, counts, status, and DSP interrupts for repeating TPU MONON events |
-| `dsp-l1mon-vectors` | PMB8876 Mask ROM monitoring bounds, zero-I/Q result, ring behavior, and TX inactivity |
-| `dsp-l1mon-functional` | Autonomous TPU MONON through the normal Mask ROM interrupt handler and monitoring result ring |
-| `dsp-gsm-channel-scan` | Multiband MON scan using DSP firmware 0801 and auto-discovered EELITE AFC calibration, followed by FCCH detection |
-| `dsp-boot-state` | Autonomous Mask ROM execution after DSP reset and interrupt-gated boot-command dispatch |
-| `dsp-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |
-| `dsp-data-rom-dump` | PMB8875/PMB8876 DSP boot-mode DREAD dump of fixed and banked Data Mask ROM in Intel HEX format |
+| `dsp-lle-core` | Communication flags, firmware command handshake, shared RAM access widths, MCU/DSP interrupt requests, and reset |
+| `dsp-lle-irqs` | Real DSP-generated INT_TOMCU requests, VIC routing, and acknowledgement for all four DSP SRC lines |
+| `dsp-lle-interrupt-functional` | DSP interrupt masking, acknowledgement, simultaneous priority, nested arbitration, and repeat delivery |
+| `dsp-lle-interrupt-sources` | All documented DSP interrupt-unit source bits, line routing, masking, coalescing, and acknowledgement |
+| `dsp-lle-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
+| `dsp-lle-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
+| `dsp-lle-mcs-functional` | Bidirectional MCS communication flags with MCU and custom DSP code |
+| `dsp-lle-peripheral-map` | Reset-isolated, read-only PMB8876 DSP data-space capture for the candidate `DE00`-`DEFF` peripheral window |
+| `dsp-lle-peripherals-registers` | Direct TeakLite reads of documented status, counter, pointer, semaphore, and ID registers without peripheral control writes |
+| `dsp-lle-instructions` | TeakLite I instruction results, including external-register writes, captured from PMB8876 Mask ROM 0801 hardware |
+| `dsp-lle-opcode-aliases` | Noncanonical variants of every documented TeakLite I don't-care opcode field |
+| `dsp-lle-opcode-probe` | Resumable diagnostic sweep of raw TeakLite first-word opcodes with reset and timeout isolation |
+| `dsp-lle-expansion-probe` | Resumable sweep of expansion words for all documented two-word TeakLite I encoding rows |
+| `dsp-lle-tpu-events` | PMB8876 TPU Timer RAM decoder values 0–9 and 15–31 observed through Baseband, modulator, and DSP interrupt state |
+| `dsp-lle-tpu-bb-events` | Hardware timing, counts, status, and DSP interrupts for repeating TPU MONON events |
+| `dsp-lle-l1mon-vectors` | PMB8876 Mask ROM monitoring bounds, zero-I/Q result, ring behavior, and TX inactivity |
+| `dsp-lle-l1mon-functional` | Autonomous TPU MONON through the normal Mask ROM interrupt handler and monitoring result ring |
+| `dsp-hle-gsm-channel-scan` | Multiband MON scan using DSP firmware 0801 and auto-discovered EELITE AFC calibration, followed by FCCH detection |
+| `dsp-hle-boot-state` | Autonomous Mask ROM execution after DSP reset and interrupt-gated boot-command dispatch |
+| `dsp-hle-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |
+| `dsp-hle-data-rom-dump` | PMB8875/PMB8876 DSP boot-mode DREAD dump of fixed and banked Data Mask ROM in Intel HEX format |
 | `mod` | Common CLC, SRC, and SRB register blocks |
 | `scu` | CPU identification, watchdog protection, mode transitions, counter, and status |
 | `scu-reset` | Intentional software reset using the firmware reset-control sequence |

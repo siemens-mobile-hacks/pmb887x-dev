@@ -1,7 +1,7 @@
 #include <pmb887x.h>
 
 #include "cgu/clock.h"
-#include "dsp/baseband-functional-8876.inc"
+#include "dsp/lle/baseband-functional-8876.inc"
 #include "dsp/dsp-hw.h"
 #include "test.h"
 

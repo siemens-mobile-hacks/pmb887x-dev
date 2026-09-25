@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use Digest::SHA qw(sha256_hex);
+use File::Basename qw(basename);
 use File::Copy qw(copy);
 use File::Path qw(make_path);
 use File::Spec;
@@ -14,65 +15,67 @@ use TeakTools qw(find_teak_tools);
 my ($teak_assembler, $teak_disassembler) = find_teak_tools();
 my $cache_dir = $ENV{DSP_IMAGE_CACHE} // '/tmp/pmb887x-dsp-images';
 my @images = (
-	[ 'commands-0602.asm', 'commands-0602.inc', 'DSP_TEST_IMAGE_0602', 'pmb8875' ],
-	[ 'commands-0604.asm', 'commands-0604.inc', 'DSP_TEST_IMAGE_0604', 'pmb8875' ],
-	[ 'commands-0801.asm', 'commands-0801.inc', 'DSP_TEST_IMAGE_0801', 'pmb8876' ],
-	[ 'irqs-0602.asm', 'irqs-0602.inc', 'DSP_IRQ_IMAGE_0602', 'pmb8875' ],
-	[ 'irqs-0604.asm', 'irqs-0604.inc', 'DSP_IRQ_IMAGE_0604', 'pmb8875' ],
-	[ 'irqs-0801.asm', 'irqs-0801.inc', 'DSP_IRQ_IMAGE_0801', 'pmb8876' ],
-	[ 'benchmark.asm', 'benchmark-8875.inc', 'DSP_BENCHMARK_8875', 'pmb8875' ],
-	[ 'benchmark.asm', 'benchmark-8876.inc', 'DSP_BENCHMARK_8876', 'pmb8876' ],
-	[ 'irq-shared-benchmark.asm', 'irq-shared-benchmark-8876.inc', 'DSP_IRQ_SHARED_BENCHMARK_8876', 'pmb8876' ],
-	[ 'timers-functional.asm', 'timers-functional-8875.inc', 'DSP_TIMERS_IMAGE_8875', 'pmb8875' ],
-	[ 'timers-functional.asm', 'timers-functional-8876.inc', 'DSP_TIMERS_IMAGE_8876', 'pmb8876' ],
-	[ 'mcs-functional.asm', 'mcs-functional-8875.inc', 'DSP_MCS_IMAGE_8875', 'pmb8875' ],
-	[ 'mcs-functional.asm', 'mcs-functional-8876.inc', 'DSP_MCS_IMAGE_8876', 'pmb8876' ],
-	[ 'delay-slot-functional.asm', 'delay-slot-functional-8876.inc', 'DSP_DELAY_SLOT_IMAGE_8876', 'pmb8876' ],
-	[ 'interrupt-functional.asm', 'interrupt-functional-8875.inc', 'DSP_INTERRUPT_IMAGE_8875', 'pmb8875' ],
-	[ 'interrupt-functional.asm', 'interrupt-functional-8876.inc', 'DSP_INTERRUPT_IMAGE_8876', 'pmb8876' ],
-	[ 'interrupt-sources-a0.asm', 'interrupt-sources-a0-8876.inc', 'DSP_INTERRUPT_SOURCES_A0_8876', 'pmb8876' ],
-	[ 'interrupt-sources-b0.asm', 'interrupt-sources-b0-8876.inc', 'DSP_INTERRUPT_SOURCES_B0_8876', 'pmb8876' ],
-	[ 'interrupt-sources-1.asm', 'interrupt-sources-1-8876.inc', 'DSP_INTERRUPT_SOURCES_1_8876', 'pmb8876' ],
-	[ 'interrupt-sources-2.asm', 'interrupt-sources-2-8876.inc', 'DSP_INTERRUPT_SOURCES_2_8876', 'pmb8876' ],
-	[ 'ssc-functional.asm', 'ssc-functional-8875.inc', 'DSP_SSC_IMAGE_8875', 'pmb8875' ],
-	[ 'ssc-functional.asm', 'ssc-functional-8876.inc', 'DSP_SSC_IMAGE_8876', 'pmb8876' ],
-	[ 'cipher-a512-functional.asm', 'cipher-a512-functional-8875.inc', 'DSP_CIPHER_A512_IMAGE_8875', 'pmb8875' ],
-	[ 'cipher-a512-functional.asm', 'cipher-a512-functional-8876.inc', 'DSP_CIPHER_A512_IMAGE_8876', 'pmb8876' ],
-	[ 'cipher-a53-functional.asm', 'cipher-a53-functional-8875.inc', 'DSP_CIPHER_A53_IMAGE_8875', 'pmb8875' ],
-	[ 'cipher-a53-functional.asm', 'cipher-a53-functional-8876.inc', 'DSP_CIPHER_A53_IMAGE_8876', 'pmb8876' ],
-	[ 'cipher-kgcore-vectors.asm', 'cipher-kgcore-vectors-8875.inc', 'DSP_CIPHER_KGCORE_IMAGE_8875', 'pmb8875' ],
-	[ 'cipher-kgcore-vectors.asm', 'cipher-kgcore-vectors-8876.inc', 'DSP_CIPHER_KGCORE_IMAGE_8876', 'pmb8876' ],
-	[ 'channel-decoder-functional.asm', 'channel-decoder-functional-8875.inc', 'DSP_CHANNEL_DECODER_IMAGE_8875', 'pmb8875' ],
-	[ 'channel-decoder-functional.asm', 'channel-decoder-functional-8876.inc', 'DSP_CHANNEL_DECODER_IMAGE_8876', 'pmb8876' ],
-	[ 'channel-decoder-vector-runner.asm', 'channel-decoder-vector-runner-8875.inc', 'DSP_CHANNEL_DECODER_VECTOR_RUNNER_8875', 'pmb8875' ],
-	[ 'channel-decoder-vector-runner.asm', 'channel-decoder-vector-runner-8876.inc', 'DSP_CHANNEL_DECODER_VECTOR_RUNNER_8876', 'pmb8876' ],
-	[ 'sch-decoder-vector-runner.asm', 'sch-decoder-vector-runner-8876.inc', 'DSP_SCH_DECODER_VECTOR_RUNNER_8876', 'pmb8876' ],
-	[ 'equalizer-functional.asm', 'equalizer-functional-8875.inc', 'DSP_EQUALIZER_IMAGE_8875', 'pmb8875' ],
-	[ 'equalizer-functional.asm', 'equalizer-functional-8876.inc', 'DSP_EQUALIZER_IMAGE_8876', 'pmb8876' ],
-	[ 'equalizer-vector-runner.asm', 'equalizer-vector-runner-8875.inc', 'DSP_EQUALIZER_VECTOR_RUNNER_8875', 'pmb8875' ],
-	[ 'equalizer-vector-runner.asm', 'equalizer-vector-runner-8876.inc', 'DSP_EQUALIZER_VECTOR_RUNNER_8876', 'pmb8876' ],
-	[ 'equalizer-output-runner.asm', 'equalizer-output-runner-8875.inc', 'DSP_EQUALIZER_OUTPUT_RUNNER_8875', 'pmb8875' ],
-	[ 'equalizer-output-runner.asm', 'equalizer-output-runner-8876.inc', 'DSP_EQUALIZER_OUTPUT_RUNNER_8876', 'pmb8876' ],
-	[ 'equalizer-burst-runner.asm', 'equalizer-burst-runner-8875.inc', 'DSP_EQUALIZER_BURST_RUNNER_8875', 'pmb8875' ],
-	[ 'equalizer-burst-runner.asm', 'equalizer-burst-runner-8876.inc', 'DSP_EQUALIZER_BURST_RUNNER_8876', 'pmb8876' ],
-	[ 'i2s-functional.asm', 'i2s-functional-8875.inc', 'DSP_I2S_FUNCTIONAL_8875', 'pmb8875' ],
-	[ 'i2s-functional.asm', 'i2s-functional-8876.inc', 'DSP_I2S_FUNCTIONAL_8876', 'pmb8876' ],
-	[ 'i2s-rx-functional.asm', 'i2s-rx-functional-8876.inc', 'DSP_I2S_RX_FUNCTIONAL_8876', 'pmb8876' ],
-	[ 'i2s-rx-pcm-functional.asm', 'i2s-rx-pcm-functional-8876.inc', 'DSP_I2S_RX_PCM_FUNCTIONAL_8876', 'pmb8876' ],
-	[ 'afe-functional.asm', 'afe-functional-8875.inc', 'DSP_AFE_FUNCTIONAL_8875', 'pmb8875' ],
-	[ 'afe-functional.asm', 'afe-functional-8876.inc', 'DSP_AFE_FUNCTIONAL_8876', 'pmb8876' ],
-	[ 'modulator-functional.asm', 'modulator-functional-8875.inc', 'DSP_MODULATOR_FUNCTIONAL_8875', 'pmb8875' ],
-	[ 'modulator-functional.asm', 'modulator-functional-8876.inc', 'DSP_MODULATOR_FUNCTIONAL_8876', 'pmb8876' ],
-	[ 'baseband-functional.asm', 'baseband-functional-8876.inc', 'DSP_BASEBAND_FUNCTIONAL_8876', 'pmb8876' ],
-	[ 'tpu-events.asm', 'tpu-events-8876.inc', 'DSP_TPU_EVENTS_8876', 'pmb8876' ],
-	[ 'tpu-bb-events.asm', 'tpu-bb-events-8876.inc', 'DSP_TPU_BB_EVENTS_8876', 'pmb8876' ],
-	[ 'l1mon-vectors.asm', 'l1mon-vectors-8876.inc', 'DSP_L1MON_VECTORS_8876', 'pmb8876' ],
-	[ 'l1mon-functional.asm', 'l1mon-functional-8876.inc', 'DSP_L1MON_FUNCTIONAL_8876', 'pmb8876' ],
-	[ 'dsp-control-functional.asm', 'dsp-control-functional-8876.inc', 'DSP_CONTROL_FUNCTIONAL_8876', 'pmb8876' ],
-	[ 'dsp-io-functional.asm', 'dsp-io-functional-8876.inc', 'DSP_IO_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/commands-0602.asm', 'lle/commands-0602.inc', 'DSP_TEST_IMAGE_0602', 'pmb8875' ],
+	[ 'lle/commands-0604.asm', 'lle/commands-0604.inc', 'DSP_TEST_IMAGE_0604', 'pmb8875' ],
+	[ 'lle/commands-0801.asm', 'lle/commands-0801.inc', 'DSP_TEST_IMAGE_0801', 'pmb8876' ],
+	[ 'lle/irqs-0602.asm', 'lle/irqs-0602.inc', 'DSP_IRQ_IMAGE_0602', 'pmb8875' ],
+	[ 'lle/irqs-0604.asm', 'lle/irqs-0604.inc', 'DSP_IRQ_IMAGE_0604', 'pmb8875' ],
+	[ 'lle/irqs-0801.asm', 'lle/irqs-0801.inc', 'DSP_IRQ_IMAGE_0801', 'pmb8876' ],
+	[ 'lle/benchmark.asm', 'lle/benchmark-8875.inc', 'DSP_BENCHMARK_8875', 'pmb8875' ],
+	[ 'lle/benchmark.asm', 'lle/benchmark-8876.inc', 'DSP_BENCHMARK_8876', 'pmb8876' ],
+	[ 'lle/irq-shared-benchmark.asm', 'lle/irq-shared-benchmark-8876.inc', 'DSP_IRQ_SHARED_BENCHMARK_8876', 'pmb8876' ],
+	[ 'lle/timers-functional.asm', 'lle/timers-functional-8875.inc', 'DSP_TIMERS_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/timers-functional.asm', 'lle/timers-functional-8876.inc', 'DSP_TIMERS_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/mcs-functional.asm', 'lle/mcs-functional-8875.inc', 'DSP_MCS_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/mcs-functional.asm', 'lle/mcs-functional-8876.inc', 'DSP_MCS_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/mcs-semaphores.asm', 'lle/mcs-semaphores-8875.inc', 'DSP_MCS_SEMAPHORE_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/mcs-semaphores.asm', 'lle/mcs-semaphores-8876.inc', 'DSP_MCS_SEMAPHORE_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/delay-slot-functional.asm', 'lle/delay-slot-functional-8876.inc', 'DSP_DELAY_SLOT_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/interrupt-functional.asm', 'lle/interrupt-functional-8875.inc', 'DSP_INTERRUPT_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/interrupt-functional.asm', 'lle/interrupt-functional-8876.inc', 'DSP_INTERRUPT_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/interrupt-sources-a0.asm', 'lle/interrupt-sources-a0-8876.inc', 'DSP_INTERRUPT_SOURCES_A0_8876', 'pmb8876' ],
+	[ 'lle/interrupt-sources-b0.asm', 'lle/interrupt-sources-b0-8876.inc', 'DSP_INTERRUPT_SOURCES_B0_8876', 'pmb8876' ],
+	[ 'lle/interrupt-sources-1.asm', 'lle/interrupt-sources-1-8876.inc', 'DSP_INTERRUPT_SOURCES_1_8876', 'pmb8876' ],
+	[ 'lle/interrupt-sources-2.asm', 'lle/interrupt-sources-2-8876.inc', 'DSP_INTERRUPT_SOURCES_2_8876', 'pmb8876' ],
+	[ 'lle/ssc-functional.asm', 'lle/ssc-functional-8875.inc', 'DSP_SSC_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/ssc-functional.asm', 'lle/ssc-functional-8876.inc', 'DSP_SSC_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/cipher-a512-functional.asm', 'lle/cipher-a512-functional-8875.inc', 'DSP_CIPHER_A512_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/cipher-a512-functional.asm', 'lle/cipher-a512-functional-8876.inc', 'DSP_CIPHER_A512_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/cipher-a53-functional.asm', 'lle/cipher-a53-functional-8875.inc', 'DSP_CIPHER_A53_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/cipher-a53-functional.asm', 'lle/cipher-a53-functional-8876.inc', 'DSP_CIPHER_A53_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/cipher-kgcore-vectors.asm', 'lle/cipher-kgcore-vectors-8875.inc', 'DSP_CIPHER_KGCORE_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/cipher-kgcore-vectors.asm', 'lle/cipher-kgcore-vectors-8876.inc', 'DSP_CIPHER_KGCORE_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/channel-decoder-functional.asm', 'lle/channel-decoder-functional-8875.inc', 'DSP_CHANNEL_DECODER_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/channel-decoder-functional.asm', 'lle/channel-decoder-functional-8876.inc', 'DSP_CHANNEL_DECODER_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/channel-decoder-vector-runner.asm', 'lle/channel-decoder-vector-runner-8875.inc', 'DSP_CHANNEL_DECODER_VECTOR_RUNNER_8875', 'pmb8875' ],
+	[ 'lle/channel-decoder-vector-runner.asm', 'lle/channel-decoder-vector-runner-8876.inc', 'DSP_CHANNEL_DECODER_VECTOR_RUNNER_8876', 'pmb8876' ],
+	[ 'lle/sch-decoder-vector-runner.asm', 'lle/sch-decoder-vector-runner-8876.inc', 'DSP_SCH_DECODER_VECTOR_RUNNER_8876', 'pmb8876' ],
+	[ 'lle/equalizer-functional.asm', 'lle/equalizer-functional-8875.inc', 'DSP_EQUALIZER_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/equalizer-functional.asm', 'lle/equalizer-functional-8876.inc', 'DSP_EQUALIZER_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/equalizer-vector-runner.asm', 'lle/equalizer-vector-runner-8875.inc', 'DSP_EQUALIZER_VECTOR_RUNNER_8875', 'pmb8875' ],
+	[ 'lle/equalizer-vector-runner.asm', 'lle/equalizer-vector-runner-8876.inc', 'DSP_EQUALIZER_VECTOR_RUNNER_8876', 'pmb8876' ],
+	[ 'lle/equalizer-output-runner.asm', 'lle/equalizer-output-runner-8875.inc', 'DSP_EQUALIZER_OUTPUT_RUNNER_8875', 'pmb8875' ],
+	[ 'lle/equalizer-output-runner.asm', 'lle/equalizer-output-runner-8876.inc', 'DSP_EQUALIZER_OUTPUT_RUNNER_8876', 'pmb8876' ],
+	[ 'lle/equalizer-burst-runner.asm', 'lle/equalizer-burst-runner-8875.inc', 'DSP_EQUALIZER_BURST_RUNNER_8875', 'pmb8875' ],
+	[ 'lle/equalizer-burst-runner.asm', 'lle/equalizer-burst-runner-8876.inc', 'DSP_EQUALIZER_BURST_RUNNER_8876', 'pmb8876' ],
+	[ 'lle/i2s-functional.asm', 'lle/i2s-functional-8875.inc', 'DSP_I2S_FUNCTIONAL_8875', 'pmb8875' ],
+	[ 'lle/i2s-functional.asm', 'lle/i2s-functional-8876.inc', 'DSP_I2S_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/i2s-rx-functional.asm', 'lle/i2s-rx-functional-8876.inc', 'DSP_I2S_RX_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/i2s-rx-pcm-functional.asm', 'lle/i2s-rx-pcm-functional-8876.inc', 'DSP_I2S_RX_PCM_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/afe-functional.asm', 'lle/afe-functional-8875.inc', 'DSP_AFE_FUNCTIONAL_8875', 'pmb8875' ],
+	[ 'lle/afe-functional.asm', 'lle/afe-functional-8876.inc', 'DSP_AFE_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/modulator-functional.asm', 'lle/modulator-functional-8875.inc', 'DSP_MODULATOR_FUNCTIONAL_8875', 'pmb8875' ],
+	[ 'lle/modulator-functional.asm', 'lle/modulator-functional-8876.inc', 'DSP_MODULATOR_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/baseband-functional.asm', 'lle/baseband-functional-8876.inc', 'DSP_BASEBAND_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/tpu-events.asm', 'lle/tpu-events-8876.inc', 'DSP_TPU_EVENTS_8876', 'pmb8876' ],
+	[ 'lle/tpu-bb-events.asm', 'lle/tpu-bb-events-8876.inc', 'DSP_TPU_BB_EVENTS_8876', 'pmb8876' ],
+	[ 'lle/l1mon-vectors.asm', 'lle/l1mon-vectors-8876.inc', 'DSP_L1MON_VECTORS_8876', 'pmb8876' ],
+	[ 'lle/l1mon-functional.asm', 'lle/l1mon-functional-8876.inc', 'DSP_L1MON_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/dsp-control-functional.asm', 'lle/dsp-control-functional-8876.inc', 'DSP_CONTROL_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/dsp-io-functional.asm', 'lle/dsp-io-functional-8876.inc', 'DSP_IO_FUNCTIONAL_8876', 'pmb8876' ],
 );
 my @embedded_images = (
-	[ '../../rom/dsp/el71/0801/container.bin', 'gsm-l1/el71-v45-dsp-container.inc',
+	[ '../../rom/dsp/el71/0801/container.bin', 'hle/gsm-l1/el71-v45-dsp-container.inc',
 		'DSP_EL71_V45_CONTAINER' ],
 );
 
@@ -129,9 +132,10 @@ sub build_image {
 
 	if (!$cache_hit) {
 		my $temp_dir = tempdir('dsp-image-XXXXXX', TMPDIR => 1, CLEANUP => 1);
-		my $expanded_path = File::Spec->catfile($temp_dir, "$output_name.asm");
-		my $image_path = File::Spec->catfile($temp_dir, "$output_name.bin");
-		my $dis_path = File::Spec->catfile($temp_dir, "$output_name.dis");
+		my $temp_name = basename($output_name);
+		my $expanded_path = File::Spec->catfile($temp_dir, "$temp_name.asm");
+		my $image_path = File::Spec->catfile($temp_dir, "$temp_name.bin");
+		my $dis_path = File::Spec->catfile($temp_dir, "$temp_name.dis");
 
 		open my $expanded_file, '>', $expanded_path or die "Cannot write $expanded_path: $!\n";
 		print {$expanded_file} $expanded;
