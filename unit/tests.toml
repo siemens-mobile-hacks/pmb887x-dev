@@ -44,6 +44,18 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-mask-rom-commands]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-hle-runtime-firmware]
+devices = ["generic-pmb8876"]
+
+[dsp-hle-runtime-transport]
+devices = ["generic-pmb8876"]
+
+[dsp-hle-runtime-notifications]
+devices = ["generic-pmb8876"]
+
+[dsp-hle-startup-transport]
+devices = ["generic-pmb8876"]
+
 [dsp-lle-peripheral-map]
 devices = ["generic-pmb8876"]
 

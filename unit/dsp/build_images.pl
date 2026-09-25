@@ -77,6 +77,8 @@ my @images = (
 my @embedded_images = (
 	[ '../../rom/dsp/el71/0801/container.bin', 'hle/gsm-l1/el71-v45-dsp-container.inc',
 		'DSP_EL71_V45_CONTAINER' ],
+	[ '../../rom/dsp/sl98/0801-container.bin', 'hle/runtime-base-container.inc',
+		'DSP_RUNTIME_BASE_CONTAINER' ],
 );
 
 sub read_file {
