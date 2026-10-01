@@ -22,11 +22,13 @@ success.
 | `dsp-lle-irqs` | Real DSP-generated INT_TOMCU requests, VIC routing, and acknowledgement for all four DSP SRC lines |
 | `dsp-lle-interrupt-functional` | DSP interrupt masking, acknowledgement, simultaneous priority, nested arbitration, and repeat delivery |
 | `dsp-lle-interrupt-block-repeat` | Independent block-repeat state across interrupt preemption |
+| `dsp-lle-clock-domains` | DSP core, Timer 2, Shared RAM, and command-interface behavior under CGU and CLC controls |
 | `dsp-lle-interrupt-sources` | All documented DSP interrupt-unit source bits, line routing, masking, coalescing, and acknowledgement |
 | `dsp-lle-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
 | `dsp-lle-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
 | `dsp-hle-runtime-firmware` | PMB8876 runtime startup, command transport, and platform-specific command behavior |
 | `dsp-hle-runtime-semaphores` | Runtime command traffic, MCU semaphore ownership, and DSP-reset interaction |
+| `dsp-hle-runtime-idle` | Runtime IDLE acknowledgement, DSP clock status, wakeup, and command recovery |
 | `dsp-lle-mcs-functional` | Communication flags, all-semaphore arbitration, queued transfer, and DSP-reset behavior |
 | `dsp-lle-peripheral-map` | Reset-isolated, read-only PMB8876 DSP data-space capture for the candidate `DE00`-`DEFF` peripheral window |
 | `dsp-lle-peripherals-registers` | Direct TeakLite reads of documented status, counter, pointer, semaphore, and ID registers without peripheral control writes |

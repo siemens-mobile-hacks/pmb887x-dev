@@ -35,6 +35,8 @@ my @images = (
 		'DSP_INTERRUPT_BLOCK_REPEAT_8875', 'pmb8875' ],
 	[ 'lle/interrupt-block-repeat.asm', 'lle/interrupt-block-repeat-8876.inc',
 		'DSP_INTERRUPT_BLOCK_REPEAT_8876', 'pmb8876' ],
+	[ 'lle/clock-domains.asm', 'lle/clock-domains-8875.inc', 'DSP_CLOCK_DOMAINS_8875', 'pmb8875' ],
+	[ 'lle/clock-domains.asm', 'lle/clock-domains-8876.inc', 'DSP_CLOCK_DOMAINS_8876', 'pmb8876' ],
 	[ 'lle/interrupt-sources-a0.asm', 'lle/interrupt-sources-a0-8876.inc', 'DSP_INTERRUPT_SOURCES_A0_8876', 'pmb8876' ],
 	[ 'lle/interrupt-sources-b0.asm', 'lle/interrupt-sources-b0-8876.inc', 'DSP_INTERRUPT_SOURCES_B0_8876', 'pmb8876' ],
 	[ 'lle/interrupt-sources-1.asm', 'lle/interrupt-sources-1-8876.inc', 'DSP_INTERRUPT_SOURCES_1_8876', 'pmb8876' ],

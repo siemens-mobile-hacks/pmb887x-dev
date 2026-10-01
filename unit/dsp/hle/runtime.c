@@ -10,6 +10,16 @@ static const size_t DSP_RUNTIME_PIPE_OFFSETS[] = { 0x0005, 0x0021, 0x003D };
 
 static const struct dsp_runtime_profile DSP_RUNTIME_PROFILES[] = {
 	{
+		.name = "APOXI 0603 runtime",
+		.mask_id = 0x0603,
+		.platform = DSP_USER_ROM_PLATFORM_APOXI,
+	},
+	{
+		.name = "APOXI 0604 runtime",
+		.mask_id = 0x0604,
+		.platform = DSP_USER_ROM_PLATFORM_APOXI,
+	},
+	{
 		.name = "APOXI 0800 runtime",
 		.mask_id = 0x0800,
 		.platform = DSP_USER_ROM_PLATFORM_APOXI,
@@ -18,6 +28,16 @@ static const struct dsp_runtime_profile DSP_RUNTIME_PROFILES[] = {
 		.name = "APOXI 0801 runtime",
 		.mask_id = 0x0801,
 		.platform = DSP_USER_ROM_PLATFORM_APOXI,
+	},
+	{
+		.name = "Siemens 0602 runtime",
+		.mask_id = 0x0602,
+		.platform = DSP_USER_ROM_PLATFORM_SIEMENS,
+	},
+	{
+		.name = "Siemens 0605 runtime",
+		.mask_id = 0x0605,
+		.platform = DSP_USER_ROM_PLATFORM_SIEMENS,
 	},
 	{
 		.name = "Siemens 0800 runtime",

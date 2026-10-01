@@ -1148,6 +1148,7 @@
 
 /* PLL Status Register */
 #define	CGU_STAT							MMIO32(CGU_BASE + 0xB0)
+#define	CGU_STAT_DSP_CLK					BIT(9)					 // DSP core is active (not idle)
 #define	CGU_STAT_LOCK						BIT(13)					 // PLL lock status
 
 /* Clock Generation Unit Control Register 6 (CGU_CTL6) */

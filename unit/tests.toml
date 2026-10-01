@@ -56,6 +56,9 @@ devices = ["siemens-c81"]
 [dsp-hle-runtime-semaphores]
 devices = ["generic-pmb8876", "siemens-c81"]
 
+[dsp-hle-runtime-idle]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dsp-hle-startup-transport]
 devices = ["generic-pmb8876", "siemens-c81"]
 
@@ -84,6 +87,9 @@ devices = ["generic-pmb8876"]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [dsp-lle-interrupt-block-repeat]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-lle-clock-domains]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [dsp-lle-interrupt-sources]
