@@ -13,7 +13,7 @@
 #define DSP_MASK_ID_FAMILY_MASK 0xFF00
 #define DSP_MASK_ID_FAMILY_06XX 0x0600
 #define DSP_MASK_ID_FAMILY_08XX 0x0800
-#define DSP_MAX_PROGRAM_PAGES 3
+#define DSP_MAX_PROGRAM_PAGES 4
 #define DSP_MAX_DATA_PAGES 4
 #define DSP_WAIT_ITERATIONS 1000000
 
@@ -56,11 +56,10 @@ static const struct dsp_rom_layout ROM_LAYOUT_08XX = {
 	.program_window_first = 0xA000,
 	.program_window_words = 0x6000,
 	.program_page_shift = 2,
-	.program_page_count = 3,
-	.data_fixed_first = 0x8000,
-	.data_fixed_words = 0x1000,
-	.data_window_first = 0x9000,
-	.data_window_words = 0x4000,
+	.program_page_count = 4,
+	.data_fixed_words = 0,
+	.data_window_first = 0x8000,
+	.data_window_words = 0x5000,
 	.data_page_count = 4,
 };
 
@@ -199,15 +198,18 @@ int main(void) {
 	uint32_t fixed_hash;
 	uint32_t page_hashes[DSP_MAX_DATA_PAGES];
 
-	if (!test_check("DLOAD selects data page 0", dsp_dload_word(layout->page_address, 0)))
-		return test_finish();
-	bool fixed_dumped = dump_region(DSP_BOOT_DREAD, layout->data_fixed_first, layout->data_fixed_words, 0,
-		&fixed_hash, &current_upper_address);
-	if (!test_check("DREAD dumps fixed data ROM", fixed_dumped)) {
-		printf(":00000001FF\n");
-		return test_finish();
+	// PMB8876 has no fixed data ROM: the data page selects the whole 0x8000-0xCFFF window.
+	if (layout->data_fixed_words != 0) {
+		if (!test_check("DLOAD selects data page 0", dsp_dload_word(layout->page_address, 0)))
+			return test_finish();
+		bool fixed_dumped = dump_region(DSP_BOOT_DREAD, layout->data_fixed_first, layout->data_fixed_words, 0,
+			&fixed_hash, &current_upper_address);
+		if (!test_check("DREAD dumps fixed data ROM", fixed_dumped)) {
+			printf(":00000001FF\n");
+			return test_finish();
+		}
+		printf("# DSP fixed data ROM word-wise FNV-1a: %08lX\n", fixed_hash);
 	}
-	printf("# DSP fixed data ROM word-wise FNV-1a: %08lX\n", fixed_hash);
 
 	for (size_t page = 0; page < layout->data_page_count; page++) {
 		if (!test_check("DLOAD selects data ROM bank", dsp_dload_word(layout->page_address, page))) {
@@ -257,9 +259,10 @@ int main(void) {
 		}
 		printf("# DSP program ROM bank %lu word-wise FNV-1a: %08lX\n", (uint32_t) page, page_hashes[page]);
 	}
-	bool banks_distinct = page_hashes[0] != page_hashes[1];
-	if (layout->program_page_count == 3)
-		banks_distinct = banks_distinct && page_hashes[0] != page_hashes[2] && page_hashes[1] != page_hashes[2];
+	bool banks_distinct = true;
+	for (size_t first = 0; first < layout->program_page_count; first++)
+		for (size_t second = first + 1; second < layout->program_page_count; second++)
+			banks_distinct = banks_distinct && page_hashes[first] != page_hashes[second];
 	test_check("program ROM banks are distinct", banks_distinct);
 #endif
 	printf(":00000001FF\n");

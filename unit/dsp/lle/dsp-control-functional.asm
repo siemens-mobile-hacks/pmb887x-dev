@@ -25,14 +25,14 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0048)]
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0049)]
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x004A)]
 
-// Read one signature word from every data page while executing from PRAM.
+// Read the first word of every data page while executing from PRAM.
 clr a0 always
 mov a0l [0x$TEAK_DSP_PAGE]
 nop
 nop
 nop
 nop
-mov [0x$9000] a0
+mov [0x$8000] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)]
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_DSP_PAGE]
@@ -40,7 +40,7 @@ nop
 nop
 nop
 nop
-mov [0x$9000] a0
+mov [0x$8000] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)]
 mov 0x$0002 a0l
 mov a0l [0x$TEAK_DSP_PAGE]
@@ -48,7 +48,7 @@ nop
 nop
 nop
 nop
-mov [0x$9000] a0
+mov [0x$8000] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0022)]
 mov 0x$0003 a0l
 mov a0l [0x$TEAK_DSP_PAGE]
@@ -56,7 +56,7 @@ nop
 nop
 nop
 nop
-mov [0x$9000] a0
+mov [0x$8000] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0023)]
 
 // Program-page switches must not redirect execution outside PRAM.
@@ -84,7 +84,7 @@ nop
 nop
 mov 0x$1000 a0l
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0032)]
-mov [0x$9000] a0
+mov [0x$8000] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0033)]
 
 // MCU0 drives core INT0 after BRANCH. It must be enabled before entering idle.

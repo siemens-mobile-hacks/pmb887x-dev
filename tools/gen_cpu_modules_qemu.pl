@@ -194,7 +194,6 @@ sub genDspConfig {
 	my $cpu = $cpu_meta->{name};
 	my $prefix = uc($cpu)."_TEAK_";
 	getDspMemory($cpu_meta, "P", "PROM_FIXED");
-	getDspMemory($cpu_meta, "D", "DROM_FIXED");
 	getDspMemory($cpu_meta, "D", "SHARED_RAM");
 	getDspMemory($cpu_meta, "D", "DEMODULATOR_RAM");
 	getDspMemory($cpu_meta, "D", "YRAM");
@@ -202,6 +201,9 @@ sub genDspConfig {
 	my @data_pages = getDspPages($cpu_meta, "D", "DROM_PAGE");
 	die "Missing $cpu DSP ROM version" if !defined($cpu_meta->dspRomVersion());
 	die "Missing $cpu DSP ROM pages" if !@program_pages || !@data_pages;
+	# A CPU without a fixed data ROM pages its whole data ROM window.
+	my $has_data_fixed = grep { $_->{space} eq "D" && $_->{name} eq "DROM_FIXED" } @{$cpu_meta->dspMemory()};
+	my $data_rom_base = $has_data_fixed ? "DROM_FIXED_BASE" : "DROM_PAGE0_BASE";
 
 	my $page_mask = getPageMask(max(scalar(@program_pages), scalar(@data_pages)));
 	my $program_page_shift = 0;
@@ -256,7 +258,7 @@ sub genDspConfig {
 	.program_rom_base = ${prefix}PROM_FIXED_BASE,
 	.program_bank_base = ${prefix}PROM_PAGE0_BASE,
 	.program_bank_count = %u,
-	.data_rom_base = ${prefix}DROM_FIXED_BASE,
+	.data_rom_base = ${prefix}$data_rom_base,
 	.data_bank_base = ${prefix}DROM_PAGE0_BASE,
 	.data_bank_count = %u,
 	.shared_base = ${prefix}SHARED_RAM_BASE,
