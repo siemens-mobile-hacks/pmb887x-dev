@@ -4,7 +4,7 @@
 #include <stopwatch.h>
 #include <wdt.h>
 
-#include "dsp/gsm-l1/gsm-trx.h"
+#include "../gsm-trx.h"
 #include "eeprom.h"
 #include "gsm.h"
 

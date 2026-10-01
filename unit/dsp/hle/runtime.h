@@ -4,7 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define DSP_RUNTIME_MASK_ID 0x0801
+#include "user-rom.h"
+
 #define DSP_RUNTIME_PIPE_COUNT 3
 // SL98 uses this fixed delay after BRANCH and while asserting the startup-probe interrupt.
 #define DSP_RUNTIME_FIRMWARE_DELAY_ITERATIONS 2000
@@ -17,22 +18,15 @@
 #define DSP_RUNTIME_FIRMWARE_STM_HZ 1000000
 // PMB7870 DSP firmware specification: a runtime command is accepted within 70 us.
 #define DSP_RUNTIME_DATASHEET_ACCEPT_US 70
-#define DSP_RUNTIME_ROUTE_FIRST_COMMAND 35
-#define DSP_RUNTIME_ROUTE_LAST_COMMAND 66
-#define DSP_RUNTIME_ROUTE_PROGRAM_ADDRESS 0x1FC0
-#define DSP_RUNTIME_REJECT_HANDLER 0x28D7
-
 struct dsp_runtime_profile {
 	const char *name;
-	const uint8_t *container;
-	size_t container_size;
-	const uint16_t *route_targets;
-	bool has_extended_routes;
+	uint16_t mask_id;
+	enum dsp_user_rom_platform platform;
+	bool accepts_i2s_swap;
+	bool supports_fc_notifications;
+	bool uses_stm_command_timeout;
 	bool supports_a53_cch;
 };
-
-extern const struct dsp_runtime_profile DSP_RUNTIME_PROFILES[];
-extern const size_t DSP_RUNTIME_PROFILE_COUNT;
 
 volatile uint16_t *dsp_runtime_pipe_get(size_t index);
 void dsp_runtime_command_prepare(
@@ -53,4 +47,4 @@ bool dsp_runtime_command_execute(
 	size_t parameter_count,
 	bool accepted
 );
-bool dsp_runtime_profile_start(const struct dsp_runtime_profile *profile);
+bool dsp_runtime_profile_start(const struct dsp_runtime_profile **selected_profile);

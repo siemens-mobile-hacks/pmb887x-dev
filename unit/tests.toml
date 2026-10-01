@@ -22,7 +22,7 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-timer-clock]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-hle-boot-timing]
+[dsp-lle-boot-timing]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [dsp-lle-instructions]
@@ -45,19 +45,19 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [dsp-hle-runtime-firmware]
-devices = ["generic-pmb8876"]
+devices = ["generic-pmb8876", "siemens-c81"]
 
 [dsp-hle-runtime-transport]
-devices = ["generic-pmb8876"]
+devices = ["generic-pmb8876", "siemens-c81"]
 
 [dsp-hle-runtime-notifications]
-devices = ["generic-pmb8876"]
+devices = ["siemens-c81"]
 
 [dsp-hle-runtime-semaphores]
-devices = ["generic-pmb8876"]
+devices = ["generic-pmb8876", "siemens-c81"]
 
 [dsp-hle-startup-transport]
-devices = ["generic-pmb8876"]
+devices = ["generic-pmb8876", "siemens-c81"]
 
 [dsp-lle-peripheral-map]
 devices = ["generic-pmb8876"]
@@ -155,7 +155,7 @@ devices = ["generic-pmb8876"]
 [dsp-hle-gsm-channel-scan]
 devices = ["siemens-c81", "siemens-el71"]
 
-[dsp-hle-boot-state]
+[dsp-lle-boot-state]
 devices = ["generic-pmb8876"]
 
 [dsp-lle-control-functional]
@@ -167,10 +167,10 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-io-functional]
 devices = ["generic-pmb8876"]
 
-[dsp-hle-rom-dump]
+[dsp-lle-rom-dump]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-hle-data-rom-dump]
+[dsp-lle-data-rom-dump]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [ebu]

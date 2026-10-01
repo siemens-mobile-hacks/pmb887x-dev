@@ -97,16 +97,9 @@ static bool wait_for_flags(uint16_t mask, uint16_t expected, uint32_t *elapsed_t
 }
 
 static bool runtime_start(void) {
-	const struct dsp_runtime_profile *profile = NULL;
+	const struct dsp_runtime_profile *profile;
 
-	for (size_t i = 0; i < DSP_RUNTIME_PROFILE_COUNT; i++) {
-		if (DSP_RUNTIME_PROFILES[i].has_extended_routes) {
-			profile = &DSP_RUNTIME_PROFILES[i];
-			break;
-		}
-	}
-
-	return profile != NULL && dsp_runtime_profile_start(profile);
+	return dsp_runtime_profile_start(&profile) && profile->supports_fc_notifications;
 }
 
 static void test_fc_notifications(void) {
@@ -188,7 +181,5 @@ int main(void) {
 	}
 
 	TPU_PARAM = 0;
-	DSP_COM_CLEAR = UINT16_MAX;
-	(void) dsp_hw_reset();
 	return test_finish();
 }

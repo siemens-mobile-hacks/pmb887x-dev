@@ -13,10 +13,6 @@ success.
 
 ## Tests
 
-DSP sources are split by execution model: `dsp/hle` exercises Mask ROM or a
-startup runtime without loading custom DSP code, while `dsp/lle` contains every
-test that loads a purpose-built DSP program.
-
 | Test | Coverage |
 | --- | --- |
 | `stm` | System timer registers and counter views |
@@ -28,7 +24,7 @@ test that loads a purpose-built DSP program.
 | `dsp-lle-interrupt-sources` | All documented DSP interrupt-unit source bits, line routing, masking, coalescing, and acknowledgement |
 | `dsp-lle-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
 | `dsp-lle-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
-| `dsp-hle-runtime-firmware` | PMB8876 startup-runtime command transport and exact base/extended firmware route tables |
+| `dsp-hle-runtime-firmware` | PMB8876 runtime startup, command transport, and platform-specific command behavior |
 | `dsp-hle-runtime-semaphores` | Runtime command traffic, MCU semaphore ownership, and DSP-reset interaction |
 | `dsp-lle-mcs-functional` | Communication flags, all-semaphore arbitration, queued transfer, and DSP-reset behavior |
 | `dsp-lle-peripheral-map` | Reset-isolated, read-only PMB8876 DSP data-space capture for the candidate `DE00`-`DEFF` peripheral window |
@@ -44,9 +40,9 @@ test that loads a purpose-built DSP program.
 | `dsp-lle-l1mon-vectors` | PMB8876 Mask ROM monitoring bounds, zero-I/Q result, ring behavior, and TX inactivity |
 | `dsp-lle-l1mon-functional` | Autonomous TPU MONON through the normal Mask ROM interrupt handler and monitoring result ring |
 | `dsp-hle-gsm-channel-scan` | Multiband MON scan using DSP firmware 0801 and auto-discovered EELITE AFC calibration, followed by FCCH detection |
-| `dsp-hle-boot-state` | Autonomous Mask ROM execution after DSP reset and interrupt-gated boot-command dispatch |
-| `dsp-hle-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |
-| `dsp-hle-data-rom-dump` | PMB8875/PMB8876 DSP boot-mode DREAD dump of fixed and banked Data Mask ROM in Intel HEX format |
+| `dsp-lle-boot-state` | Autonomous Mask ROM execution after DSP reset and interrupt-gated boot-command dispatch |
+| `dsp-lle-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |
+| `dsp-lle-data-rom-dump` | PMB8875/PMB8876 DSP boot-mode DREAD dump of fixed and banked Data Mask ROM in Intel HEX format |
 | `mod` | Common CLC, SRC, and SRB register blocks |
 | `scu` | CPU identification, watchdog protection, mode transitions, counter, and status |
 | `scu-reset` | Intentional software reset using the firmware reset-control sequence |

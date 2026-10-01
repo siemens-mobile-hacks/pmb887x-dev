@@ -33,7 +33,7 @@ add_peripheral_test(eeprom-parser eeprom/test.c eeprom.c)
 add_peripheral_test(dsp-lle-core dsp/lle/test.c)
 add_peripheral_test(dsp-lle-clock dsp/lle/clock.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-timer-clock dsp/lle/timer-clock.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-hle-boot-timing dsp/hle/boot-timing.c)
+add_peripheral_test(dsp-lle-boot-timing dsp/lle/boot-timing.c)
 add_peripheral_test(dsp-lle-instructions dsp/lle/instructions.c)
 add_peripheral_test(dsp-lle-opcode-aliases dsp/lle/instructions.c)
 target_compile_definitions(dsp-lle-opcode-aliases PRIVATE
@@ -63,11 +63,11 @@ target_compile_definitions(dsp-lle-expansion-probe PRIVATE
 )
 add_peripheral_test(dsp-lle-irqs dsp/lle/irqs.c)
 add_peripheral_test(dsp-lle-mask-rom-commands dsp/lle/commands.c)
-add_peripheral_test(dsp-hle-runtime-firmware dsp/hle/runtime-firmware.c dsp/hle/runtime.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-hle-runtime-transport dsp/hle/runtime-transport.c dsp/hle/runtime.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-hle-runtime-notifications dsp/hle/runtime-notifications.c dsp/hle/runtime.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-hle-runtime-semaphores dsp/hle/runtime-semaphores.c dsp/hle/runtime.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-hle-startup-transport dsp/hle/startup-transport.c dsp/hle/runtime.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-hle-runtime-firmware dsp/hle/runtime-firmware.c dsp/hle/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-hle-runtime-transport dsp/hle/runtime-transport.c dsp/hle/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-hle-runtime-notifications dsp/hle/runtime-notifications.c dsp/hle/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-hle-runtime-semaphores dsp/hle/runtime-semaphores.c dsp/hle/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-hle-startup-transport dsp/hle/startup-transport.c dsp/hle/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-peripheral-map dsp/lle/peripheral-map.c)
 add_peripheral_test(dsp-lle-peripherals-registers dsp/lle/safe-peripherals.c)
 add_peripheral_test(dsp-lle-benchmark dsp/lle/benchmark.c dsp/dsp-hw.c)
@@ -106,16 +106,17 @@ add_peripheral_test(
 	dsp/hle/gsm-l1/gsm-l1.c
 	dsp/hle/gsm-l1/board/siemens-x85.c
 	dsp/hle/gsm-l1/board/hd155153np.c
+	dsp/hle/user-rom.c
 	dsp/dsp-hw.c
 	eeprom.c
 )
-add_peripheral_test(dsp-hle-boot-state dsp/hle/boot-state.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-boot-state dsp/lle/boot-state.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-control-functional dsp/lle/dsp-control-functional.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-program-banks dsp/lle/program-banks.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-io-functional dsp/lle/dsp-io-functional.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-hle-rom-dump dsp/hle/rom-dump.c)
-add_peripheral_test(dsp-hle-data-rom-dump dsp/hle/rom-dump.c)
-target_compile_definitions(dsp-hle-data-rom-dump PRIVATE DSP_DUMP_DATA_ROM=1)
+add_peripheral_test(dsp-lle-rom-dump dsp/lle/rom-dump.c)
+add_peripheral_test(dsp-lle-data-rom-dump dsp/lle/rom-dump.c)
+target_compile_definitions(dsp-lle-data-rom-dump PRIVATE DSP_DUMP_DATA_ROM=1)
 add_peripheral_test(ebu ebu/test.c)
 add_peripheral_test(ebu-clock ebu/clock.c cgu/clock.c)
 add_peripheral_test(gpio gpio/test.c)

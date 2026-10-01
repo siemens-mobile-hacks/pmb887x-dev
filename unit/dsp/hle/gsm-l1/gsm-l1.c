@@ -2,12 +2,12 @@
 #include <gen/dsp.h>
 #include <stopwatch.h>
 
-#include "../dsp-hw.h"
+#include "../../dsp-hw.h"
 #include "board/gsm.h"
 #include "gsm-l1.h"
 #include "gsm-trx.h"
 #include "gsm.h"
-#include "el71-v45-dsp-container.inc"
+#include "../user-rom.h"
 
 #define TPU_TIMER_RAM_BASE 512
 #define TPU_TIMER_BANK_0_OFFSET 0
@@ -1160,13 +1160,7 @@ static bool dsp_receiver_init(void) {
 	static const uint16_t MODU_INIT_PARAMETERS[] = { 0xFFFB, 0xFFE7, 220, 220, 0, 21, 1, 0, 8 };
 	static const uint16_t IQ_SWAP_PARAMETERS[] = { 1 };
 
-	if (!dsp_hw_reset())
-		return false;
-	for (size_t i = 0; i < TEAK_SHARED_RAM_SIZE / sizeof(*dsp_hw_shared_memory); i++)
-		dsp_hw_shared_memory[i] = 0;
-
-	DSP_COM_CLEAR = 0xFFFF;
-	if (!dsp_hw_load_container(DSP_EL71_V45_CONTAINER, sizeof(DSP_EL71_V45_CONTAINER)))
+	if (!dsp_user_rom_start(NULL))
 		return false;
 	stopwatch_usleep_wd(1000);
 

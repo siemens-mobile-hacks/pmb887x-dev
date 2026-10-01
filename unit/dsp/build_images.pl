@@ -75,10 +75,22 @@ my @images = (
 	[ 'lle/dsp-io-functional.asm', 'lle/dsp-io-functional-8876.inc', 'DSP_IO_FUNCTIONAL_8876', 'pmb8876' ],
 );
 my @embedded_images = (
-	[ '../../rom/dsp/el71/0801/container.bin', 'hle/gsm-l1/el71-v45-dsp-container.inc',
-		'DSP_EL71_V45_CONTAINER' ],
-	[ '../../rom/dsp/sl98/0801-container.bin', 'hle/runtime-base-container.inc',
-		'DSP_RUNTIME_BASE_CONTAINER' ],
+	[ '../../rom/dsp/cx75/0602/container.bin', 'hle/user-rom-siemens-0602.inc',
+		'DSP_USER_ROM_SIEMENS_0602' ],
+	[ '../../rom/dsp/cx75/0605/container.bin', 'hle/user-rom-siemens-0605.inc',
+		'DSP_USER_ROM_SIEMENS_0605' ],
+	[ '../../rom/dsp/vs7/0603/container.bin', 'hle/user-rom-apoxi-0603.inc',
+		'DSP_USER_ROM_APOXI_0603' ],
+	[ '../../rom/dsp/vs7/0604/container.bin', 'hle/user-rom-apoxi-0604.inc',
+		'DSP_USER_ROM_APOXI_0604' ],
+	[ '../../rom/dsp/el71/0800/container.bin', 'hle/user-rom-siemens-0800.inc',
+		'DSP_USER_ROM_SIEMENS_0800' ],
+	[ '../../rom/dsp/el71/0801/container.bin', 'hle/user-rom-siemens-0801.inc',
+		'DSP_USER_ROM_SIEMENS_0801' ],
+	[ '../../rom/dsp/sl98/0800-container.bin', 'hle/user-rom-apoxi-0800.inc',
+		'DSP_USER_ROM_APOXI_0800' ],
+	[ '../../rom/dsp/sl98/0801-container.bin', 'hle/user-rom-apoxi-0801.inc',
+		'DSP_USER_ROM_APOXI_0801' ],
 );
 
 sub read_file {

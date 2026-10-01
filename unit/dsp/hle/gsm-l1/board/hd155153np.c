@@ -1,9 +1,7 @@
 #include <pmb887x.h>
 #include <gen/peripheral/rf/HD155153NP.h>
 
-#include "dsp/gsm-l1/gsm-trx.h"
-
-#if defined(BOARD_HAS_RF_HD155153NP)
+#include "../gsm-trx.h"
 
 #define TPU_RF_CONTROL_RAM_BASE 64
 #define TPU_RF_TELEGRAM_WORDS 4
@@ -140,5 +138,3 @@ uint32_t gsm_trx_get_max_gain_step(void) {
 uint16_t gsm_trx_encode_gain_state(int32_t residual, uint32_t range, uint32_t step) {
 	return ((uint16_t) residual << 8) | (range << 6) | step;
 }
-
-#endif
