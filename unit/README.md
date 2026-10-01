@@ -29,7 +29,7 @@ test that loads a purpose-built DSP program.
 | `dsp-lle-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
 | `dsp-lle-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
 | `dsp-hle-runtime-firmware` | PMB8876 startup-runtime command transport and exact base/extended firmware route tables |
-| `dsp-lle-mcs-functional` | Bidirectional MCS communication flags with MCU and custom DSP code |
+| `dsp-lle-mcs-functional` | Communication flags, all-semaphore arbitration, queued transfer, and DSP-reset behavior |
 | `dsp-lle-peripheral-map` | Reset-isolated, read-only PMB8876 DSP data-space capture for the candidate `DE00`-`DEFF` peripheral window |
 | `dsp-lle-peripherals-registers` | Direct TeakLite reads of documented status, counter, pointer, semaphore, and ID registers without peripheral control writes |
 | `dsp-lle-instructions` | TeakLite I instruction results, including external-register writes, captured from PMB8876 Mask ROM 0801 hardware |
