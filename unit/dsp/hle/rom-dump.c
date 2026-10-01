@@ -10,9 +10,6 @@
 #define DSP_BOOT_MAX_WORDS 507
 #define IHEX_RECORD_WORDS 8
 #define DSP_BOOT_BLOCK_WORDS (DSP_BOOT_MAX_WORDS / IHEX_RECORD_WORDS * IHEX_RECORD_WORDS)
-#define DSP_MASK_ID_FAMILY_MASK 0xFF00
-#define DSP_MASK_ID_FAMILY_06XX 0x0600
-#define DSP_MASK_ID_FAMILY_08XX 0x0800
 #define DSP_MAX_PROGRAM_PAGES 4
 #define DSP_MAX_DATA_PAGES 4
 #define DSP_WAIT_ITERATIONS 1000000
@@ -32,6 +29,15 @@ struct dsp_rom_layout {
 	uint16_t data_window_first;
 	uint32_t data_window_words;
 	size_t data_page_count;
+};
+
+struct dsp_rom_expectations {
+	uint16_t mask_id;
+	const struct dsp_rom_layout *layout;
+	uint32_t program_fixed_hash;
+	uint32_t program_page_hashes[DSP_MAX_PROGRAM_PAGES];
+	uint32_t data_fixed_hash;
+	uint32_t data_page_hashes[DSP_MAX_DATA_PAGES];
 };
 
 static const struct dsp_rom_layout ROM_LAYOUT_06XX = {
@@ -62,6 +68,41 @@ static const struct dsp_rom_layout ROM_LAYOUT_08XX = {
 	.data_window_words = 0x5000,
 	.data_page_count = 4,
 };
+
+static const struct dsp_rom_expectations ROM_EXPECTATIONS[] = {
+	{
+		.mask_id = 0x0602,
+		.layout = &ROM_LAYOUT_06XX,
+		.program_fixed_hash = 0x833458ED,
+		.program_page_hashes = { 0x8CF47EA9, 0x91076EF9 },
+		.data_fixed_hash = 0xBE0C6441,
+		.data_page_hashes = { 0x034D0BCD, 0xE28E1781 },
+	},
+	{
+		.mask_id = 0x0604,
+		.layout = &ROM_LAYOUT_06XX,
+		.program_fixed_hash = 0x76AD132F,
+		.program_page_hashes = { 0x46B514FD, 0xDA5A5CA6 },
+		.data_fixed_hash = 0x759B1A54,
+		.data_page_hashes = { 0x80EF7943, 0x8B20DBA6 },
+	},
+	{
+		.mask_id = 0x0801,
+		.layout = &ROM_LAYOUT_08XX,
+		.program_fixed_hash = 0x3B018B00,
+		.program_page_hashes = { 0x61DCDE5D, 0x041E8769, 0x436D3807, 0xF4101DC5 },
+		.data_page_hashes = { 0xEB1485E1, 0xFCF12CBB, 0x6E384738, 0x6E3CDDC5 },
+	},
+};
+
+static const struct dsp_rom_expectations *find_rom_expectations(uint16_t mask_id) {
+	for (size_t i = 0; i < ARRAY_SIZE(ROM_EXPECTATIONS); i++) {
+		if (ROM_EXPECTATIONS[i].mask_id == mask_id)
+			return &ROM_EXPECTATIONS[i];
+	}
+
+	return NULL;
+}
 
 static bool wait_for_boot_ready(void) {
 	for (size_t i = 0; i < DSP_WAIT_ITERATIONS; i++) {
@@ -181,13 +222,11 @@ int main(void) {
 		return test_finish();
 
 	uint16_t mask_id = dsp_shared_memory[0];
-	uint16_t mask_family = mask_id & DSP_MASK_ID_FAMILY_MASK;
 	printf("# DSP mask ID: %04lX\n", (uint32_t) mask_id);
-	if (!test_check("DSP Mask ROM ID is supported",
-		mask_family == DSP_MASK_ID_FAMILY_06XX || mask_family == DSP_MASK_ID_FAMILY_08XX))
+	const struct dsp_rom_expectations *expectations = find_rom_expectations(mask_id);
+	if (!test_check("DSP Mask ROM ID is supported", expectations != NULL))
 		return test_finish();
-	const struct dsp_rom_layout *layout = mask_family == DSP_MASK_ID_FAMILY_06XX ?
-		&ROM_LAYOUT_06XX : &ROM_LAYOUT_08XX;
+	const struct dsp_rom_layout *layout = expectations->layout;
 
 #ifdef DSP_DUMP_DATA_ROM
 	printf("# Convert: rg -a '^:' /tmp/dsp-%04lX-data-rom.log > /tmp/dsp-%04lX-data-rom.hex && "
@@ -209,6 +248,7 @@ int main(void) {
 			return test_finish();
 		}
 		printf("# DSP fixed data ROM word-wise FNV-1a: %08lX\n", fixed_hash);
+		test_eq_u32("fixed Data ROM hash matches Mask ROM version", expectations->data_fixed_hash, fixed_hash);
 	}
 
 	for (size_t page = 0; page < layout->data_page_count; page++) {
@@ -224,6 +264,8 @@ int main(void) {
 			return test_finish();
 		}
 		printf("# DSP data ROM bank %lu word-wise FNV-1a: %08lX\n", (uint32_t) page, page_hashes[page]);
+		test_eq_u32("Data ROM bank hash matches Mask ROM version", expectations->data_page_hashes[page],
+			page_hashes[page]);
 	}
 #else
 	printf("# Convert: rg -a '^:' /tmp/dsp-%04lX-program-rom.log > /tmp/dsp-%04lX-program-rom.hex && "
@@ -243,6 +285,7 @@ int main(void) {
 		return test_finish();
 	}
 	printf("# DSP fixed program ROM word-wise FNV-1a: %08lX\n", fixed_hash);
+	test_eq_u32("fixed Program ROM hash matches Mask ROM version", expectations->program_fixed_hash, fixed_hash);
 
 	for (size_t page = 0; page < layout->program_page_count; page++) {
 		if (!test_check("DLOAD selects program ROM bank", dsp_dload_word(layout->page_address,
@@ -258,6 +301,8 @@ int main(void) {
 			return test_finish();
 		}
 		printf("# DSP program ROM bank %lu word-wise FNV-1a: %08lX\n", (uint32_t) page, page_hashes[page]);
+		test_eq_u32("Program ROM bank hash matches Mask ROM version", expectations->program_page_hashes[page],
+			page_hashes[page]);
 	}
 	bool banks_distinct = true;
 	for (size_t first = 0; first < layout->program_page_count; first++)
