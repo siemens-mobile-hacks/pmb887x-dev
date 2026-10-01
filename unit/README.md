@@ -21,6 +21,7 @@ success.
 | `dsp-lle-core` | Communication flags, firmware command handshake, shared RAM access widths, MCU/DSP interrupt requests, and reset |
 | `dsp-lle-irqs` | Real DSP-generated INT_TOMCU requests, VIC routing, and acknowledgement for all four DSP SRC lines |
 | `dsp-lle-interrupt-functional` | DSP interrupt masking, acknowledgement, simultaneous priority, nested arbitration, and repeat delivery |
+| `dsp-lle-interrupt-block-repeat` | Independent block-repeat state across interrupt preemption |
 | `dsp-lle-interrupt-sources` | All documented DSP interrupt-unit source bits, line routing, masking, coalescing, and acknowledgement |
 | `dsp-lle-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
 | `dsp-lle-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
