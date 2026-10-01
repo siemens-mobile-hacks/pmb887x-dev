@@ -37,6 +37,7 @@ test that loads a purpose-built DSP program.
 | `dsp-lle-opcode-probe` | Resumable diagnostic sweep of raw TeakLite first-word opcodes with reset and timeout isolation |
 | `dsp-lle-expansion-probe` | Resumable sweep of expansion words for all documented two-word TeakLite I encoding rows |
 | `dsp-lle-control-functional` | DSP control, Program/Data ROM mapping and banking, reset, and power-state behavior |
+| `dsp-lle-program-banks` | Mask-specific Program ROM page selection, exact instruction reads, and same-PC execution |
 | `dsp-lle-tpu-events` | PMB8876 TPU Timer RAM decoder values 0–9 and 15–31 observed through Baseband, modulator, and DSP interrupt state |
 | `dsp-lle-tpu-bb-events` | Hardware timing, counts, status, and DSP interrupts for repeating TPU MONON events |
 | `dsp-lle-l1mon-vectors` | PMB8876 Mask ROM monitoring bounds, zero-I/Q result, ring behavior, and TX inactivity |

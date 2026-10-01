@@ -110,6 +110,7 @@ add_peripheral_test(
 )
 add_peripheral_test(dsp-hle-boot-state dsp/hle/boot-state.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-control-functional dsp/lle/dsp-control-functional.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-program-banks dsp/lle/program-banks.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-io-functional dsp/lle/dsp-io-functional.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-hle-rom-dump dsp/hle/rom-dump.c)
 add_peripheral_test(dsp-hle-data-rom-dump dsp/hle/rom-dump.c)

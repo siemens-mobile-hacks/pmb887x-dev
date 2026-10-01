@@ -28,8 +28,6 @@ my @images = (
 	[ 'lle/timers-functional.asm', 'lle/timers-functional-8876.inc', 'DSP_TIMERS_IMAGE_8876', 'pmb8876' ],
 	[ 'lle/mcs-functional.asm', 'lle/mcs-functional-8875.inc', 'DSP_MCS_IMAGE_8875', 'pmb8875' ],
 	[ 'lle/mcs-functional.asm', 'lle/mcs-functional-8876.inc', 'DSP_MCS_IMAGE_8876', 'pmb8876' ],
-	[ 'lle/mcs-semaphores.asm', 'lle/mcs-semaphores-8875.inc', 'DSP_MCS_SEMAPHORE_IMAGE_8875', 'pmb8875' ],
-	[ 'lle/mcs-semaphores.asm', 'lle/mcs-semaphores-8876.inc', 'DSP_MCS_SEMAPHORE_IMAGE_8876', 'pmb8876' ],
 	[ 'lle/delay-slot-functional.asm', 'lle/delay-slot-functional-8876.inc', 'DSP_DELAY_SLOT_IMAGE_8876', 'pmb8876' ],
 	[ 'lle/interrupt-functional.asm', 'lle/interrupt-functional-8875.inc', 'DSP_INTERRUPT_IMAGE_8875', 'pmb8875' ],
 	[ 'lle/interrupt-functional.asm', 'lle/interrupt-functional-8876.inc', 'DSP_INTERRUPT_IMAGE_8876', 'pmb8876' ],
@@ -72,6 +70,8 @@ my @images = (
 	[ 'lle/l1mon-vectors.asm', 'lle/l1mon-vectors-8876.inc', 'DSP_L1MON_VECTORS_8876', 'pmb8876' ],
 	[ 'lle/l1mon-functional.asm', 'lle/l1mon-functional-8876.inc', 'DSP_L1MON_FUNCTIONAL_8876', 'pmb8876' ],
 	[ 'lle/dsp-control-functional.asm', 'lle/dsp-control-functional-8876.inc', 'DSP_CONTROL_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/program-banks-8875.asm', 'lle/program-banks-8875.inc', 'DSP_PROGRAM_BANKS_8875', 'pmb8875' ],
+	[ 'lle/program-banks.asm', 'lle/program-banks-8876.inc', 'DSP_PROGRAM_BANKS_8876', 'pmb8876' ],
 	[ 'lle/dsp-io-functional.asm', 'lle/dsp-io-functional-8876.inc', 'DSP_IO_FUNCTIONAL_8876', 'pmb8876' ],
 );
 my @embedded_images = (

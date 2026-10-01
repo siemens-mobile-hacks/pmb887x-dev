@@ -158,6 +158,9 @@ devices = ["generic-pmb8876"]
 [dsp-lle-control-functional]
 devices = ["generic-pmb8876"]
 
+[dsp-lle-program-banks]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dsp-lle-io-functional]
 devices = ["generic-pmb8876"]
 
