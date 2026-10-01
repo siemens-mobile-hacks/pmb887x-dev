@@ -53,6 +53,9 @@ devices = ["generic-pmb8876"]
 [dsp-hle-runtime-notifications]
 devices = ["generic-pmb8876"]
 
+[dsp-hle-runtime-semaphores]
+devices = ["generic-pmb8876"]
+
 [dsp-hle-startup-transport]
 devices = ["generic-pmb8876"]
 
