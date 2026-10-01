@@ -3,7 +3,7 @@
 #include <stopwatch.h>
 #include <wdt.h>
 
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "l1mon-functional-8876.inc"
 #include "test.h"
 

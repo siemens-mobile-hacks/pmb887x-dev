@@ -1,7 +1,7 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
 
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "test.h"
 
 #define TIMER_SAMPLE_US 5000

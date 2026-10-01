@@ -1,7 +1,7 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
 
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "interrupt-sources-1-8876.inc"
 #include "interrupt-sources-2-8876.inc"
 #include "interrupt-sources-a0-8876.inc"

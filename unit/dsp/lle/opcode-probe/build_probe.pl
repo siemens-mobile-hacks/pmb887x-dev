@@ -5,7 +5,7 @@ use Digest::SHA qw(sha256_hex);
 use File::Spec;
 use File::Temp qw(tempdir);
 use FindBin qw($RealBin);
-use lib "$RealBin/..";
+use lib "$RealBin/../..";
 use DspAsm qw(expand_teak_constants);
 use TeakTools qw(find_teak_tools);
 

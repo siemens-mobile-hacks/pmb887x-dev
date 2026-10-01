@@ -1,6 +1,6 @@
 #include <pmb887x.h>
 
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "test.h"
 
 #define RESULT_BASE 0x0500

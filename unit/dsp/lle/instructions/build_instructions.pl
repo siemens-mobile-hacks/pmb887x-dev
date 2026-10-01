@@ -6,7 +6,7 @@ use File::Path qw(remove_tree);
 use File::Spec;
 use File::Temp qw(tempdir);
 use FindBin qw($RealBin);
-use lib "$RealBin/..";
+use lib "$RealBin/../..";
 use TeakTools qw(find_teak_tools);
 
 my ($teak_assembler, $teak_disassembler) = find_teak_tools();

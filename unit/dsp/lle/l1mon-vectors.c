@@ -1,7 +1,7 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
 
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "l1mon-vectors-8876.inc"
 #include "test.h"
 

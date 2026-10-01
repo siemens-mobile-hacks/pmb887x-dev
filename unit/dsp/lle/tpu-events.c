@@ -2,7 +2,7 @@
 #include <gen/dsp.h>
 #include <wdt.h>
 
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "test.h"
 #include "tpu-events-8876.inc"
 

@@ -3,7 +3,7 @@
 #include <stopwatch.h>
 
 #include "dsp-control-functional-8876.inc"
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "test.h"
 
 #define COMPLETE_MARKER 0xA55A
@@ -30,12 +30,12 @@ static const uint32_t PROGRAM_PAGE_HASHES[] = {
 };
 
 static bool hash_words(bool program, uint16_t first, size_t words, uint32_t *hash) {
-	uint16_t values[DSP_HW_BOOT_MAX_WORDS];
+	uint16_t values[DSP_HW_BOOT_TRANSFER_WORDS];
 	uint32_t source = first;
 	uint32_t value_hash = 0x811C9DC5U;
 
 	while (words != 0) {
-		size_t block_words = words < DSP_HW_BOOT_MAX_WORDS ? words : DSP_HW_BOOT_MAX_WORDS;
+		size_t block_words = words < DSP_HW_BOOT_TRANSFER_WORDS ? words : DSP_HW_BOOT_TRANSFER_WORDS;
 		bool read;
 
 		if (program) {

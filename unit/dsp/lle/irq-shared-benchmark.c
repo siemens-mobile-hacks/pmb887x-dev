@@ -2,7 +2,7 @@
 #include <gen/dsp.h>
 #include <stopwatch.h>
 
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "irq-shared-benchmark-8876.inc"
 #include "test.h"
 

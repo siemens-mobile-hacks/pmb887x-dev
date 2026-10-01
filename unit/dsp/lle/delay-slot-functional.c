@@ -1,7 +1,7 @@
 #include <pmb887x.h>
 
 #include "delay-slot-functional-8876.inc"
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "test.h"
 
 #define COMPLETE_MARKER 0xA55A

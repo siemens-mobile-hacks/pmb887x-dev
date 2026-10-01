@@ -3,7 +3,7 @@
 
 #include <string.h>
 
-#include "dsp-hw.h"
+#include "../dsp-hw.h"
 #include "test.h"
 
 #define READY_MARKER 0xA55A
