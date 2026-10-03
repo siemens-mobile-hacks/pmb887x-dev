@@ -1,6 +1,6 @@
 #include <pmb887x.h>
 
-#include "../dsp-hw.h"
+#include "dsp/dsp-hw.h"
 #include "sch-decoder-vector-runner-8876.inc"
 #include "test.h"
 

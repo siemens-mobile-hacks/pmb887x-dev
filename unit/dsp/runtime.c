@@ -1,10 +1,11 @@
 #include <pmb887x.h>
 
-#include "../dsp-hw.h"
-#include "runtime.h"
+#include "dsp/dsp-hw.h"
+#include "dsp/runtime.h"
 #include "test.h"
 
-#define DSP_RUNTIME_COMMAND_READ_DSP 33
+#define FIRMWARE_DELAY_ITERATIONS 2000
+#define FIRMWARE_POLL_LIMIT 1000
 
 static const size_t DSP_RUNTIME_PIPE_OFFSETS[] = { 0x0005, 0x0021, 0x003D };
 
@@ -74,17 +75,30 @@ void dsp_runtime_command_prepare(
 }
 
 void dsp_runtime_interrupt_pulse(uint16_t flags) {
-	SCU_DSP_INT |= flags;
-	SCU_DSP_INT &= ~flags;
+	SCU_DSP_INT = flags;
+	SCU_DSP_INT = 0;
+}
+
+void dsp_runtime_command_start(
+	size_t pipe_index,
+	uint16_t command,
+	const uint16_t *parameters,
+	size_t parameter_count
+) {
+	uint16_t flag = BIT(pipe_index);
+
+	dsp_runtime_command_prepare(pipe_index, command, parameters, parameter_count);
+	DSP_COM_SET = flag;
+	dsp_runtime_interrupt_pulse(flag);
 }
 
 void dsp_runtime_firmware_delay(void) {
-	for (size_t i = 0; i < DSP_RUNTIME_FIRMWARE_DELAY_ITERATIONS; i++)
+	for (size_t i = 0; i < FIRMWARE_DELAY_ITERATIONS; i++)
 		__asm__ volatile("" : : : "memory");
 }
 
 bool dsp_runtime_wait(uint16_t flags, size_t *polls) {
-	for (size_t poll = 1; poll <= DSP_RUNTIME_FIRMWARE_POLL_LIMIT; poll++) {
+	for (size_t poll = 1; poll <= FIRMWARE_POLL_LIMIT; poll++) {
 		if ((DSP_COM_STATUS & flags) == 0) {
 			if (polls != NULL)
 				*polls = poll;
@@ -93,38 +107,22 @@ bool dsp_runtime_wait(uint16_t flags, size_t *polls) {
 	}
 
 	if (polls != NULL)
-		*polls = DSP_RUNTIME_FIRMWARE_POLL_LIMIT;
+		*polls = FIRMWARE_POLL_LIMIT;
 	return false;
-}
-
-bool dsp_runtime_wait_stm(uint16_t flags, uint32_t timeout_ticks, uint32_t *elapsed_ticks) {
-	uint32_t start = STM_TIM0;
-
-	while ((DSP_COM_STATUS & flags) != 0) {
-		uint32_t elapsed = STM_TIM0 - start;
-
-		if (elapsed > timeout_ticks) {
-			*elapsed_ticks = elapsed;
-			return (DSP_COM_STATUS & flags) == 0;
-		}
-	}
-
-	*elapsed_ticks = STM_TIM0 - start;
-	return true;
 }
 
 bool dsp_runtime_startup_probe(uint16_t result_offset) {
 	uint16_t parameters[] = { 0xE000, result_offset, 5 };
 	volatile uint16_t *pipe = dsp_runtime_pipe_get(0);
 
-	dsp_runtime_command_prepare(0, DSP_RUNTIME_COMMAND_READ_DSP, parameters, ARRAY_SIZE(parameters));
+	dsp_runtime_command_prepare(0, DSP_COMMAND_READ_DSP, parameters, ARRAY_SIZE(parameters));
 	dsp_runtime_firmware_delay();
 	DSP_COM_SET = BIT(0);
 	SCU_DSP_INT |= BIT(0);
 	dsp_runtime_firmware_delay();
 	SCU_DSP_INT &= ~BIT(0);
 
-	return (DSP_COM_STATUS & BIT(0)) == 0 && pipe[0] == (uint16_t) -DSP_RUNTIME_COMMAND_READ_DSP;
+	return (DSP_COM_STATUS & BIT(0)) == 0 && pipe[0] == (uint16_t) -DSP_COMMAND_READ_DSP;
 }
 
 bool dsp_runtime_command_execute(
@@ -136,12 +134,38 @@ bool dsp_runtime_command_execute(
 ) {
 	uint16_t flag = BIT(pipe_index);
 
-	dsp_runtime_command_prepare(pipe_index, command, parameters, parameter_count);
-	DSP_COM_SET = flag;
-	dsp_runtime_interrupt_pulse(flag);
+	dsp_runtime_command_start(pipe_index, command, parameters, parameter_count);
 	if (!dsp_runtime_wait(flag, NULL))
 		return false;
 	return dsp_runtime_pipe_get(pipe_index)[0] == (accepted ? (uint16_t) -command : 0);
+}
+
+bool dsp_runtime_data_read(
+	uint16_t address,
+	uint16_t result_offset,
+	uint16_t *values,
+	size_t word_count
+) {
+	if (word_count > UINT16_MAX)
+		return false;
+	uint16_t parameters[] = { address, result_offset, (uint16_t) word_count };
+
+	if (!dsp_runtime_command_execute(0, DSP_COMMAND_READ_DSP,
+		parameters, ARRAY_SIZE(parameters), true)) {
+		return false;
+	}
+	for (size_t i = 0; i < word_count; i++)
+		values[i] = dsp_hw_shared_memory[result_offset + i];
+	return true;
+}
+
+bool dsp_runtime_data_write(uint16_t source_offset, uint16_t address, size_t word_count) {
+	if (word_count > UINT16_MAX)
+		return false;
+	uint16_t parameters[] = { source_offset, address, (uint16_t) word_count };
+
+	return dsp_runtime_command_execute(0, DSP_COMMAND_WRITE_DSP,
+		parameters, ARRAY_SIZE(parameters), true);
 }
 
 static const struct dsp_runtime_profile *dsp_runtime_profile_find(const struct dsp_user_rom *user_rom) {

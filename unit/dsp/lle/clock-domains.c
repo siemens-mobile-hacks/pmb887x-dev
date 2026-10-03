@@ -1,7 +1,7 @@
 #include <pmb887x.h>
 #include <stopwatch.h>
 
-#include "../dsp-hw.h"
+#include "dsp/dsp-hw.h"
 #include "test.h"
 
 #ifdef PMB8875

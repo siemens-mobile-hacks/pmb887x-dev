@@ -2,7 +2,7 @@
 #include <gen/dsp.h>
 
 #include "baseband-functional-8876.inc"
-#include "../dsp-hw.h"
+#include "dsp/dsp-hw.h"
 #include "test.h"
 
 #define TPU_TIMER_RAM_BASE 512

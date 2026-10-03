@@ -7,7 +7,7 @@
 #ifdef PMB8876
 #include "program-banks-8876.inc"
 #endif
-#include "../dsp-hw.h"
+#include "dsp/dsp-hw.h"
 #include "test.h"
 
 #define COMPLETE_MARKER 0xA55A

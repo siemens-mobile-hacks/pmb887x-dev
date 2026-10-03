@@ -2,12 +2,13 @@
 #include <gen/dsp.h>
 #include <stopwatch.h>
 
-#include "../../dsp-hw.h"
-#include "board/gsm.h"
-#include "gsm-l1.h"
-#include "gsm-trx.h"
-#include "gsm.h"
-#include "../user-rom.h"
+#include "dsp/dsp-hw.h"
+#include "dsp/hle/gsm-l1/board/gsm.h"
+#include "dsp/hle/gsm-l1/gsm-l1.h"
+#include "dsp/hle/gsm-l1/gsm-trx.h"
+#include "dsp/hle/gsm-l1/gsm.h"
+#include "dsp/runtime.h"
+#include "dsp/hle/user-rom.h"
 
 #define TPU_TIMER_RAM_BASE 512
 #define TPU_TIMER_BANK_0_OFFSET 0
@@ -60,26 +61,15 @@ enum tpu_timer_decoder {
 #define FCCH_PHASE_ADVANCE_TICKS 72
 #define TPU_SCH_RESULT_BOUNDARY_TICK 0x0E8B
 
-enum dsp_runtime_command {
-	DSP_RUNTIME_COMMAND_FC_INIT = 1,
-	DSP_RUNTIME_COMMAND_MODU_INIT = 2,
-	DSP_RUNTIME_COMMAND_IQ_SWAP_1 = 3,
-	DSP_RUNTIME_COMMAND_IQ_SWAP_2 = 4,
-	DSP_RUNTIME_COMMAND_DEC_INIT = 5,
-	DSP_RUNTIME_COMMAND_BB_OFF = 13,
-	DSP_RUNTIME_COMMAND_IDLE = 14,
-	DSP_RUNTIME_COMMAND_RF_ADAPT = 67,
-};
-
 #define DSP_MON_RAW_VALUES_PER_DB 16
 #define GSM_SCAN_CHANNEL_COUNT (GSM_CHANNEL_COUNT - 1)
 
-#define DSP_RUNTIME_PIPE_OFFSET 0x0005
 #define DSP_RF_ADAPT_EXTENSION_OFFSET 0x0018
 #define DSP_RF_ADAPT_EXTENSION_VALUE 0xFB8C
 #define DSP_BB_OFF_SEQUENCE_OFFSET 0x0500
 #define DSP_RUNTIME_CONFIG_OFFSET 0x057A
 #define DSP_RUNTIME_CONFIG_VALUE 0xC000
+#define GSM_DSP_COMMAND_RF_ADAPT 67
 
 #define DSP_MON_INDEX_OFFSET 191
 #define DSP_MON_VALUES_OFFSET 192
@@ -1050,16 +1040,8 @@ static void signal_dsp_communication(uint16_t flags) {
 	SCU_DSP_INT = 0;
 }
 
-static void dsp_runtime_command_start(uint16_t command, const uint16_t *parameters, size_t count) {
-	dsp_hw_shared_memory[DSP_RUNTIME_PIPE_OFFSET] = command;
-	for (size_t i = 0; i < count; i++)
-		dsp_hw_shared_memory[DSP_RUNTIME_PIPE_OFFSET + 1 + i] = parameters[i];
-
-	signal_dsp_communication(BIT(0));
-}
-
-static bool dsp_runtime_command_execute(uint16_t command, const uint16_t *parameters, size_t count) {
-	dsp_runtime_command_start(command, parameters, count);
+static bool gsm_dsp_command_execute(uint16_t command, const uint16_t *parameters, size_t count) {
+	dsp_runtime_command_start(0, command, parameters, count);
 	return wait_for_dsp_communication(BIT(0));
 }
 
@@ -1067,7 +1049,7 @@ static bool dsp_execute_baseband_off(void) {
 	uint16_t sequence = (dsp_hw_shared_memory[DSP_BB_OFF_SEQUENCE_OFFSET] & 0xFF00);
 	sequence++;
 	dsp_hw_shared_memory[DSP_BB_OFF_SEQUENCE_OFFSET] = sequence;
-	return dsp_runtime_command_execute(DSP_RUNTIME_COMMAND_BB_OFF, NULL, 0);
+	return gsm_dsp_command_execute(DSP_COMMAND_BB_OFF, NULL, 0);
 }
 
 static void dsp_fcch_command_start(void) {
@@ -1075,7 +1057,7 @@ static void dsp_fcch_command_start(void) {
 	static const uint16_t PARAMETERS[] = { 1, 115, 33 };
 
 	reset_fcch_result();
-	dsp_runtime_command_start(DSP_RUNTIME_COMMAND_FC_INIT, PARAMETERS, ARRAY_SIZE(PARAMETERS));
+	dsp_runtime_command_start(0, DSP_COMMAND_FC_INIT, PARAMETERS, ARRAY_SIZE(PARAMETERS));
 }
 
 static void dsp_fcch_refinement_command_start(void) {
@@ -1083,7 +1065,7 @@ static void dsp_fcch_refinement_command_start(void) {
 	static const uint16_t PARAMETERS[] = { 0, 115, 35 };
 
 	reset_fcch_result();
-	dsp_runtime_command_start(DSP_RUNTIME_COMMAND_FC_INIT, PARAMETERS, ARRAY_SIZE(PARAMETERS));
+	dsp_runtime_command_start(0, DSP_COMMAND_FC_INIT, PARAMETERS, ARRAY_SIZE(PARAMETERS));
 }
 
 static bool execute_requested_fcch_command(void) {
@@ -1149,7 +1131,7 @@ static bool dsp_channel_decoder_profiles_init(void) {
 	};
 
 	for (size_t i = 0; i < ARRAY_SIZE(PROFILES); i++)
-		if (!dsp_runtime_command_execute(DSP_RUNTIME_COMMAND_DEC_INIT, PROFILES[i].parameters, PROFILES[i].count))
+		if (!gsm_dsp_command_execute(DSP_COMMAND_DEC_INIT, PROFILES[i].parameters, PROFILES[i].count))
 			return false;
 
 	return true;
@@ -1166,21 +1148,21 @@ static bool dsp_receiver_init(void) {
 
 	if (!dsp_channel_decoder_profiles_init())
 		return false;
-	if (!dsp_runtime_command_execute(DSP_RUNTIME_COMMAND_MODU_INIT, MODU_INIT_PARAMETERS, ARRAY_SIZE(MODU_INIT_PARAMETERS)))
+	if (!gsm_dsp_command_execute(DSP_COMMAND_MODU_INIT, MODU_INIT_PARAMETERS, ARRAY_SIZE(MODU_INIT_PARAMETERS)))
 		return false;
 	dsp_hw_shared_memory[DSP_RF_ADAPT_EXTENSION_OFFSET] = DSP_RF_ADAPT_EXTENSION_VALUE;
-	if (!dsp_runtime_command_execute(DSP_RUNTIME_COMMAND_RF_ADAPT, RF_ADAPT_PARAMETERS, ARRAY_SIZE(RF_ADAPT_PARAMETERS)))
+	if (!gsm_dsp_command_execute(GSM_DSP_COMMAND_RF_ADAPT, RF_ADAPT_PARAMETERS, ARRAY_SIZE(RF_ADAPT_PARAMETERS)))
 		return false;
 	dsp_hw_shared_memory[DSP_RUNTIME_CONFIG_OFFSET] = DSP_RUNTIME_CONFIG_VALUE;
-	if (!dsp_runtime_command_execute(DSP_RUNTIME_COMMAND_IDLE, NULL, 0))
+	if (!gsm_dsp_command_execute(DSP_COMMAND_IDLE, NULL, 0))
 		return false;
-	if (!dsp_runtime_command_execute(DSP_RUNTIME_COMMAND_IQ_SWAP_1, IQ_SWAP_PARAMETERS, ARRAY_SIZE(IQ_SWAP_PARAMETERS)))
+	if (!gsm_dsp_command_execute(DSP_COMMAND_IQ_SWAP_1, IQ_SWAP_PARAMETERS, ARRAY_SIZE(IQ_SWAP_PARAMETERS)))
 		return false;
-	if (!dsp_runtime_command_execute(DSP_RUNTIME_COMMAND_IQ_SWAP_2, IQ_SWAP_PARAMETERS, ARRAY_SIZE(IQ_SWAP_PARAMETERS)))
+	if (!gsm_dsp_command_execute(DSP_COMMAND_IQ_SWAP_2, IQ_SWAP_PARAMETERS, ARRAY_SIZE(IQ_SWAP_PARAMETERS)))
 		return false;
-	if (!dsp_runtime_command_execute(DSP_RUNTIME_COMMAND_MODU_INIT, MODU_INIT_PARAMETERS, ARRAY_SIZE(MODU_INIT_PARAMETERS)))
+	if (!gsm_dsp_command_execute(DSP_COMMAND_MODU_INIT, MODU_INIT_PARAMETERS, ARRAY_SIZE(MODU_INIT_PARAMETERS)))
 		return false;
-	if (!dsp_runtime_command_execute(DSP_RUNTIME_COMMAND_IDLE, NULL, 0))
+	if (!gsm_dsp_command_execute(DSP_COMMAND_IDLE, NULL, 0))
 		return false;
 
 	dsp_hw_shared_memory[DSP_MON_INDEX_OFFSET] = 0;

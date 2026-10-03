@@ -1,12 +1,10 @@
 #include <pmb887x.h>
 
-#include "../dsp-hw.h"
-#include "runtime.h"
+#include "dsp/dsp-hw.h"
+#include "dsp/runtime.h"
 #include "test.h"
 
 #define DSP_RUNTIME_RESULT_OFFSET 0x0200
-#define DSP_COMMAND_I2S_SWAP 48
-
 static void test_runtime_probe(void) {
 	static const uint16_t PARAMETERS[] = { 0xE000, DSP_RUNTIME_RESULT_OFFSET, 5 };
 

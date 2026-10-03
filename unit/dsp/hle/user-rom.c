@@ -1,8 +1,8 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
 
-#include "../dsp-hw.h"
-#include "user-rom.h"
+#include "dsp/dsp-hw.h"
+#include "dsp/hle/user-rom.h"
 
 #if defined(PMB8875) && defined(BOARD_PLATFORM_SIEMENS)
 #include "user-rom-siemens-0602.inc"

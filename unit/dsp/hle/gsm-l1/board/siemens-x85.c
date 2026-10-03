@@ -4,9 +4,9 @@
 #include <stopwatch.h>
 #include <wdt.h>
 
-#include "../gsm-trx.h"
+#include "dsp/hle/gsm-l1/gsm-trx.h"
 #include "eeprom.h"
-#include "gsm.h"
+#include "dsp/hle/gsm-l1/board/gsm.h"
 
 #if defined(BOARD_PLATFORM_SIEMENS_X85)
 

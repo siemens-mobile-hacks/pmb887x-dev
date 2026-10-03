@@ -1,10 +1,9 @@
 #include <pmb887x.h>
 
-#include "../dsp-hw.h"
-#include "runtime.h"
+#include "dsp/dsp-hw.h"
+#include "dsp/runtime.h"
 #include "test.h"
 
-#define DSP_COMMAND_READ_DSP 33
 #define MCU_INITIAL_SEMAPHORE_MASK 0xA55A
 #define MCU_REMAINING_SEMAPHORE_MASK ((uint16_t) ~MCU_INITIAL_SEMAPHORE_MASK)
 #define DSP_SEMAPHORE_RESULT_OFFSET 0x0400

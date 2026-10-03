@@ -1,6 +1,6 @@
 #include <pmb887x.h>
 
-#include "../dsp-container.h"
+#include "dsp/dsp-container.h"
 #include "test.h"
 
 #define DSP_BOOT_PLOAD 0

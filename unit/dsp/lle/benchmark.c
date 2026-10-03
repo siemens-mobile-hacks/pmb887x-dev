@@ -2,7 +2,7 @@
 #include <gen/dsp.h>
 #include <stopwatch.h>
 
-#include "../dsp-hw.h"
+#include "dsp/dsp-hw.h"
 #include "test.h"
 
 #define BENCHMARK_READY 0xB001

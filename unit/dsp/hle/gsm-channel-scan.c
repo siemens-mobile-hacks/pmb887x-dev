@@ -2,7 +2,7 @@
 #include <stopwatch.h>
 #include <wdt.h>
 
-#include "gsm-l1/gsm-l1.h"
+#include "dsp/hle/gsm-l1/gsm-l1.h"
 #include "test.h"
 
 #define CHANNEL_SCAN_TIMEOUT_MS 60000

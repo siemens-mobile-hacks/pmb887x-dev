@@ -1,7 +1,7 @@
 #include <pmb887x.h>
 #include <gen/peripheral/rf/HD155153NP.h>
 
-#include "../gsm-trx.h"
+#include "dsp/hle/gsm-l1/gsm-trx.h"
 
 #define TPU_RF_CONTROL_RAM_BASE 64
 #define TPU_RF_TELEGRAM_WORDS 4

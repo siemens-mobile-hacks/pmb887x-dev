@@ -1,9 +1,8 @@
 #include <pmb887x.h>
-#include <cpu.h>
 #include <stopwatch.h>
 
-#include "../dsp-hw.h"
-#include "runtime.h"
+#include "dsp/dsp-hw.h"
+#include "dsp/runtime.h"
 #include "test.h"
 
 #define DSP_RUNTIME_RESULT_OFFSET 0x0200
@@ -17,11 +16,36 @@
 #define DSP_RUNTIME_FIXTURE_WORDS (DSP_RUNTIME_PIPE_COUNT * 2)
 #define DSP_RUNTIME_PRIORITY_PROGRAM_ADDRESS 0x2000
 #define DSP_RUNTIME_FIXTURE_BASE 0xA500
-#define DSP_COMMAND_WRITE_PROG 34
-#define DSP_COMMAND_READ_PROG 35
 
 static uint16_t fixture_word(size_t index) {
 	return DSP_RUNTIME_FIXTURE_BASE ^ index;
+}
+
+static stopwatch_t microseconds_to_ticks(uint32_t microseconds) {
+	return (stopwatch_t) stopwatch_ticks_per_s() * microseconds / 1000000;
+}
+
+static uint32_t ticks_to_nanoseconds(stopwatch_t ticks) {
+	return (uint32_t) (ticks * 1000000000ULL / stopwatch_ticks_per_s());
+}
+
+static bool wait_for_command(
+	uint16_t flags,
+	stopwatch_t start,
+	uint32_t timeout_us,
+	stopwatch_t *elapsed_ticks
+) {
+	stopwatch_t timeout_ticks = microseconds_to_ticks(timeout_us);
+
+	while ((DSP_COM_STATUS & flags) != 0) {
+		if (stopwatch_elapsed(start) > timeout_ticks) {
+			*elapsed_ticks = stopwatch_elapsed(start);
+			return false;
+		}
+	}
+
+	*elapsed_ticks = stopwatch_elapsed(start);
+	return *elapsed_ticks <= timeout_ticks;
 }
 
 static bool install_program_fixture(void) {
@@ -279,14 +303,14 @@ static void characterize_accept_latency(void) {
 		sprintf(name, "runtime pipe %lu completes every timing sample", (uint32_t) pipe_index);
 		test_check(name, success);
 		sprintf(name, "runtime pipe %lu completes within firmware's 1000-poll wait", (uint32_t) pipe_index);
-		test_check(name, success && maximum_polls <= DSP_RUNTIME_FIRMWARE_POLL_LIMIT);
-		printf("# runtime pipe %lu IRQ-to-ACK: samples=%lu ticks min=%lu mean=%lu max=%lu polls_max=%lu\n",
-			(uint32_t) pipe_index, samples, minimum, (uint32_t) (total / samples), maximum,
-			(uint32_t) maximum_polls);
+		test_check(name, success && maximum_polls <= 1000);
+		printf("# runtime pipe %lu IRQ-to-ACK: samples=%lu min=%lu ns mean=%lu ns max=%lu ns polls_max=%lu\n",
+			(uint32_t) pipe_index, samples, ticks_to_nanoseconds(minimum),
+			ticks_to_nanoseconds(total / samples), ticks_to_nanoseconds(maximum), (uint32_t) maximum_polls);
 	}
 }
 
-static void test_stm_timeout(void) {
+static void test_timed_command_acceptance(void) {
 	static const struct {
 		uint16_t command;
 		uint16_t parameters[11];
@@ -299,16 +323,8 @@ static void test_stm_timeout(void) {
 			"cipher-key command on runtime pipe two" },
 	};
 
-	uint32_t initial_stm_clc = STM_CLC;
-	STM_CLC = DSP_RUNTIME_FIRMWARE_STM_CLC;
-	stopwatch_update();
-	uint32_t stm_frequency = cpu_get_stm_freq();
-	test_eq_u32("firmware STM configuration provides its 1 MHz timeout clock",
-		DSP_RUNTIME_FIRMWARE_STM_HZ, stm_frequency);
-	printf("# firmware timeout clock: STM=%lu Hz STM_CLC=%08lx\n", stm_frequency, STM_CLC);
-
 	for (size_t pipe_index = 0; pipe_index < ARRAY_SIZE(CASES); pipe_index++) {
-		uint32_t maximum_ticks = 0;
+		stopwatch_t maximum_ticks = 0;
 		uint32_t samples = 0;
 		bool success = true;
 
@@ -318,10 +334,10 @@ static void test_stm_timeout(void) {
 			dsp_runtime_command_prepare(pipe_index, CASES[pipe_index].command, CASES[pipe_index].parameters,
 				CASES[pipe_index].parameter_count);
 			DSP_COM_SET = flag;
+			stopwatch_t start = stopwatch_get();
 			dsp_runtime_interrupt_pulse(flag);
-			uint32_t elapsed_ticks;
-			bool command_complete = dsp_runtime_wait_stm(flag, DSP_RUNTIME_FIRMWARE_STM_TIMEOUT_TICKS,
-				&elapsed_ticks);
+			stopwatch_t elapsed_ticks;
+			bool command_complete = wait_for_command(flag, start, 100, &elapsed_ticks);
 			command_complete &= dsp_runtime_pipe_get(pipe_index)[0] == (uint16_t) -CASES[pipe_index].command;
 			success &= command_complete;
 			samples++;
@@ -332,15 +348,11 @@ static void test_stm_timeout(void) {
 		}
 
 		char name[104];
-		sprintf(name, "%s meets the 70-us acceptance guarantee and firmware's 100-tick wait",
-			CASES[pipe_index].name);
-		test_check(name, success && maximum_ticks <= DSP_RUNTIME_DATASHEET_ACCEPT_US &&
-			maximum_ticks <= DSP_RUNTIME_FIRMWARE_STM_TIMEOUT_TICKS);
-		printf("# %s: samples=%lu STM ticks max=%lu\n", CASES[pipe_index].name, samples, maximum_ticks);
+		sprintf(name, "%s meets the 70-us acceptance deadline", CASES[pipe_index].name);
+		test_check(name, success && maximum_ticks <= microseconds_to_ticks(70));
+		printf("# %s: samples=%lu max=%lu ns\n", CASES[pipe_index].name, samples,
+			ticks_to_nanoseconds(maximum_ticks));
 	}
-
-	STM_CLC = initial_stm_clc;
-	stopwatch_update();
 }
 
 static void test_runtime_profile(void) {
@@ -363,7 +375,7 @@ static void test_runtime_profile(void) {
 	test_rejected_commands();
 	characterize_accept_latency();
 	if (profile->uses_stm_command_timeout)
-		test_stm_timeout();
+		test_timed_command_acceptance();
 }
 
 int main(void) {

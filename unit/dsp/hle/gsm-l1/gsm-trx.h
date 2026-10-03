@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "gsm.h"
+#include "dsp/hle/gsm-l1/gsm.h"
 
 #define GSM_TRX_MONITOR_COUNT 4
 #define GSM_TRX_TELEGRAM_COUNT 20

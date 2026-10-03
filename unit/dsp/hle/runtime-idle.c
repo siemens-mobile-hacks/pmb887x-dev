@@ -1,13 +1,11 @@
 #include <pmb887x.h>
 #include <stopwatch.h>
 
-#include "runtime.h"
+#include "dsp/runtime.h"
 #include "test.h"
 
 #define DSP_RUNTIME_IDLE_RESULT_OFFSET 0x0200
 #define DSP_RUNTIME_IDLE_TIMEOUT_US 2000
-#define DSP_COMMAND_IDLE 14
-#define DSP_COMMAND_READ_DSP 33
 
 static bool wait_core_idle(uint32_t *elapsed_us) {
 	stopwatch_t start = stopwatch_get();

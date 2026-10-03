@@ -1,7 +1,7 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
 
-#include "../dsp-hw.h"
+#include "dsp/dsp-hw.h"
 #include "dsp-io-functional-8876.inc"
 #include "test.h"
 

@@ -1,6 +1,6 @@
 #include <pmb887x.h>
 
-#include "rf-ssc-tcm.h"
+#include "dsp/rf-ssc-tcm.h"
 
 #define ITCM_BASE 0x01000000
 #define TCM_REGION_SIZE_8K 0x10

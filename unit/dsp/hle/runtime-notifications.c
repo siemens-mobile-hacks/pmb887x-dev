@@ -1,11 +1,10 @@
 #include <pmb887x.h>
 #include <stopwatch.h>
 
-#include "../dsp-hw.h"
-#include "runtime.h"
+#include "dsp/dsp-hw.h"
+#include "dsp/runtime.h"
 #include "test.h"
 
-#define DSP_COMMAND_FC_INIT 1
 #define DSP_FC_PREPARE_FLAG BIT(7)
 #define DSP_FC_RESULT_FLAGS (BIT(3) | BIT(4))
 // Extended runtime Shared RAM ABI used by its frequency-correction handler.

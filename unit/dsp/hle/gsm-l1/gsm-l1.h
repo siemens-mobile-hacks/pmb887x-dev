@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "gsm.h"
+#include "dsp/hle/gsm-l1/gsm.h"
 
 struct gsm_l1_runtime {
 	void (*poll)(void *context);

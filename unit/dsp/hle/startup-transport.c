@@ -1,31 +1,33 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
+#include <stopwatch.h>
 
-#include "../dsp-container.h"
-#include "../dsp-hw.h"
-#include "runtime.h"
+#include "dsp/dsp-container.h"
+#include "dsp/dsp-hw.h"
+#include "dsp/runtime.h"
 #include "test.h"
 
 #define DSP_BOOT_DATA_OFFSET 2
 #define DSP_RUNTIME_RESULT_OFFSET 0x0200
-#define DSP_COMMAND_READ_DSP 33
-static bool wait_for_boot_record(size_t *polls, uint32_t *elapsed_ticks) {
-	uint32_t start = STM_TIM0;
+#define DSP_RUNTIME_FIRMWARE_POLL_LIMIT 1000
+
+static bool wait_for_boot_record(size_t *polls, uint32_t *elapsed_us) {
+	stopwatch_t start = stopwatch_get();
 
 	for (size_t poll = 1; poll <= DSP_RUNTIME_FIRMWARE_POLL_LIMIT; poll++) {
 		if ((DSP_COM_STATUS & BIT(0)) == 0) {
 			*polls = poll;
-			*elapsed_ticks = STM_TIM0 - start;
+			*elapsed_us = stopwatch_elapsed_us(start);
 			return true;
 		}
 	}
 
 	*polls = DSP_RUNTIME_FIRMWARE_POLL_LIMIT;
-	*elapsed_ticks = STM_TIM0 - start;
+	*elapsed_us = stopwatch_elapsed_us(start);
 	return false;
 }
 
-static bool submit_record(const dsp_container_record_t *record, size_t *polls, uint32_t *elapsed_ticks) {
+static bool submit_record(const dsp_container_record_t *record, size_t *polls, uint32_t *elapsed_us) {
 	volatile uint16_t *boot_data = dsp_hw_shared_memory + DSP_BOOT_DATA_OFFSET;
 
 	boot_data[0] = record->command;
@@ -39,7 +41,7 @@ static bool submit_record(const dsp_container_record_t *record, size_t *polls, u
 	DSP_COM_SET = BIT(0);
 	SCU_DSP_INT = BIT(0);
 	SCU_DSP_INT = 0;
-	return wait_for_boot_record(polls, elapsed_ticks);
+	return wait_for_boot_record(polls, elapsed_us);
 }
 
 static bool readback_record(const dsp_container_record_t *record, uint16_t *readback) {
@@ -69,14 +71,14 @@ static bool load_and_verify_user_rom(void) {
 		char name[104];
 
 		size_t polls;
-		uint32_t elapsed_ticks;
-		bool completed = submit_record(&record, &polls, &elapsed_ticks);
+		uint32_t elapsed_us;
+		bool completed = submit_record(&record, &polls, &elapsed_us);
 		sprintf(name, "startup record %lu completes within firmware's 1000-poll wait",
 			(uint32_t) record_index);
 		test_check(name, completed);
-		printf("# startup record %lu command=%lu address=%04lX words=%lu STM_ticks=%lu polls=%lu\n",
+		printf("# startup record %lu command=%lu address=%04lX words=%lu elapsed=%lu us polls=%lu\n",
 			(uint32_t) record_index, (uint32_t) record.command, (uint32_t) record.destination,
-			(uint32_t) record.words, elapsed_ticks, (uint32_t) polls);
+			(uint32_t) record.words, elapsed_us, (uint32_t) polls);
 		if (!completed)
 			return false;
 

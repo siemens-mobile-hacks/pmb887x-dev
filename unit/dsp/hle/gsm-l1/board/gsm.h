@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../gsm.h"
+#include "dsp/hle/gsm-l1/gsm.h"
 
 bool gsm_board_init(void);
 void gsm_board_enable_transceiver_power(void);
