@@ -29,6 +29,7 @@ success.
 | `dsp-hle-runtime-firmware` | PMB8876 runtime startup, command transport, and platform-specific command behavior |
 | `dsp-hle-runtime-semaphores` | Runtime command traffic, MCU semaphore ownership, and DSP-reset interaction |
 | `dsp-hle-runtime-idle` | Runtime IDLE acknowledgement, DSP clock status, wakeup, and command recovery |
+| `dsp-audio-pcm` | Exact triangle generation, source stride, channel interleave, and block padding |
 | `dsp-lle-mcs-functional` | Communication flags, all-semaphore arbitration, queued transfer, and DSP-reset behavior |
 | `dsp-lle-peripheral-map` | Reset-isolated, read-only PMB8876 DSP data-space capture for the candidate `DE00`-`DEFF` peripheral window |
 | `dsp-lle-peripherals-registers` | Direct TeakLite reads of documented status, counter, pointer, semaphore, and ID registers without peripheral control writes |

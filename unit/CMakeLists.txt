@@ -68,6 +68,7 @@ add_peripheral_test(dsp-hle-runtime-transport dsp/hle/runtime-transport.c dsp/ru
 add_peripheral_test(dsp-hle-runtime-notifications dsp/hle/runtime-notifications.c dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-hle-runtime-semaphores dsp/hle/runtime-semaphores.c dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-hle-runtime-idle dsp/hle/runtime-idle.c dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-audio-pcm dsp/audio/pcm/test.c dsp/audio/pcm.c)
 add_peripheral_test(dsp-hle-startup-transport dsp/hle/startup-transport.c dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-peripheral-map dsp/lle/peripheral-map.c)
 add_peripheral_test(dsp-lle-peripherals-registers dsp/lle/safe-peripherals.c)
