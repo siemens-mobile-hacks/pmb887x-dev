@@ -62,6 +62,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-audio-pcm]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-hle-i2s-playback]
+devices = ["siemens-cx75", "siemens-e71", "siemens-el71"]
+
 [dsp-hle-startup-transport]
 devices = ["generic-pmb8876", "siemens-c81"]
 
