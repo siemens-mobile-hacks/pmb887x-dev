@@ -34,10 +34,10 @@
 #define	GPIO_I2C_SCL		28
 #define	GPIO_I2C_SDA		29
 #define	GPIO_DIF_D1			30
-#define	GPIO_PIN31			31
+#define	GPIO_I2S2_CLK0		31
 #define	GPIO_I2S2_RX		32
 #define	GPIO_I2S2_TX		33
-#define	GPIO_PIN34			34
+#define	GPIO_I2S2_WA0		34
 #define	GPIO_PIN35			35
 #define	GPIO_PIN36			36
 #define	GPIO_PIN37			37
@@ -105,7 +105,7 @@
 #define	GPIO_DIF_HD			99
 #define	GPIO_DIF_VD			100
 #define	GPIO_PIN101			101
-#define	GPIO_PIN102			102
+#define	GPIO_I2S2_CLK1		102
 #define	GPIO_I2S2_WA1		103
 #define	GPIO_MMCI_CMD		104
 #define	GPIO_MMCI_DAT0		105

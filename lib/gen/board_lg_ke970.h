@@ -67,5 +67,3 @@
 #define	KP_MUSIC		0x00000810
 #define	KP_PTT			0x00000820
 #define	KP_CAMERA		0x00001020
-
-

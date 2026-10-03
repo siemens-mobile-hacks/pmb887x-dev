@@ -25,6 +25,10 @@ addr = 0x10
 [gpio.aliases]
 MMCI_DAT1 = "HW_DET_FM_RADIO"
 USIF_TXD_MTSR = "A_FM_STANDBY"
+I2S2_CLK0 = "I2S_CLK"
+I2S2_RX = "PM_I2S_ADC"
+I2S2_TX = "I2S_DAC"
+I2S2_WA0 = "I2S_WA0"
 
 [gpio.inputs]
 # HWID 413

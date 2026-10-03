@@ -3,6 +3,9 @@ vendor = "Siemens"
 model = "CX75"
 extends = "include/siemens-sgl-sirius.toml"
 
+[gpio.aliases]
+RF_STR1 = "PM_RINGIN"
+
 [gpio.inputs]
 # HWID 5000
 HW_DET_MOB_TYPE1 = 1

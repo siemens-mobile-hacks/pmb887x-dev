@@ -20,6 +20,10 @@ revision = 0xED
 [gpio.aliases]
 MMCI_DAT1 = "OPEN_CLOSE_SW1"
 DIF_HD = "OPEN_CLOSE_SW2"
+I2S2_CLK0 = "I2S_CLK"
+I2S2_RX = "PM_I2S_ADC"
+I2S2_TX = "I2S_DAC"
+I2S2_WA0 = "I2S_WA0"
 
 [gpio.inputs]
 # HWID 407

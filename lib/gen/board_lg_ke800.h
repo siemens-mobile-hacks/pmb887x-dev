@@ -52,5 +52,3 @@
 #define	KP_NAV_UP		0x00001004
 #define	KP_NAV_RIGHT	0x00001008
 #define	KP_NAV_LEFT		0x00001010
-
-
