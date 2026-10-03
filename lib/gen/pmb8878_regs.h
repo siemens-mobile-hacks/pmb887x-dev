@@ -1141,10 +1141,10 @@
 #define	CGU_CON2_CLK32K_EN					BIT(24)					 // Enable external 32 kHz clock output
 #define	CGU_CON2_MS_CLKSEL					GENMASK(29, 28)			 // Source clock for the mixed-signal domain (CLK_MS_O)
 #define	CGU_CON2_MS_CLKSEL_SHIFT			28
-#define	CGU_CON2_MS_CLKSEL_OSC				0x0
-#define	CGU_CON2_MS_CLKSEL_CLK32K			0x10000000
-#define	CGU_CON2_MS_CLKSEL_OSC_DIV_64		0x20000000
-#define	CGU_CON2_MS_CLKSEL_DISABLE			0x30000000
+#define	CGU_CON2_MS_CLKSEL_CLK_IN			0x0
+#define	CGU_CON2_MS_CLKSEL_DISABLE_01		0x10000000
+#define	CGU_CON2_MS_CLKSEL_PLL				0x20000000
+#define	CGU_CON2_MS_CLKSEL_DISABLE_11		0x30000000
 
 /* PLL Status Register */
 #define	CGU_STAT							MMIO32(CGU_BASE + 0xB0)

@@ -271,12 +271,10 @@ uint32_t cpu_get_clk32k_freq(void) {
 
 uint32_t cpu_get_ms_freq(void) {
 	switch (CGU_CON2 & CGU_CON2_MS_CLKSEL) {
-		case CGU_CON2_MS_CLKSEL_OSC:
+		case CGU_CON2_MS_CLKSEL_CLK_IN:
 			return CPU_OSC_FREQ;
-		case CGU_CON2_MS_CLKSEL_CLK32K:
-			return CPU_CLK32K_FREQ;
-		case CGU_CON2_MS_CLKSEL_OSC_DIV_64:
-			return CPU_OSC_FREQ / 64;
+		case CGU_CON2_MS_CLKSEL_PLL:
+			return cpu_get_pll_freq();
 		default:
 			return 0;
 	}

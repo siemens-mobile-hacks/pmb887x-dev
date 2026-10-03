@@ -199,7 +199,7 @@ static bool configure_system_clocks(void) {
 	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_DSP_CLKSEL) | CGU_CON2_DSP_CLKSEL_PHASE1;
 
 	// Configure the mixed-signal clock.
-	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_MS_CLKSEL) | CGU_CON2_MS_CLKSEL_OSC_DIV_64;
+	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_MS_CLKSEL) | CGU_CON2_MS_CLKSEL_PLL;
 
 	return cpu_get_sys_freq() == SYSTEM_FREQUENCY_HZ && cpu_get_freq() == CPU_FREQUENCY_HZ;
 }
