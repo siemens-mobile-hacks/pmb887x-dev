@@ -1136,13 +1136,11 @@ static void test_halt_and_lock(void) {
 }
 
 static void test_halt_after_partial_transfer(void) {
-	if (test_is_qemu()) {
-		test_skip("HALT drains buffered data", "QEMU does not model the DMAC FIFO");
-		return;
-	}
+	uint8_t expected[8 * sizeof(uint32_t)];
 
 	reset_dmac();
 	fill_matrix_buffers();
+	memcpy(expected, matrix_source, sizeof(expected));
 	start_transfer(
 		(uint32_t) matrix_source,
 		(uint32_t) matrix_destination,
@@ -1171,13 +1169,14 @@ static void test_halt_after_partial_transfer(void) {
 		(DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) != 0
 	);
 	test_eq_memory("HALT preserves completed burst", matrix_source, matrix_destination, 4 * sizeof(uint32_t));
+	memset(matrix_source + 4 * sizeof(uint32_t), 0x5A, 4 * sizeof(uint32_t));
 	DMAC_SOFT_BREQ = BIT(0);
 	test_check("final request drains halted channel", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_check(
 		"halted channel becomes inactive after drain",
 		(DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0
 	);
-	test_eq_memory("halted partial transfer data", matrix_source, matrix_destination, 8 * sizeof(uint32_t));
+	test_eq_memory("HALT drains prefetched data", expected, matrix_destination, sizeof(expected));
 	test_check("final request clears after drain", (DMAC_SOFT_BREQ & BIT(0)) == 0);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
