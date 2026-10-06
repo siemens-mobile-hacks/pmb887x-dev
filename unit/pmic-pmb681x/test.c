@@ -2,6 +2,7 @@
 #include <pmic/PMB6812.h>
 
 #include "i2c.h"
+#include "pmb681x.h"
 #include "test.h"
 
 #ifdef BOARD_HAS_PMIC_PMB6812
@@ -70,11 +71,17 @@ static bool command_write(uint8_t value, uint8_t pec) {
 
 int main(void) {
 	uint8_t confirmation = 0;
-	uint8_t value = 1 << PMB6812_LEDCTRL1_LEDPWM_SHIFT;
-	uint8_t public_command[] = { PMB6812_LEDCTRL1, value };
+	const uint8_t value = 1 << PMB6812_LEDCTRL1_LEDPWM_SHIFT;
+	uint8_t charger_status = 0;
+	const uint8_t public_command[] = { PMB6812_LEDCTRL1, value };
 
-	test_start("PMB6812 PEC");
+	test_start("PMB681x");
 	i2c_init();
+
+	test_check("PMIC identification read completes",
+		i2c_smbus_read_byte(PMB6812_I2C_ADDR, PMB6812_CHST, &charger_status));
+	test_eq_u32("PMIC identifies as PMB6812 SM-POWER", PMB6812_CHST_PMUID_SM_POWER,
+		charger_status & PMB6812_CHST_PMUID);
 
 	test_check("command write is acknowledged", command_write(value, 0x2E));
 	test_check("command confirmation read completes", i2c_read(PMB6812_I2C_ADDR, &confirmation, 1));
@@ -90,9 +97,7 @@ int main(void) {
 		i2c_smbus_write_pec(PMB6812_I2C_ADDR, public_command, ARRAY_SIZE(public_command)));
 	test_check("public PEC confirmation read completes", i2c_read(PMB6812_I2C_ADDR, &confirmation, 1));
 	test_eq_u32("public PEC write calculates the expected CRC", 0x2E, confirmation);
-	public_command[1] = 0;
-	test_check("public confirmed PEC write verifies confirmation",
-		i2c_smbus_write_pec_confirmed(PMB6812_I2C_ADDR, public_command, ARRAY_SIZE(public_command)));
+	test_check("PMB681x register write verifies confirmation", pmb681x_reg_write(PMB6812_LEDCTRL1, 0));
 
 #ifdef PMB8875
 	test_i2c_v1_data_nack();
@@ -104,8 +109,8 @@ int main(void) {
 #else
 
 int main(void) {
-	test_start("PMB6812 PEC");
-	test_skip("PMB6812 PEC", "unsupported PMIC");
+	test_start("PMB681x");
+	test_skip("PMB681x", "unsupported PMIC");
 	return test_finish();
 }
 
