@@ -15,7 +15,7 @@ static uint8_t smbus_pec_update(uint8_t pec, uint8_t value) {
 	return pec;
 }
 
-static uint8_t smbus_pec_calculate(uint8_t address, const uint8_t *data, uint32_t size) {
+uint8_t i2c_smbus_pec_calculate(uint8_t address, const uint8_t *data, uint32_t size) {
 	uint8_t pec = smbus_pec_update(0, address << 1);
 
 	for (uint32_t i = 0; i < size; i++)
@@ -37,18 +37,9 @@ bool i2c_read(uint8_t address, uint8_t *data, uint32_t size) {
 }
 
 bool i2c_smbus_write_pec(uint8_t address, const uint8_t *data, uint32_t size) {
-	uint8_t pec = smbus_pec_calculate(address, data, size);
+	uint8_t pec = i2c_smbus_pec_calculate(address, data, size);
 
 	return i2c_hw_write(address, data, size, &pec, 1);
-}
-
-bool i2c_smbus_write_pec_confirmed(uint8_t address, const uint8_t *data, uint32_t size) {
-	uint8_t pec = smbus_pec_calculate(address, data, size);
-	uint8_t confirmation;
-
-	if (!i2c_hw_write(address, data, size, &pec, 1))
-		return false;
-	return i2c_hw_read(address, &confirmation, 1) && confirmation == pec;
 }
 
 bool i2c_smbus_write_byte(uint8_t address, uint8_t reg, uint8_t value) {

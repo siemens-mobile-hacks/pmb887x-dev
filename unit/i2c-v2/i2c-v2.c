@@ -6,16 +6,17 @@
 #include "i2c.h"
 #include "driver.h"
 #include "i2c-v2.h"
+#include "pmb681x.h"
 #include "test.h"
 
 #ifdef PMB8876
 
 #include <string.h>
 
-#if defined(BOARD_HAS_PMIC_PMB6812)
+#if defined(BOARD_PLATFORM_APOXI)
 #include <pmic/PMB6812.h>
-#elif defined(BOARD_HAS_PMIC_D1094XX)
-#include <pmic/D1094XX.h>
+#elif defined(BOARD_PLATFORM_SIEMENS)
+#include <pmic/PASIC.h>
 #endif
 
 #define I2C_STATUS_CLEAR 0x3F
@@ -42,7 +43,7 @@ struct i2c_test_target {
 	enum i2c_test_write_verify write_verify;
 };
 
-#if defined(BOARD_HAS_PMIC_PMB6812)
+#if defined(BOARD_PLATFORM_APOXI)
 static const struct i2c_test_target I2C_TEST_TARGET = {
 	.address = PMB6812_I2C_ADDR,
 	.write_register = PMB6812_LEDCTRL1,
@@ -52,11 +53,11 @@ static const struct i2c_test_target I2C_TEST_TARGET = {
 	.write_uses_pec = true,
 	.write_verify = I2C_TEST_WRITE_CONFIRM,
 };
-#elif defined(BOARD_HAS_PMIC_D1094XX)
+#elif defined(BOARD_PLATFORM_SIEMENS)
 static const struct i2c_test_target I2C_TEST_TARGET = {
-	.address = D1094XX_I2C_ADDR,
-	.write_register = D1094XX_LIGHT_PWM1,
-	.read_register = D1094XX_LIGHT_PWM1,
+	.address = PASIC_I2C_ADDR,
+	.write_register = PASIC_LIGHT_PWM1,
+	.read_register = PASIC_LIGHT_PWM1,
 	.write_value = 1,
 	.restore_value = 0,
 	.write_uses_pec = false,
@@ -333,45 +334,46 @@ static void test_tx_fifo_overflow(void) {
 	test_eq_u32("TX FIFO overflow does not end a transfer", 0, protocol_status);
 }
 
-static bool public_target_write(uint8_t value) {
+static bool polling_reg_write(uint8_t value) {
+#ifdef BOARD_PLATFORM_APOXI
+	return pmb681x_reg_write(I2C_TEST_TARGET.write_register, value);
+#else
 	uint8_t data[] = {
 		I2C_TEST_TARGET.write_register,
 		value,
 	};
 
-	if (I2C_TEST_TARGET.write_uses_pec)
-		return i2c_smbus_write_pec_confirmed(I2C_TEST_TARGET.address, data, ARRAY_SIZE(data));
-
 	return i2c_write(I2C_TEST_TARGET.address, data, ARRAY_SIZE(data));
+#endif
 }
 
-static bool public_target_read(uint8_t reg, uint8_t *value) {
+static bool polling_reg_read(uint8_t reg, uint8_t *value) {
 	return i2c_write(I2C_TEST_TARGET.address, &reg, 1) && i2c_read(I2C_TEST_TARGET.address, value, 1);
 }
 
-static void test_public_polling_driver(void) {
+static void test_polling_api(void) {
 	i2c_init();
 	uint8_t reference = 0;
-	test_check("public polling read completes", public_target_read(I2C_TEST_TARGET.read_register, &reference));
-	test_check("public polling write is accepted", public_target_write(I2C_TEST_TARGET.write_value));
+	test_check("polling read completes", polling_reg_read(I2C_TEST_TARGET.read_register, &reference));
+	test_check("polling write is accepted", polling_reg_write(I2C_TEST_TARGET.write_value));
 	if (I2C_TEST_TARGET.write_verify == I2C_TEST_WRITE_READBACK) {
 		uint8_t actual = 0;
-		test_check("public polling write verification completes",
-			public_target_read(I2C_TEST_TARGET.write_register, &actual));
-		test_eq_u32("public polling write data", I2C_TEST_TARGET.write_value, actual);
+		test_check("polling write verification completes",
+			polling_reg_read(I2C_TEST_TARGET.write_register, &actual));
+		test_eq_u32("polling write data", I2C_TEST_TARGET.write_value, actual);
 	}
-	test_check("public polling restore is accepted", public_target_write(I2C_TEST_TARGET.restore_value));
+	test_check("polling restore is accepted", polling_reg_write(I2C_TEST_TARGET.restore_value));
 	if (I2C_TEST_TARGET.write_verify == I2C_TEST_WRITE_READBACK) {
 		uint8_t actual = 0;
-		test_check("public polling restore verification completes",
-			public_target_read(I2C_TEST_TARGET.write_register, &actual));
-		test_eq_u32("public polling restore data", I2C_TEST_TARGET.restore_value, actual);
+		test_check("polling restore verification completes",
+			polling_reg_read(I2C_TEST_TARGET.write_register, &actual));
+		test_eq_u32("polling restore data", I2C_TEST_TARGET.restore_value, actual);
 	}
 
 	uint8_t value = 0;
-	test_check("public polling write reports a missing slave", !i2c_write(0x7F, &value, sizeof(value)));
-	test_check("public polling read completes after NACK", public_target_read(I2C_TEST_TARGET.read_register, &value));
-	test_eq_u32("public polling read recovers after NACK", reference, value);
+	test_check("polling write reports a missing slave", !i2c_write(0x7F, &value, sizeof(value)));
+	test_check("polling read completes after NACK", polling_reg_read(I2C_TEST_TARGET.read_register, &value));
+	test_eq_u32("polling read recovers after NACK", reference, value);
 }
 
 static void test_target(void) {
@@ -1177,8 +1179,8 @@ int i2c_v2_test(void) {
 	test_nack_recovery();
 	test_category("NACK state-machine transitions");
 	test_nack_transitions();
-	test_category("Public polling driver");
-	test_public_polling_driver();
+	test_category("Polling API");
+	test_polling_api();
 	test_category("TX FIFO overflow");
 	test_tx_fifo_overflow();
 

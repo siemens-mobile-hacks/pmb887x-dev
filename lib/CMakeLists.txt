@@ -29,6 +29,7 @@ add_library(pmb887x OBJECT
 	i2c.c
 	i2c-v1.c
 	i2c-v2.c
+	pmb681x.c
 	printf.c
 	wdt.c
 	stopwatch.c

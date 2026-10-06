@@ -7,6 +7,7 @@
 
 #include "dmac.h"
 #include "i2c.h"
+#include "pmb681x.h"
 #include "test.h"
 
 #ifdef SIM_TIMER_TEST
@@ -121,12 +122,7 @@ static bool sim_supply_set(bool enabled) {
 		return false;
 	control &= ~PMB6812_PWCTRL5_LSIMMD;
 	control |= (enabled ? PMB6812_PWCTRL5_LSIMMD_ON : PMB6812_PWCTRL5_LSIMMD_OFF);
-	const uint8_t command[] = {
-		PMB6812_PWCTRL5,
-		control,
-	};
-
-	return i2c_smbus_write_pec_confirmed(PMB6812_I2C_ADDR, command, ARRAY_SIZE(command));
+	return pmb681x_reg_write(PMB6812_PWCTRL5, control);
 #elif defined(BOARD_HAS_PMIC_D1094XX)
 	uint8_t supply_enable;
 
