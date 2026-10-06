@@ -2,7 +2,7 @@
 
 #ifdef PMB8875
 
-#define I2C_POLL_LIMIT 1000000
+#define I2C_TRANSFER_TIMEOUT_MS 100
 
 static const uint32_t I2C_BUS_CONFIG = I2C_BUSCON_SDAEN0 | I2C_BUSCON_SCLEN0 |
 	(0x7E << I2C_BUSCON_BRP_SHIFT) | I2C_BUSCON_PREDIV_8 | I2C_BUSCON_BRPMOD_MODE1;
@@ -17,6 +17,7 @@ struct i2c_transfer {
 	uint32_t prefix_remaining;
 	uint32_t remaining;
 	bool address_sent;
+	bool stop_requested;
 };
 
 static void buffer_size_set(uint32_t size) {
@@ -37,7 +38,7 @@ static void write_buffer(struct i2c_transfer *transfer, uint32_t value, uint32_t
 	uint32_t count = offset;
 
 	while (count < sizeof(value) && (transfer->prefix_remaining != 0 || transfer->remaining != 0)) {
-		value |= (uint32_t) transfer_byte_get(transfer) << (count * 8);
+		value |= ((uint32_t) transfer_byte_get(transfer) << (count * 8));
 		count++;
 	}
 	buffer_size_set(count);
@@ -66,14 +67,17 @@ static void transfer_stop(void) {
 }
 
 static bool transfer_wait(struct i2c_transfer *transfer, bool reading) {
-	for (uint32_t i = 0; i < I2C_POLL_LIMIT; i++) {
+	stopwatch_t start = stopwatch_get();
+
+	while (stopwatch_elapsed_ms(start) < I2C_TRANSFER_TIMEOUT_MS) {
 		uint32_t status = I2C_SYSCON;
 
 		if ((status & I2C_SYSCON_IRQP) != 0)
 			I2C_WHBSYSCON = I2C_WHBSYSCON_CLRIRQP;
 
 		if ((status & I2C_SYSCON_IRQD) != 0) {
-			bool nack = (status & I2C_SYSCON_LRB) != 0 && (!reading || !transfer->address_sent);
+			bool nack = (status & I2C_SYSCON_LRB) != 0 && !transfer->stop_requested &&
+				(!reading || !transfer->address_sent);
 
 			if (nack) {
 				transfer_stop();
@@ -84,6 +88,7 @@ static bool transfer_wait(struct i2c_transfer *transfer, bool reading) {
 				if (transfer->prefix_remaining != 0 || transfer->remaining != 0) {
 					write_buffer(transfer, 0, 0);
 				} else {
+					transfer->stop_requested = true;
 					I2C_WHBSYSCON = I2C_WHBSYSCON_CLRBUM | I2C_WHBSYSCON_CLRIRQD;
 				}
 			} else {

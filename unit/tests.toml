@@ -324,6 +324,9 @@ devices = ["siemens-el71", "lg-ke970"]
 [i2c-v2-dma]
 devices = ["siemens-el71", "lg-ke970"]
 
+[pmic-pmb6812-pec]
+devices = ["panasonic-vs7", "lg-ke970"]
+
 [i2c-fm-radio]
 devices = ["siemens-e71"]
 

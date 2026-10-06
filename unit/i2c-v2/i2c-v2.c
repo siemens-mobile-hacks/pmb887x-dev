@@ -340,17 +340,9 @@ static bool public_target_write(uint8_t value) {
 	};
 
 	if (I2C_TEST_TARGET.write_uses_pec)
-		return i2c_smbus_write_pec(I2C_TEST_TARGET.address, data, ARRAY_SIZE(data));
+		return i2c_smbus_write_pec_confirmed(I2C_TEST_TARGET.address, data, ARRAY_SIZE(data));
 
 	return i2c_write(I2C_TEST_TARGET.address, data, ARRAY_SIZE(data));
-}
-
-static bool public_target_write_verification_read(uint8_t *actual) {
-	if (I2C_TEST_TARGET.write_verify == I2C_TEST_WRITE_CONFIRM)
-		return i2c_read(I2C_TEST_TARGET.address, actual, 1);
-
-	uint8_t reg = I2C_TEST_TARGET.write_register;
-	return i2c_write(I2C_TEST_TARGET.address, &reg, 1) && i2c_read(I2C_TEST_TARGET.address, actual, 1);
 }
 
 static bool public_target_read(uint8_t reg, uint8_t *value) {
@@ -361,21 +353,20 @@ static void test_public_polling_driver(void) {
 	i2c_init();
 	uint8_t reference = 0;
 	test_check("public polling read completes", public_target_read(I2C_TEST_TARGET.read_register, &reference));
-	test_check("public polling write completes", public_target_write(I2C_TEST_TARGET.write_value));
-	uint8_t actual = 0;
-	test_check("public polling write verification completes", public_target_write_verification_read(&actual));
-	test_eq_u32(
-		"public polling write is accepted",
-		target_write_verification_value(I2C_TEST_TARGET.write_value),
-		actual
-	);
-	test_check("public polling restore completes", public_target_write(I2C_TEST_TARGET.restore_value));
-	test_check("public polling restore verification completes", public_target_write_verification_read(&actual));
-	test_eq_u32(
-		"public polling restore is accepted",
-		target_write_verification_value(I2C_TEST_TARGET.restore_value),
-		actual
-	);
+	test_check("public polling write is accepted", public_target_write(I2C_TEST_TARGET.write_value));
+	if (I2C_TEST_TARGET.write_verify == I2C_TEST_WRITE_READBACK) {
+		uint8_t actual = 0;
+		test_check("public polling write verification completes",
+			public_target_read(I2C_TEST_TARGET.write_register, &actual));
+		test_eq_u32("public polling write data", I2C_TEST_TARGET.write_value, actual);
+	}
+	test_check("public polling restore is accepted", public_target_write(I2C_TEST_TARGET.restore_value));
+	if (I2C_TEST_TARGET.write_verify == I2C_TEST_WRITE_READBACK) {
+		uint8_t actual = 0;
+		test_check("public polling restore verification completes",
+			public_target_read(I2C_TEST_TARGET.write_register, &actual));
+		test_eq_u32("public polling restore data", I2C_TEST_TARGET.restore_value, actual);
+	}
 
 	uint8_t value = 0;
 	test_check("public polling write reports a missing slave", !i2c_write(0x7F, &value, sizeof(value)));

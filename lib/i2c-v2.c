@@ -115,7 +115,7 @@ bool i2c_hw_write(
 			} else {
 				byte = byte_get(&prefix, &prefix_size, &data, &size);
 			}
-			value |= (uint32_t) byte << (offset * 8);
+			value |= ((uint32_t) byte << (offset * 8));
 		}
 		I2C_TXD = value;
 		I2C_ICR = request;
