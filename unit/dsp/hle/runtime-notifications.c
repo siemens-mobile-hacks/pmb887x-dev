@@ -96,9 +96,9 @@ static bool wait_for_flags(uint16_t mask, uint16_t expected, uint32_t *elapsed_t
 }
 
 static bool runtime_start(void) {
-	const struct dsp_runtime_profile *profile;
+	const struct dsp_user_rom *user_rom;
 
-	return dsp_runtime_profile_start(&profile) && profile->supports_fc_notifications;
+	return dsp_runtime_start(&user_rom) && user_rom->supports_fc_notifications;
 }
 
 static void test_fc_notifications(void) {

@@ -4,17 +4,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-enum dsp_user_rom_platform {
-	DSP_USER_ROM_PLATFORM_SIEMENS,
-	DSP_USER_ROM_PLATFORM_APOXI,
-};
-
 struct dsp_user_rom {
 	const char *name;
 	uint16_t mask_id;
-	enum dsp_user_rom_platform platform;
 	const uint8_t *container;
 	size_t container_size;
+	bool accepts_i2s_swap;
+	bool supports_fc_notifications;
+	bool uses_stm_command_timeout;
 };
 
 const struct dsp_user_rom *dsp_user_rom_find(uint16_t mask_id);

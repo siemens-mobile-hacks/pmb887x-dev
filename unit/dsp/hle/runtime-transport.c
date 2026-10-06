@@ -78,7 +78,7 @@ static void test_interrupt_gating(void) {
 	test_eq_u32("wrong MCU interrupt does not acknowledge runtime pipe zero", DSP_COMMAND_READ_PROG, pipe[0]);
 
 	dsp_runtime_interrupt_pulse(BIT(0));
-	if (!test_check("matching MCU interrupt completes runtime pipe zero", dsp_runtime_wait(BIT(0), NULL)))
+	if (!test_check("matching MCU interrupt completes runtime pipe zero", dsp_runtime_wait(BIT(0))))
 		return;
 	test_eq_u32("accepted runtime command is acknowledged with its negated ID",
 		(uint16_t) -DSP_COMMAND_READ_PROG, pipe[0]);
@@ -135,7 +135,7 @@ static void test_selective_interrupts(void) {
 
 	DSP_COM_SET = flags;
 	dsp_runtime_interrupt_pulse(BIT(1));
-	if (!test_check("pipe one interrupt acknowledges pipe one", dsp_runtime_wait(BIT(1), NULL)))
+	if (!test_check("pipe one interrupt acknowledges pipe one", dsp_runtime_wait(BIT(1))))
 		return;
 	stopwatch_usleep_wd(DSP_RUNTIME_PENDING_OBSERVATION_US);
 	test_eq_u32("pipe zero and two remain pending after pipe one interrupt",
@@ -145,7 +145,7 @@ static void test_selective_interrupts(void) {
 
 	dsp_runtime_interrupt_pulse(BIT(0) | BIT(2));
 	if (!test_check("remaining interrupts acknowledge pipe zero and two",
-		dsp_runtime_wait(BIT(0) | BIT(2), NULL))) {
+		dsp_runtime_wait(BIT(0) | BIT(2)))) {
 		return;
 	}
 
@@ -175,7 +175,7 @@ static void test_simultaneous_pipes(void) {
 
 	DSP_COM_SET = flags;
 	dsp_runtime_interrupt_pulse(flags);
-	if (!test_check("one MCU pulse services all three pending runtime pipes", dsp_runtime_wait(flags, NULL)))
+	if (!test_check("one MCU pulse services all three pending runtime pipes", dsp_runtime_wait(flags)))
 		return;
 
 	for (size_t i = 0; i < DSP_RUNTIME_PIPE_COUNT; i++) {
@@ -266,7 +266,6 @@ static void characterize_accept_latency(void) {
 		uint32_t maximum = 0;
 		uint64_t total = 0;
 		uint32_t samples = 0;
-		size_t maximum_polls = 0;
 		bool success = true;
 
 		for (size_t sample = 0; sample < DSP_RUNTIME_TIMING_SAMPLES; sample++) {
@@ -281,8 +280,7 @@ static void characterize_accept_latency(void) {
 			DSP_COM_SET = flag;
 			stopwatch_t start = stopwatch_get();
 			dsp_runtime_interrupt_pulse(flag);
-			size_t polls;
-			bool command_complete = dsp_runtime_wait(flag, &polls);
+			bool command_complete = dsp_runtime_wait(flag);
 			uint32_t elapsed = (uint32_t) stopwatch_elapsed(start);
 			command_complete &= dsp_runtime_pipe_get(pipe_index)[0] == (uint16_t) -DSP_COMMAND_READ_PROG;
 			success &= command_complete;
@@ -293,8 +291,6 @@ static void characterize_accept_latency(void) {
 				maximum = elapsed;
 			total += elapsed;
 			samples++;
-			if (polls > maximum_polls)
-				maximum_polls = polls;
 			if (!command_complete)
 				break;
 		}
@@ -302,11 +298,11 @@ static void characterize_accept_latency(void) {
 		char name[72];
 		sprintf(name, "runtime pipe %lu completes every timing sample", (uint32_t) pipe_index);
 		test_check(name, success);
-		sprintf(name, "runtime pipe %lu completes within firmware's 1000-poll wait", (uint32_t) pipe_index);
-		test_check(name, success && maximum_polls <= 1000);
-		printf("# runtime pipe %lu IRQ-to-ACK: samples=%lu min=%lu ns mean=%lu ns max=%lu ns polls_max=%lu\n",
+		sprintf(name, "runtime pipe %lu completes within firmware's 100 us timeout", (uint32_t) pipe_index);
+		test_check(name, success && ticks_to_nanoseconds(maximum) <= 100000);
+		printf("# runtime pipe %lu IRQ-to-ACK: samples=%lu min=%lu ns mean=%lu ns max=%lu ns\n",
 			(uint32_t) pipe_index, samples, ticks_to_nanoseconds(minimum),
-			ticks_to_nanoseconds(total / samples), ticks_to_nanoseconds(maximum), (uint32_t) maximum_polls);
+			ticks_to_nanoseconds(total / samples), ticks_to_nanoseconds(maximum));
 	}
 }
 
@@ -355,15 +351,14 @@ static void test_timed_command_acceptance(void) {
 	}
 }
 
-static void test_runtime_profile(void) {
-	const struct dsp_runtime_profile *profile;
+static void test_runtime(void) {
+	const struct dsp_user_rom *user_rom;
 
 	test_category("Selected original User ROM transport");
 	if (!test_check("boot protocol selects and starts the platform User ROM",
-		dsp_runtime_profile_start(&profile))) {
+		dsp_runtime_start(&user_rom))) {
 		return;
 	}
-	printf("# DSP runtime profile: %s\n", profile->name);
 	if (!test_check("runtime installs a controlled Program RAM transport fixture", install_program_fixture()))
 		return;
 
@@ -374,7 +369,7 @@ static void test_runtime_profile(void) {
 	test_simultaneous_pipe_priority();
 	test_rejected_commands();
 	characterize_accept_latency();
-	if (profile->uses_stm_command_timeout)
+	if (user_rom->uses_stm_command_timeout)
 		test_timed_command_acceptance();
 }
 
@@ -382,6 +377,6 @@ int main(void) {
 	test_start("DSP startup runtime transport test");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 
-	test_runtime_profile();
+	test_runtime();
 	return test_finish();
 }

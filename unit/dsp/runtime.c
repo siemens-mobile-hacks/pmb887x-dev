@@ -1,61 +1,15 @@
 #include <pmb887x.h>
+#include <stopwatch.h>
 
 #include "dsp/dsp-hw.h"
 #include "dsp/runtime.h"
 #include "test.h"
 
 #define FIRMWARE_DELAY_ITERATIONS 2000
-#define FIRMWARE_POLL_LIMIT 1000
+#define DSP_RUNTIME_WAIT_TIMEOUT_US 2000
+#define DSP_RUNTIME_START_TIMEOUT_US 2000
 
 static const size_t DSP_RUNTIME_PIPE_OFFSETS[] = { 0x0005, 0x0021, 0x003D };
-
-static const struct dsp_runtime_profile DSP_RUNTIME_PROFILES[] = {
-	{
-		.name = "APOXI 0603 runtime",
-		.mask_id = 0x0603,
-		.platform = DSP_USER_ROM_PLATFORM_APOXI,
-	},
-	{
-		.name = "APOXI 0604 runtime",
-		.mask_id = 0x0604,
-		.platform = DSP_USER_ROM_PLATFORM_APOXI,
-	},
-	{
-		.name = "APOXI 0800 runtime",
-		.mask_id = 0x0800,
-		.platform = DSP_USER_ROM_PLATFORM_APOXI,
-	},
-	{
-		.name = "APOXI 0801 runtime",
-		.mask_id = 0x0801,
-		.platform = DSP_USER_ROM_PLATFORM_APOXI,
-	},
-	{
-		.name = "Siemens 0602 runtime",
-		.mask_id = 0x0602,
-		.platform = DSP_USER_ROM_PLATFORM_SIEMENS,
-	},
-	{
-		.name = "Siemens 0605 runtime",
-		.mask_id = 0x0605,
-		.platform = DSP_USER_ROM_PLATFORM_SIEMENS,
-	},
-	{
-		.name = "Siemens 0800 runtime",
-		.mask_id = 0x0800,
-		.platform = DSP_USER_ROM_PLATFORM_SIEMENS,
-		.accepts_i2s_swap = true,
-	},
-	{
-		.name = "Siemens 0801 runtime",
-		.mask_id = 0x0801,
-		.platform = DSP_USER_ROM_PLATFORM_SIEMENS,
-		.accepts_i2s_swap = true,
-		.supports_fc_notifications = true,
-		.uses_stm_command_timeout = true,
-		.supports_a53_cch = true,
-	},
-};
 
 volatile uint16_t *dsp_runtime_pipe_get(size_t index) {
 	return dsp_hw_shared_memory + DSP_RUNTIME_PIPE_OFFSETS[index];
@@ -97,18 +51,13 @@ void dsp_runtime_firmware_delay(void) {
 		__asm__ volatile("" : : : "memory");
 }
 
-bool dsp_runtime_wait(uint16_t flags, size_t *polls) {
-	for (size_t poll = 1; poll <= FIRMWARE_POLL_LIMIT; poll++) {
-		if ((DSP_COM_STATUS & flags) == 0) {
-			if (polls != NULL)
-				*polls = poll;
-			return true;
-		}
+bool dsp_runtime_wait(uint16_t flags) {
+	stopwatch_t start = stopwatch_get();
+	while ((DSP_COM_STATUS & flags) != 0) {
+		if (stopwatch_elapsed_us(start) >= DSP_RUNTIME_WAIT_TIMEOUT_US)
+			return false;
 	}
-
-	if (polls != NULL)
-		*polls = FIRMWARE_POLL_LIMIT;
-	return false;
+	return true;
 }
 
 bool dsp_runtime_startup_probe(uint16_t result_offset) {
@@ -135,7 +84,7 @@ bool dsp_runtime_command_execute(
 	uint16_t flag = BIT(pipe_index);
 
 	dsp_runtime_command_start(pipe_index, command, parameters, parameter_count);
-	if (!dsp_runtime_wait(flag, NULL))
+	if (!dsp_runtime_wait(flag))
 		return false;
 	return dsp_runtime_pipe_get(pipe_index)[0] == (accepted ? (uint16_t) -command : 0);
 }
@@ -168,29 +117,15 @@ bool dsp_runtime_data_write(uint16_t source_offset, uint16_t address, size_t wor
 		parameters, ARRAY_SIZE(parameters), true);
 }
 
-static const struct dsp_runtime_profile *dsp_runtime_profile_find(const struct dsp_user_rom *user_rom) {
-	for (size_t i = 0; i < ARRAY_SIZE(DSP_RUNTIME_PROFILES); i++) {
-		if (DSP_RUNTIME_PROFILES[i].mask_id == user_rom->mask_id &&
-			DSP_RUNTIME_PROFILES[i].platform == user_rom->platform) {
-			return &DSP_RUNTIME_PROFILES[i];
-		}
-	}
-
-	return NULL;
-}
-
-bool dsp_runtime_profile_start(const struct dsp_runtime_profile **selected_profile) {
-	const struct dsp_user_rom *user_rom;
-
-	if (!dsp_user_rom_start(&user_rom))
+bool dsp_runtime_start(const struct dsp_user_rom **selected_rom) {
+	if (!dsp_user_rom_start(selected_rom))
 		return false;
-	const struct dsp_runtime_profile *profile = dsp_runtime_profile_find(user_rom);
-	if (profile == NULL) {
-		printf("# No runtime ABI profile for %s\n", user_rom->name);
-		return false;
-	}
 
-	dsp_runtime_firmware_delay();
-	*selected_profile = profile;
+	stopwatch_t start = stopwatch_get();
+	while ((CGU_STAT & CGU_STAT_DSP_CLK) != 0) {
+		if (stopwatch_elapsed_us(start) >= DSP_RUNTIME_START_TIMEOUT_US)
+			return false;
+		test_watchdog_serve();
+	}
 	return true;
 }

@@ -25,11 +25,8 @@ static void test_runtime_idle(void) {
 	static const uint16_t READ_DSP_PARAMETERS[] = {
 		0xE000, DSP_RUNTIME_IDLE_RESULT_OFFSET, 1,
 	};
-	const struct dsp_runtime_profile *profile;
-
-	if (!test_check("platform User ROM starts for IDLE tests", dsp_runtime_profile_start(&profile)))
+	if (!test_check("platform User ROM starts for IDLE tests", dsp_runtime_start(NULL)))
 		return;
-	printf("# DSP runtime profile: %s\n", profile->name);
 
 	uint32_t initial_idle_us;
 	if (!test_check("runtime enters IDLE after startup", wait_core_idle(&initial_idle_us)))
@@ -59,7 +56,7 @@ static void test_runtime_idle(void) {
 
 	DSP_COM_SET = BIT(0);
 	dsp_runtime_interrupt_pulse(BIT(0));
-	bool command_complete = dsp_runtime_wait(BIT(0), NULL);
+	bool command_complete = dsp_runtime_wait(BIT(0));
 	test_check("command immediately following IDLE completes",
 		command_complete && dsp_runtime_pipe_get(0)[0] == (uint16_t) -DSP_COMMAND_READ_DSP);
 	uint32_t recovered_idle_us;

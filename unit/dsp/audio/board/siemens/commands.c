@@ -10,7 +10,7 @@ bool dsp_siemens_cmd_exec(
 	size_t parameter_count
 ) {
 	dsp_runtime_command_start(pipe_index, command, parameters, parameter_count);
-	if (!dsp_runtime_wait(BIT(pipe_index), NULL)) {
+	if (!dsp_runtime_wait(BIT(pipe_index))) {
 		printf("# Siemens audio command timed out: command=%u pipe=%lu\n",
 			command, (uint32_t) pipe_index);
 		return false;

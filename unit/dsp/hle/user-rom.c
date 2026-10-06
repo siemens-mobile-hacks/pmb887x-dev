@@ -8,37 +8,73 @@
 #include "user-rom-siemens-0602.inc"
 #include "user-rom-siemens-0605.inc"
 static const struct dsp_user_rom DSP_USER_ROMS[] = {
-	{ "Siemens 0602", 0x0602, DSP_USER_ROM_PLATFORM_SIEMENS,
-		DSP_USER_ROM_SIEMENS_0602, sizeof(DSP_USER_ROM_SIEMENS_0602) },
-	{ "Siemens 0605", 0x0605, DSP_USER_ROM_PLATFORM_SIEMENS,
-		DSP_USER_ROM_SIEMENS_0605, sizeof(DSP_USER_ROM_SIEMENS_0605) },
+	{
+		.name = "Siemens 0602",
+		.mask_id = 0x0602,
+		.container = DSP_USER_ROM_SIEMENS_0602,
+		.container_size = sizeof(DSP_USER_ROM_SIEMENS_0602),
+	},
+	{
+		.name = "Siemens 0605",
+		.mask_id = 0x0605,
+		.container = DSP_USER_ROM_SIEMENS_0605,
+		.container_size = sizeof(DSP_USER_ROM_SIEMENS_0605),
+	},
 };
 #elif defined(PMB8875) && defined(BOARD_PLATFORM_APOXI)
 #include "user-rom-apoxi-0603.inc"
 #include "user-rom-apoxi-0604.inc"
 static const struct dsp_user_rom DSP_USER_ROMS[] = {
-	{ "APOXI 0603", 0x0603, DSP_USER_ROM_PLATFORM_APOXI,
-		DSP_USER_ROM_APOXI_0603, sizeof(DSP_USER_ROM_APOXI_0603) },
-	{ "APOXI 0604", 0x0604, DSP_USER_ROM_PLATFORM_APOXI,
-		DSP_USER_ROM_APOXI_0604, sizeof(DSP_USER_ROM_APOXI_0604) },
+	{
+		.name = "APOXI 0603",
+		.mask_id = 0x0603,
+		.container = DSP_USER_ROM_APOXI_0603,
+		.container_size = sizeof(DSP_USER_ROM_APOXI_0603),
+	},
+	{
+		.name = "APOXI 0604",
+		.mask_id = 0x0604,
+		.container = DSP_USER_ROM_APOXI_0604,
+		.container_size = sizeof(DSP_USER_ROM_APOXI_0604),
+	},
 };
 #elif defined(PMB8876) && defined(BOARD_PLATFORM_SIEMENS)
 #include "user-rom-siemens-0800.inc"
 #include "user-rom-siemens-0801.inc"
 static const struct dsp_user_rom DSP_USER_ROMS[] = {
-	{ "Siemens 0800", 0x0800, DSP_USER_ROM_PLATFORM_SIEMENS,
-		DSP_USER_ROM_SIEMENS_0800, sizeof(DSP_USER_ROM_SIEMENS_0800) },
-	{ "Siemens 0801", 0x0801, DSP_USER_ROM_PLATFORM_SIEMENS,
-		DSP_USER_ROM_SIEMENS_0801, sizeof(DSP_USER_ROM_SIEMENS_0801) },
+	{
+		.name = "Siemens 0800",
+		.mask_id = 0x0800,
+		.container = DSP_USER_ROM_SIEMENS_0800,
+		.container_size = sizeof(DSP_USER_ROM_SIEMENS_0800),
+		.accepts_i2s_swap = true,
+	},
+	{
+		.name = "Siemens 0801",
+		.mask_id = 0x0801,
+		.container = DSP_USER_ROM_SIEMENS_0801,
+		.container_size = sizeof(DSP_USER_ROM_SIEMENS_0801),
+		.accepts_i2s_swap = true,
+		.supports_fc_notifications = true,
+		.uses_stm_command_timeout = true,
+	},
 };
 #elif defined(PMB8876) && defined(BOARD_PLATFORM_APOXI)
 #include "user-rom-apoxi-0800.inc"
 #include "user-rom-apoxi-0801.inc"
 static const struct dsp_user_rom DSP_USER_ROMS[] = {
-	{ "APOXI 0800", 0x0800, DSP_USER_ROM_PLATFORM_APOXI,
-		DSP_USER_ROM_APOXI_0800, sizeof(DSP_USER_ROM_APOXI_0800) },
-	{ "APOXI 0801", 0x0801, DSP_USER_ROM_PLATFORM_APOXI,
-		DSP_USER_ROM_APOXI_0801, sizeof(DSP_USER_ROM_APOXI_0801) },
+	{
+		.name = "APOXI 0800",
+		.mask_id = 0x0800,
+		.container = DSP_USER_ROM_APOXI_0800,
+		.container_size = sizeof(DSP_USER_ROM_APOXI_0800),
+	},
+	{
+		.name = "APOXI 0801",
+		.mask_id = 0x0801,
+		.container = DSP_USER_ROM_APOXI_0801,
+		.container_size = sizeof(DSP_USER_ROM_APOXI_0801),
+	},
 };
 #else
 #error Unsupported DSP User ROM platform

@@ -21,32 +21,31 @@ static void test_runtime_probe(void) {
 	test_check("READ_DSP startup probe replaces the complete destination", destination_replaced);
 }
 
-static void test_profile_specific_dispatch(const struct dsp_runtime_profile *profile) {
+static void test_user_rom_dispatch(const struct dsp_user_rom *user_rom) {
 	static const uint16_t PARAMETERS[] = { 0 };
 
 	test_check("runtime command 48 has the platform-specific acceptance behavior",
 		dsp_runtime_command_execute(0, DSP_COMMAND_I2S_SWAP, PARAMETERS, ARRAY_SIZE(PARAMETERS),
-			profile->accepts_i2s_swap));
+			user_rom->accepts_i2s_swap));
 }
 
-static void test_runtime_profile(void) {
-	const struct dsp_runtime_profile *profile;
+static void test_runtime(void) {
+	const struct dsp_user_rom *user_rom;
 
 	test_category("Selected original User ROM firmware behavior");
 	if (!test_check("boot protocol selects and starts the platform User ROM",
-		dsp_runtime_profile_start(&profile))) {
+		dsp_runtime_start(&user_rom))) {
 		return;
 	}
-	printf("# DSP runtime profile: %s\n", profile->name);
 
 	test_runtime_probe();
-	test_profile_specific_dispatch(profile);
+	test_user_rom_dispatch(user_rom);
 }
 
 int main(void) {
 	test_start("DSP startup runtime HLE test");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 
-	test_runtime_profile();
+	test_runtime();
 	return test_finish();
 }

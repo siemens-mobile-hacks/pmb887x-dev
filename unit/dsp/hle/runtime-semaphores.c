@@ -10,14 +10,11 @@
 #define DSP_SEMAPHORE_SOURCE_ADDRESS 0xE500
 
 static void test_runtime_semaphores(void) {
-	const struct dsp_runtime_profile *profile;
-
 	test_category("Selected original User ROM semaphore integration");
 	if (!test_check("platform User ROM starts for semaphore integration",
-		dsp_runtime_profile_start(&profile))) {
+		dsp_runtime_start(NULL))) {
 		return;
 	}
-	printf("# DSP runtime profile: %s\n", profile->name);
 	test_eq_u32("stock runtime startup preserves the free semaphore state", UINT16_MAX, DSP_SEM_STATUS);
 
 	DSP_SEM_SET = MCU_INITIAL_SEMAPHORE_MASK;

@@ -32,16 +32,6 @@ enum dsp_runtime_command_id {
 	DSP_COMMAND_I2S_SWAP = 48,
 };
 
-struct dsp_runtime_profile {
-	const char *name;
-	uint16_t mask_id;
-	enum dsp_user_rom_platform platform;
-	bool accepts_i2s_swap;
-	bool supports_fc_notifications;
-	bool uses_stm_command_timeout;
-	bool supports_a53_cch;
-};
-
 volatile uint16_t *dsp_runtime_pipe_get(size_t index);
 void dsp_runtime_command_prepare(
 	size_t pipe_index,
@@ -57,7 +47,7 @@ void dsp_runtime_command_start(
 );
 void dsp_runtime_interrupt_pulse(uint16_t flags);
 void dsp_runtime_firmware_delay(void);
-bool dsp_runtime_wait(uint16_t flags, size_t *polls);
+bool dsp_runtime_wait(uint16_t flags);
 bool dsp_runtime_startup_probe(uint16_t result_offset);
 bool dsp_runtime_command_execute(
 	size_t pipe_index,
@@ -73,4 +63,4 @@ bool dsp_runtime_data_read(
 	size_t word_count
 );
 bool dsp_runtime_data_write(uint16_t source_offset, uint16_t address, size_t word_count);
-bool dsp_runtime_profile_start(const struct dsp_runtime_profile **selected_profile);
+bool dsp_runtime_start(const struct dsp_user_rom **selected_rom);
