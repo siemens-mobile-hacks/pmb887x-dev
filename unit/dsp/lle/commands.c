@@ -367,7 +367,7 @@ static void test_data_ram(void) {
 }
 
 static bool test_mask_rom_read(const char *name, uint16_t command, uint16_t source, const uint16_t *expected,
-	size_t words, bool verify_fingerprint) {
+	size_t words) {
 	char command_name[80];
 	char contents_name[80];
 
@@ -375,45 +375,31 @@ static bool test_mask_rom_read(const char *name, uint16_t command, uint16_t sour
 	if (!test_check(command_name, read_words(command, source, words)))
 		return false;
 	sprintf(contents_name, "%s returns expected words", name);
-	if (verify_fingerprint)
-		test_eq_memory(contents_name, expected, DSP_SHARED_MEMORY + DSP_BOOT_RESULT_OFFSET,
-			words * sizeof(uint16_t));
-	else
-		test_skip(contents_name, " fingerprint is not known for this Mask ID");
+	test_eq_memory(contents_name, expected, DSP_SHARED_MEMORY + DSP_BOOT_RESULT_OFFSET,
+		words * sizeof(uint16_t));
 
 	return true;
 }
 
 static void test_program_mask_rom(void) {
-	if (dsp_mask_config == NULL) {
-		test_skip("Program Mask ROM fingerprints", "Mask ID parameters are not known");
-		return;
-	}
-
 	for (size_t i = 0; i < dsp_mask_config->program_rom_fingerprint_count; i++) {
 		char name[48];
 
 		sprintf(name, "PREAD Program Mask ROM P:%04lX",
 			(uint32_t) dsp_mask_config->program_rom_addresses[i]);
 		test_mask_rom_read(name, DSP_BOOT_PREAD, dsp_mask_config->program_rom_addresses[i],
-			dsp_mask_config->program_rom_fingerprints[i], ARRAY_SIZE(dsp_mask_config->program_rom_fingerprints[i]),
-			true);
+			dsp_mask_config->program_rom_fingerprints[i], ARRAY_SIZE(dsp_mask_config->program_rom_fingerprints[i]));
 	}
 }
 
 static void test_data_mask_rom(void) {
-	if (dsp_mask_config == NULL) {
-		test_skip("Data Mask ROM fingerprints", "Mask ID parameters are not known");
-		return;
-	}
-
 	if (!test_mask_rom_read("DREAD fixed Data Mask ROM", DSP_BOOT_DREAD, dsp_mask_config->data_rom_address,
-		dsp_mask_config->data_rom_fingerprint, ARRAY_SIZE(dsp_mask_config->data_rom_fingerprint), true))
+		dsp_mask_config->data_rom_fingerprint, ARRAY_SIZE(dsp_mask_config->data_rom_fingerprint)))
 		return;
 	for (size_t i = 0; i < ARRAY_SIZE(data_rom_probe); i++)
 		data_rom_probe[i] = DSP_SHARED_MEMORY[DSP_BOOT_RESULT_OFFSET + i];
 	test_mask_rom_read("DREAD runtime command table", DSP_BOOT_DREAD, dsp_mask_config->command_table_address,
-		dsp_mask_config->command_table_fingerprint, ARRAY_SIZE(dsp_mask_config->command_table_fingerprint), true);
+		dsp_mask_config->command_table_fingerprint, ARRAY_SIZE(dsp_mask_config->command_table_fingerprint));
 }
 
 static bool load_test_startup(void) {
@@ -699,6 +685,8 @@ int main(void) {
 	if (!test_check("DSP Mask ROM family matches the CPU", mask_family == DSP_MASK_ID_FAMILY))
 		return test_finish();
 	dsp_mask_config = find_dsp_mask_config(mask_id);
+	if (!test_check("DSP Mask ROM version is supported", dsp_mask_config != NULL))
+		return test_finish();
 
 	test_category("Program RAM boot commands");
 	test_program_ram();
@@ -709,10 +697,7 @@ int main(void) {
 	test_category("Data Mask ROM boot command");
 	test_data_mask_rom();
 	test_category("Branch and runtime commands");
-	if (dsp_mask_config != NULL)
-		test_branch_and_runtime_commands();
-	else
-		test_skip("Branch and runtime commands", "Mask ID parameters are not known");
+	test_branch_and_runtime_commands();
 
 	return test_finish();
 }

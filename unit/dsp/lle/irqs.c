@@ -248,10 +248,8 @@ int main(void) {
 	uint16_t mask_id = DSP_SHARED_MEMORY[0];
 	printf("# DSP mask ID: %04lX\n", (uint32_t) mask_id);
 	const struct dsp_irq_mask_config *mask_config = find_dsp_irq_mask_config(mask_id);
-	if (mask_config == NULL) {
-		test_skip("DSP-generated interrupts", "Mask ID parameters are not known");
+	if (!test_check("DSP Mask ROM version is supported", mask_config != NULL))
 		return test_finish();
-	}
 	bool loaded = load_dsp_image(mask_config->image, mask_config->image_size);
 	if (!test_check("boot commands load DSP interrupt generator", loaded))
 		return test_finish();
