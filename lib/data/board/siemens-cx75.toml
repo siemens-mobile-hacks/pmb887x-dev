@@ -5,6 +5,10 @@ extends = "include/siemens-sgl-sirius.toml"
 
 [gpio.aliases]
 RF_STR1 = "PM_RINGIN"
+I2S2_CLK0 = "I2S_CLK"
+I2S2_RX = "PM_I2S_ADC"
+I2S2_TX = "I2S_DAC"
+I2S2_WA0 = "I2S_WA0"
 
 [gpio.inputs]
 # HWID 5000

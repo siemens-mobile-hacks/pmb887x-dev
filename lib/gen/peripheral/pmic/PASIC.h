@@ -269,9 +269,9 @@
 #define	PASIC_PP_ROUTE_2_VALUE							GENMASK(3, 0)	 // Route selection from 0 to 8
 #define	PASIC_PP_ROUTE_2_VALUE_SHIFT					0
 
-/* Audio switch-mux path 4 */
+/* DAC-to-mono-output routing */
 #define	PASIC_SWITCH_MUX_4								0x4F
-#define	PASIC_SWITCH_MUX_4_VALUE						GENMASK(7, 0)	 // Mux control value
+#define	PASIC_SWITCH_MUX_4_VALUE						GENMASK(7, 0)	 // Route mask
 #define	PASIC_SWITCH_MUX_4_VALUE_SHIFT					0
 
 /* Amplifier paths 4 and 5 gain */
@@ -301,19 +301,19 @@
 #define	PASIC_AMPLIFIER_GAIN_9_GAIN						GENMASK(6, 0)	 // Amplifier gain code
 #define	PASIC_AMPLIFIER_GAIN_9_GAIN_SHIFT				0
 
-/* Audio switch-mux path 5 */
+/* DAC-to-stereo-output routing */
 #define	PASIC_SWITCH_MUX_5								0x55
-#define	PASIC_SWITCH_MUX_5_VALUE						GENMASK(7, 0)	 // Mux control value
+#define	PASIC_SWITCH_MUX_5_VALUE						GENMASK(7, 0)	 // Route mask
 #define	PASIC_SWITCH_MUX_5_VALUE_SHIFT					0
 
-/* Audio mux-input selection */
+/* Audio-mux input selection */
 #define	PASIC_MUX_INPUT									0x56
-#define	PASIC_MUX_INPUT_VALUE							GENMASK(7, 0)	 // Mux input code
+#define	PASIC_MUX_INPUT_VALUE							GENMASK(7, 0)	 // Input code
 #define	PASIC_MUX_INPUT_VALUE_SHIFT						0
 
-/* Audio switch-mux path 3 */
+/* LINEA/LINEB output routing */
 #define	PASIC_SWITCH_MUX_3								0x57
-#define	PASIC_SWITCH_MUX_3_VALUE						GENMASK(7, 0)	 // Mux control value
+#define	PASIC_SWITCH_MUX_3_VALUE						GENMASK(7, 0)	 // Route mask
 #define	PASIC_SWITCH_MUX_3_VALUE_SHIFT					0
 
 /* OUTPORT control */

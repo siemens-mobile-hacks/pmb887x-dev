@@ -143,8 +143,12 @@ uint32_t cpu_get_ebu_freq(void) {
 
 uint32_t cpu_get_dsp_freq(void) {
 	switch (CGU_CON2 & CGU_CON2_DSP_CLKSEL) {
+		case CGU_CON2_DSP_CLKSEL_OSC:
+			return CPU_OSC_FREQ;
 		case CGU_CON2_DSP_CLKSEL_PHASE1:
 			return cpu_get_phase_freq(1);
+		case CGU_CON2_DSP_CLKSEL_PLL:
+			return cpu_get_pll_freq();
 		default:
 			return 0;
 	}

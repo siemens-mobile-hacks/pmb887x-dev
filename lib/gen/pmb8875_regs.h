@@ -34,10 +34,10 @@
 #define	GPIO_I2C_SCL	28
 #define	GPIO_I2C_SDA	29
 #define	GPIO_PIN30		30
-#define	GPIO_PIN31		31
-#define	GPIO_PIN32		32
-#define	GPIO_PIN33		33
-#define	GPIO_PIN34		34
+#define	GPIO_I2S2_CLK0	31
+#define	GPIO_I2S2_RX	32
+#define	GPIO_I2S2_TX	33
+#define	GPIO_I2S2_WA0	34
 #define	GPIO_PIN35		35
 #define	GPIO_PIN36		36
 #define	GPIO_PIN37		37
@@ -2702,6 +2702,7 @@
 #define	CGU_CON2_DSP_CLKSEL					GENMASK(2, 0)			 // Source clock for DSP
 #define	CGU_CON2_DSP_CLKSEL_SHIFT			0
 #define	CGU_CON2_DSP_CLKSEL_OSC				0x0
+#define	CGU_CON2_DSP_CLKSEL_PLL				0x2
 #define	CGU_CON2_DSP_CLKSEL_PHASE1			0x3
 #define	CGU_CON2_DSP_CLKSEL_DISABLE			0x7
 #define	CGU_CON2_EBU_CLKSEL					GENMASK(6, 4)			 // Source clock for EBU
