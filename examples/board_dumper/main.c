@@ -5,8 +5,8 @@
 #include <pmic/PMB6812.h>
 #define PMIC_I2C_ADDR PMB6812_I2C_ADDR
 #elif defined(BOARD_HAS_PMIC_D1094XX)
-#include <pmic/D1094XX.h>
-#define PMIC_I2C_ADDR D1094XX_I2C_ADDR
+#include <pmic/PASIC.h>
+#define PMIC_I2C_ADDR PASIC_I2C_ADDR
 #else
 #error "unsupported PMIC for this board"
 #endif

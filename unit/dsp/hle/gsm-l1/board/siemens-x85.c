@@ -1,5 +1,5 @@
 #include <pmb887x.h>
-#include <gen/peripheral/pmic/D1094XX.h>
+#include <gen/peripheral/pmic/PASIC.h>
 #include <i2c.h>
 #include <stopwatch.h>
 #include <wdt.h>
@@ -9,10 +9,6 @@
 #include "dsp/hle/gsm-l1/board/gsm.h"
 
 #if defined(BOARD_PLATFORM_SIEMENS_X85)
-
-#if !defined(BOARD_HAS_PMIC_D1094XX)
-#error "the Siemens X85 GSM board backend requires a D1094XX PMIC"
-#endif
 
 #define CGU_LOCK_TIMEOUT_MS 20
 #define CGU_TRANSITION_TIMEOUT_MS 20
@@ -214,10 +210,10 @@ static void configure_rf_gpio(void) {
 
 static void enable_transceiver_power_rails(void) {
 	i2c_init();
-	i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_RF_VOLTAGE,
-		D1094XX_RF_VOLTAGE_VRF1_LEVEL_2850MV | D1094XX_RF_VOLTAGE_VRF2_LEVEL_2850MV);
-	i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_RF_ENABLE,
-		D1094XX_RF_ENABLE_VRF1_EN | D1094XX_RF_ENABLE_VRF2_EN);
+	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_RF_VOLTAGE,
+		PASIC_RF_VOLTAGE_VRF1_LEVEL_2850MV | PASIC_RF_VOLTAGE_VRF2_LEVEL_2850MV);
+	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_RF_ENABLE,
+		PASIC_RF_ENABLE_VRF1_EN | PASIC_RF_ENABLE_VRF2_EN);
 	stopwatch_usleep_wd(RF_POWER_SETTLE_US);
 }
 

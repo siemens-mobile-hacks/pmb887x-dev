@@ -163,9 +163,4 @@ higher values remain undocumented.
 
 ## Metadata
 
-- `D1094XX.cfg` describes the D1094xx family and generates its public header.
-- `D1601XX.cfg` describes the D1601xx family and generates its public header.
-- `PASIC.cfg` is the common superset used by the emulator and generic PASIC tools.
-
-Use `PASIC.h` only when code must work with multiple PASIC families. Code targeting one known family should use
-the matching family-specific header.
+`PASIC.cfg` is the shared register map for the D1094XX and D1601XX families.

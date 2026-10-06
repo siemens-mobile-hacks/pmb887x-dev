@@ -1,5 +1,5 @@
 #include <pmb887x.h>
-#include <pmic/D1094XX.h>
+#include <pmic/PASIC.h>
 #include <printf.h>
 
 static const char *pmic_model_name(uint32_t model, uint32_t revision) {
@@ -30,14 +30,14 @@ static uint32_t pmic_family(uint32_t model, bool is_dialog) {
 
 static void print_pmic_info(void) {
 	uint8_t id = 0;
-	i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_IDENTIFICATION, &id);
-	uint32_t model = (id & D1094XX_IDENTIFICATION_MODEL) >> D1094XX_IDENTIFICATION_MODEL_SHIFT;
-	uint32_t revision = (id & D1094XX_IDENTIFICATION_REVISION) >> D1094XX_IDENTIFICATION_REVISION_SHIFT;
-	bool is_dialog = (id & D1094XX_IDENTIFICATION_VENDOR) == D1094XX_IDENTIFICATION_VENDOR_DIALOG;
+	i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_IDENTIFICATION, &id);
+	uint32_t model = (id & PASIC_IDENTIFICATION_MODEL) >> PASIC_IDENTIFICATION_MODEL_SHIFT;
+	uint32_t revision = (id & PASIC_IDENTIFICATION_REVISION) >> PASIC_IDENTIFICATION_REVISION_SHIFT;
+	bool is_dialog = (id & PASIC_IDENTIFICATION_VENDOR) == PASIC_IDENTIFICATION_VENDOR_DIALOG;
 
 	printf(
 		"PMIC 0x%02X: ID=0x%02X, model=%s, vendor=%s, family=%u, revision=%u\n",
-		D1094XX_I2C_ADDR,
+		PASIC_I2C_ADDR,
 		id,
 		pmic_model_name(model, revision),
 		is_dialog ? "Dialog Mozart" : "ST Twigo4",
@@ -51,7 +51,7 @@ static void dump_all_regs(void) {
 	printf("PMIC registers on 0x31\n");
 	for (int i = 0; i <= 0xFF; ++i) {
 		uint8_t v = 0;
-		i2c_smbus_read_byte(D1094XX_I2C_ADDR, i, &v);
+		i2c_smbus_read_byte(PASIC_I2C_ADDR, i, &v);
 		printf("0x%02X, ", v);
 		wdt_serve();
 	}
