@@ -33,7 +33,8 @@ static void dump_pmic(void) {
 	i2c_init();
 	printf("PMIC:");
 	for (int i = 0; i <= 0xFF; ++i) {
-		uint32_t v = i2c_smbus_read_byte(PMIC_I2C_ADDR, i);
+		uint8_t v = 0;
+		i2c_smbus_read_byte(PMIC_I2C_ADDR, i, &v);
 		printf(" 0x%02X,", v);
 		wdt_serve();
 	}

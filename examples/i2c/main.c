@@ -5,7 +5,8 @@
 static void dump_all_regs(void) {
 	printf("Dump all PASIC registers...\n");
 	for (int i = 0; i <= 0xFF; ++i) {
-		uint32_t v = i2c_smbus_read_byte(PASIC_I2C_ADDR, i);
+		uint8_t v = 0;
+		i2c_smbus_read_byte(PASIC_I2C_ADDR, i, &v);
 		printf("%02X: %02X\n", i, v);
 		wdt_serve();
 	}

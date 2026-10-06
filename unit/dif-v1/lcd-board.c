@@ -20,15 +20,17 @@ void lcd_board_initialize_light(void) {
 }
 
 void lcd_board_enable_vboost(void) {
-	uint8_t supply_enable = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2);
+	uint8_t supply_enable = 0;
 
+	i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2, &supply_enable);
 	supply_enable |= PASIC_SUPPLY_ENABLE_2_VBOOST_EN;
 	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2, supply_enable);
 }
 
 void lcd_board_enable_backlight(void) {
-	uint8_t control = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_LIGHT_CONTROL);
+	uint8_t control = 0;
 
+	i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_LIGHT_CONTROL, &control);
 	control |= PASIC_LIGHT_CONTROL_LED2_EN |
 		PASIC_LIGHT_CONTROL_PWM1_EN | PASIC_LIGHT_CONTROL_MASTER_EN;
 	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_LIGHT_PWM1, LCD_BACKLIGHT_LEVEL);

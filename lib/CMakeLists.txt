@@ -27,6 +27,7 @@ add_library(pmb887x OBJECT
 	init/reset_handler.c
 	usart.c
 	i2c.c
+	i2c-v1.c
 	i2c-v2.c
 	printf.c
 	wdt.c

@@ -1,5 +1,7 @@
 #pragma once
 
+/* IRQ and DMA transfer support used only by the I2Cv2 peripheral tests. */
+
 #ifdef PMB8876
 #include <pmb887x.h>
 

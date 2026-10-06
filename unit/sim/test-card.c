@@ -122,9 +122,11 @@ static bool sim_power_on(uint8_t atr[SIM_MAX_ATR_SIZE], size_t *atr_size) {
 	SIM_IMSC = 0;
 	SIM_ICR = SIM_IRQ_MASK;
 	SIM_CON = SIM_CON_SIMEN;
-	supply_enable = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1);
+	if (!i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, &supply_enable))
+		return false;
 	supply_enable |= PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
-	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, supply_enable);
+	if (!i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, supply_enable))
+		return false;
 	GPIO_PIN(GPIO_I2C_SCL) = 0x1211;
 	GPIO_PIN(GPIO_I2C_SDA) = 0x1211;
 
@@ -154,7 +156,8 @@ static void sim_power_off(void) {
 	SIM_ICR = SIM_IRQ_MASK;
 
 	i2c_init();
-	supply_enable = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1);
+	if (!i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, &supply_enable))
+		return;
 	supply_enable &= ~PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
 	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, supply_enable);
 }

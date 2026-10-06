@@ -16,6 +16,7 @@ LIB_AFILES += $(LIB_DIR)/init/start.S
 LIB_CFILES += $(LIB_DIR)/init/reset_handler.c
 LIB_CFILES += $(LIB_DIR)/usart.c
 LIB_CFILES += $(LIB_DIR)/i2c.c
+LIB_CFILES += $(LIB_DIR)/i2c-v1.c
 LIB_CFILES += $(LIB_DIR)/i2c-v2.c
 LIB_CFILES += $(LIB_DIR)/printf.c
 LIB_CFILES += $(LIB_DIR)/../third_party/printf/src/printf/printf.c

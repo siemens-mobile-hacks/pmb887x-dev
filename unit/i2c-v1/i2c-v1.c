@@ -8,11 +8,11 @@
 #define I2C_MAX_IRQS 128
 #define PMIC_I2C_ADDR 0x31
 #define PMIC_LED_CONTROL_REG 0x14
-#define I2C_BUS_CONFIG (I2C_BUSCON_SDAEN0 | I2C_BUSCON_SCLEN0 | (0x7E << I2C_BUSCON_BRP_SHIFT) | \
-	I2C_BUSCON_PREDIV_8 | I2C_BUSCON_BRPMOD_MODE1)
-#define I2C_CLEAR_STATE (I2C_WHBSYSCON_CLRAL | I2C_WHBSYSCON_CLRIRQD | I2C_WHBSYSCON_CLRIRQP | \
-	I2C_WHBSYSCON_CLRIRQE | I2C_WHBSYSCON_CLRRSC | I2C_WHBSYSCON_CLRBUM | I2C_WHBSYSCON_CLRACKDIS | \
-	I2C_WHBSYSCON_CLRTRX | I2C_WHBSYSCON_CLRSTP)
+static const uint32_t I2C_BUS_CONFIG = I2C_BUSCON_SDAEN0 | I2C_BUSCON_SCLEN0 |
+	(0x7E << I2C_BUSCON_BRP_SHIFT) | I2C_BUSCON_PREDIV_8 | I2C_BUSCON_BRPMOD_MODE1;
+static const uint32_t I2C_CLEAR_STATE = I2C_WHBSYSCON_CLRAL | I2C_WHBSYSCON_CLRIRQD |
+	I2C_WHBSYSCON_CLRIRQP | I2C_WHBSYSCON_CLRIRQE | I2C_WHBSYSCON_CLRRSC | I2C_WHBSYSCON_CLRBUM |
+	I2C_WHBSYSCON_CLRACKDIS | I2C_WHBSYSCON_CLRTRX | I2C_WHBSYSCON_CLRSTP;
 
 enum transfer_result {
 	TRANSFER_PENDING,
@@ -253,6 +253,8 @@ static void test_registers(void) {
 
 static void test_reset_values(void) {
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_I2C;
+	SCU_RST_REQ &= ~SCU_RST_REQ_I2C;
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, I2C_CLC);
 	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("PISEL reset value", 0, I2C_PISEL);
@@ -361,7 +363,7 @@ static void test_register_dump(void) {
 	test_eq_u32("all PMIC registers are readable", TRANSFER_DONE, smbus_read(0, registers, sizeof(registers), true));
 	test_eq_u32("PMIC register byte count", sizeof(registers), transfer.transferred);
 	for (uint32_t row = 0; row < sizeof(registers); row += 16) {
-		printf("# %02X:", row);
+		printf("# %02X:", (unsigned int) row);
 		for (uint32_t column = 0; column < 16; column++)
 			printf(" %02X", registers[row + column]);
 		printf("\n");
@@ -386,7 +388,7 @@ static void test_scan(void) {
 			complete = false;
 		}
 	}
-	printf("# found %u I2C device(s)\n", devices);
+	printf("# found %u I2C device(s)\n", (unsigned int) devices);
 	test_check("I2C scan completes", complete);
 	test_check("I2C scan finds PMIC at 0x31", pmic_found);
 }
@@ -403,6 +405,25 @@ static void test_recovery(void) {
 		smbus_read(PMIC_LED_CONTROL_REG, &value, sizeof(value), true)
 	);
 	test_eq_u32("bus is released", 0, I2C_SYSCON & (I2C_SYSCON_BB | I2C_SYSCON_BUM));
+}
+
+static void test_public_polling_driver(void) {
+	uint8_t before = 0;
+	uint8_t after = 0;
+	uint8_t unused = 0;
+
+	i2c_init();
+	test_check("public polling register read completes",
+		i2c_smbus_read_byte(PMIC_I2C_ADDR, PMIC_LED_CONTROL_REG, &before));
+	test_check("public polling register write completes",
+		i2c_smbus_write_byte(PMIC_I2C_ADDR, PMIC_LED_CONTROL_REG, before));
+	test_check("public polling register readback completes",
+		i2c_smbus_read_byte(PMIC_I2C_ADDR, PMIC_LED_CONTROL_REG, &after));
+	test_eq_u32("public polling write preserves register value", before, after);
+	test_check("public polling reports a missing slave", !i2c_read(0x7F, &unused, sizeof(unused)));
+	test_check("public polling recovers after NACK",
+		i2c_smbus_read_byte(PMIC_I2C_ADDR, PMIC_LED_CONTROL_REG, &after));
+	test_eq_u32("public polling recovery returns target data", before, after);
 }
 
 int i2c_v1_test(void) {
@@ -423,6 +444,8 @@ int i2c_v1_test(void) {
 	test_register_dump();
 	test_scan();
 	test_recovery();
+	test_category("Public polling driver");
+	test_public_polling_driver();
 	return test_finish();
 }
 

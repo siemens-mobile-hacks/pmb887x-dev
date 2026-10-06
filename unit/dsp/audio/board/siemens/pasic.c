@@ -20,12 +20,17 @@ void pasic_register_write(uint8_t reg, uint8_t value) {
 }
 
 static void pasic_register_update(uint8_t reg, uint8_t value, uint8_t mask) {
-	uint8_t old_value = i2c_smbus_read_byte(PASIC_I2C_ADDR, reg);
+	uint8_t old_value = 0;
+
+	i2c_smbus_read_byte(PASIC_I2C_ADDR, reg, &old_value);
 	pasic_register_write(reg, (old_value & ~mask) | (value & mask));
 }
 
 bool pasic_detect(void) {
-	uint8_t identification = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_IDENTIFICATION);
+	uint8_t identification;
+
+	if (!i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_IDENTIFICATION, &identification))
+		return false;
 	switch (identification & (PASIC_IDENTIFICATION_VENDOR | PASIC_IDENTIFICATION_MODEL)) {
 		case (PASIC_IDENTIFICATION_VENDOR_DIALOG | 4):
 			pasic_family = PASIC_FAMILY_DIALOG_MODEL_4;
@@ -63,9 +68,13 @@ void pasic_output_enable(
 	uint8_t supply_2_mask,
 	uint32_t supply_settle_ms
 ) {
-	uint8_t initial_supply_mode = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_MODE);
-	uint8_t initial_supply_1 = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1);
-	uint8_t initial_supply_2 = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2);
+	uint8_t initial_supply_mode = 0;
+	uint8_t initial_supply_1 = 0;
+	uint8_t initial_supply_2 = 0;
+
+	i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_MODE, &initial_supply_mode);
+	i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, &initial_supply_1);
+	i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2, &initial_supply_2);
 	pasic_register_write(PASIC_SUPPLY_MODE, initial_supply_mode | supply_mode_mask);
 	pasic_register_write(PASIC_SUPPLY_ENABLE_1, initial_supply_1 | supply_1_mask);
 	pasic_register_write(PASIC_SUPPLY_ENABLE_2, initial_supply_2 | supply_2_mask);

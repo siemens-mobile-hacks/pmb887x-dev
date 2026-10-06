@@ -29,7 +29,8 @@ static uint32_t pmic_family(uint32_t model, bool is_dialog) {
 }
 
 static void print_pmic_info(void) {
-	uint32_t id = i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_IDENTIFICATION);
+	uint8_t id = 0;
+	i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_IDENTIFICATION, &id);
 	uint32_t model = (id & D1094XX_IDENTIFICATION_MODEL) >> D1094XX_IDENTIFICATION_MODEL_SHIFT;
 	uint32_t revision = (id & D1094XX_IDENTIFICATION_REVISION) >> D1094XX_IDENTIFICATION_REVISION_SHIFT;
 	bool is_dialog = (id & D1094XX_IDENTIFICATION_VENDOR) == D1094XX_IDENTIFICATION_VENDOR_DIALOG;
@@ -49,7 +50,8 @@ static void dump_all_regs(void) {
 	print_pmic_info();
 	printf("PMIC registers on 0x31\n");
 	for (int i = 0; i <= 0xFF; ++i) {
-		uint32_t v = i2c_smbus_read_byte(D1094XX_I2C_ADDR, i);
+		uint8_t v = 0;
+		i2c_smbus_read_byte(D1094XX_I2C_ADDR, i, &v);
 		printf("0x%02X, ", v);
 		wdt_serve();
 	}
@@ -57,7 +59,8 @@ static void dump_all_regs(void) {
 	
 	printf("Dialog on 0x03\n");
 	for (int i = 0; i <= 0xFF; ++i) {
-		uint32_t v = i2c_smbus_read_byte(0x03, i);
+		uint8_t v = 0;
+		i2c_smbus_read_byte(0x03, i, &v);
 		printf("0x%02X, ", v);
 		wdt_serve();
 	}
@@ -65,7 +68,8 @@ static void dump_all_regs(void) {
 
 	printf("Dialog on 0x8\n");
 	for (int i = 0; i <= 0xFF; ++i) {
-		uint32_t v = i2c_smbus_read_byte(0x8, i);
+		uint8_t v = 0;
+		i2c_smbus_read_byte(0x8, i, &v);
 		printf("0x%02X, ", v);
 		wdt_serve();
 	}

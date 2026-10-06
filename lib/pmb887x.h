@@ -63,6 +63,5 @@ __IRQ void fiq_handler(void);
 #include "wdt.h" // IWYU pragma: export
 #include "gpio.h" // IWYU pragma: export
 #include "i2c.h" // IWYU pragma: export
-#include "i2c-v2.h" // IWYU pragma: export
 #include "cpu.h" // IWYU pragma: export
 #include "stopwatch.h" // IWYU pragma: export

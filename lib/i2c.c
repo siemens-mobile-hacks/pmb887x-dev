@@ -1,125 +1,58 @@
 #include "i2c.h"
 
-// from: https://github.com/todbot/SoftI2CMaster
+#include "i2c-internal.h"
 
-/* I2C */
-void i2c_init() {
-	i2c_sda_hi();
-	i2c_scl_hi();
-    
-    i2c_delay();
-}
-
-void i2c_start_read(uint8_t addr) {
-	i2c_start();
-	i2c_write((addr & 0x7F) << 1 | 1);
-}
-
-void i2c_start_write(uint8_t addr) {
-	i2c_start();
-	i2c_write((addr & 0x7F) << 1 | 0);
-}
-
-void i2c_start() {
-	i2c_sda_hi();
-	i2c_scl_hi();
-	
-	i2c_delay();
-	
-	i2c_sda_lo();
-	i2c_delay();
-	
-	i2c_scl_lo();
-	i2c_delay();
-}
-
-void i2c_stop() {
-	i2c_scl_hi();
-	i2c_delay();
-	
-	i2c_sda_hi();
-	i2c_delay();
-}
-
-void i2c_writebit(uint32_t c) {
-	if (c > 0) {
-		i2c_sda_hi();
-	} else {
-		i2c_sda_lo();
+static uint8_t smbus_pec_update(uint8_t pec, uint8_t value) {
+	pec ^= value;
+	for (uint32_t bit = 0; bit < 8; bit++) {
+		if ((pec & 0x80) != 0) {
+			pec = (pec << 1) ^ 0x07;
+		} else {
+			pec <<= 1;
+		}
 	}
-	
-	i2c_scl_hi();
-	i2c_delay();
-	
-	i2c_scl_lo();
-	i2c_delay();
-	
-	if (c > 0)
-		i2c_sda_lo();
-	
-	i2c_delay();
+
+	return pec;
 }
 
-uint32_t i2c_readbit() {
-	i2c_sda_hi();
-	i2c_scl_hi();
-	i2c_delay();
-	
-	uint32_t bit = gpio_get(GPIO_I2C_SDA);
-	i2c_scl_lo();
-	i2c_delay();
-	
-	return bit;
+void i2c_init(void) {
+	i2c_hw_init();
 }
 
-uint8_t i2c_write(uint8_t c) {
-	for (uint8_t i = 0; i < 8; ++i) {
-		i2c_writebit(c & 0x80);
-		c <<= 1;
-	}
-	return i2c_readbit();
+bool i2c_write(uint8_t address, const uint8_t *data, uint32_t size) {
+	return i2c_hw_write(address, NULL, 0, data, size);
 }
 
-uint8_t i2c_read(bool ack) {
-    uint8_t res = 0;
-	
-	for (uint8_t i = 0; i < 8; ++i) {
-		res <<= 1;
-		res |= i2c_readbit();
-	}
-	
-	i2c_writebit(ack ? 1 : 0);
-	i2c_delay();
-	
-    return res;
+bool i2c_read(uint8_t address, uint8_t *data, uint32_t size) {
+	return i2c_hw_read(address, data, size);
 }
 
-/* I2C SMBUS */
-void i2c_smbus_write_byte(uint32_t addr, uint8_t reg, uint8_t value) {
-	i2c_smbus_write(addr, reg, 1, &value);
-}
+bool i2c_smbus_write_pec(uint8_t address, const uint8_t *data, uint32_t size) {
+	uint8_t pec = smbus_pec_update(0, address << 1);
 
-uint8_t i2c_smbus_read_byte(uint32_t addr, uint8_t reg) {
-	uint8_t value = 0;
-	i2c_smbus_read(addr, reg, 2, &value);
-	return value;
-}
-
-void i2c_smbus_write(uint32_t addr, uint8_t reg, uint32_t size, uint8_t *value) {
-	i2c_start_write(addr);
-	i2c_write(reg);
 	for (uint32_t i = 0; i < size; i++)
-		i2c_write(value[i]);
-	i2c_stop();
+		pec = smbus_pec_update(pec, data[i]);
+
+	return i2c_hw_write(address, data, size, &pec, 1);
 }
 
-void i2c_smbus_read(uint32_t addr, uint8_t reg, uint32_t size, uint8_t *value) {
-	i2c_start_write(addr);
-	i2c_write(reg);
-	i2c_stop();
+bool i2c_smbus_write_byte(uint8_t address, uint8_t reg, uint8_t value) {
+	return i2c_smbus_write(address, reg, 1, &value);
+}
 
-	i2c_start_read(addr);
-	for (uint32_t i = 0; i < size; i++)
-		value[i] = i2c_read(i != size - 1);
-	i2c_stop();
+bool i2c_smbus_read_byte(uint8_t address, uint8_t reg, uint8_t *value) {
+	return i2c_smbus_read(address, reg, 1, value);
+}
+
+bool i2c_smbus_write(uint8_t address, uint8_t reg, uint32_t size, const uint8_t *data) {
+	uint8_t prefix = reg;
+
+	return i2c_hw_write(address, &prefix, 1, data, size);
+}
+
+bool i2c_smbus_read(uint8_t address, uint8_t reg, uint32_t size, uint8_t *data) {
+	if (!i2c_hw_write(address, &reg, 1, NULL, 0))
+		return false;
+
+	return i2c_hw_read(address, data, size);
 }
