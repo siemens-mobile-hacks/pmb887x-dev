@@ -9,6 +9,10 @@
 #define	VIC_IRQ_COUNT	170
 
 
+// DMA requests
+#define	DMAC_HAS_REQUEST_SELECTOR	0
+
+
 // Common regs for all modules
 /* Clock Control Register */
 #define	MOD_CLC_DISR						BIT(0)			 // Module Disable Request Bit

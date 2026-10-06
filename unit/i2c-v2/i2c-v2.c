@@ -2,6 +2,7 @@
 
 #include <pmb887x.h>
 
+#include "dmac.h"
 #include "i2c.h"
 #include "driver.h"
 #include "i2c-v2.h"
@@ -1197,7 +1198,8 @@ int i2c_v2_dma_test(void) {
 	test_start("I2Cv2 DMA test");
 	i2c_v2_init();
 	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
-	SCU_DMARS |= BIT(8) | BIT(9);
+	dmac_request_select(I2C_DMA_TX_REQUEST, I2C_DMA_TX_SELECT);
+	dmac_request_select(I2C_DMA_RX_REQUEST, I2C_DMA_RX_SELECT);
 
 	printf("# target write form: %s\n", I2C_TEST_TARGET.write_uses_pec ? "SMBus PEC" : "plain I2C");
 	test_category("DMA target transfers");

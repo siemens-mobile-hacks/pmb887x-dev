@@ -1,6 +1,7 @@
 #include <pmb887x.h>
 #include <string.h>
 
+#include "dmac.h"
 #include "test.h"
 
 #define SSC_WAIT_ITERATIONS 300000
@@ -9,8 +10,6 @@
 #define SSC_BLOCK_WORDS 256
 #define SSC_RX_FIFO_WORDS 32
 #define SSC_IRQ_MASK (SSC_IMSC_TX | SSC_IMSC_RX | SSC_IMSC_ERR)
-#define SSC_DMA_TX_REQUEST 2
-#define SSC_DMA_RX_REQUEST 3
 #define SSC_DMA_TX_CHANNEL 4
 #define SSC_DMA_RX_CHANNEL 5
 #define SSC_DMA_CHANNELS (BIT(SSC_DMA_TX_CHANNEL) | BIT(SSC_DMA_RX_CHANNEL))
@@ -500,12 +499,14 @@ static bool transfer_dma(const struct dma_options *options) {
 	DMAC_ERR_CLEAR = SSC_DMA_CHANNELS;
 	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
 	DMAC_SYNC = 0;
+	dmac_request_select(SSC_DMA_TX_REQUEST, SSC_DMA_TX_SELECT);
+	dmac_request_select(SSC_DMA_RX_REQUEST, SSC_DMA_RX_SELECT);
 
 	DMAC_CH_SRC_ADDR(SSC_DMA_RX_CHANNEL) = (uint32_t) &SSC_RB;
 	DMAC_CH_DST_ADDR(SSC_DMA_RX_CHANNEL) = destination_address;
 	DMAC_CH_CONTROL(SSC_DMA_RX_CHANNEL) = (
 		first_count | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | options->destination_burst |
-		source_width | destination_width |
+		source_width | destination_width | SSC_DMA_RX_AHB |
 		DMAC_CH_CONTROL_DI | first_interrupt
 	);
 	DMAC_CH_CONFIG(SSC_DMA_RX_CHANNEL) = (
@@ -517,7 +518,7 @@ static bool transfer_dma(const struct dma_options *options) {
 	DMAC_CH_DST_ADDR(SSC_DMA_TX_CHANNEL) = (uint32_t) &SSC_TB;
 	DMAC_CH_CONTROL(SSC_DMA_TX_CHANNEL) = (
 		first_count | options->source_burst | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
-		source_width | destination_width |
+		source_width | destination_width | SSC_DMA_TX_AHB |
 		DMAC_CH_CONTROL_SI | first_interrupt
 	);
 	DMAC_CH_CONFIG(SSC_DMA_TX_CHANNEL) = (
@@ -533,14 +534,14 @@ static bool transfer_dma(const struct dma_options *options) {
 			.source = (uint32_t) &SSC_RB,
 			.destination = destination_address + options->lli_split * item_size,
 			.control = remaining | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | options->destination_burst |
-				source_width | destination_width |
+				source_width | destination_width | SSC_DMA_RX_AHB |
 				DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I,
 		};
 		tx_lli = (struct dma_lli) {
 			.source = source_address + options->lli_split * item_size,
 			.destination = (uint32_t) &SSC_TB,
 			.control = remaining | options->source_burst | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
-				source_width | destination_width |
+				source_width | destination_width | SSC_DMA_TX_AHB |
 				DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I,
 		};
 		DMAC_CH_LLI(SSC_DMA_RX_CHANNEL) = (uint32_t) &rx_lli;

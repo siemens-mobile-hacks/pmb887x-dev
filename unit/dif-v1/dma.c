@@ -2,14 +2,13 @@
 #include <string.h>
 
 #include "dif-v1.h"
+#include "dmac.h"
 #include "test.h"
 
 #ifdef PMB8875
 
 #define DIF_DMA_WAIT_ITERATIONS 300000
 #define DIF_DMA_ITEMS 256
-#define DIF_DMA_TX_REQUEST 4
-#define DIF_DMA_RX_REQUEST 5
 #define DIF_DMA_TX_CHANNEL 4
 #define DIF_DMA_RX_CHANNEL 5
 #define DIF_DMA_CHANNELS (BIT(DIF_DMA_TX_CHANNEL) | BIT(DIF_DMA_RX_CHANNEL))
@@ -112,12 +111,14 @@ static bool transfer_dma(const struct dma_options *options) {
 	DMAC_ERR_CLEAR = DIF_DMA_CHANNELS;
 	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
 	DMAC_SYNC = 0;
+	dmac_request_select(DIF_DMA_TX_REQUEST, DIF_DMA_TX_SELECT);
+	dmac_request_select(DIF_DMA_RX_REQUEST, DIF_DMA_RX_SELECT);
 
 	DMAC_CH_SRC_ADDR(DIF_DMA_RX_CHANNEL) = (uint32_t) &DIF_RB;
 	DMAC_CH_DST_ADDR(DIF_DMA_RX_CHANNEL) = destination_address;
 	DMAC_CH_CONTROL(DIF_DMA_RX_CHANNEL) = (
 		first_count | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | options->destination_burst |
-		source_width | destination_width | DMAC_CH_CONTROL_DI | first_interrupt
+		source_width | destination_width | DIF_DMA_RX_AHB | DMAC_CH_CONTROL_DI | first_interrupt
 	);
 	DMAC_CH_CONFIG(DIF_DMA_RX_CHANNEL) = (
 		(DIF_DMA_RX_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM |
@@ -128,7 +129,7 @@ static bool transfer_dma(const struct dma_options *options) {
 	DMAC_CH_DST_ADDR(DIF_DMA_TX_CHANNEL) = (uint32_t) &DIF_TB;
 	DMAC_CH_CONTROL(DIF_DMA_TX_CHANNEL) = (
 		first_count | options->source_burst | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
-		source_width | destination_width | DMAC_CH_CONTROL_SI | first_interrupt
+		source_width | destination_width | DIF_DMA_TX_AHB | DMAC_CH_CONTROL_SI | first_interrupt
 	);
 	DMAC_CH_CONFIG(DIF_DMA_TX_CHANNEL) = (
 		(DIF_DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER |
@@ -143,13 +144,13 @@ static bool transfer_dma(const struct dma_options *options) {
 			.source = (uint32_t) &DIF_RB,
 			.destination = destination_address + options->lli_split * item_size,
 			.control = remaining | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | options->destination_burst |
-				source_width | destination_width | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I,
+				source_width | destination_width | DIF_DMA_RX_AHB | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I,
 		};
 		tx_lli = (struct dma_lli) {
 			.source = source_address + options->lli_split * item_size,
 			.destination = (uint32_t) &DIF_TB,
 			.control = remaining | options->source_burst | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
-				source_width | destination_width | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I,
+				source_width | destination_width | DIF_DMA_TX_AHB | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I,
 		};
 		DMAC_CH_LLI(DIF_DMA_RX_CHANNEL) = (uint32_t) &rx_lli;
 		DMAC_CH_LLI(DIF_DMA_TX_CHANNEL) = (uint32_t) &tx_lli;

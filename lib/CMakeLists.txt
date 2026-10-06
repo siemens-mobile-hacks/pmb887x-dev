@@ -32,6 +32,7 @@ add_library(pmb887x OBJECT
 	printf.c
 	wdt.c
 	stopwatch.c
+	dmac.c
 	cpu.c
 )
 target_link_libraries(pmb887x PUBLIC printf::printf)

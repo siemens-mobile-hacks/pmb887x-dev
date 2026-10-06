@@ -43,6 +43,10 @@ for my $cpu (@{Sie::CpuMetadata::getCpus()}) {
 	$str .= "// IRQ numbers\n";
 	$str .= getIrqsHeader($irqs);
 	$str .= "\n";
+
+	$str .= "// DMA requests\n";
+	$str .= getDmaHeader($cpu_meta->{dma});
+	$str .= "\n";
 	
 	$str .= "// Common regs for all modules\n";
 	$str .= getCommonRegsHeader($cpu_meta, $cpu_meta->{common});
@@ -273,6 +277,42 @@ sub getIrqsHeader {
 		push @header, ["#define", $irq_name, $irqs->{$irq_name}];
 	}
 	return printTable(\@header)."\n";
+}
+
+sub getDmaHeader {
+	my ($modules) = @_;
+	my %control_side = (TX => "D", RX => "S");
+
+	my @header = (
+		["#define", "DMAC_HAS_REQUEST_SELECTOR", dmaHasRequestSelector($modules)],
+	);
+	for my $module (sort keys %$modules) {
+		for my $dma (@{$modules->{$module}}) {
+			my $channel = $dma->{channel};
+			my $side = $control_side{$channel};
+			die "Unknown DMA channel $module:$channel" if !defined($side);
+			die "Unknown DMA bus $module:$channel:$dma->{bus}" if $dma->{bus} !~ /^AHB[12]$/;
+			die "Invalid DMA request $module:$channel:$dma->{request}" if $dma->{request} < 0 || $dma->{request} > 15;
+			die "Invalid DMA selector $module:$channel:$dma->{sel}" if $dma->{sel} < 0 || $dma->{sel} > 1;
+
+			my $prefix = getMacroName($module."_DMA_".$channel);
+			push @header, ["#define", $prefix."_REQUEST", $dma->{request}];
+			push @header, ["#define", $prefix."_SELECT", $dma->{sel}];
+			push @header, ["#define", $prefix."_AHB", "DMAC_CH_CONTROL_".$side."_".$dma->{bus}];
+		}
+	}
+	return printTable(\@header)."\n";
+}
+
+sub dmaHasRequestSelector {
+	my ($modules) = @_;
+
+	for my $module (keys %$modules) {
+		for my $dma (@{$modules->{$module}}) {
+			return 1 if $dma->{sel} != 0;
+		}
+	}
+	return 0;
 }
 
 sub genModuleHeader {

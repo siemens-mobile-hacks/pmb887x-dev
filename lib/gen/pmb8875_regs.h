@@ -198,6 +198,34 @@
 #define	VIC_IRQ_COUNT			128
 
 
+// DMA requests
+#define	DMAC_HAS_REQUEST_SELECTOR	0
+#define	DIF_DMA_TX_REQUEST			4
+#define	DIF_DMA_TX_SELECT			0
+#define	DIF_DMA_TX_AHB				DMAC_CH_CONTROL_D_AHB1
+#define	DIF_DMA_RX_REQUEST			5
+#define	DIF_DMA_RX_SELECT			0
+#define	DIF_DMA_RX_AHB				DMAC_CH_CONTROL_S_AHB1
+#define	SIM_DMA_TX_REQUEST			8
+#define	SIM_DMA_TX_SELECT			0
+#define	SIM_DMA_TX_AHB				DMAC_CH_CONTROL_D_AHB1
+#define	SIM_DMA_RX_REQUEST			8
+#define	SIM_DMA_RX_SELECT			0
+#define	SIM_DMA_RX_AHB				DMAC_CH_CONTROL_S_AHB1
+#define	SSC_DMA_TX_REQUEST			2
+#define	SSC_DMA_TX_SELECT			0
+#define	SSC_DMA_TX_AHB				DMAC_CH_CONTROL_D_AHB1
+#define	SSC_DMA_RX_REQUEST			3
+#define	SSC_DMA_RX_SELECT			0
+#define	SSC_DMA_RX_AHB				DMAC_CH_CONTROL_S_AHB1
+#define	USART1_DMA_TX_REQUEST		6
+#define	USART1_DMA_TX_SELECT		0
+#define	USART1_DMA_TX_AHB			DMAC_CH_CONTROL_D_AHB1
+#define	USART1_DMA_RX_REQUEST		7
+#define	USART1_DMA_RX_SELECT		0
+#define	USART1_DMA_RX_AHB			DMAC_CH_CONTROL_S_AHB1
+
+
 // Common regs for all modules
 /* Clock Control Register */
 #define	MOD_CLC_DISR						BIT(0)			 // Module Disable Request Bit

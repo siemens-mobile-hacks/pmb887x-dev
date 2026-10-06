@@ -1,6 +1,7 @@
 #include <pmb887x.h>
 #include <string.h>
 
+#include "dmac.h"
 #include "test.h"
 
 #define USART_IRQ_MASK 0xFF
@@ -162,17 +163,18 @@ static bool transfer_block_mem2per_per2mem(const struct dma_options *options) {
 	DMAC_ERR_CLEAR = channels;
 	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
 	DMAC_SYNC = 0;
-	SCU_DMARS &= ~(BIT(6) | BIT(7));
+	dmac_request_select(USART1_DMA_TX_REQUEST, USART1_DMA_TX_SELECT);
+	dmac_request_select(USART1_DMA_RX_REQUEST, USART1_DMA_RX_SELECT);
 
 	DMAC_CH_SRC_ADDR(DMA_RX_CHANNEL) = (uint32_t) &USART_RXB(USART1);
 	DMAC_CH_DST_ADDR(DMA_RX_CHANNEL) = (uint32_t) block_rx;
 	DMAC_CH_CONTROL(DMA_RX_CHANNEL) = (
 		first_count | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | options->destination_burst |
 		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_DI | first_interrupt
+		USART1_DMA_RX_AHB | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_DI | first_interrupt
 	);
 	DMAC_CH_CONFIG(DMA_RX_CHANNEL) = (
-		(7 << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
+		(USART1_DMA_RX_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
 		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC
 	);
 
@@ -181,10 +183,10 @@ static bool transfer_block_mem2per_per2mem(const struct dma_options *options) {
 	DMAC_CH_CONTROL(DMA_TX_CHANNEL) = (
 		first_count | options->source_burst | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
 		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-		DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | first_interrupt
+		DMAC_CH_CONTROL_S_AHB1 | USART1_DMA_TX_AHB | DMAC_CH_CONTROL_SI | first_interrupt
 	);
 	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = (
-		(6 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER |
+		(USART1_DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER |
 		DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC
 	);
 	DMAC_CH_LLI(DMA_RX_CHANNEL) = 0;
@@ -197,14 +199,14 @@ static bool transfer_block_mem2per_per2mem(const struct dma_options *options) {
 			.destination = (uint32_t) block_rx + options->lli_split,
 			.control = remaining | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | options->destination_burst |
 				DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-				DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I,
+				USART1_DMA_RX_AHB | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I,
 		};
 		tx_lli = (struct dma_lli) {
 			.source = (uint32_t) block_tx + options->lli_split,
 			.destination = (uint32_t) &USART_TXB(USART1),
 			.control = remaining | options->source_burst | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
 				DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-				DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I,
+				DMAC_CH_CONTROL_S_AHB1 | USART1_DMA_TX_AHB | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I,
 		};
 		DMAC_CH_LLI(DMA_RX_CHANNEL) = (uint32_t) &rx_lli;
 		DMAC_CH_LLI(DMA_TX_CHANNEL) = (uint32_t) &tx_lli;
