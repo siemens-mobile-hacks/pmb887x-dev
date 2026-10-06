@@ -89,11 +89,18 @@ def stable_device_path(device):
 
 def find_serial_ports():
 	ports = []
+	devices = set()
 	for info in list_ports.comports():
 		adapter = KNOWN_ADAPTERS.get((info.vid, info.pid))
 		if adapter is None:
 			continue
-		ports.append((adapter[1], stable_device_path(info.device), info))
+		path = stable_device_path(info.device)
+		device = os.path.realpath(path)
+		if device in devices:
+			continue
+		devices.add(device)
+		stable_score = 1 if path.startswith("/dev/serial/by-id/") else 0
+		ports.append((adapter[1] + stable_score, path, info))
 
 	ports.sort(key=lambda item: (-item[0], item[1]))
 	return ports
