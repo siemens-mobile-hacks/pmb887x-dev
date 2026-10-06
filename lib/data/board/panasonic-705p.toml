@@ -31,7 +31,7 @@ bus = "I2C"
 addr = 0x08
 
 [dsp]
-ram0_value = 0x0801
+rom_version = 0x0801
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }

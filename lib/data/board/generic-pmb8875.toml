@@ -20,3 +20,6 @@ type = "sdram"
 bus = "EBU"
 ebu.cs = 1
 ram.size = 0x2000000 # 32 MiB
+
+[dsp]
+rom_version = 0x0604

@@ -80,7 +80,7 @@ M_8 = { type = "resistor_divider", r1 = 390000, r2 = 100000, value = 4200 }
 M_9 = { type = "voltage", value = 1500 } # ~150mV draw
 
 [dsp]
-ram0_value = 0x0801
+rom_version = 0x0801
 
 [gpio.aliases]
 MMCI_DAT1 = "USB_CHG_EN"

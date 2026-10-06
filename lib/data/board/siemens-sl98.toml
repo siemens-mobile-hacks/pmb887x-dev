@@ -52,7 +52,7 @@ M_7 = { type = "resistor", value = 14800 }
 M_9 = { type = "resistor", value = 15000 }
 
 [dsp]
-ram0_value = 0x0801
+rom_version = 0x0801
 
 [gpio.aliases]
 DSPOUT0 = "AC_DCD"

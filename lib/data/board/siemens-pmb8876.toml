@@ -4,5 +4,8 @@ vendor = "Generic"
 model = "Siemens PMB8876"
 platform = "siemens"
 
+[dsp]
+rom_version = 0x0801
+
 [gpio.aliases]
 DSPOUT1 = "PM_WADOG"

@@ -3,3 +3,6 @@ cpu.type = "pmb8875"
 vendor = "Generic"
 model = "APOXI PMB8875"
 platform = "apoxi"
+
+[dsp]
+rom_version = 0x0604

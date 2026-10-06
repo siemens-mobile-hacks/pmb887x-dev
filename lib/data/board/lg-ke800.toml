@@ -69,7 +69,7 @@ M_8 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
 M_9 = { type = "resistor", value = 15000 }
 
 [dsp]
-ram0_value = 0x0801
+rom_version = 0x0801
 
 [gpio.aliases]
 PIN110 = "RPWRON" # remote poweron
