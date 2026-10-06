@@ -12,6 +12,18 @@
 #define DMA_SOURCE_REQUEST 0
 #define DMA_DESTINATION_REQUEST 1
 
+#ifdef PMB8875
+#define ENDIAN_DESTINATION_AHB DMAC_CH_CONTROL_D_AHB1
+#define ENDIAN_DESTINATION_CONFIG DMAC_CONFIG_M1_BE
+#define ENDIAN_LLI_AHB1_DATA_MASTER (DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1)
+#define ENDIAN_LLI_AHB1_NAME "AHB1 endian setting does not change LLI format"
+#else
+#define ENDIAN_DESTINATION_AHB DMAC_CH_CONTROL_D_AHB2
+#define ENDIAN_DESTINATION_CONFIG DMAC_CONFIG_M2_BE
+#define ENDIAN_LLI_AHB1_DATA_MASTER (DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2)
+#define ENDIAN_LLI_AHB1_NAME "LLI loads through big-endian AHB1"
+#endif
+
 struct dmac_lli {
 	uint32_t src;
 	uint32_t dst;
@@ -50,10 +62,16 @@ struct dmac_unaligned_case {
 	uint32_t widths;
 };
 
-struct dmac_request_results {
-	bool completed;
-	bool cleared;
-	bool data_matches;
+struct dmac_request_burst_case {
+	const char *name;
+	uint16_t transfer_count;
+	uint16_t expected_remaining;
+	size_t transferred_bytes;
+	uint32_t flow;
+	uint32_t src_burst;
+	uint32_t dst_burst;
+	uint32_t src_width;
+	uint32_t dst_width;
 };
 
 static const uint32_t source[] = {
@@ -78,7 +96,7 @@ static volatile uint8_t *const matrix_destination = (volatile uint8_t *) MATRIX_
 
 static const uint32_t PERIPHERAL_FC_CONTROL =
 	DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_BYTE |
-	DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+	DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 	DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I;
 
 static volatile uint32_t irq_count;
@@ -184,8 +202,8 @@ static void test_mem2mem(void) {
 		0,
 		(
 			ARRAY_SIZE(source) | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
-			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-			DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+			DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
 	);
@@ -238,7 +256,7 @@ static void test_endian_transfer(
 		DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
 		width |
 		DMAC_CH_CONTROL_S_AHB1 |
-		DMAC_CH_CONTROL_D_AHB2 |
+		ENDIAN_DESTINATION_AHB |
 		DMAC_CH_CONTROL_SI |
 		DMAC_CH_CONTROL_DI |
 		DMAC_CH_CONTROL_I
@@ -257,6 +275,15 @@ static void test_endianness(void) {
 		1,
 		0x87654321
 	);
+#ifdef PMB8875
+	test_endian_transfer(
+		"32-bit AHB1 big endian preserves memory byte order",
+		DMAC_CONFIG_M1_BE,
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD,
+		1,
+		0x87654321
+	);
+#else
 	test_endian_transfer(
 		"32-bit LE to BE swaps bytes",
 		DMAC_CONFIG_M2_BE,
@@ -292,6 +319,7 @@ static void test_endianness(void) {
 		1,
 		0x21436587
 	);
+#endif
 }
 
 static void test_endian_matrix_transfer(const struct dmac_endian_case *item) {
@@ -301,9 +329,13 @@ static void test_endian_matrix_transfer(const struct dmac_endian_case *item) {
 		endian_matrix_source[i] = (uint8_t) (i * 29 + 0x13);
 		endian_matrix_destination[i] = 0xA5;
 	}
+#ifdef PMB8875
+	memcpy(endian_matrix_expected, endian_matrix_source, size);
+#else
 	for (uint32_t unit = 0; unit < size; unit += item->dst_width_bytes)
 		for (uint32_t byte = 0; byte < item->dst_width_bytes; byte++)
 			endian_matrix_expected[unit + byte] = endian_matrix_source[unit + item->dst_width_bytes - 1 - byte];
+#endif
 
 	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_source;
 	DMAC_CH_DST_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_destination;
@@ -315,12 +347,12 @@ static void test_endian_matrix_transfer(const struct dmac_endian_case *item) {
 		item->src_width |
 		item->dst_width |
 		DMAC_CH_CONTROL_S_AHB1 |
-		DMAC_CH_CONTROL_D_AHB2 |
+		ENDIAN_DESTINATION_AHB |
 		DMAC_CH_CONTROL_SI |
 		DMAC_CH_CONTROL_DI |
 		DMAC_CH_CONTROL_I
 	);
-	DMAC_CONFIG = DMAC_CONFIG_M2_BE | DMAC_CONFIG_ENABLE;
+	DMAC_CONFIG = ENDIAN_DESTINATION_CONFIG | DMAC_CONFIG_ENABLE;
 	DMAC_CH_CONFIG(DMA_CHANNEL) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_ENABLE;
 	test_check("big-endian matrix transfer completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_eq_memory(item->name, endian_matrix_expected, endian_matrix_destination, size);
@@ -334,6 +366,7 @@ static void test_endian_matrix(void) {
 			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
 		{"SB8, nine dwords with partial burst", 9, 4, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_8,
 			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
+#ifndef PMB8875
 		{"SB4, seven halfwords", 7, 2, 2, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
 			DMAC_CH_CONTROL_S_WIDTH_WORD, DMAC_CH_CONTROL_D_WIDTH_WORD},
 		{"SB8, byte to dword packing", 16, 1, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_8,
@@ -342,10 +375,50 @@ static void test_endian_matrix(void) {
 			DMAC_CH_CONTROL_S_WIDTH_WORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
 		{"SB4, dword to halfword splitting", 4, 4, 2, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
 			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_WORD},
+#endif
 	};
 
 	for (size_t i = 0; i < ARRAY_SIZE(cases); i++)
 		test_endian_matrix_transfer(&cases[i]);
+}
+
+static void test_paced_endianness(void) {
+	uint8_t expected[8 * sizeof(uint32_t)];
+
+	reset_dmac();
+	for (size_t i = 0; i < sizeof(expected); i++) {
+		endian_matrix_source[i] = (uint8_t) (i * 29 + 0x13);
+		endian_matrix_destination[i] = 0xA5;
+	}
+#ifdef PMB8875
+	memcpy(expected, endian_matrix_source, sizeof(expected));
+#else
+	for (size_t unit = 0; unit < sizeof(expected); unit += sizeof(uint32_t))
+		for (size_t byte = 0; byte < sizeof(uint32_t); byte++)
+			expected[unit + byte] = endian_matrix_source[unit + sizeof(uint32_t) - 1 - byte];
+#endif
+
+	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_source;
+	DMAC_CH_DST_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_destination;
+	DMAC_CH_LLI(DMA_CHANNEL) = 0;
+	DMAC_CH_CONTROL(DMA_CHANNEL) = (
+		8 | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+		DMAC_CH_CONTROL_S_AHB1 | ENDIAN_DESTINATION_AHB | DMAC_CH_CONTROL_SI |
+		DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+	);
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE | ENDIAN_DESTINATION_CONFIG;
+	DMAC_CH_CONFIG(DMA_CHANNEL) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_ENABLE;
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("big-endian source first paced burst clears", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
+	test_eq_u32("big-endian source first paced burst leaves four items", 4,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	memset(endian_matrix_source + 4 * sizeof(uint32_t), 0x5A, 4 * sizeof(uint32_t));
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("big-endian source prefetched burst completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("big-endian source FIFO preserves byte order", expected, endian_matrix_destination,
+		sizeof(expected));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
 static void fill_matrix_buffers(void) {
@@ -419,7 +492,7 @@ static void test_bursts_and_widths(void) {
 
 		uint32_t control = (
 			item->count | item->src_burst | item->dst_burst | item->src_width | item->dst_width |
-			DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI |
 			DMAC_CH_CONTROL_I
 		);
 		start_transfer(
@@ -470,7 +543,7 @@ static void test_unaligned_addresses(void) {
 			(
 				item->count | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
 				item->widths |
-				DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+				DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 				DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 			),
 			DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
@@ -497,7 +570,7 @@ static void test_overlap(void) {
 		0,
 		(
 			32 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_16 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
@@ -517,7 +590,7 @@ static void test_transfer_boundaries(void) {
 		0,
 		(
 			1 | DMAC_CH_CONTROL_SB_SIZE_SZ_256 | DMAC_CH_CONTROL_DB_SIZE_SZ_256 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
@@ -537,7 +610,7 @@ static void test_transfer_boundaries(void) {
 		0,
 		(
 			32 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_16 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
@@ -562,7 +635,7 @@ static void test_transfer_boundaries(void) {
 		0,
 		(
 			DMAC_CH_CONTROL_SB_SIZE_SZ_256 | DMAC_CH_CONTROL_DB_SIZE_SZ_256 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
@@ -593,8 +666,8 @@ static void test_address_increment(void) {
 
 	uint32_t fixed_source = (
 		8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
-		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -612,8 +685,8 @@ static void test_address_increment(void) {
 	fill_matrix_buffers();
 	uint32_t fixed_destination = (
 		8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
-		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
 	);
 	start_transfer(
 		(uint32_t) matrix_source,
@@ -642,7 +715,7 @@ static void test_software_requests(void) {
 		0,
 		(
 			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
@@ -667,7 +740,7 @@ static void test_software_requests(void) {
 		0,
 		(
 			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM
@@ -690,7 +763,7 @@ static void test_software_requests(void) {
 		0,
 		(
 			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		(1 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_PER2PER
@@ -699,55 +772,6 @@ static void test_software_requests(void) {
 	test_check("PER2PER software requests complete", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_eq_memory("PER2PER software-request data", matrix_source, matrix_destination, 4 * sizeof(uint32_t));
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
-}
-
-static struct dmac_request_results run_request_selectors(uint32_t shift, uint32_t flow) {
-	struct dmac_request_results results = {
-		.completed = true,
-		.cleared = true,
-		.data_matches = true,
-	};
-	for (uint32_t request = 0; request < 16; request++) {
-		reset_dmac();
-		fill_matrix_buffers();
-		start_transfer(
-			(uint32_t) matrix_source,
-			(uint32_t) matrix_destination,
-			0,
-			(
-				4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-				DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
-				DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
-			),
-			(request << shift) | flow
-		);
-		DMAC_SOFT_BREQ = BIT(request);
-		results.completed &= wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL));
-		results.cleared &= (DMAC_SOFT_BREQ & BIT(request)) == 0;
-		results.data_matches &= memcmp(matrix_source, (const void *) matrix_destination,
-			4 * sizeof(uint32_t)) == 0;
-		DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
-	}
-
-	return results;
-}
-
-static void test_request_selectors(void) {
-	struct dmac_request_results mem2per = run_request_selectors(
-		DMAC_CH_CONFIG_DST_PERIPH_SHIFT,
-		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
-	);
-	test_check("all MEM2PER request selectors complete", mem2per.completed);
-	test_check("all MEM2PER burst requests clear", mem2per.cleared);
-	test_check("all MEM2PER request selectors transfer data", mem2per.data_matches);
-
-	struct dmac_request_results per2mem = run_request_selectors(
-		DMAC_CH_CONFIG_SRC_PERIPH_SHIFT,
-		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM
-	);
-	test_check("all PER2MEM request selectors complete", per2mem.completed);
-	test_check("all PER2MEM burst requests clear", per2mem.cleared);
-	test_check("all PER2MEM request selectors transfer data", per2mem.data_matches);
 }
 
 static void test_request_selector_isolation(void) {
@@ -759,7 +783,7 @@ static void test_request_selector_isolation(void) {
 		0,
 		(
 			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
@@ -783,6 +807,483 @@ static void test_request_selector_isolation(void) {
 	DMAC_SOFT_BREQ = BIT(0);
 	test_check("selected request completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_eq_memory("selected request transfers data", matrix_source, matrix_destination, 4 * sizeof(uint32_t));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
+static void test_request_burst_sizes(void) {
+	static const struct dmac_request_burst_case cases[] = {
+		{
+			.name = "MEM2PER uses DBSize, not SBSize",
+			.transfer_count = 8,
+			.expected_remaining = 4,
+			.transferred_bytes = 16,
+			.flow = DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER,
+			.src_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_1,
+			.dst_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_4,
+			.src_width = DMAC_CH_CONTROL_S_WIDTH_DWORD,
+			.dst_width = DMAC_CH_CONTROL_D_WIDTH_DWORD,
+		},
+		{
+			.name = "MEM2PER converts four destination dwords to 16 source bytes",
+			.transfer_count = 20,
+			.expected_remaining = 4,
+			.transferred_bytes = 16,
+			.flow = DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER,
+			.src_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_1,
+			.dst_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_4,
+			.src_width = DMAC_CH_CONTROL_S_WIDTH_BYTE,
+			.dst_width = DMAC_CH_CONTROL_D_WIDTH_DWORD,
+		},
+		{
+			.name = "MEM2PER converts four destination bytes to one source dword",
+			.transfer_count = 3,
+			.expected_remaining = 2,
+			.transferred_bytes = 4,
+			.flow = DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER,
+			.src_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_1,
+			.dst_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_4,
+			.src_width = DMAC_CH_CONTROL_S_WIDTH_DWORD,
+			.dst_width = DMAC_CH_CONTROL_D_WIDTH_BYTE,
+		},
+		{
+			.name = "PER2MEM uses SBSize, not DBSize",
+			.transfer_count = 8,
+			.expected_remaining = 4,
+			.transferred_bytes = 16,
+			.flow = DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM,
+			.src_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+			.dst_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_1,
+			.src_width = DMAC_CH_CONTROL_S_WIDTH_DWORD,
+			.dst_width = DMAC_CH_CONTROL_D_WIDTH_DWORD,
+		},
+		{
+			.name = "PER2MEM transfers four source bytes into one destination dword",
+			.transfer_count = 8,
+			.expected_remaining = 4,
+			.transferred_bytes = 4,
+			.flow = DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM,
+			.src_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+			.dst_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_1,
+			.src_width = DMAC_CH_CONTROL_S_WIDTH_BYTE,
+			.dst_width = DMAC_CH_CONTROL_D_WIDTH_DWORD,
+		},
+		{
+			.name = "PER2MEM splits four source dwords into 16 destination bytes",
+			.transfer_count = 8,
+			.expected_remaining = 4,
+			.transferred_bytes = 16,
+			.flow = DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM,
+			.src_burst = DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+			.dst_burst = DMAC_CH_CONTROL_DB_SIZE_SZ_1,
+			.src_width = DMAC_CH_CONTROL_S_WIDTH_DWORD,
+			.dst_width = DMAC_CH_CONTROL_D_WIDTH_BYTE,
+		},
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(cases); i++) {
+		const struct dmac_request_burst_case *item = &cases[i];
+		test_category(item->name);
+		reset_dmac();
+		fill_matrix_buffers();
+		start_transfer(
+			(uint32_t) matrix_source,
+			(uint32_t) matrix_destination,
+			0,
+			(
+				item->transfer_count | item->src_burst | item->dst_burst |
+				item->src_width | item->dst_width | DMAC_CH_CONTROL_S_AHB1 |
+				DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI
+			),
+			item->flow
+		);
+
+		DMAC_SOFT_BREQ = BIT(0);
+		test_check("burst request is acknowledged", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
+		test_eq_u32("burst decrements TransferSize in source units", item->expected_remaining,
+			DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+		test_eq_memory("burst transfers the expected data", matrix_source, matrix_destination,
+			item->transferred_bytes);
+		test_eq_u32("burst stops at the expected byte", 0xA5,
+			matrix_destination[item->transferred_bytes]);
+		test_check("burst does not reach terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	}
+}
+
+static void test_mem2per_fifo_pacing(void) {
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
+	);
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("MEM2PER first single-item burst clears", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
+	test_eq_u32(
+		"MEM2PER first single-item burst transfers one item",
+		7,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE
+	);
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("MEM2PER second single-item burst clears", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
+	test_eq_u32(
+		"MEM2PER second single-item burst transfers one item",
+		6,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE
+	);
+	test_eq_memory("MEM2PER two single-item bursts transfer two items", matrix_source, matrix_destination,
+		2 * sizeof(uint32_t));
+	test_eq_u32("MEM2PER second single-item burst does not drain FIFO", 0xA5A5A5A5,
+		*(volatile uint32_t *) (matrix_destination + 2 * sizeof(uint32_t)));
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			2 | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
+	);
+	test_check("four byte BREQs are acknowledged", issue_peripheral_fc_bursts(BIT(0), 4));
+	test_eq_u32("four byte BREQs leave one source dword", 1,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_eq_memory("four byte BREQs transfer one source dword", matrix_source, matrix_destination,
+		sizeof(uint32_t));
+	test_eq_u32("four byte BREQs stop at one source dword", 0xA5, matrix_destination[sizeof(uint32_t)]);
+	test_check("next four byte BREQs are acknowledged", issue_peripheral_fc_bursts(BIT(0), 4));
+	test_check("eight byte BREQs reach terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_eq_memory("eight byte BREQs transfer two source dwords", matrix_source, matrix_destination,
+		2 * sizeof(uint32_t));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
+static void test_per2mem_fifo_pacing(void) {
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM
+	);
+	test_check("four byte source BREQs are acknowledged", issue_peripheral_fc_bursts(BIT(0), 4));
+	test_eq_u32("four byte source BREQs leave four source bytes", 4,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_eq_memory("four byte source BREQs write one destination dword", matrix_source, matrix_destination,
+		sizeof(uint32_t));
+	test_eq_u32("four byte source BREQs stop at one destination dword", 0xA5,
+		matrix_destination[sizeof(uint32_t)]);
+	test_check("next four source BREQs are acknowledged", issue_peripheral_fc_bursts(BIT(0), 4));
+	test_check("eight byte source BREQs reach terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_eq_memory("eight byte source BREQs write two destination dwords", matrix_source, matrix_destination,
+		2 * sizeof(uint32_t));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
+static void test_peripheral_flow_widths(void) {
+	uint32_t peripherals = (
+		(DMA_SOURCE_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
+		(DMA_DESTINATION_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT)
+	);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		peripherals | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+	DMAC_SOFT_LSREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("destination LSREQ completes byte-to-dword transfer",
+		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("destination LSREQ consumes one destination item", matrix_source, matrix_destination,
+		sizeof(uint32_t));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		peripherals | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+	bool requests_cleared = true;
+	for (uint32_t i = 0; i < 3; i++) {
+		DMAC_SOFT_SREQ = BIT(DMA_DESTINATION_REQUEST);
+		if (!wait_for_value(&DMAC_SOFT_SREQ, BIT(DMA_DESTINATION_REQUEST), 0))
+			requests_cleared = false;
+	}
+	test_check("three destination byte SREQs clear", requests_cleared);
+	test_check("ordinary destination byte SREQs are not terminal",
+		(DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	DMAC_SOFT_LSREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("destination byte LSREQ completes split source dword",
+		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("destination single requests split one source dword", matrix_source, matrix_destination,
+		sizeof(uint32_t));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		peripherals | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+	DMAC_SOFT_LBREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("destination LBREQ completes byte-to-dword transfer",
+		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("destination LBREQ consumes one destination burst", matrix_source, matrix_destination,
+		4 * sizeof(uint32_t));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			32 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI
+		),
+		peripherals | DMAC_CH_CONFIG_FLOW_CTRL_PER2PER
+	);
+	uint32_t paired_requests = BIT(DMA_SOURCE_REQUEST) | BIT(DMA_DESTINATION_REQUEST);
+	DMAC_SOFT_BREQ = paired_requests;
+	test_check("DMAC-controlled P2P mixed-width bursts clear",
+		wait_for_value(&DMAC_SOFT_BREQ, paired_requests, 0));
+	test_eq_u32("DMAC-controlled P2P destination burst leaves 16 source bytes", 16,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_eq_memory("DMAC-controlled P2P destination burst data", matrix_source, matrix_destination, 16);
+	test_eq_u32("DMAC-controlled P2P destination burst stops at 16 bytes", 0xA5,
+		matrix_destination[16]);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		peripherals | DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_DST | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+	DMAC_SOFT_BREQ = BIT(DMA_SOURCE_REQUEST);
+	DMAC_SOFT_LBREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("destination-controlled P2P mixed-width burst completes",
+		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("destination-controlled P2P mixed-width burst data", matrix_source, matrix_destination, 16);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		peripherals | DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_SRC | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+	DMAC_SOFT_LBREQ = BIT(DMA_SOURCE_REQUEST);
+	test_check("last source mixed-width burst waits for destination",
+		wait_for_value(&DMAC_SOFT_LBREQ, BIT(DMA_SOURCE_REQUEST), 0));
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("source-controlled P2P mixed-width burst completes",
+		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("source-controlled P2P mixed-width burst data", matrix_source, matrix_destination, 16);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
+static void test_destination_flow_narrow_tail(void) {
+	uint32_t peripherals = (
+		(DMA_SOURCE_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
+		(DMA_DESTINATION_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT)
+	);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		peripherals | DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_DST | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+
+	DMAC_SOFT_SREQ = BIT(DMA_DESTINATION_REQUEST) | BIT(DMA_SOURCE_REQUEST);
+	test_check("destination-controlled narrow first requests clear",
+		wait_for_value(&DMAC_SOFT_SREQ,
+			BIT(DMA_DESTINATION_REQUEST) | BIT(DMA_SOURCE_REQUEST), 0));
+	test_eq_u32("destination-controlled narrow first byte", matrix_source[0], matrix_destination[0]);
+	test_eq_u32("destination-controlled narrow transfer keeps FIFO active",
+		DMAC_CH_CONFIG_ACTIVE, DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE);
+
+	DMAC_SOFT_LSREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("destination-controlled narrow last request completes",
+		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_u32("destination-controlled narrow last byte", matrix_source[1], matrix_destination[1]);
+	test_eq_u32("destination-controlled narrow tail is discarded", 0xA5, matrix_destination[2]);
+	test_check("destination-controlled narrow transfer becomes inactive",
+		(DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0);
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
+static void test_request_tails(void) {
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			5 | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
+	);
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("MEM2PER full burst before tail clears", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
+	test_eq_u32("MEM2PER full burst leaves one source item", 1,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("MEM2PER BREQ transfers a partial tail", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("MEM2PER partial tail data", matrix_source, matrix_destination, 5 * sizeof(uint32_t));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			5 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM
+	);
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("PER2MEM full burst before tail clears", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
+	test_eq_u32("PER2MEM full burst leaves one source item", 1,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("PER2MEM BREQ transfers a partial tail", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("PER2MEM partial burst tail data", matrix_source, matrix_destination, 5 * sizeof(uint32_t));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			5 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM
+	);
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("PER2MEM full burst before single tail clears", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
+	DMAC_SOFT_SREQ = BIT(0);
+	test_check("PER2MEM SREQ transfers a single-item tail", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("PER2MEM single-item tail data", matrix_source, matrix_destination, 5 * sizeof(uint32_t));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
+static void test_fifo_byte_capacity(void) {
+	uint8_t expected[20];
+
+	reset_dmac();
+	fill_matrix_buffers();
+	memcpy(expected, matrix_source, sizeof(expected));
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			20 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
+	);
+	DMAC_SOFT_BREQ = BIT(0);
+	test_check("byte FIFO initial burst clears", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
+	test_eq_u32("byte FIFO initial burst leaves 16 bytes", 16,
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	DMAC_CH_CONFIG(DMA_CHANNEL) |= DMAC_CH_CONFIG_HALT;
+	test_check("byte FIFO is active after prefetch", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) != 0);
+	memset(matrix_source + 4, 0x5A, 16);
+
+	test_check("four halted byte FIFO bursts clear", issue_peripheral_fc_bursts(BIT(0), 4));
+	test_check("16-byte FIFO drains to terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
+	test_check("16-byte FIFO becomes inactive", (DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0);
+	test_eq_memory("16-byte FIFO preserves prefetched data", expected, matrix_destination, sizeof(expected));
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
@@ -966,10 +1467,12 @@ static void test_peripheral_fc_per2per_source(void) {
 	test_check("last source single is acknowledged", wait_for_value(&DMAC_SOFT_LSREQ, BIT(DMA_SOURCE_REQUEST), 0));
 	test_eq_u32("last source single waits for destination", 0xA5, matrix_destination[1]);
 	test_check("waiting last source single has no terminal count", (DMAC_RAW_TC_STATUS & BIT(DMA_CHANNEL)) == 0);
+	uint8_t last_source_value = matrix_source[1];
+	matrix_source[1] ^= 0xFF;
 	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
 	test_check("destination burst drains last source item", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_check("final destination burst is acknowledged", (DMAC_SOFT_BREQ & BIT(DMA_DESTINATION_REQUEST)) == 0);
-	test_eq_memory("source-controlled single sequence data", matrix_source, matrix_destination, 2);
+	test_eq_u32("last source request captures data before acknowledgement", last_source_value, matrix_destination[1]);
 	test_eq_u32("two source singles decrement TransferSize to 0xFFE", 0xFFE,
 		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
 	test_check("last source single exposes masked terminal count", (DMAC_TC_STATUS & BIT(DMA_CHANNEL)) != 0);
@@ -1032,6 +1535,60 @@ static void test_peripheral_fc_per2per_source(void) {
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
+static void test_peripheral_fc_large_last_source_burst(void) {
+	uint8_t expected[32];
+	uint32_t peripherals = (
+		(DMA_SOURCE_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
+		(DMA_DESTINATION_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT)
+	);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	memcpy(expected, matrix_source, sizeof(expected));
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			DMAC_CH_CONTROL_SB_SIZE_SZ_32 | DMAC_CH_CONTROL_DB_SIZE_SZ_16 |
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		peripherals | DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_SRC | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+	DMAC_SOFT_LBREQ = BIT(DMA_SOURCE_REQUEST);
+	stopwatch_usleep_wd(1000);
+	test_check("oversized last source burst waits for FIFO space",
+		(DMAC_SOFT_LBREQ & BIT(DMA_SOURCE_REQUEST)) != 0);
+	test_check("oversized last source burst fills FIFO",
+		(DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) != 0);
+	test_eq_u32("oversized last source burst initially reads one FIFO",
+		(uint32_t) matrix_source + 16, DMAC_CH_SRC_ADDR(DMA_CHANNEL));
+	memset(matrix_source, 0x5A, 16);
+
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("first destination burst drains oversized source burst",
+		wait_for_value(&DMAC_SOFT_BREQ, BIT(DMA_DESTINATION_REQUEST), 0));
+	test_eq_memory("first destination burst preserves captured data", expected, matrix_destination, 16);
+	test_check("oversized last source burst is acknowledged after refill",
+		wait_for_value(&DMAC_SOFT_LBREQ, BIT(DMA_SOURCE_REQUEST), 0));
+	test_eq_u32("completed source side exposes its final byte",
+		(uint32_t) matrix_source + 31, DMAC_CH_SRC_ADDR(DMA_CHANNEL));
+	memset(matrix_source + 16, 0x5A, 16);
+
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("second destination burst completes oversized source burst",
+		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_eq_memory("oversized last source burst preserves all captured data", expected,
+		matrix_destination, sizeof(expected));
+	test_eq_u32("completed oversized source burst keeps its final source byte",
+		(uint32_t) matrix_source + 31, DMAC_CH_SRC_ADDR(DMA_CHANNEL));
+	test_eq_u32("completed oversized source burst exposes its final destination byte",
+		(uint32_t) matrix_destination + 31, DMAC_CH_DST_ADDR(DMA_CHANNEL));
+	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+}
+
 static void test_registers(void) {
 	reset_dmac();
 
@@ -1066,7 +1623,7 @@ static void test_halt_and_lock(void) {
 		0,
 		(
 			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_LOCK | DMAC_CH_CONFIG_HALT
@@ -1114,7 +1671,7 @@ static void test_halt_and_lock(void) {
 		0,
 		(
 			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
@@ -1147,7 +1704,7 @@ static void test_halt_after_partial_transfer(void) {
 		0,
 		(
 			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
@@ -1181,6 +1738,85 @@ static void test_halt_after_partial_transfer(void) {
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 }
 
+static void test_halt_peripheral_controlled_transfer(void) {
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		PERIPHERAL_FC_CONTROL,
+		(DMA_DESTINATION_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("peripheral-controlled burst completes before HALT",
+		wait_for_value(&DMAC_SOFT_BREQ, BIT(DMA_DESTINATION_REQUEST), 0));
+	test_check("peripheral-controlled channel does not prefetch",
+		(DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0);
+	test_eq_u32("peripheral-controlled burst advances source by one burst",
+		(uint32_t) matrix_source + 4, DMAC_CH_SRC_ADDR(DMA_CHANNEL));
+	test_eq_memory("peripheral-controlled burst transfers one burst", matrix_source,
+		matrix_destination, 4);
+
+	DMAC_CH_CONFIG(DMA_CHANNEL) |= DMAC_CH_CONFIG_HALT;
+	memset(matrix_source + 4, 0x5A, 4);
+	DMAC_SOFT_BREQ = BIT(DMA_DESTINATION_REQUEST);
+	stopwatch_usleep_wd(1000);
+	test_check("HALT blocks the next peripheral-controlled request",
+		(DMAC_SOFT_BREQ & BIT(DMA_DESTINATION_REQUEST)) != 0);
+	test_eq_u32("HALT leaves the next destination byte unchanged", 0xA5, matrix_destination[4]);
+
+	DMAC_CH_CONFIG(DMA_CHANNEL) &= ~DMAC_CH_CONFIG_HALT;
+	test_check("peripheral-controlled request resumes after HALT",
+		wait_for_value(&DMAC_SOFT_BREQ, BIT(DMA_DESTINATION_REQUEST), 0));
+	test_eq_u32("resumed request reads source after HALT", 0x5A, matrix_destination[4]);
+	DMAC_CH_CONFIG(DMA_CHANNEL) = 0;
+}
+
+static void test_halt_drains_peripheral_controlled_fifo(void) {
+	uint8_t expected[sizeof(uint32_t)];
+
+	reset_dmac();
+	fill_matrix_buffers();
+	memcpy(expected, matrix_source, sizeof(expected));
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		(DMA_DESTINATION_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+	DMAC_SOFT_SREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("split source request completes before HALT",
+		wait_for_value(&DMAC_SOFT_SREQ, BIT(DMA_DESTINATION_REQUEST), 0));
+	test_check("split source item leaves data in FIFO",
+		(DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) != 0);
+	test_eq_u32("split source request transfers one destination byte", expected[0], matrix_destination[0]);
+
+	DMAC_CH_CONFIG(DMA_CHANNEL) |= DMAC_CH_CONFIG_HALT;
+	memset(matrix_source, 0x5A, sizeof(expected));
+	DMAC_SOFT_SREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("second destination request drains halted FIFO",
+		wait_for_value(&DMAC_SOFT_SREQ, BIT(DMA_DESTINATION_REQUEST), 0));
+	DMAC_SOFT_SREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("third destination request drains halted FIFO",
+		wait_for_value(&DMAC_SOFT_SREQ, BIT(DMA_DESTINATION_REQUEST), 0));
+	DMAC_SOFT_SREQ = BIT(DMA_DESTINATION_REQUEST);
+	test_check("fourth destination request drains halted FIFO",
+		wait_for_value(&DMAC_SOFT_SREQ, BIT(DMA_DESTINATION_REQUEST), 0));
+	test_check("drained peripheral-controlled FIFO becomes inactive",
+		(DMAC_CH_CONFIG(DMA_CHANNEL) & DMAC_CH_CONFIG_ACTIVE) == 0);
+	test_eq_memory("HALT drains the captured source item", expected, matrix_destination, sizeof(expected));
+	DMAC_CH_CONFIG(DMA_CHANNEL) = 0;
+}
+
 static void test_halt_while_waiting_for_source_request(void) {
 	reset_dmac();
 	fill_matrix_buffers();
@@ -1190,7 +1826,7 @@ static void test_halt_while_waiting_for_source_request(void) {
 		0,
 		(
 			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM
@@ -1231,8 +1867,8 @@ static void test_multiple_channels(void) {
 	DMAC_CH_LLI(0) = 0;
 	DMAC_CH_CONTROL(0) = (
 		128 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_16 |
-		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
 	DMAC_CH_CONFIG(0) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_ENABLE;
 
@@ -1241,8 +1877,8 @@ static void test_multiple_channels(void) {
 	DMAC_CH_LLI(7) = 0;
 	DMAC_CH_CONTROL(7) = (
 		128 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_16 |
-		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
 	DMAC_CH_CONFIG(7) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_ENABLE;
 
@@ -1265,8 +1901,8 @@ static void test_multiple_channels(void) {
 	DMAC_CH_LLI(0) = 0;
 	DMAC_CH_CONTROL(0) = (
 		32 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
-		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
 	DMAC_CH_CONFIG(0) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_ENABLE;
 	DMAC_CH_SRC_ADDR(7) = (uint32_t) (matrix_source + 4096);
@@ -1274,8 +1910,8 @@ static void test_multiple_channels(void) {
 	DMAC_CH_LLI(7) = 0;
 	DMAC_CH_CONTROL(7) = (
 		32 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
-		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
 	DMAC_CH_CONFIG(7) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_ENABLE;
 	VIC_CON(VIC_DMAC_CH0_IRQ) = 1;
@@ -1298,8 +1934,8 @@ static void test_all_channels(void) {
 		DMAC_CH_LLI(channel) = 0;
 		DMAC_CH_CONTROL(channel) = (
 			128 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_16 |
-			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-			DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+			DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		);
 		DMAC_CH_CONFIG(channel) = (
 			DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_TC |
@@ -1330,8 +1966,8 @@ static void test_lli(void) {
 	lli.next = 0;
 	lli.control = (
 		8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
-		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
 
 	start_transfer(
@@ -1340,7 +1976,7 @@ static void test_lli(void) {
 		(uint32_t) &lli,
 		(
 			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_TC
@@ -1379,10 +2015,19 @@ static void test_endian_lli(const char *name, uint32_t lli_master, uint32_t glob
 		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | data_master |
 		DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
-	endian_lli.src = __builtin_bswap32((uint32_t) (matrix_source + 16));
-	endian_lli.dst = __builtin_bswap32((uint32_t) (matrix_destination + 16));
-	endian_lli.next = 0;
-	endian_lli.control = __builtin_bswap32(control);
+#ifdef PMB8875
+	endian_lli = (struct dmac_lli) {
+		.src = (uint32_t) (matrix_source + 16),
+		.dst = (uint32_t) (matrix_destination + 16),
+		.control = control,
+	};
+#else
+	endian_lli = (struct dmac_lli) {
+		.src = __builtin_bswap32((uint32_t) (matrix_source + 16)),
+		.dst = __builtin_bswap32((uint32_t) (matrix_destination + 16)),
+		.control = __builtin_bswap32(control),
+	};
+#endif
 
 	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) matrix_source;
 	DMAC_CH_DST_ADDR(DMA_CHANNEL) = (uint32_t) matrix_destination;
@@ -1397,17 +2042,19 @@ static void test_endian_lli(const char *name, uint32_t lli_master, uint32_t glob
 
 static void test_lli_endianness(void) {
 	test_endian_lli(
-		"LLI loads through big-endian AHB1",
+		ENDIAN_LLI_AHB1_NAME,
 		DMAC_CH_LLI_LM_AHB1,
 		DMAC_CONFIG_M1_BE,
-		DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2
+		ENDIAN_LLI_AHB1_DATA_MASTER
 	);
+#ifndef PMB8875
 	test_endian_lli(
 		"LLI loads through big-endian AHB2",
 		DMAC_CH_LLI_LM_AHB2,
 		DMAC_CONFIG_M2_BE,
 		DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1
 	);
+#endif
 }
 
 static void test_lli_alignment(void) {
@@ -1427,7 +2074,7 @@ static void test_lli_alignment(void) {
 		uint32_t control = (
 			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
 			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-			DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI
 		);
 		uint32_t *item = &lli_alignment_storage[cases[i].offset];
@@ -1459,8 +2106,8 @@ static void test_lli_interrupts(void) {
 		.next = (uint32_t) &lli_chain[1],
 		.control = (
 			16 | DMAC_CH_CONTROL_SB_SIZE_SZ_16 | DMAC_CH_CONTROL_DB_SIZE_SZ_16 |
-			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 |
-			DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB1 |
+			DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 	};
 	lli_chain[1] = (struct dmac_lli) {
@@ -1469,8 +2116,8 @@ static void test_lli_interrupts(void) {
 		.next = (uint32_t) &lli_chain[2],
 		.control = (
 			8 | DMAC_CH_CONTROL_SB_SIZE_SZ_8 | DMAC_CH_CONTROL_DB_SIZE_SZ_8 |
-			DMAC_CH_CONTROL_S_WIDTH_WORD | DMAC_CH_CONTROL_D_WIDTH_WORD | DMAC_CH_CONTROL_S_AHB2 |
-			DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI
+			DMAC_CH_CONTROL_S_WIDTH_WORD | DMAC_CH_CONTROL_D_WIDTH_WORD | DMAC_CH_CONTROL_S_AHB1 |
+			DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI
 		),
 	};
 	lli_chain[2] = (struct dmac_lli) {
@@ -1479,8 +2126,8 @@ static void test_lli_interrupts(void) {
 		.next = 0,
 		.control = (
 			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
-			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
-			DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+			DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 	};
 
@@ -1493,7 +2140,7 @@ static void test_lli_interrupts(void) {
 		(uint32_t) &lli_chain[0],
 		(
 			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_INT_MASK_TC
@@ -1539,7 +2186,7 @@ static void test_interrupt(void) {
 		0,
 		(
 			4 | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_WIDTH_DWORD |
-			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC
@@ -1567,8 +2214,8 @@ static void test_sreq_behavior(void) {
 	DMAC_CH_LLI(0) = 0;
 	DMAC_CH_CONTROL(0) = (
 		1 | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
-		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 |
-		DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB1 |
+		DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
 	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
 	DMAC_CH_CONFIG(0) = (
@@ -1582,7 +2229,7 @@ static void test_sreq_behavior(void) {
 		0,
 		(
 			1 | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 | DMAC_CH_CONTROL_S_WIDTH_BYTE |
-			DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
 			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 		),
 		(1 << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER
@@ -1600,6 +2247,33 @@ static void test_sreq_behavior(void) {
 	test_eq_u32("MEM2PER SREQ leaves destination unchanged", 0xA5, matrix_destination[0]);
 	test_eq_u32("PER2MEM SREQ transfers data", matrix_source[16], matrix_destination[16]);
 	test_check("pending SREQ has no DMA error", (DMAC_RAW_ERR_STATUS & (BIT(0) | BIT(DMA_CHANNEL))) == 0);
+}
+
+static void test_ahb2_integration(void) {
+	reset_dmac();
+	clear_destination();
+	start_transfer(
+		(uint32_t) source,
+		(uint32_t) destination,
+		0,
+		(
+			ARRAY_SIZE(source) | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB2 |
+			DMAC_CH_CONTROL_D_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM
+	);
+
+	bool completed = wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL));
+#ifdef PMB8875
+	test_check("AHB2 memory transfer remains pending", !completed);
+	test_eq_u32("AHB2 transfer count remains unchanged", ARRAY_SIZE(source),
+		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+	test_eq_u32("AHB2 destination remains unchanged", 0xDEADBEEF, destination[0]);
+#else
+	test_check("AHB2 memory transfer completes", completed);
+	test_eq_memory("AHB2 memory transfer data", source, destination, sizeof(source));
+#endif
 }
 
 int main(void) {
@@ -1621,11 +2295,18 @@ int main(void) {
 	test_category("Endianness");
 	test_endianness();
 	test_endian_matrix();
+	test_paced_endianness();
 
 	test_category("Software requests and flow control");
 	test_software_requests();
-	test_request_selectors();
 	test_request_selector_isolation();
+	test_request_burst_sizes();
+	test_mem2per_fifo_pacing();
+	test_per2mem_fifo_pacing();
+	test_peripheral_flow_widths();
+	test_destination_flow_narrow_tail();
+	test_request_tails();
+	test_fifo_byte_capacity();
 
 	test_memory_peripheral_fc(
 		"Peripheral FC: memory to peripheral", DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER, DMA_DESTINATION_REQUEST
@@ -1635,10 +2316,13 @@ int main(void) {
 	);
 	test_peripheral_fc_per2per_destination();
 	test_peripheral_fc_per2per_source();
+	test_peripheral_fc_large_last_source_burst();
 
 	test_category("Channel control and arbitration");
 	test_halt_and_lock();
 	test_halt_after_partial_transfer();
+	test_halt_peripheral_controlled_transfer();
+	test_halt_drains_peripheral_controlled_fifo();
 	test_halt_while_waiting_for_source_request();
 	test_multiple_channels();
 	test_all_channels();
@@ -1654,6 +2338,7 @@ int main(void) {
 
 	test_category("Known hardware behavior");
 	test_sreq_behavior();
+	test_ahb2_integration();
 
 	return test_finish();
 }
