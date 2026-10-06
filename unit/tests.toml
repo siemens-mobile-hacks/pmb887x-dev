@@ -388,10 +388,10 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 devices = ["generic-pmb8876"]
 
 [sim-card]
-devices = ["generic-pmb8876"]
+devices = ["panasonic-vs7", "generic-pmb8876"]
 
 [sim-card-dma]
-devices = ["generic-pmb8876"]
+devices = ["panasonic-vs7", "generic-pmb8876"]
 
 [sim-card-timers]
 devices = ["generic-pmb8876"]

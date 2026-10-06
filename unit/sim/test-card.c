@@ -1,6 +1,11 @@
 #include <pmb887x.h>
+#if defined(BOARD_HAS_PMIC_PMB6812)
+#include <pmic/PMB6812.h>
+#elif defined(BOARD_HAS_PMIC_D1094XX)
 #include <pmic/PASIC.h>
+#endif
 
+#include "dmac.h"
 #include "i2c.h"
 #include "test.h"
 
@@ -16,13 +21,12 @@
 #define SIM_TEST_NAME "SIM card"
 #endif
 
-#ifdef PMB8876
-
 #define SIM_IRQ_MASK (SIM_IMSC_ERR | SIM_IMSC_IN | SIM_IMSC_OK)
 #define SIM_MAX_ATR_SIZE 64
 #define SIM_MAX_APDU_DATA 256
 #define SIM_DMA_CHANNEL 0
-#define SIM_DMA_REQUEST 8
+// CX75 and EL71 firmware use privileged DMA accesses with a four-byte memory burst for SIM.
+#define SIM_DMA_PROTECTION_PRIVILEGED (1 << DMAC_CH_CONTROL_PROTECTION_SHIFT)
 
 struct apdu_response {
 	uint8_t data[SIM_MAX_APDU_DATA];
@@ -109,12 +113,45 @@ static bool sim_receive_procedure(uint8_t *value) {
 	return true;
 }
 
-static bool sim_power_on(uint8_t atr[SIM_MAX_ATR_SIZE], size_t *atr_size) {
+static bool sim_supply_set(bool enabled) {
+#if defined(BOARD_HAS_PMIC_PMB6812)
+	uint8_t control;
+
+	if (!i2c_smbus_read_byte(PMB6812_I2C_ADDR, PMB6812_PWCTRL5, &control))
+		return false;
+	control &= ~PMB6812_PWCTRL5_LSIMMD;
+	control |= (enabled ? PMB6812_PWCTRL5_LSIMMD_ON : PMB6812_PWCTRL5_LSIMMD_OFF);
+	const uint8_t command[] = {
+		PMB6812_PWCTRL5,
+		control,
+	};
+
+	return i2c_smbus_write_pec_confirmed(PMB6812_I2C_ADDR, command, ARRAY_SIZE(command));
+#elif defined(BOARD_HAS_PMIC_D1094XX)
 	uint8_t supply_enable;
 
+	if (!i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, &supply_enable))
+		return false;
+	if (enabled)
+		supply_enable |= PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
+	else
+		supply_enable &= ~PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
+
+	return i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, supply_enable);
+#else
+	(void) enabled;
+	return true;
+#endif
+}
+
+static bool sim_power_on(uint8_t atr[SIM_MAX_ATR_SIZE], size_t *atr_size) {
 	i2c_init();
 
+#ifdef PMB8875
+	SIM_CLC = 1 << MOD_CLC_RMC_SHIFT;
+#else
 	SIM_CLC = 4 << MOD_CLC_RMC_SHIFT;
+#endif
 	SIM_CON = 0;
 	SIM_BRF = 0x5D;
 	SIM_RXSPC = 0x28;
@@ -122,15 +159,13 @@ static bool sim_power_on(uint8_t atr[SIM_MAX_ATR_SIZE], size_t *atr_size) {
 	SIM_IMSC = 0;
 	SIM_ICR = SIM_IRQ_MASK;
 	SIM_CON = SIM_CON_SIMEN;
-	if (!i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, &supply_enable))
-		return false;
-	supply_enable |= PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
-	if (!i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, supply_enable))
+	if (!sim_supply_set(true))
 		return false;
 	GPIO_PIN(GPIO_I2C_SCL) = 0x1211;
 	GPIO_PIN(GPIO_I2C_SDA) = 0x1211;
 
 	delay_ms(255);
+	SIM_CON |= SIM_CON_SIMVCC;
 	SIM_CON |= SIM_CON_SIMIOL | SIM_CON_ERROFF;
 	SIM_CON |= SIM_CON_SIMON;
 	delay_ms(100);
@@ -148,18 +183,13 @@ static bool sim_power_on(uint8_t atr[SIM_MAX_ATR_SIZE], size_t *atr_size) {
 }
 
 static void sim_power_off(void) {
-	uint8_t supply_enable;
-
 	SIM_DMAE = 0;
 	SIM_CON = 0;
 	SIM_IRQEN = 0;
 	SIM_ICR = SIM_IRQ_MASK;
 
 	i2c_init();
-	if (!i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, &supply_enable))
-		return;
-	supply_enable &= ~PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
-	i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, supply_enable);
+	sim_supply_set(false);
 }
 
 #ifdef SIM_HARDWARE_T0
@@ -179,19 +209,19 @@ static bool sim_hardware_t0_select_dma(void) {
 		.destination = (uint32_t) &SIM_TXB,
 		.next = 0,
 		.control = (
-			ARRAY_SIZE(T0_SELECT_MF) | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			ARRAY_SIZE(T0_SELECT_MF) | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
 			DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-			DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+			SIM_DMA_TX_AHB | DMAC_CH_CONTROL_SI | SIM_DMA_PROTECTION_PRIVILEGED | DMAC_CH_CONTROL_I
 		),
 	};
 	DMAC_CH_LLI(SIM_DMA_CHANNEL) = (uint32_t) &t0_data_lli;
 	DMAC_CH_CONTROL(SIM_DMA_CHANNEL) = (
-		ARRAY_SIZE(T0_HEADER) | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+		ARRAY_SIZE(T0_HEADER) | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
 		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-		DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+		SIM_DMA_TX_AHB | DMAC_CH_CONTROL_SI | SIM_DMA_PROTECTION_PRIVILEGED
 	);
 	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) = (
-		(SIM_DMA_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		(SIM_DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_INT_MASK_ERR |
 		DMAC_CH_CONFIG_INT_MASK_TC
 	);
@@ -243,13 +273,13 @@ static bool sim_hardware_t0_getresponse_dma(uint8_t length, struct apdu_response
 	DMAC_CH_DST_ADDR(SIM_DMA_CHANNEL) = (uint32_t) &SIM_TXB;
 	DMAC_CH_LLI(SIM_DMA_CHANNEL) = 0;
 	DMAC_CH_CONTROL(SIM_DMA_CHANNEL) = (
-		ARRAY_SIZE(t0_getresp_header) | DMAC_CH_CONTROL_SB_SIZE_SZ_1 |
+		ARRAY_SIZE(t0_getresp_header) | DMAC_CH_CONTROL_SB_SIZE_SZ_4 |
 		DMAC_CH_CONTROL_DB_SIZE_SZ_1 | DMAC_CH_CONTROL_S_WIDTH_BYTE |
-		DMAC_CH_CONTROL_D_WIDTH_BYTE | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI |
-		DMAC_CH_CONTROL_I
+		DMAC_CH_CONTROL_D_WIDTH_BYTE | SIM_DMA_TX_AHB | DMAC_CH_CONTROL_SI |
+		SIM_DMA_PROTECTION_PRIVILEGED | DMAC_CH_CONTROL_I
 	);
 	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) = (
-		(SIM_DMA_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		(SIM_DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_INT_MASK_ERR |
 		DMAC_CH_CONFIG_INT_MASK_TC
 	);
@@ -277,12 +307,12 @@ static bool sim_hardware_t0_getresponse_dma(uint8_t length, struct apdu_response
 	DMAC_CH_DST_ADDR(SIM_DMA_CHANNEL) = (uint32_t) response->data;
 	DMAC_CH_LLI(SIM_DMA_CHANNEL) = 0;
 	DMAC_CH_CONTROL(SIM_DMA_CHANNEL) = (
-		length | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+		length | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
 		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-		DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		SIM_DMA_RX_AHB | DMAC_CH_CONTROL_DI | SIM_DMA_PROTECTION_PRIVILEGED | DMAC_CH_CONTROL_I
 	);
 	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) = (
-		(SIM_DMA_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
+		(SIM_DMA_RX_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) |
 		DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM_PER | DMAC_CH_CONFIG_INT_MASK_ERR |
 		DMAC_CH_CONFIG_INT_MASK_TC | DMAC_CH_CONFIG_ENABLE
 	);
@@ -321,12 +351,12 @@ static uint32_t sim_probe_character_timer(uint32_t ticks, uint32_t *elapsed_us) 
 	DMAC_CH_DST_ADDR(SIM_DMA_CHANNEL) = (uint32_t) &SIM_TXB;
 	DMAC_CH_LLI(SIM_DMA_CHANNEL) = 0;
 	DMAC_CH_CONTROL(SIM_DMA_CHANNEL) = (
-		ARRAY_SIZE(T0_HEADER) | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+		ARRAY_SIZE(T0_HEADER) | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
 		DMAC_CH_CONTROL_S_WIDTH_BYTE | DMAC_CH_CONTROL_D_WIDTH_BYTE |
-		DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+		SIM_DMA_TX_AHB | DMAC_CH_CONTROL_SI | SIM_DMA_PROTECTION_PRIVILEGED | DMAC_CH_CONTROL_I
 	);
 	DMAC_CH_CONFIG(SIM_DMA_CHANNEL) = (
-		(SIM_DMA_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		(SIM_DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
 		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_INT_MASK_ERR |
 		DMAC_CH_CONFIG_INT_MASK_TC
 	);
@@ -662,6 +692,8 @@ int main(void) {
 	struct apdu_response response;
 
 	test_start(SIM_TEST_NAME);
+	dmac_request_select(SIM_DMA_TX_REQUEST, SIM_DMA_TX_SELECT);
+	dmac_request_select(SIM_DMA_RX_REQUEST, SIM_DMA_RX_SELECT);
 	test_category("Reset values");
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, SIM_CLC);
 	test_module_id("ID", 0xF000C032, SIM_ID);
@@ -717,9 +749,6 @@ int main(void) {
 		(unsigned int) timer_status);
 	test_check("CHTIMER expires while T=0 waits for the next character",
 		(timer_status & SIM_STAT_CHTIMEOUT) != 0);
-
-	test_category("Block waiting timer");
-	test_skip("BWT timeout", "requires a T=1 card or card emulator");
 	goto done;
 #endif
 
@@ -798,14 +827,3 @@ done:
 	sim_power_off();
 	return test_finish();
 }
-
-#else
-
-int main(void) {
-	test_start(SIM_TEST_NAME);
-	test_skip(SIM_TEST_NAME, "is only available on PMB8876");
-
-	return test_finish();
-}
-
-#endif
