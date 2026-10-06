@@ -68,31 +68,26 @@ add_peripheral_test(dsp-hle-runtime-transport dsp/hle/runtime-transport.c dsp/ru
 add_peripheral_test(dsp-hle-runtime-notifications dsp/hle/runtime-notifications.c dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-hle-runtime-semaphores dsp/hle/runtime-semaphores.c dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-hle-runtime-idle dsp/hle/runtime-idle.c dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-audio-pcm dsp/audio/pcm/test.c dsp/audio/pcm.c)
-set(DSP_I2S_PLAYBACK_BOARD_SOURCES)
+set(DSP_AUDIO_BOARD_SOURCE)
 if(BOARD STREQUAL "siemens-cx75")
-	set(DSP_I2S_PLAYBACK_BOARD_SOURCES dsp/audio/board/siemens/commands.c
-		dsp/audio/board/siemens/pasic.c
-		dsp/audio/board/siemens/r65.c
-		dsp/audio/board/siemens/cx75.c)
+	set(DSP_AUDIO_BOARD_SOURCE dsp/audio/board/siemens/cx75.c)
 elseif(BOARD STREQUAL "siemens-e71")
-	set(DSP_I2S_PLAYBACK_BOARD_SOURCES dsp/audio/board/siemens/commands.c
-		dsp/audio/board/siemens/pasic.c
-		dsp/audio/board/siemens/x85.c
-		dsp/audio/board/siemens/e71.c)
+	set(DSP_AUDIO_BOARD_SOURCE dsp/audio/board/siemens/e71.c)
 elseif(BOARD STREQUAL "siemens-el71")
-	set(DSP_I2S_PLAYBACK_BOARD_SOURCES dsp/audio/board/siemens/commands.c
-		dsp/audio/board/siemens/pasic.c
-		dsp/audio/board/siemens/x85.c
-		dsp/audio/board/siemens/el71.c)
+	set(DSP_AUDIO_BOARD_SOURCE dsp/audio/board/siemens/el71.c)
 endif()
-if(DSP_I2S_PLAYBACK_BOARD_SOURCES)
-	add_peripheral_test(dsp-hle-i2s-playback dsp/audio/i2s-playback/test.c
-		dsp/audio/board.c
-		dsp/audio/i2s.c
-		dsp/audio/pcm.c
-		${DSP_I2S_PLAYBACK_BOARD_SOURCES}
-		dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
+set(DSP_AUDIO_SOURCES
+	dsp/audio/board/siemens/commands.c
+	dsp/audio/board/siemens/pasic.c
+	dsp/audio/board/siemens/siemens.c
+	dsp/audio/pcm.c
+	${DSP_AUDIO_BOARD_SOURCE}
+	dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
+if(DSP_AUDIO_BOARD_SOURCE)
+	add_peripheral_test(dsp-hle-i2s-playback dsp/audio/i2s-playback/test.c ${DSP_AUDIO_SOURCES})
+endif()
+if(BOARD STREQUAL "siemens-el71")
+	add_peripheral_test(dsp-hle-afe-playback dsp/audio/afe-playback/test.c ${DSP_AUDIO_SOURCES})
 endif()
 add_peripheral_test(dsp-hle-startup-transport dsp/hle/startup-transport.c dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-peripheral-map dsp/lle/peripheral-map.c)

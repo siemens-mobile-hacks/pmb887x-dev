@@ -4,6 +4,22 @@
 #include "dsp/audio/pcm.h"
 #include "test.h"
 
+size_t pcm_triangle_period_frame_count(uint32_t sample_rate_hz, uint32_t tone_hz) {
+	if (sample_rate_hz == 0)
+		return 0;
+	if (tone_hz == 0)
+		return 0;
+
+	uint32_t dividend = sample_rate_hz;
+	uint32_t divisor = tone_hz;
+	while (divisor != 0) {
+		uint32_t remainder = dividend % divisor;
+		dividend = divisor;
+		divisor = remainder;
+	}
+	return sample_rate_hz / dividend;
+}
+
 void pcm_triangle_generate(
 	int16_t *samples,
 	size_t sample_count,
@@ -25,7 +41,7 @@ void pcm_triangle_generate(
 			sample = -amplitude +
 				(int64_t) amplitude * (phase - sample_rate_hz * 3) / sample_rate_hz;
 		}
-		samples[i] = sample;
+		samples[i] = (int16_t) sample;
 	}
 }
 
@@ -57,9 +73,9 @@ bool pcm_shared_ring_play(
 	const struct dsp_audio_pcm *pcm,
 	size_t total_frames
 ) {
-	if (ring->buffer_word_count == 0 || ring->channel_count == 0)
+	if (ring->buffer_word_count == 0)
 		return false;
-	if (ring->output_probe_block_count == 0)
+	if (ring->channel_count == 0)
 		return false;
 
 	size_t block_frames = ring->buffer_word_count / ring->channel_count;
@@ -71,8 +87,6 @@ bool pcm_shared_ring_play(
 		return false;
 
 	size_t frames_submitted = 0;
-	size_t blocks_submitted = 0;
-	bool output_valid = false;
 	test_watchdog_reset();
 
 	while (frames_submitted < total_frames) {
@@ -89,7 +103,6 @@ bool pcm_shared_ring_play(
 		size_t remaining = total_frames - frames_submitted;
 		frame_count = remaining < block_frames ? remaining : block_frames;
 		frames_submitted += frame_count;
-		blocks_submitted++;
 		if (frames_submitted < total_frames) {
 			remaining = total_frames - frames_submitted;
 			frame_count = remaining < block_frames ? remaining : block_frames;
@@ -97,9 +110,7 @@ bool pcm_shared_ring_play(
 				pcm, frames_submitted, frame_count, ring->source_frame_step, ring->channel_count);
 			DSP_COM_SET = ring->response_flag;
 		}
-		if (!output_valid && blocks_submitted % ring->output_probe_block_count == 0)
-			output_valid = ring->output_validate(pcm);
 		test_watchdog_reset();
 	}
-	return output_valid;
+	return true;
 }

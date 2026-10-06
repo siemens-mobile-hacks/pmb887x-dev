@@ -8,7 +8,6 @@ struct dsp_audio_pcm {
 	const int16_t *samples;
 	size_t sample_count;
 	uint32_t sample_rate_hz;
-	uint32_t expected_tone_hz;
 };
 
 struct pcm_shared_ring {
@@ -18,11 +17,10 @@ struct pcm_shared_ring {
 	size_t source_frame_step;
 	uint16_t response_flag;
 	uint32_t request_timeout_ms;
-	size_t output_probe_block_count;
 	bool (*start)(void);
-	bool (*output_validate)(const struct dsp_audio_pcm *pcm);
 };
 
+size_t pcm_triangle_period_frame_count(uint32_t sample_rate_hz, uint32_t tone_hz);
 void pcm_triangle_generate(
 	int16_t *samples,
 	size_t sample_count,

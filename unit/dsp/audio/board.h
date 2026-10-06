@@ -6,11 +6,20 @@
 
 #include "dsp/audio/pcm.h"
 
-bool dsp_audio_mask_is_supported(const uint16_t *mask_ids, size_t mask_id_count, uint16_t mask_id);
-const char *dsp_audio_board_get_name(void);
-uint32_t dsp_audio_board_get_sample_rate_hz(void);
-bool dsp_audio_board_clocks_configure(void);
-bool dsp_audio_board_supports_mask_rom(uint16_t mask_id);
-bool dsp_audio_board_play(const struct dsp_audio_pcm *pcm, size_t total_frames, size_t *frames_played);
-bool dsp_audio_board_stop(void);
-bool dsp_audio_board_output_is_muted(void);
+enum audio_output {
+	AUDIO_OUTPUT_I2S,
+	AUDIO_OUTPUT_AFE,
+};
+
+const char *audio_board_get_name(void);
+bool audio_board_configure_clocks(void);
+bool audio_board_has_mask_rom(uint16_t mask_id);
+uint32_t audio_output_get_rate_hz(enum audio_output output);
+bool audio_output_configure(enum audio_output output);
+bool audio_output_play(
+	enum audio_output output,
+	const struct dsp_audio_pcm *pcm,
+	size_t total_frames,
+	size_t *frames_played
+);
+bool audio_output_stop(enum audio_output output);

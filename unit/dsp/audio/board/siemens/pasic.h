@@ -1,7 +1,15 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+
+#include "test.h"
+
+/* Real phones play quietly; QEMU output is checked at full scale. */
+#ifndef PASIC_OUTPUT_GAIN_PERCENT
+#define PASIC_OUTPUT_GAIN_PERCENT (test_is_qemu() ? 100 : 1)
+#endif
 
 enum pasic_amplifier_path {
 	PASIC_AMPLIFIER_PATH_0,
@@ -17,10 +25,13 @@ enum pasic_amplifier_path {
 };
 
 enum pasic_push_pull_path {
-	PASIC_PUSH_PULL_PATH_A = 10,
+	PASIC_PUSH_PULL_PATH_A,
 	PASIC_PUSH_PULL_PATH_B,
 	PASIC_PUSH_PULL_PATH_C,
 	PASIC_PUSH_PULL_PATH_D,
+};
+
+enum pasic_push_pull_route {
 	PASIC_PUSH_PULL_ROUTE_1,
 	PASIC_PUSH_PULL_ROUTE_2,
 };
@@ -33,33 +44,51 @@ enum pasic_switch_mux_path {
 	PASIC_SWITCH_MUX_PATH_5,
 };
 
-bool pasic_initialize(void);
-bool pasic_output_enable(
+enum pasic_line_route {
+	PASIC_LINE_ROUTE_DISABLED,
+	PASIC_LINE_ROUTE_MONO,
+	PASIC_LINE_ROUTE_DIFFERENTIAL_STEREO,
+};
+
+enum pasic_mono_route {
+	PASIC_MONO_ROUTE_DISABLED,
+	PASIC_MONO_ROUTE_DAC,
+};
+
+enum pasic_stereo_route {
+	PASIC_STEREO_ROUTE_DISABLED,
+	PASIC_STEREO_ROUTE_DAC,
+};
+
+struct pasic_gain_table {
+	const uint8_t *codes;
+	size_t code_count;
+};
+
+bool pasic_detect(void);
+void pasic_register_write(uint8_t reg, uint8_t value);
+void pasic_output_enable(
 	uint8_t supply_mode_mask,
 	uint8_t supply_1_mask,
 	uint8_t supply_2_mask,
 	uint32_t supply_settle_ms
 );
-bool pasic_supply_mode_set(uint8_t value);
-bool pasic_supply_enable_1_set(uint8_t value);
-bool pasic_supply_enable_2_set(uint8_t value);
-bool pasic_light_control_set(uint8_t value);
-bool pasic_audio_controls_reset(void);
+void pasic_audio_controls_reset(void);
 bool pasic_amplifier_gain_set(enum pasic_amplifier_path path, uint8_t gain);
+bool pasic_output_gain_percent_set(
+	enum pasic_amplifier_path path,
+	const struct pasic_gain_table *table,
+	uint8_t percent
+);
 bool pasic_push_pull_configure(
 	enum pasic_push_pull_path path,
 	bool enabled,
 	uint8_t source
 );
-bool pasic_switch_mux_set(enum pasic_switch_mux_path path, uint8_t value);
-bool pasic_mux_input_set(uint8_t value);
+bool pasic_push_pull_route_set(enum pasic_push_pull_route route, uint8_t source);
+bool pasic_mono_route_set(enum pasic_mono_route route);
+bool pasic_stereo_route_set(enum pasic_stereo_route route);
+bool pasic_line_route_set(enum pasic_line_route route);
+bool pasic_switch_mux_raw_set(enum pasic_switch_mux_path path, uint8_t value);
 bool pasic_adc_sample_rate_set(uint8_t code);
 bool pasic_dac_sample_rate_set(uint8_t code);
-bool pasic_stereo_mode_set(uint8_t value);
-bool pasic_mono_control_set(uint8_t value);
-bool pasic_stereo_control_set(uint8_t value);
-bool pasic_adc_control_set(uint8_t value);
-bool pasic_dac_control_set(uint8_t value);
-bool pasic_i2s_rx_control_set(uint8_t value);
-bool pasic_i2s_tx_control_set(uint8_t value);
-bool pasic_output_is_muted(void);

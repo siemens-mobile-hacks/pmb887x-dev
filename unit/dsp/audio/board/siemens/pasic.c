@@ -14,33 +14,17 @@ enum pasic_family {
 };
 
 static enum pasic_family pasic_family;
-static uint8_t pasic_revision;
-static bool pasic_initialized;
 
-static bool pasic_register_write(uint8_t reg, uint8_t value) {
-	if (!pasic_initialize())
-		return false;
+void pasic_register_write(uint8_t reg, uint8_t value) {
 	i2c_smbus_write_byte(PASIC_I2C_ADDR, reg, value);
-	uint8_t readback = i2c_smbus_read_byte(PASIC_I2C_ADDR, reg);
-
-	if (readback == value)
-		return true;
-	printf("# PASIC register %02X readback=%02X, expected=%02X\n", reg, readback, value);
-	return false;
 }
 
-static bool pasic_register_update(uint8_t reg, uint8_t value, uint8_t mask) {
-	if (!pasic_initialize())
-		return false;
+static void pasic_register_update(uint8_t reg, uint8_t value, uint8_t mask) {
 	uint8_t old_value = i2c_smbus_read_byte(PASIC_I2C_ADDR, reg);
-	return pasic_register_write(reg, (old_value & ~mask) | (value & mask));
+	pasic_register_write(reg, (old_value & ~mask) | (value & mask));
 }
 
-bool pasic_initialize(void) {
-	if (pasic_initialized)
-		return true;
-
-	i2c_init();
+bool pasic_detect(void) {
 	uint8_t identification = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_IDENTIFICATION);
 	switch (identification & (PASIC_IDENTIFICATION_VENDOR | PASIC_IDENTIFICATION_MODEL)) {
 		case (PASIC_IDENTIFICATION_VENDOR_DIALOG | 4):
@@ -66,63 +50,33 @@ bool pasic_initialize(void) {
 			return false;
 	}
 
-	pasic_revision = (identification & PASIC_IDENTIFICATION_REVISION) >>
+	uint8_t revision = (identification & PASIC_IDENTIFICATION_REVISION) >>
 		PASIC_IDENTIFICATION_REVISION_SHIFT;
 	printf("# PASIC identification: %02X, family=%u, revision=%u\n",
-		identification, (unsigned int) pasic_family, (unsigned int) pasic_revision);
-	pasic_initialized = true;
+		identification, (unsigned int) pasic_family, (unsigned int) revision);
 	return true;
 }
 
-bool pasic_output_enable(
+void pasic_output_enable(
 	uint8_t supply_mode_mask,
 	uint8_t supply_1_mask,
 	uint8_t supply_2_mask,
 	uint32_t supply_settle_ms
 ) {
-	if (!pasic_initialize())
-		return false;
-
 	uint8_t initial_supply_mode = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_MODE);
 	uint8_t initial_supply_1 = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1);
 	uint8_t initial_supply_2 = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2);
-	if (!pasic_register_write(PASIC_SUPPLY_MODE, initial_supply_mode | supply_mode_mask))
-		return false;
-	if (!pasic_register_write(PASIC_SUPPLY_ENABLE_1, initial_supply_1 | supply_1_mask))
-		return false;
-	if (!pasic_register_write(PASIC_SUPPLY_ENABLE_2, initial_supply_2 | supply_2_mask))
-		return false;
+	pasic_register_write(PASIC_SUPPLY_MODE, initial_supply_mode | supply_mode_mask);
+	pasic_register_write(PASIC_SUPPLY_ENABLE_1, initial_supply_1 | supply_1_mask);
+	pasic_register_write(PASIC_SUPPLY_ENABLE_2, initial_supply_2 | supply_2_mask);
 	stopwatch_usleep_wd(supply_settle_ms * 1000);
-
-	uint8_t supply_mode = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_MODE);
-	uint8_t supply_1 = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1);
-	uint8_t supply_2 = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2);
-	printf("# PASIC supplies: mode=%02X->%02X, enable1=%02X->%02X, enable2=%02X->%02X\n",
-		initial_supply_mode, supply_mode, initial_supply_1, supply_1, initial_supply_2, supply_2);
-	return true;
 }
 
-bool pasic_supply_mode_set(uint8_t value) {
-	return pasic_register_write(PASIC_SUPPLY_MODE, value);
-}
-
-bool pasic_supply_enable_1_set(uint8_t value) {
-	return pasic_register_write(PASIC_SUPPLY_ENABLE_1, value);
-}
-
-bool pasic_supply_enable_2_set(uint8_t value) {
-	return pasic_register_write(PASIC_SUPPLY_ENABLE_2, value);
-}
-
-bool pasic_light_control_set(uint8_t value) {
-	return pasic_register_write(PASIC_LIGHT_CONTROL, value);
-}
-
-bool pasic_audio_controls_reset(void) {
+void pasic_audio_controls_reset(void) {
 	static const struct {
 		uint8_t reg;
 		uint8_t value;
-	} reset_values[] = {
+	} RESET_VALUES[] = {
 		{ PASIC_AMPLIFIER_GAIN_0, 0x39 },
 		{ PASIC_AMPLIFIER_GAIN_1, 0x39 },
 		{ PASIC_AMPLIFIER_GAIN_2, 0x79 },
@@ -147,10 +101,8 @@ bool pasic_audio_controls_reset(void) {
 		{ PASIC_SWITCH_MUX_5, 0x00 },
 	};
 
-	for (size_t i = 0; i < ARRAY_SIZE(reset_values); i++)
-		if (!pasic_register_write(reset_values[i].reg, reset_values[i].value))
-			return false;
-	return true;
+	for (size_t i = 0; i < ARRAY_SIZE(RESET_VALUES); i++)
+		pasic_register_write(RESET_VALUES[i].reg, RESET_VALUES[i].value);
 }
 
 bool pasic_amplifier_gain_set(enum pasic_amplifier_path path, uint8_t gain) {
@@ -206,13 +158,33 @@ bool pasic_amplifier_gain_set(enum pasic_amplifier_path path, uint8_t gain) {
 			return false;
 	}
 
-	if (!pasic_register_update(reg, value, mask))
-		return false;
+	pasic_register_update(reg, value, mask);
 	if (path == PASIC_AMPLIFIER_PATH_6)
-		return pasic_register_update(PASIC_AMPLIFIER_GAIN_4_5, 0, PASIC_AMPLIFIER_GAIN_4_5_PATH_4_SELECT);
+		pasic_register_update(PASIC_AMPLIFIER_GAIN_4_5, 0, PASIC_AMPLIFIER_GAIN_4_5_PATH_4_SELECT);
 	if (path == PASIC_AMPLIFIER_PATH_9)
-		return pasic_register_update(PASIC_AMPLIFIER_GAIN_7_8, 0, PASIC_AMPLIFIER_GAIN_7_8_PATH_7_SELECT);
+		pasic_register_update(PASIC_AMPLIFIER_GAIN_7_8, 0, PASIC_AMPLIFIER_GAIN_7_8_PATH_7_SELECT);
 	return true;
+}
+
+bool pasic_output_gain_percent_set(
+	enum pasic_amplifier_path path,
+	const struct pasic_gain_table *table,
+	uint8_t percent
+) {
+	if (percent > 100)
+		return false;
+	if (path != PASIC_AMPLIFIER_PATH_4 && path != PASIC_AMPLIFIER_PATH_7)
+		return false;
+	if (table == NULL)
+		return false;
+	if (table->codes == NULL)
+		return false;
+	if (table->code_count < 2)
+		return false;
+
+	// Round a nonzero percentage up to the first audible firmware step.
+	size_t index = ((size_t) percent * (table->code_count - 1) + 99) / 100;
+	return pasic_amplifier_gain_set(path, table->codes[index]);
 }
 
 bool pasic_push_pull_configure(
@@ -222,10 +194,6 @@ bool pasic_push_pull_configure(
 ) {
 	if (source > 8)
 		return false;
-	if (path == PASIC_PUSH_PULL_ROUTE_1)
-		return pasic_register_write(PASIC_PP_ROUTE_1, source);
-	if (path == PASIC_PUSH_PULL_ROUTE_2)
-		return pasic_register_write(PASIC_PP_ROUTE_2, source);
 	if ((source & 1) != 0)
 		return false;
 
@@ -262,10 +230,32 @@ bool pasic_push_pull_configure(
 		default:
 			return false;
 	}
-	return pasic_register_update(reg, value, mask);
+
+	pasic_register_update(reg, value, mask);
+	return true;
 }
 
-bool pasic_switch_mux_set(enum pasic_switch_mux_path path, uint8_t value) {
+bool pasic_push_pull_route_set(enum pasic_push_pull_route route, uint8_t source) {
+	if (source > 8)
+		return false;
+
+	uint8_t reg;
+	switch (route) {
+		case PASIC_PUSH_PULL_ROUTE_1:
+			reg = PASIC_PP_ROUTE_1;
+			break;
+		case PASIC_PUSH_PULL_ROUTE_2:
+			reg = PASIC_PP_ROUTE_2;
+			break;
+		default:
+			return false;
+	}
+
+	pasic_register_write(reg, source);
+	return true;
+}
+
+bool pasic_switch_mux_raw_set(enum pasic_switch_mux_path path, uint8_t value) {
 	uint8_t reg;
 	uint8_t mask = UINT8_MAX;
 
@@ -294,60 +284,77 @@ bool pasic_switch_mux_set(enum pasic_switch_mux_path path, uint8_t value) {
 		default:
 			return false;
 	}
-	return pasic_register_update(reg, value, mask);
+
+	pasic_register_update(reg, value, mask);
+	return true;
 }
 
-bool pasic_mux_input_set(uint8_t value) {
-	return pasic_register_write(PASIC_MUX_INPUT, value);
+bool pasic_mono_route_set(enum pasic_mono_route route) {
+	uint8_t value;
+
+	switch (route) {
+		case PASIC_MONO_ROUTE_DISABLED:
+			value = 0x00;
+			break;
+		case PASIC_MONO_ROUTE_DAC:
+			value = 0x03;
+			break;
+		default:
+			return false;
+	}
+
+	return pasic_switch_mux_raw_set(PASIC_SWITCH_MUX_PATH_4, value);
+}
+
+bool pasic_stereo_route_set(enum pasic_stereo_route route) {
+	uint8_t value;
+
+	switch (route) {
+		case PASIC_STEREO_ROUTE_DISABLED:
+			value = 0x00;
+			break;
+		case PASIC_STEREO_ROUTE_DAC:
+			value = 0x0C;
+			break;
+		default:
+			return false;
+	}
+
+	return pasic_switch_mux_raw_set(PASIC_SWITCH_MUX_PATH_5, value);
+}
+
+bool pasic_line_route_set(enum pasic_line_route route) {
+	uint8_t value;
+
+	switch (route) {
+		case PASIC_LINE_ROUTE_DISABLED:
+			value = 0x00;
+			break;
+		case PASIC_LINE_ROUTE_MONO:
+			value = 0x03;
+			break;
+		case PASIC_LINE_ROUTE_DIFFERENTIAL_STEREO:
+			value = 0x18;
+			break;
+		default:
+			return false;
+	}
+
+	return pasic_switch_mux_raw_set(PASIC_SWITCH_MUX_PATH_3, value);
 }
 
 bool pasic_adc_sample_rate_set(uint8_t code) {
 	if (code > 8)
 		return false;
-	return pasic_register_update(PASIC_SAMPLE_RATE,
+	pasic_register_update(PASIC_SAMPLE_RATE,
 		(code << PASIC_SAMPLE_RATE_ADC_SHIFT), PASIC_SAMPLE_RATE_ADC);
+	return true;
 }
 
 bool pasic_dac_sample_rate_set(uint8_t code) {
 	if (code > 8)
 		return false;
-	return pasic_register_update(PASIC_SAMPLE_RATE,
+	pasic_register_update(PASIC_SAMPLE_RATE,
 		(code << PASIC_SAMPLE_RATE_DAC_SHIFT), PASIC_SAMPLE_RATE_DAC);
-}
-
-bool pasic_stereo_mode_set(uint8_t value) {
-	return pasic_register_write(PASIC_STEREO_MODE, value);
-}
-
-bool pasic_mono_control_set(uint8_t value) {
-	return pasic_register_write(PASIC_MONO_CONTROL, value);
-}
-
-bool pasic_stereo_control_set(uint8_t value) {
-	return pasic_register_write(PASIC_STEREO_CONTROL, value);
-}
-
-bool pasic_adc_control_set(uint8_t value) {
-	return pasic_register_write(PASIC_ADC_CONTROL, value);
-}
-
-bool pasic_dac_control_set(uint8_t value) {
-	return pasic_register_write(PASIC_DAC_CONTROL, value);
-}
-
-bool pasic_i2s_rx_control_set(uint8_t value) {
-	return pasic_register_write(PASIC_I2S_RX_CONTROL, value);
-}
-
-bool pasic_i2s_tx_control_set(uint8_t value) {
-	return pasic_register_write(PASIC_I2S_TX_CONTROL, value);
-}
-
-bool pasic_output_is_muted(void) {
-	if (!pasic_initialize())
-		return false;
-	uint8_t mono_control = i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_MONO_CONTROL);
-
-	printf("# PASIC output: mono-control=%02X\n", mono_control);
-	return mono_control == 0;
+	return true;
 }

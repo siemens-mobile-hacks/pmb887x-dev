@@ -16,7 +16,7 @@ bool dsp_siemens_cmd_exec(
 		return false;
 	}
 
-	/* DConfJTab does not preserve the dispatcher's acknowledgement value. */
+	// DConfJTab does not preserve the dispatcher's acknowledgement value.
 	if (command == SIEMENS_AUDIO_COMMAND_DCONF_JTAB)
 		return true;
 	if (dsp_runtime_pipe_get(pipe_index)[0] == (uint16_t) -command)
@@ -29,20 +29,21 @@ bool dsp_siemens_cmd_exec(
 
 bool dsp_siemens_jtab_exec(
 	size_t pipe_index,
-	const struct dconf_jtab_record *records,
-	size_t record_count
+	const uint16_t *words,
+	size_t word_count
 ) {
-	for (size_t i = 0; i < record_count; i++) {
-		const struct dconf_jtab_record *record = &records[i];
-		if (record->word_count == 0 || record->word_count != (size_t) record->words[0] + 1) {
-			printf("# Invalid DConfJTab record: index=%lu words=%lu prefix=%u\n",
-				(uint32_t) i, (uint32_t) record->word_count, record->words[0]);
+	for (size_t offset = 0; offset < word_count;) {
+		size_t record_word_count = (size_t) words[offset] + 1;
+		if (record_word_count > word_count - offset) {
+			printf("# Truncated DConfJTab record: offset=%lu words=%lu remaining=%lu\n",
+				(uint32_t) offset, (uint32_t) record_word_count, (uint32_t) (word_count - offset));
 			return false;
 		}
 		if (!dsp_siemens_cmd_exec(pipe_index, SIEMENS_AUDIO_COMMAND_DCONF_JTAB,
-			record->words, record->word_count)) {
+			&words[offset], record_word_count)) {
 			return false;
 		}
+		offset += record_word_count;
 	}
 	return true;
 }

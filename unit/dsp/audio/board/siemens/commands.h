@@ -17,16 +17,6 @@ enum siemens_audio_command_id {
 	SIEMENS_AUDIO_COMMAND_USER_14 = 50,
 };
 
-struct dconf_jtab_record {
-	const uint16_t *words;
-	size_t word_count;
-};
-
-#define DCONF_JTAB_RECORD(...) { \
-	.words = (const uint16_t[]) { __VA_ARGS__ }, \
-	.word_count = sizeof((const uint16_t[]) { __VA_ARGS__ }) / sizeof(uint16_t), \
-}
-
 bool dsp_siemens_cmd_exec(
 	size_t pipe_index,
 	uint16_t command,
@@ -35,6 +25,6 @@ bool dsp_siemens_cmd_exec(
 );
 bool dsp_siemens_jtab_exec(
 	size_t pipe_index,
-	const struct dconf_jtab_record *records,
-	size_t record_count
+	const uint16_t *words,
+	size_t word_count
 );
