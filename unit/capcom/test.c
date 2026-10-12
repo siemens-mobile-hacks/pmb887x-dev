@@ -180,6 +180,7 @@ static uint32_t measure_timer(const capcom_t *capcom, uint32_t t0i, uint32_t ioc
 	CAPCOM_T01CON(capcom->base) = 0;
 	uint32_t current = CAPCOM_T0(capcom->base);
 	wraps += current < previous;
+	test_watchdog_serve();
 
 	return (wraps << 16) | current;
 }
@@ -211,6 +212,7 @@ static timer_counts_t measure_timer_pair(const capcom_t *capcom, uint32_t timer_
 	uint32_t t1 = CAPCOM_T1(capcom->base);
 	wraps_t0 += t0 < previous_t0;
 	wraps_t1 += t1 < previous_t1;
+	test_watchdog_serve();
 
 	timer_counts_t counts = {
 		(wraps_t0 << 16) | t0,

@@ -261,6 +261,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [capcom-clock]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[capcom-pwm]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [rtc]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 

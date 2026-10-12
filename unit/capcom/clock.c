@@ -14,7 +14,9 @@ static const struct {
 } CLOCK_CASES[] = {
 	{ "CAPCOM timers run at oscillator / 8", 3250000 },
 	{ "fSYS PLL does not change CAPCOM timers", 3250000 },
+#ifdef PMB8876
 	{ "AHB_PER PLL/2 does not change CAPCOM timers", 3250000 },
+#endif
 	{ "FPI2 PLL /2 selects 6.5 MHz CAPCOM timers", 6500000 },
 	{ "FPI2 PLL /4 selects 3.25 MHz CAPCOM timers", 3250000 },
 	{ "FPI2 PLL /8 selects 1.625 MHz CAPCOM timers", 1625000 },
@@ -76,39 +78,46 @@ int main(void) {
 	uint32_t bypass_con1 = CGU_CON1 & ~CGU_CON1_FSYS_CLKSEL;
 	uint32_t fpi2_con1 = bypass_con1 &
 		~(CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV);
+#ifdef PMB8876
 	uint32_t osc_con3 = CGU_CON3 & ~(CGU_CON3_AHB_PER_CLKSEL | CGU_CON3_AHB_PER_CLKDIV);
 	uint32_t pll_con3 = osc_con3 | CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2;
+#endif
 	cgu_pll_set(3, 0);
 
 	for (uint32_t index = 0; index < ARRAY_SIZE(capcoms); index++) {
+		uint32_t mode = 0;
 		CAPCOM_CLC(capcoms[index]) = (1 << MOD_CLC_RMC_SHIFT);
 		CGU_CON1 = bypass_con1;
+#ifdef PMB8876
 		CGU_CON3 = osc_con3;
-		counts[index][0] = measure_timers(capcoms[index]);
+#endif
+		counts[index][mode++] = measure_timers(capcoms[index]);
 		CGU_CON1 = bypass_con1 | CGU_CON1_FSYS_CLKSEL_PLL;
-		counts[index][1] = measure_timers(capcoms[index]);
+		counts[index][mode++] = measure_timers(capcoms[index]);
+#ifdef PMB8876
 		CGU_CON1 = bypass_con1;
 		CGU_CON3 = pll_con3;
-		counts[index][2] = measure_timers(capcoms[index]);
+		counts[index][mode++] = measure_timers(capcoms[index]);
 		CGU_CON3 = osc_con3;
+#endif
 		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV1;
-		counts[index][3] = measure_timers(capcoms[index]);
+		counts[index][mode++] = measure_timers(capcoms[index]);
 		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2;
-		counts[index][4] = measure_timers(capcoms[index]);
+		counts[index][mode++] = measure_timers(capcoms[index]);
 		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV4;
-		counts[index][5] = measure_timers(capcoms[index]);
+		counts[index][mode++] = measure_timers(capcoms[index]);
 		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV8;
-		counts[index][6] = measure_timers(capcoms[index]);
+		counts[index][mode++] = measure_timers(capcoms[index]);
 		CGU_CON1 = bypass_con1;
 		CAPCOM_CLC(capcoms[index]) = (2 << MOD_CLC_RMC_SHIFT);
-		counts[index][7] = measure_timers(capcoms[index]);
+		counts[index][mode++] = measure_timers(capcoms[index]);
 		CAPCOM_CLC(capcoms[index]) = (4 << MOD_CLC_RMC_SHIFT);
-		counts[index][8] = measure_timers(capcoms[index]);
+		counts[index][mode++] = measure_timers(capcoms[index]);
 		CAPCOM_CLC(capcoms[index]) = (8 << MOD_CLC_RMC_SHIFT);
-		counts[index][9] = measure_timers(capcoms[index]);
+		counts[index][mode++] = measure_timers(capcoms[index]);
 		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2;
 		CAPCOM_CLC(capcoms[index]) = (4 << MOD_CLC_RMC_SHIFT);
-		counts[index][10] = measure_timers(capcoms[index]);
+		counts[index][mode] = measure_timers(capcoms[index]);
 	}
 
 	for (uint32_t mode = 0; mode < ARRAY_SIZE(CLOCK_CASES); mode++) {
