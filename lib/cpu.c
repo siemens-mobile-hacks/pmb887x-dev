@@ -187,6 +187,9 @@ uint32_t cpu_get_fpi2_freq(void) {
 }
 
 uint32_t cpu_get_ahb_per_freq(void) {
+#ifdef PMB8875
+	return 0;
+#else
 	uint32_t frequency;
 
 	switch (CGU_CON3 & CGU_CON3_AHB_PER_CLKSEL) {
@@ -204,6 +207,7 @@ uint32_t cpu_get_ahb_per_freq(void) {
 
 	uint32_t divider = (CGU_CON3 & CGU_CON3_AHB_PER_CLKDIV) >> CGU_CON3_AHB_PER_CLKDIV_SHIFT;
 	return frequency >> divider;
+#endif
 }
 
 uint32_t cpu_get_clk48m_freq(void) {
@@ -220,11 +224,18 @@ uint32_t cpu_get_clk48m_freq(void) {
 			return 0;
 	}
 
+#ifdef PMB8875
+	return frequency;
+#else
 	uint32_t divider = (CGU_CON3 & CGU_CON3_CLK48M_CLKDIV) >> CGU_CON3_CLK48M_CLKDIV_SHIFT;
 	return frequency >> divider;
+#endif
 }
 
 uint32_t cpu_get_mmci_freq(void) {
+#ifdef PMB8875
+	return 0;
+#else
 	uint32_t frequency;
 
 	switch (CGU_CON3 & CGU_CON3_MMCI_CLKSEL) {
@@ -243,6 +254,7 @@ uint32_t cpu_get_mmci_freq(void) {
 
 	uint32_t divider = (CGU_CON3 & CGU_CON3_MMCI_CLKDIV) >> CGU_CON3_MMCI_CLKDIV_SHIFT;
 	return frequency >> divider;
+#endif
 }
 
 uint32_t cpu_get_clkout0_freq(void) {
@@ -262,11 +274,15 @@ uint32_t cpu_get_clkout1_freq(void) {
 }
 
 uint32_t cpu_get_clkout2_freq(void) {
+#ifdef PMB8875
+	return 0;
+#else
 	if ((CGU_CON3 & CGU_CON3_CLKOUT2_EN) == 0)
 		return 0;
 
 	uint32_t divider = (CGU_CON3 & CGU_CON3_CLKOUT2_CLKDIV) >> CGU_CON3_CLKOUT2_CLKDIV_SHIFT;
 	return cpu_get_phase_freq(4) >> divider;
+#endif
 }
 
 uint32_t cpu_get_clk32k_freq(void) {
@@ -285,5 +301,10 @@ uint32_t cpu_get_ms_freq(void) {
 }
 
 uint32_t cpu_get_dma_freq(void) {
-	return (CGU_CON3 & CGU_CON3_DMA_CLK_DISABLE) == 0 ? cpu_get_pll_freq() : 0;
+#ifndef PMB8875
+	if ((CGU_CON3 & CGU_CON3_DMA_CLK_DISABLE) != 0)
+		return 0;
+#endif
+
+	return cpu_get_pll_freq();
 }

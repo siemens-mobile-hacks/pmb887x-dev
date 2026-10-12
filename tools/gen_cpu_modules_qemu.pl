@@ -230,6 +230,7 @@ sub genDspConfig {
 		push @peripherals, {
 			name => $module->{name},
 			type => $type,
+			model => $module->{model},
 			base => $module->{base},
 			size => $module->{size},
 			memory => $memory,
@@ -242,6 +243,7 @@ sub genDspConfig {
 		$str .= "\t{\n";
 		$str .= "\t\t.name = \"$peripheral->{name}\",\n";
 		$str .= "\t\t.type = PMB887X_DSP_PERIPHERAL_$peripheral->{type},\n";
+		$str .= "\t\t.model = PMB887X_DSP_MODEL_$peripheral->{model},\n" if $peripheral->{model};
 		$str .= sprintf("\t\t.base = 0x%04X,\n", $peripheral->{base});
 		$str .= sprintf("\t\t.size = 0x%04X,\n", $peripheral->{size});
 		$str .= $memory ? "\t\t.ram_base = ${prefix}$memory->{name}_BASE,\n" : "\t\t.ram_base = 0,\n";

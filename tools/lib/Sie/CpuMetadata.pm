@@ -256,12 +256,13 @@ sub loadCPU {
 				page		=> $page eq '-' ? undef : parseAnyInt($page),
 			};
 		} elsif ($line =~ /^\.dsp_module/) {
-			my ($key, $name, $base, $definition) = split("\t", $line);
+			my ($key, $name, $base, $definition, $model) = split("\t", $line);
 			die "Invalid DSP module: $line" if !defined($definition);
 			push @{$self->{available_dsp_modules}}, {
 				name		=> $name,
 				base		=> parseAnyInt($base),
 				definition	=> $definition,
+				model		=> $model,
 			};
 		} elsif ($line =~ /^\.irq_count/) {
 			my ($key, $count) = split("\t", $line);
@@ -339,6 +340,7 @@ sub loadDspModules {
 		$module->{base} = $def->{base};
 		$module->{name} = $def->{name};
 		$module->{definition} = $def->{definition};
+		$module->{model} = $def->{model};
 		$self->{dsp_modules}->{$def->{name}} = $module;
 	}
 }
