@@ -51,7 +51,7 @@ addr = 0x08
 
 [peripheral.RF]
 type = "pmb6272"
-bus = "TPU:RFSSC"
+port = { RFSSC = "TPU:RFSSC", IQ_TX = "DSP:IQ_RX" }
 
 [peripheral.AMP]
 type = "lm4946"

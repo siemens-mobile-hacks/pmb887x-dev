@@ -36,13 +36,13 @@ in = { CS = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF
 
 [peripheral.PMIC]
 type = "d1094xx"
-bus = "I2C"
+port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX" }
 addr = 0x31
 revision = 0xED
 
 #[peripheral.RF]
 #type = "hd155153np"
-#bus = "TPU:RFSSC"
+#port = { RFSSC = "TPU:RFSSC", IQ_TX = "DSP:IQ_RX" }
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }

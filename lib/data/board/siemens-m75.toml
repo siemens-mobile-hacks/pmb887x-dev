@@ -3,6 +3,9 @@ vendor = "Siemens"
 model = "M75"
 extends = "include/siemens-sgl-sirius.toml"
 
+[peripheral.GIMMICK]
+out = { FPDAT6 = "DISP_CS1" }
+
 [gpio.inputs]
 HW_DET_MOB_TYPE1 = 0
 HW_DET_MOB_TYPE2 = 1

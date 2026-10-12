@@ -3,6 +3,12 @@ vendor = "Siemens"
 model = "CX75"
 extends = "include/siemens-sgl-sirius.toml"
 
+[peripheral.GIMMICK]
+out = { FPDAT0 = "DISP_CS1" }
+
+[peripheral.LCD0]
+type = "pcf8882"
+
 [gpio.aliases]
 RF_STR1 = "PM_RINGIN"
 I2S2_CLK0 = "I2S_CLK"

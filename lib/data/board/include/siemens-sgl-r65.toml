@@ -34,7 +34,7 @@ in = { CS = "DISPLAY_CS1", CD = "GIMMICK:SRS", RESET = "DISPLAY_RESET" }
 
 [peripheral.PMIC]
 type = "d1094xx"
-bus = "I2C"
+port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX" }
 addr = 0x31
 revision = 0xDB
 
