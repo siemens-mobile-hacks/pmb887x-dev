@@ -245,6 +245,9 @@ static void test_registers(void) {
 
 static void test_reset_values(void) {
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_SSC0;
+	SCU_RST_REQ &= ~SCU_RST_REQ_SSC0;
+
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, SSC_CLC);
 	SSC_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("PISEL reset value", 0, SSC_PISEL);
@@ -390,7 +393,7 @@ static void test_fifo_flush(void) {
 	for (uint32_t i = 0; i < SSC_RX_FIFO_WORDS; i++)
 		SSC_TB = i + 1;
 	for (uint32_t wait = 0; wait < SSC_WAIT_ITERATIONS; wait++) {
-		if ((SSC_FSTAT & SSC_FSTAT_RXFFL) != 0)
+		if ((SSC_FSTAT & SSC_FSTAT_TXFFL) == 0 && (SSC_CON & SSC_CON_BSY) == 0)
 			break;
 		test_watchdog_serve();
 	}
