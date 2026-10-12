@@ -198,7 +198,7 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [gpio-mon]
-devices = ["generic-pmb8876"]
+devices = ["generic-pmb8875", "generic-pmb8876"]
 timeout = 360
 
 [gprscu]

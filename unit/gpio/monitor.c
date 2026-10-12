@@ -2,8 +2,11 @@
 
 #include "test.h"
 
-#define SCU_RST_REQ_PROBE 0
-#define SCU_RST_REQ_DANGEROUS_BITS SCU_RST_REQ_USART0
+#ifndef GPIO_MON_RESET_PROBE
+#define GPIO_MON_RESET_PROBE 0
+#endif
+#define SCU_RESET_MONITOR_FIRST 0x0900
+#define SCU_RESET_MONITOR_LAST 0x097F
 #define CGU_ACTIVITY_SAMPLES 40000
 #define CGU_PHASE_PROBE_CONFIG 0x22
 #define CGU_PROBE_TIMEOUT_MS 300000
@@ -55,7 +58,6 @@ struct fpi2_measurement {
 	{ .name = probe_name, .reg = probe_reg, .mask = probe_mask, .value = probe_value, .required_osc = probe_osc, \
 		.transition_name = signal_name, .transition_selection = signal_selection }
 
-#if SCU_RST_REQ_PROBE
 static const struct monitor_signal RESET_SIGNALS[] = {
 	{ "RST_AHB_PER_N", 0x0968 },
 	{ "RST_ANA_N", 0x092F },
@@ -84,7 +86,6 @@ static const struct monitor_signal RESET_SIGNALS[] = {
 	{ "RST_USART1_N", 0x0935 },
 	{ "RST_USB_N", 0x0930 },
 };
-#endif
 
 static const struct monitor_signal CGU_CLOCK_SIGNALS[] = {
 	{ "CLK32KOUT_O", 0x0817 },
@@ -189,6 +190,7 @@ static const struct cgu_value_probe CGU_VALUE_PROBES[] = {
 		CGU_OSC_PLL_POWER_UP | CGU_OSC_PLL_BYPASS_N, "CLK_MS_O", CGU_SIGNAL_CLK_MS_O),
 	CGU_VALUE_PROBE("MS + CLKSEL_DISABLE_11", &CGU_CON2, CGU_CON2_MS_CLKSEL,
 		CGU_CON2_MS_CLKSEL_DISABLE_11),
+#ifdef PMB8876
 	CGU_VALUE_PROBE("AHB_PER + CLKSEL_CLK32K + CLKDIV_DIV1", &CGU_CON3,
 		CGU_CON3_AHB_PER_CLKSEL | CGU_CON3_AHB_PER_CLKDIV,
 		CGU_CON3_AHB_PER_CLKSEL_CLK32K | CGU_CON3_AHB_PER_CLKDIV_DIV1),
@@ -243,6 +245,7 @@ static const struct cgu_value_probe CGU_VALUE_PROBES[] = {
 		CGU_CON3_CLKOUT2_EN | CGU_CON3_CLKOUT2_CLKDIV_DIV8,
 		CGU_OSC_PHASE4_POWER_UP | CGU_OSC_PHASE4_BYPASS_N, "CLK_CLKOUT2_O", CGU_SIGNAL_CLK_CLKOUT2_O),
 	CGU_VALUE_PROBE("DMA + CLK_DISABLE", &CGU_CON3, CGU_CON3_DMA_CLK_DISABLE, CGU_CON3_DMA_CLK_DISABLE),
+#endif
 };
 
 static const struct cgu_value_probe CGU_UNSAFE_PROBES[] = {
@@ -263,37 +266,63 @@ static const struct cgu_value_probe CGU_UNSAFE_PROBES[] = {
 	CGU_VALUE_PROBE("FPI1 + CLKSEL_DISABLE", &CGU_CON1, CGU_CON1_FPI1_CLKSEL, CGU_CON1_FPI1_CLKSEL_DISABLE),
 };
 
-#if SCU_RST_REQ_PROBE
-static void print_asserted_reset_signals(uint32_t request) {
+static bool read_monitor_level(uint32_t selection) {
+	GPIO_MON_CR4 = selection;
+	test_spin(1000);
+	return (GPIO_PIN(GPIO_KP_OUT0) & GPIO_DATA) != 0;
+}
+
+static const char *reset_signal_name(uint32_t selection) {
+	for (uint32_t index = 0; index < ARRAY_SIZE(RESET_SIGNALS); index++) {
+		if (RESET_SIGNALS[index].selection == selection)
+			return RESET_SIGNALS[index].name;
+	}
+
+	return "unknown";
+}
+
+static void print_reset_signal_baseline(void) {
 	for (uint32_t index = 0; index < ARRAY_SIZE(RESET_SIGNALS); index++) {
 		const struct monitor_signal *signal = &RESET_SIGNALS[index];
 
-		GPIO_MON_CR4 = signal->selection;
-		test_spin(1000);
-		SCU_RST_REQ |= request;
-		uint32_t data = GPIO_PIN(GPIO_KP_OUT0) & GPIO_DATA;
-		SCU_RST_REQ &= ~request;
-		if (data == 0)
+		if (!read_monitor_level(signal->selection))
 			printf("# LOW %s selector=%04X\n", signal->name, (unsigned int) signal->selection);
 		test_watchdog_serve();
 	}
 }
 
-static void probe_scu_reset_request_bits(void) {
-	for (uint32_t bit = 0; bit < 32; bit++) {
-		uint32_t request = BIT(bit);
+static void print_reset_signal_changes(uint32_t request) {
+	for (uint32_t selection = SCU_RESET_MONITOR_FIRST; selection <= SCU_RESET_MONITOR_LAST; selection++) {
+		bool baseline = read_monitor_level(selection);
 
-		if ((request & SCU_RST_REQ_DANGEROUS_BITS) != 0) {
-			printf("# SKIP SCU_RST_REQ bit=%u mask=%08X\n", (unsigned int) bit, (unsigned int) request);
-			continue;
-		}
-
-		printf("# PROBE SCU_RST_REQ bit=%u mask=%08X\n", (unsigned int) bit, (unsigned int) request);
-		print_asserted_reset_signals(request);
+		SCU_RST_REQ |= request;
+		bool asserted = (GPIO_PIN(GPIO_KP_OUT0) & GPIO_DATA) != 0;
+		SCU_RST_REQ &= ~request;
+		if (asserted != baseline)
+			printf("# CHANGE %s selector=%04X level=%u->%u\n", reset_signal_name(selection),
+				(unsigned int) selection, baseline ? 1U : 0U, asserted ? 1U : 0U);
 		test_watchdog_serve();
 	}
 }
-#endif
+
+static void probe_scu_reset_request_bits(void) {
+	for (uint32_t bit = 0; bit < 16; bit++) {
+		uint32_t request = BIT(bit);
+
+		if (request == SCU_RST_REQ_USART0) {
+			printf("# OMIT SCU_RST_REQ bit=2: resetting the console terminates the serial protocol\n");
+			continue;
+		}
+
+		SCU_RST_REQ |= request;
+		uint32_t readback = SCU_RST_REQ;
+		SCU_RST_REQ &= ~request;
+		printf("# PROBE SCU_RST_REQ bit=%u mask=%08X readback=%08X\n", (unsigned int) bit,
+			(unsigned int) request, (unsigned int) readback);
+		print_reset_signal_changes(request);
+		test_watchdog_serve();
+	}
+}
 
 static uint32_t count_monitor_transitions(uint32_t selection) {
 	volatile uint32_t *pin = &GPIO_PIN(GPIO_KP_OUT0);
@@ -339,12 +368,6 @@ static uint32_t count_gpio_reads_during_32k_edges(uint32_t edges) {
 	}
 
 	return reads;
-}
-
-static bool read_monitor_level(uint32_t selection) {
-	GPIO_MON_CR4 = selection;
-	test_spin(1000);
-	return (GPIO_PIN(GPIO_KP_OUT0) & GPIO_DATA) != 0;
 }
 
 static void capture_cgu_state(struct cgu_state *state) {
@@ -591,7 +614,9 @@ static void route_cgu_clocks_to_osc(void) {
 	CGU_CON1 &= ~(CGU_CON1_FPI1_CLKSEL | CGU_CON1_FSYS_CLKSEL | CGU_CON1_AHB_CLKSEL);
 	CGU_CON2 &= ~(CGU_CON2_DSP_CLKSEL | CGU_CON2_EBU_CLKSEL | CGU_CON2_CLK48M_CLKSEL);
 	CGU_CON2 &= ~CGU_CON2_AFC32K_EN;
+#ifdef PMB8876
 	CGU_CON3 &= ~(CGU_CON3_AHB_PER_CLKSEL | CGU_CON3_MMCI_CLKSEL);
+#endif
 }
 
 static void probe_afc32k_fsys_combination(void) {
@@ -631,6 +656,7 @@ static void probe_afc32k_fsys_combination(void) {
 	print_cgu_diff(&oscillator_state, &pll_state);
 }
 
+#ifdef PMB8876
 static void probe_clk48m_divider(void) {
 	uint32_t initial_osc = CGU_OSC;
 	uint32_t initial_con0 = CGU_CON0;
@@ -663,6 +689,7 @@ static void probe_clk48m_divider(void) {
 	for (uint32_t divider = 0; divider < ARRAY_SIZE(transitions); divider++)
 		printf("# CLKDIV=DIV%u transitions=%u\n", (1U << divider), (unsigned int) transitions[divider]);
 }
+#endif
 
 static void probe_phase_configurations(void) {
 	static const uint32_t CONFIGS[] = { 0x11, 0x22, 0x23 };
@@ -793,6 +820,7 @@ static void probe_fpi1_fsys_access_timing(void) {
 		(unsigned int) checksum[1], locked ? 1U : 0U);
 }
 
+#ifdef PMB8876
 static uint32_t measure_capcom_timer(void) {
 	CAPCOM_T01CON(CAPCOM0) = 0;
 	CAPCOM_T0(CAPCOM0) = 0;
@@ -897,6 +925,7 @@ static void probe_afc32k_dependencies(void) {
 		(unsigned int) con_transitions[1], (unsigned int) afc_transitions[1],
 		(unsigned int) trigger_transitions[1], cerb_level[1] ? 1U : 0U, locked ? 1U : 0U);
 }
+#endif
 
 static void probe_afc_and_gsm_clocks(void) {
 	uint32_t initial_afc_clc = AFC_CLC;
@@ -937,11 +966,17 @@ static void probe_cgu_clock_values(void) {
 	uint32_t initial_con0 = CGU_CON0;
 	uint32_t initial_con1 = CGU_CON1;
 	uint32_t initial_con2 = CGU_CON2;
+#ifdef PMB8876
 	uint32_t initial_con3 = CGU_CON3;
 
 	printf("# CGU REG CTL1=%08X CTL3=%08X CTL4=%08X CTL5=%08X CTL6=%08X STAT=%08X\n",
 		(unsigned int) CGU_OSC, (unsigned int) CGU_CON0, (unsigned int) CGU_CON1,
 		(unsigned int) CGU_CON2, (unsigned int) CGU_CON3, (unsigned int) CGU_STAT);
+#else
+	printf("# CGU REG CTL1=%08X CTL3=%08X CTL4=%08X CTL5=%08X STAT=%08X\n",
+		(unsigned int) CGU_OSC, (unsigned int) CGU_CON0, (unsigned int) CGU_CON1,
+		(unsigned int) CGU_CON2, (unsigned int) CGU_STAT);
+#endif
 	CGU_CON0 = (CGU_PHASE_PROBE_CONFIG << CGU_CON0_PHASE1_CONFIG_SHIFT) |
 		(CGU_PHASE_PROBE_CONFIG << CGU_CON0_PHASE2_CONFIG_SHIFT) |
 		(CGU_PHASE_PROBE_CONFIG << CGU_CON0_PHASE3_CONFIG_SHIFT) |
@@ -955,7 +990,9 @@ static void probe_cgu_clock_values(void) {
 	for (uint32_t index = 0; index < ARRAY_SIZE(CGU_VALUE_PROBES); index++)
 		probe_cgu_value(&CGU_VALUE_PROBES[index]);
 	probe_afc32k_fsys_combination();
+#ifdef PMB8876
 	probe_clk48m_divider();
+#endif
 	probe_phase_configurations();
 
 #ifdef PMB8876
@@ -963,7 +1000,9 @@ static void probe_cgu_clock_values(void) {
 #endif
 	probe_fpi1_access_timing();
 	probe_fpi1_fsys_access_timing();
+#ifdef PMB8876
 	probe_afc32k_dependencies();
+#endif
 	probe_afc_and_gsm_clocks();
 
 	printf("\n# CGU UNSAFE PROBES\n");
@@ -974,35 +1013,40 @@ static void probe_cgu_clock_values(void) {
 	CGU_CON0 = initial_con0;
 	CGU_CON1 = initial_con1;
 	CGU_CON2 = initial_con2;
+#ifdef PMB8876
 	CGU_CON3 = initial_con3;
+#endif
 }
 
 int main(void) {
 	stopwatch_init();
 
-#if SCU_RST_REQ_PROBE
-	test_start("SCU reset request monitor probe");
-#else
-	test_start("CGU clock monitor probe");
-	wdt_set_max_execution_time(CGU_PROBE_TIMEOUT_MS);
-#endif
+	if (GPIO_MON_RESET_PROBE) {
+		test_start("SCU reset request monitor probe");
+	} else {
+		test_start("CGU clock monitor probe");
+		wdt_set_max_execution_time(CGU_PROBE_TIMEOUT_MS);
+	}
+	if (test_is_qemu()) {
+		test_skip("internal GPIO monitor routing", "requires real hardware");
+		return test_finish();
+	}
 
 	GPIO_CLC = (1 << MOD_CLC_RMC_SHIFT);
 
-#if SCU_RST_REQ_PROBE
-	DSP_CLC = (1 << MOD_CLC_RMC_SHIFT);
-#endif
+	if (GPIO_MON_RESET_PROBE)
+		DSP_CLC = (1 << MOD_CLC_RMC_SHIFT);
 
 	GPIO_PIN(GPIO_KP_OUT0) = GPIO_OS_ALT1 | GPIO_PS_ALT;
 	stopwatch_msleep_wd(1);
 
-#if SCU_RST_REQ_PROBE
-	printf("# BASELINE\n");
-	print_asserted_reset_signals(0);
-	probe_scu_reset_request_bits();
-#else
-	probe_cgu_clock_values();
-#endif
+	if (GPIO_MON_RESET_PROBE) {
+		printf("# BASELINE\n");
+		print_reset_signal_baseline();
+		probe_scu_reset_request_bits();
+	} else {
+		probe_cgu_clock_values();
+	}
 
 	return test_finish();
 }
