@@ -1,6 +1,13 @@
 #include <pmb887x.h>
 
+#ifdef PMB8875
+#include "delay-slot-functional-8875.inc"
+#define DSP_DELAY_SLOT_IMAGE DSP_DELAY_SLOT_IMAGE_8875
+#endif
+#ifdef PMB8876
 #include "delay-slot-functional-8876.inc"
+#define DSP_DELAY_SLOT_IMAGE DSP_DELAY_SLOT_IMAGE_8876
+#endif
 #include "dsp/dsp-hw.h"
 #include "test.h"
 
@@ -19,7 +26,7 @@ int main(void) {
 	DSP_COM_CLEAR = UINT16_MAX;
 	for (size_t offset = COMPLETE_OFFSET; offset <= RESULT_STATUS_OFFSET; offset++)
 		dsp_hw_shared_memory[offset] = 0;
-	bool loaded = dsp_hw_load_image(DSP_DELAY_SLOT_IMAGE_8876, sizeof(DSP_DELAY_SLOT_IMAGE_8876));
+	bool loaded = dsp_hw_load_image(DSP_DELAY_SLOT_IMAGE, sizeof(DSP_DELAY_SLOT_IMAGE));
 	if (!test_check("boot commands load delayed-return test", loaded))
 		return test_finish();
 	if (!test_check("BRANCH starts delayed-return test", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))

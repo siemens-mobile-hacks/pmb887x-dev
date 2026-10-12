@@ -16,14 +16,14 @@ mov a0l [0x$TEAK_MCS_CFR]
 mov 0x$0000 st0
 mov 0x$0000 st1
 mov 0x$0000 st2
-mov 0x$D6A0 r0
-mov 0x$D6B0 r1
-mov 0x$D6C0 r2
-mov 0x$D6D0 r3
-mov 0x$D6E0 r4
-mov 0x$D6F0 r5
-mov 0x$D6C0 r7
-mov 0x$D700 sp
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04A0) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04B0) r1
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04C0) r2
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04D0) r3
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04E0) r4
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04F0) r5
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04C0) r7
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0500) sp
 mov 0x$0000 cfgi
 mov 0x$0000 cfgj
 mov 0x$0000 lc
@@ -36,9 +36,9 @@ load 0x0000u8 page
 load 0x0000 ps
 // Reset does not clear the regular or alternative register banks.
 banke r0 r1 r4 cfgi
-mov 0x$D6A0 r0
-mov 0x$D6B0 r1
-mov 0x$D6E0 r4
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04A0) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04B0) r1
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04E0) r4
 mov 0x$0000 cfgi
 banke r0 r1 r4 cfgi
 // Clear block-repeat state, context switching, and the non-reset core registers.
@@ -164,7 +164,7 @@ br 0x0000$0162 always
 // @forward-fill-end
 
 // Scratch and stack words surrounding the configured SP.
-segment d D6A0
+segment d TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04A0)
 data 0000
 data 0000
 data 0000

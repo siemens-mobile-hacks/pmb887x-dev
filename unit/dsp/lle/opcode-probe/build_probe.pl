@@ -10,15 +10,17 @@ use DspAsm qw(expand_teak_constants);
 use TeakTools qw(find_teak_tools);
 
 my ($teak_assembler, $teak_disassembler) = find_teak_tools();
-my ($asm_name, $output_name, $array_name, $mode) = @ARGV;
+my ($asm_name, $output_name, $array_name, $mode, $cpu) = @ARGV;
 $asm_name //= 'probe.asm';
 $output_name //= 'probe-image.inc';
 $array_name //= 'DSP_OPCODE_PROBE_IMAGE';
 $mode //= 'raw';
+$cpu //= 'pmb8876';
 die "Invalid input name: $asm_name\n" unless $asm_name =~ /\A[A-Za-z0-9_.-]+\z/;
 die "Invalid output name: $output_name\n" unless $output_name =~ /\A[A-Za-z0-9_.-]+\z/;
 die "Invalid C array name: $array_name\n" unless $array_name =~ /\A[A-Z][A-Z0-9_]+\z/;
 die "Invalid build mode: $mode\n" unless $mode eq 'raw' || $mode eq 'expansion';
+die "Invalid CPU: $cpu\n" unless $cpu eq 'pmb8875' || $cpu eq 'pmb8876';
 my $asm_path = File::Spec->catfile($RealBin, $asm_name);
 my $output_path = File::Spec->catfile($RealBin, $output_name);
 my $max_segment_words = 2043;
@@ -37,12 +39,14 @@ sub run_tool {
 }
 
 sub expansion_capture {
+	my $result_page = $cpu eq 'pmb8875' ? 0xDB : 0xD3;
+
 	return (
 		'segment p 0162',
 		'mov st0 r1',
 		'mov st1 r2',
 		'mov st2 r3',
-		'load 0x00d3u8 page',
+		sprintf('load 0x00%02xu8 page', $result_page),
 		'mov r1 [page:0x0010u8]',
 		'mov r2 [page:0x0011u8]',
 		'mov r3 [page:0x0012u8]',
@@ -64,7 +68,7 @@ sub expansion_capture {
 		'mov p* a0',
 		'mov a0l [page:0x001eu8]',
 		'mov a0h [page:0x001fu8]',
-		'mov [0x$D6A0] a0',
+		'mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x04A0)] a0',
 		'mov a0l [page:0x0020u8]',
 		'mov sp r0',
 		'mov r0 [page:0x0021u8]',
@@ -111,6 +115,7 @@ sub expand_asm {
 			push @output, ('data 0000') x ($last - $address + 1);
 		} elsif ($line =~ m{^// \@fill-program ([0-9A-F]{4}) ([0-9A-F]{4})$}) {
 			my ($address, $last) = (hex($1), hex($2));
+			$last = 0x0FFF if $cpu eq 'pmb8875' && $last > 0x0FFF;
 			while ($address <= $last) {
 				my $words = $last - $address + 1;
 				$words = $max_segment_words if $words > $max_segment_words;
@@ -124,8 +129,8 @@ sub expand_asm {
 	return join("\n", @output) . "\n";
 }
 
-my $dsp_asm_path = File::Spec->catfile($RealBin, '..', 'DspAsm.pm');
-my $cache_key = sha256_hex($mode, read_file(__FILE__), read_file($dsp_asm_path), read_file($asm_path),
+my $dsp_asm_path = File::Spec->catfile($RealBin, '..', '..', 'DspAsm.pm');
+my $cache_key = sha256_hex($mode, $cpu, read_file(__FILE__), read_file($dsp_asm_path), read_file($asm_path),
 	read_file($teak_assembler), read_file($teak_disassembler));
 if (-f $output_path && read_file($output_path) =~ m{^// DSP image \Q$array_name\E cache key: \Q$cache_key\E$}m) {
 	print "$array_name: cached\n";
@@ -137,7 +142,7 @@ my $expanded_asm_path = File::Spec->catfile($temp_dir, 'probe.asm');
 my $image_path = File::Spec->catfile($temp_dir, 'probe.bin');
 my $dis_path = File::Spec->catfile($temp_dir, 'probe.dis');
 open my $expanded_asm, '>', $expanded_asm_path or die "Cannot write $expanded_asm_path: $!\n";
-print {$expanded_asm} expand_teak_constants('pmb8876', expand_asm(read_file($asm_path)));
+print {$expanded_asm} expand_teak_constants($cpu, expand_asm(read_file($asm_path)));
 close $expanded_asm or die "Cannot close $expanded_asm_path: $!\n";
 run_tool($teak_assembler, '--entry', '0100', $expanded_asm_path, $image_path);
 run_tool($teak_disassembler, $image_path, $dis_path);

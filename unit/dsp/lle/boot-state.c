@@ -14,9 +14,15 @@
 #define BOOT_PENDING_OBSERVATION_US 100
 #define FW_VERSION_OFFSET 0
 #define HW_VERSION_OFFSET 1
-#define MASK_ROM_VERSION 0x0801
+#ifdef PMB8875
+#define DSP_SUBSYSTEM_VERSION 0xE001
+#define PROGRAM_ROM_FIRST 0x1000
+#define PROGRAM_ROM_BRANCH_TARGET 0x1010
+#else
 #define DSP_SUBSYSTEM_VERSION 0xE101
 #define PROGRAM_ROM_FIRST 0x2000
+#define PROGRAM_ROM_BRANCH_TARGET 0x2010
+#endif
 #define RESULT_SENTINEL 0x5AA5
 #define FW_VERSION_SENTINEL 0xDEAD
 #define HW_VERSION_SENTINEL 0xBEEF
@@ -31,9 +37,13 @@ struct boot_observation {
 	bool ready_seen;
 };
 
-static const uint16_t PROGRAM_ROM_FINGERPRINT[] = {
-	MASK_ROM_VERSION, 0xFFFF, 0x4180, 0x2010,
-};
+static bool mask_rom_is_supported(uint16_t mask_id) {
+#ifdef PMB8875
+	return mask_id == 0x0602 || mask_id == 0x0604;
+#else
+	return mask_id == 0x0801;
+#endif
+}
 
 static struct boot_observation reset_and_observe(void) {
 	struct boot_observation observation = { 0 };
@@ -101,11 +111,8 @@ static void validate_reset_start(size_t pass, const struct boot_observation *obs
 		observation->status_after_ready & BOOT_FLAG
 	);
 	test_eq_u32("boot initialization does not require an MCU interrupt", 0, SCU_DSP_INT);
-	test_eq_u32(
-		"Mask ROM publishes firmware version during autonomous initialization",
-		MASK_ROM_VERSION,
-		dsp_hw_shared_memory[FW_VERSION_OFFSET]
-	);
+	test_check("Mask ROM publishes a supported firmware version during autonomous initialization",
+		mask_rom_is_supported(dsp_hw_shared_memory[FW_VERSION_OFFSET]));
 	test_eq_u32(
 		"Mask ROM publishes DSP subsystem version during autonomous initialization",
 		DSP_SUBSYSTEM_VERSION,
@@ -115,17 +122,20 @@ static void validate_reset_start(size_t pass, const struct boot_observation *obs
 
 static void test_boot_dispatcher_wait(void) {
 	volatile uint16_t *boot_data = dsp_hw_shared_memory + BOOT_DATA_OFFSET;
+	const uint16_t program_rom_fingerprint[] = {
+		dsp_hw_shared_memory[FW_VERSION_OFFSET], 0xFFFF, 0x4180, PROGRAM_ROM_BRANCH_TARGET,
+	};
 
 	boot_data[0] = DSP_BOOT_PREAD;
 	boot_data[1] = PROGRAM_ROM_FIRST;
-	boot_data[2] = ARRAY_SIZE(PROGRAM_ROM_FINGERPRINT);
-	for (size_t i = 0; i < ARRAY_SIZE(PROGRAM_ROM_FINGERPRINT); i++)
+	boot_data[2] = ARRAY_SIZE(program_rom_fingerprint);
+	for (size_t i = 0; i < ARRAY_SIZE(program_rom_fingerprint); i++)
 		boot_data[BOOT_RESULT_INDEX + i] = RESULT_SENTINEL;
 
 	DSP_COM_SET = BOOT_FLAG;
 	stopwatch_usleep_wd(BOOT_PENDING_OBSERVATION_US);
 	test_eq_u32("boot command remains pending without an MCU interrupt", BOOT_FLAG, DSP_COM_STATUS & BOOT_FLAG);
-	for (size_t i = 0; i < ARRAY_SIZE(PROGRAM_ROM_FINGERPRINT); i++) {
+	for (size_t i = 0; i < ARRAY_SIZE(program_rom_fingerprint); i++) {
 		char name[72];
 
 		sprintf(name, "boot result word %lu remains untouched before the interrupt", (uint32_t) i);
@@ -137,11 +147,11 @@ static void test_boot_dispatcher_wait(void) {
 	SCU_DSP_INT = 0;
 	if (!test_check("MCU interrupt releases the pending boot command", wait_for_boot_command()))
 		return;
-	for (size_t i = 0; i < ARRAY_SIZE(PROGRAM_ROM_FINGERPRINT); i++) {
+	for (size_t i = 0; i < ARRAY_SIZE(program_rom_fingerprint); i++) {
 		char name[64];
 
 		sprintf(name, "PREAD returns Program Mask ROM word %lu", (uint32_t) i);
-		test_eq_u32(name, PROGRAM_ROM_FINGERPRINT[i], boot_data[BOOT_RESULT_INDEX + i]);
+		test_eq_u32(name, program_rom_fingerprint[i], boot_data[BOOT_RESULT_INDEX + i]);
 	}
 }
 

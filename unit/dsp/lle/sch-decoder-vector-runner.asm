@@ -1,17 +1,18 @@
-// Direct PMB8876 Mask ROM 0801 SCH decoder harness.
+// Direct Mask ROM SCH decoder harness.
 //
-// P:A115 reads the optional callback at D:779E and 39 packed signed-soft words
-// at D:03E2..0408. It writes results and working state at D:0374..042F,
-// including an in-place expansion of the 78 soft values. PAGE=007D matches its
-// Mask ROM caller at P:406C. The ARM runner initializes every writable input.
+// The ARM runner supplies the Mask ROM entry point, caller registers, and
+// workspace bounds in Shared RAM and initializes every writable input.
 segment p 0100
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_MCS_CFR]
 dint
 mov 0x$0001 st0
-mov 0x$007D st1
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0005)] a0
+mov a0l st1
 mov 0x$0000 st2
-mov 0x$7C14 sp
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0007)] a0
+mov a0l r0
+mov r0 sp
 mov 0x$0000 sv
 mov 0x$0000 cfgi
 mov 0x$0000 cfgj
@@ -26,10 +27,20 @@ mov a0l y0
 mpy y0 r0 a0
 nop
 
-mov 0x$03E2 r0
-mov 0x$0374 r1
-mov 0x$0376 r2
-call 0x0000$A115 always
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0001)] a0
+mov a0l r0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0002)] a0
+mov a0l r1
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0003)] a0
+mov a0l r2
+clr a0 always
+mov a0l [0x$TEAK_DSP_PAGE]
+nop
+nop
+nop
+nop
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0000)] a0
+calla a0l
 
 // Save the caller-visible result before using registers for the state copy.
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0100)]
@@ -108,19 +119,26 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0120)]
 mov a0h r7
 mov r7 a0l
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0121)]
-mov [0x$0374] a0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0002)] a0
+mov a0l r0
+mov [r0++] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0104)]
-mov [0x$0375] a0
+mov [r0] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0105)]
-mov [0x$0373] a0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0004)] a0
+mov a0l r0
+mov [r0] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0106)]
-mov [0x$0430] a0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0006)] a0
+mov a0l r0
+mov [r0] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0107)]
 
 br 0x0000$0200 always
 
 segment p 0200
-mov 0x$0374 r0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0002)] a0
+mov a0l r0
 mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0180) r1
 mov 0x$00BB r5
 bkrep r5 0x0000$0209

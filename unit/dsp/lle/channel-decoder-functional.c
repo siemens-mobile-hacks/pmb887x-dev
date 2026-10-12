@@ -33,49 +33,49 @@ static const uint16_t TRACEBACK_EXPECTED[] = {
 static void validate_ram2(void) {
 	test_category("Channel decoder / RAM2 transport");
 	test_eq_memory("SIN01 preserves unpacked 16-bit words", SIN01_UNPACKED,
-		dsp_hw_shared_memory + 0x0610, sizeof(SIN01_UNPACKED));
+		dsp_hw_shared_memory + 0x0310, sizeof(SIN01_UNPACKED));
 	test_eq_memory("SIN2 has an independent pointer and storage area", SIN2_UNPACKED,
-		dsp_hw_shared_memory + 0x0620, sizeof(SIN2_UNPACKED));
+		dsp_hw_shared_memory + 0x0320, sizeof(SIN2_UNPACKED));
 	test_eq_memory("packed 8-bit reads are ordered and sign-extended", SIN01_PACKED,
-		dsp_hw_shared_memory + 0x0630, sizeof(SIN01_PACKED));
+		dsp_hw_shared_memory + 0x0330, sizeof(SIN01_PACKED));
 }
 
 static void validate_working_ram(void) {
 	test_category("Channel decoder / Working RAM transport");
 	test_eq_memory("RAMW1 packs low and high halfwords in order", RAMW1_PACKED,
-		dsp_hw_shared_memory + 0x0640, sizeof(RAMW1_PACKED));
+		dsp_hw_shared_memory + 0x0340, sizeof(RAMW1_PACKED));
 	test_eq_memory("RAMW2 packs low and high halfwords in order", RAMW2_PACKED,
-		dsp_hw_shared_memory + 0x0650, sizeof(RAMW2_PACKED));
+		dsp_hw_shared_memory + 0x0350, sizeof(RAMW2_PACKED));
 	test_eq_memory("RAMW1 and RAMW2 remain isolated", RAMW1_PACKED,
-		dsp_hw_shared_memory + 0x0660, sizeof(RAMW1_PACKED));
+		dsp_hw_shared_memory + 0x0360, sizeof(RAMW1_PACKED));
 	test_eq_memory("RAMW1 preserves unpacked 16-bit words", RAMW1_UNPACKED,
-		dsp_hw_shared_memory + 0x0672, sizeof(RAMW1_UNPACKED));
+		dsp_hw_shared_memory + 0x0372, sizeof(RAMW1_UNPACKED));
 }
 
 static void validate_reset(void) {
 	test_category("Channel decoder / Internal reset");
 	test_eq_u32("RES_ALL clears before the first two-wait-state read completes", 0,
-		dsp_hw_shared_memory[0x0670]);
-	test_eq_u32("RES_ALL clears CONF2 and disables the accelerator", 0, dsp_hw_shared_memory[0x0671]);
+		dsp_hw_shared_memory[0x0370]);
+	test_eq_u32("RES_ALL clears CONF2 and disables the accelerator", 0, dsp_hw_shared_memory[0x0371]);
 }
 
 static void validate_decode(void) {
 	test_category("Channel decoder / 16-state processing and interrupt");
 	test_check("DEC_ON is accepted or DEC_BUSY is already visible",
-		(dsp_hw_shared_memory[0x0680] & (0x0004 | 0x4000)) != 0);
-	test_check("decoder exposes busy state after start", dsp_hw_shared_memory[0x0681] & 0x4000);
-	test_eq_u32("decoder processes every configured timestamp", 15, dsp_hw_shared_memory[0x0682]);
-	test_eq_u32("CHADEC completion enters INT0 exactly once", 1, dsp_hw_shared_memory[0x0684]);
-	test_eq_u32("INT0 handler observes the CHADEC source", 0x0100, dsp_hw_shared_memory[0x0685] & 0x0100);
-	test_eq_u32("handler acknowledges the CHADEC source", 0, dsp_hw_shared_memory[0x0683] & 0x0100);
+		(dsp_hw_shared_memory[0x0380] & (0x0004 | 0x4000)) != 0);
+	test_check("decoder exposes busy state after start", dsp_hw_shared_memory[0x0381] & 0x4000);
+	test_eq_u32("decoder processes every configured timestamp", 15, dsp_hw_shared_memory[0x0382]);
+	test_eq_u32("CHADEC completion enters INT0 exactly once", 1, dsp_hw_shared_memory[0x0384]);
+	test_eq_u32("INT0 handler observes the CHADEC source", 0x0100, dsp_hw_shared_memory[0x0385] & 0x0100);
+	test_eq_u32("handler acknowledges the CHADEC source", 0, dsp_hw_shared_memory[0x0383] & 0x0100);
 	test_eq_memory("all eight butterfly-reference registers retain their values", BUTTERFLY_REFERENCES,
-		dsp_hw_shared_memory + 0x0686, sizeof(BUTTERFLY_REFERENCES));
-	test_eq_u32("traceback RAM accepts ext0 writes", 0xA55A, dsp_hw_shared_memory[0x068F]);
+		dsp_hw_shared_memory + 0x0386, sizeof(BUTTERFLY_REFERENCES));
+	test_eq_u32("traceback RAM accepts ext0 writes", 0xA55A, dsp_hw_shared_memory[0x038F]);
 	test_eq_memory("16-state decode matches the hardware traceback vector", TRACEBACK_EXPECTED,
-		dsp_hw_shared_memory + 0x0690, sizeof(TRACEBACK_EXPECTED));
+		dsp_hw_shared_memory + 0x0390, sizeof(TRACEBACK_EXPECTED));
 	printf("# Channel decoder traceback:");
 	for (size_t i = 0; i < ARRAY_SIZE(TRACEBACK_EXPECTED); i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0690 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0390 + i]);
 	printf("\n");
 }
 
@@ -83,24 +83,24 @@ static bool run_pass(size_t pass) {
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
 		return false;
 	DSP_COM_CLEAR = UINT16_MAX;
-	for (size_t offset = 0x0600; offset <= 0x0675; offset++)
+	for (size_t offset = 0x0300; offset <= 0x0375; offset++)
 		dsp_hw_shared_memory[offset] = 0xDEAD;
 	if (!test_check("boot commands load channel-decoder test",
 		dsp_hw_load_image(DSP_CHANNEL_DECODER_IMAGE, sizeof(DSP_CHANNEL_DECODER_IMAGE))))
 		return false;
 	if (!test_check("BRANCH starts channel-decoder test", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
 		return false;
-	if (!test_check("channel-decoder test becomes ready", dsp_hw_wait_shared(0x0600, READY_MARKER, 100)))
+	if (!test_check("channel-decoder test becomes ready", dsp_hw_wait_shared(0x0300, READY_MARKER, 100)))
 		return false;
 	if (!test_check("channel-decoder memory scenarios complete",
-		dsp_hw_wait_shared(0x0601, COMPLETE_MARKER, 1000)))
+		dsp_hw_wait_shared(0x0301, COMPLETE_MARKER, 1000)))
 		return false;
 
 	validate_ram2();
 	validate_working_ram();
 	validate_decode();
 	validate_reset();
-	test_eq_u32("test reaches final memory phase", 1, dsp_hw_shared_memory[0x0602]);
+	test_eq_u32("test reaches final memory phase", 1, dsp_hw_shared_memory[0x0302]);
 	printf("# Channel decoder ext0 pass %lu complete\n", (uint32_t) pass);
 	return true;
 }

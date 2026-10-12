@@ -156,6 +156,10 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0304)]
 mov [0x$TEAK_EQ_CONF2] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0306)]
 
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x000A)] a0
+cmp 0x0000u8 a0
+br 0x0000$0D00 neq
+
 // Capture every RAMW1 region.
 mov 0x$1801 a0l
 mov a0l [0x$TEAK_EQ_CONF2]
@@ -379,12 +383,12 @@ mov 0x$1001 a0l
 mov a0l [0x$TEAK_EQ_CONF2]
 mov 0x$0008 a0l
 mov a0l [0x$TEAK_EQ_CONF1]
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0600) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0010) r0
 mov 0x$007F r1
 call 0x0000$0800 always
 mov 0x$0004 a0l
 mov a0l [0x$TEAK_EQ_CONF1]
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0680) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0090) r0
 mov 0x$003F r1
 call 0x0000$0800 always
 
@@ -397,11 +401,11 @@ or 0x$0005 a0
 mov a0l [0x$TEAK_EQ_CONF2]
 call 0x0000$0840 always
 mov [0x$TEAK_EQ_STATUS] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0700)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x00D0)]
 mov [0x$TEAK_EQ_STAT_CNT] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0701)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x00D1)]
 mov [0x$TEAK_INT_FINTA0] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0702)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x00D2)]
 
 // Capture both left metric/path banks to expose the internal ping-pong state.
 mov 0x$1801 a0l
@@ -412,7 +416,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0710) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x00E0) r0
 mov 0x$000F r1
 call 0x0000$0820 always
 mov 0x$0801 a0l
@@ -423,7 +427,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0720) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x00F0) r0
 mov 0x$000F r1
 call 0x0000$0820 always
 mov 0x$1801 a0l
@@ -434,7 +438,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0730) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0100) r0
 mov 0x$000F r1
 call 0x0000$0820 always
 mov 0x$0801 a0l
@@ -445,7 +449,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0740) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0110) r0
 mov 0x$000F r1
 call 0x0000$0820 always
 
@@ -457,7 +461,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0750) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0120) r0
 mov 0x$001F r1
 call 0x0000$0820 always
 call 0x0000$08A0 always
@@ -467,7 +471,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0770) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0140) r0
 mov 0x$001F r1
 call 0x0000$0820 always
 mov 0x$0801 a0l
@@ -478,11 +482,17 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0790) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0160) r0
 mov 0x$000F r1
 call 0x0000$0820 always
 
 // Continue to a third cumulative timestamp target without RES_EQ.
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x000A)] a0
+cmp 0x0000u8 a0
+br 0x0000$0C00 neq
+ret always
+
+segment p 0C00
 mov 0x$0200 a0l
 mov a0l [0x$TEAK_INT_RINTA0]
 
@@ -490,12 +500,12 @@ mov 0x$1001 a0l
 mov a0l [0x$TEAK_EQ_CONF2]
 mov 0x$0008 a0l
 mov a0l [0x$TEAK_EQ_CONF1]
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0800) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0400) r0
 mov 0x$007F r1
 call 0x0000$0800 always
 mov 0x$0004 a0l
 mov a0l [0x$TEAK_EQ_CONF1]
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0880) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0480) r0
 mov 0x$003F r1
 call 0x0000$0800 always
 
@@ -508,9 +518,9 @@ or 0x$0005 a0
 mov a0l [0x$TEAK_EQ_CONF2]
 call 0x0000$0840 always
 mov [0x$TEAK_EQ_STATUS] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0900)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0300)]
 mov [0x$TEAK_EQ_STAT_CNT] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0901)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0301)]
 
 mov 0x$0801 a0l
 mov a0l [0x$TEAK_EQ_CONF2]
@@ -520,7 +530,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0910) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0320) r0
 mov 0x$001F r1
 call 0x0000$0820 always
 call 0x0000$08A0 always
@@ -530,7 +540,69 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0930) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0340) r0
 mov 0x$001F r1
 call 0x0000$0820 always
 ret always
+
+// A three-segment request keeps its later inputs intact and captures only the
+// first-segment state used by the continuation test.
+segment p 0D00
+mov 0x$1801 a0l
+mov a0l [0x$TEAK_EQ_CONF2]
+mov 0x$0801 a0l
+mov a0l [0x$TEAK_EQ_CONF1]
+nop
+nop
+nop
+nop
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x01A0) r0
+mov 0x$000F r1
+call 0x0000$0820 always
+mov 0x$1001 a0l
+mov a0l [0x$TEAK_EQ_CONF1]
+nop
+nop
+nop
+nop
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x01B0) r0
+mov 0x$000F r1
+call 0x0000$0820 always
+mov 0x$0801 a0l
+mov a0l [0x$TEAK_EQ_CONF2]
+mov 0x$2001 a0l
+mov a0l [0x$TEAK_EQ_CONF1]
+nop
+nop
+nop
+nop
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x01C0) r0
+mov 0x$000F r1
+call 0x0000$0820 always
+mov 0x$4001 a0l
+mov a0l [0x$TEAK_EQ_CONF1]
+nop
+nop
+nop
+nop
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x01D0) r0
+mov 0x$000F r1
+call 0x0000$0820 always
+call 0x0000$08A0 always
+mov 0x$0010 a0l
+mov a0l [0x$TEAK_EQ_CONF1]
+nop
+nop
+nop
+nop
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x01E0) r0
+mov 0x$0017 r1
+call 0x0000$0820 always
+call 0x0000$08C0 always
+mov 0x$0200 a0l
+mov a0l [0x$TEAK_INT_RINTA0]
+clr a0 always
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0001)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0305)] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0002)]
+br 0x0000$0120 always

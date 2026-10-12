@@ -2,10 +2,26 @@
 #include <gen/dsp.h>
 
 #include "dsp/dsp-hw.h"
+#ifdef PMB8875
+#include "interrupt-sources-1-8875.inc"
+#include "interrupt-sources-2-8875.inc"
+#include "interrupt-sources-a0-8875.inc"
+#include "interrupt-sources-b0-8875.inc"
+#define DSP_INTERRUPT_SOURCES_A0 DSP_INTERRUPT_SOURCES_A0_8875
+#define DSP_INTERRUPT_SOURCES_B0 DSP_INTERRUPT_SOURCES_B0_8875
+#define DSP_INTERRUPT_SOURCES_1 DSP_INTERRUPT_SOURCES_1_8875
+#define DSP_INTERRUPT_SOURCES_2 DSP_INTERRUPT_SOURCES_2_8875
+#endif
+#ifdef PMB8876
 #include "interrupt-sources-1-8876.inc"
 #include "interrupt-sources-2-8876.inc"
 #include "interrupt-sources-a0-8876.inc"
 #include "interrupt-sources-b0-8876.inc"
+#define DSP_INTERRUPT_SOURCES_A0 DSP_INTERRUPT_SOURCES_A0_8876
+#define DSP_INTERRUPT_SOURCES_B0 DSP_INTERRUPT_SOURCES_B0_8876
+#define DSP_INTERRUPT_SOURCES_1 DSP_INTERRUPT_SOURCES_1_8876
+#define DSP_INTERRUPT_SOURCES_2 DSP_INTERRUPT_SOURCES_2_8876
+#endif
 #include "test.h"
 
 #define READY_OFFSET 0x0500
@@ -19,6 +35,12 @@
 #define HANDLER_COUNT_OFFSET 0x0508
 #define READY_MARKER 0xA55A
 #define TEST_TIMEOUT_MS 100
+#ifdef PMB8875
+#define I2S3_TX_INTERRUPT_FLAG BIT(4)
+#endif
+#ifdef PMB8876
+#define I2S3_TX_INTERRUPT_FLAG TEAK_INT_FINTB0_I2S3TX
+#endif
 
 struct interrupt_source {
 	const char *name;
@@ -60,7 +82,7 @@ static const struct interrupt_source B0_SOURCES[] = {
 	{ "SSC1TX", TEAK_INT_FINTB0_SSC1TX },
 	{ "SSC1ERR", TEAK_INT_FINTB0_SSC1ERR },
 	{ "SYSMCU", TEAK_INT_FINTB0_SYSMCU },
-	{ "I2S3TX", TEAK_INT_FINTB0_I2S3TX },
+	{ "I2S3TX", I2S3_TX_INTERRUPT_FLAG },
 };
 
 static const struct interrupt_source INT1_SOURCES[] = {
@@ -102,14 +124,14 @@ static const struct interrupt_source INT2_SOURCES[] = {
 };
 
 static const struct interrupt_bank BANKS[] = {
-	{ "A0 / INT0", A0_SOURCES, ARRAY_SIZE(A0_SOURCES), DSP_INTERRUPT_SOURCES_A0_8876,
-		sizeof(DSP_INTERRUPT_SOURCES_A0_8876) },
-	{ "B0 / INT0", B0_SOURCES, ARRAY_SIZE(B0_SOURCES), DSP_INTERRUPT_SOURCES_B0_8876,
-		sizeof(DSP_INTERRUPT_SOURCES_B0_8876) },
-	{ "INT1", INT1_SOURCES, ARRAY_SIZE(INT1_SOURCES), DSP_INTERRUPT_SOURCES_1_8876,
-		sizeof(DSP_INTERRUPT_SOURCES_1_8876) },
-	{ "INT2", INT2_SOURCES, ARRAY_SIZE(INT2_SOURCES), DSP_INTERRUPT_SOURCES_2_8876,
-		sizeof(DSP_INTERRUPT_SOURCES_2_8876) },
+	{ "A0 / INT0", A0_SOURCES, ARRAY_SIZE(A0_SOURCES), DSP_INTERRUPT_SOURCES_A0,
+		sizeof(DSP_INTERRUPT_SOURCES_A0) },
+	{ "B0 / INT0", B0_SOURCES, ARRAY_SIZE(B0_SOURCES), DSP_INTERRUPT_SOURCES_B0,
+		sizeof(DSP_INTERRUPT_SOURCES_B0) },
+	{ "INT1", INT1_SOURCES, ARRAY_SIZE(INT1_SOURCES), DSP_INTERRUPT_SOURCES_1,
+		sizeof(DSP_INTERRUPT_SOURCES_1) },
+	{ "INT2", INT2_SOURCES, ARRAY_SIZE(INT2_SOURCES), DSP_INTERRUPT_SOURCES_2,
+		sizeof(DSP_INTERRUPT_SOURCES_2) },
 };
 
 static uint16_t request_sequence;

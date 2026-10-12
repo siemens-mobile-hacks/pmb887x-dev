@@ -254,9 +254,11 @@ static uint8_t channel_decoder_parity(uint16_t value) {
 	return parity;
 }
 
-static void channel_decoder_generate_references(size_t metric_count, const uint8_t generators[3],
-	uint16_t references[8])
-{
+static void channel_decoder_generate_references(
+	size_t metric_count,
+	const uint8_t generators[3],
+	uint16_t references[8]
+) {
 	for (size_t i = 0; i < 8; i++)
 		references[i] = 0;
 	for (size_t butterfly = 0; butterfly < metric_count / 2; butterfly++) {
@@ -272,9 +274,14 @@ static void channel_decoder_generate_references(size_t metric_count, const uint8
 	}
 }
 
-static void channel_decoder_encode(const uint8_t *bits, size_t timestamp_count, size_t metric_count,
-	const uint8_t generators[3], int8_t amplitude, struct decoder_input *inputs)
-{
+static void channel_decoder_encode(
+	const uint8_t *bits,
+	size_t timestamp_count,
+	size_t metric_count,
+	const uint8_t generators[3],
+	int8_t amplitude,
+	struct decoder_input *inputs
+) {
 	uint16_t state = 0;
 
 	for (size_t timestamp = 0; timestamp < timestamp_count; timestamp++) {
@@ -303,9 +310,12 @@ static uint64_t channel_decoder_unpack_trace(const uint16_t *trace, size_t metri
 	return decisions;
 }
 
-static uint16_t channel_decoder_traceback(const uint64_t *decisions, size_t timestamp_count, size_t metric_count,
-	uint8_t *decoded)
-{
+static uint16_t channel_decoder_traceback(
+	const uint64_t *decisions,
+	size_t timestamp_count,
+	size_t metric_count,
+	uint8_t *decoded
+) {
 	uint16_t state = 0;
 
 	for (size_t timestamp = timestamp_count; timestamp-- > 0;) {
@@ -335,9 +345,12 @@ static size_t channel_decoder_best_state(const int16_t *metrics, size_t metric_c
 	return best_state;
 }
 
-static uint64_t channel_decoder_model_decisions(int16_t *metrics, size_t metric_count, const uint16_t references[8],
-	const struct decoder_input *input)
-{
+static uint64_t channel_decoder_model_decisions(
+	int16_t *metrics,
+	size_t metric_count,
+	const uint16_t references[8],
+	const struct decoder_input *input
+) {
 	int16_t next_metrics[PHYSICAL_METRIC_COUNT];
 	uint64_t decisions = 0;
 
@@ -365,9 +378,11 @@ static uint64_t channel_decoder_model_decisions(int16_t *metrics, size_t metric_
 	return decisions;
 }
 
-static uint16_t channel_decoder_model_step(int16_t metrics[METRIC_COUNT_16], const uint16_t references[8],
-	const struct decoder_input *input)
-{
+static uint16_t channel_decoder_model_step(
+	int16_t metrics[METRIC_COUNT_16],
+	const uint16_t references[8],
+	const struct decoder_input *input
+) {
 	uint16_t decisions = channel_decoder_model_decisions(metrics, METRIC_COUNT_16, references, input);
 
 	return ~(decisions << 8 | decisions >> 8);
@@ -429,36 +444,38 @@ static const struct soft_vector soft_basis_vectors[] = {
 #define DSP_CHANNEL_DECODER_VECTOR_RUNNER DSP_CHANNEL_DECODER_VECTOR_RUNNER_8876
 #endif
 
-static void prepare_common_vector(uint16_t configured_timestamp_count, uint16_t input_timestamp_count,
-	uint16_t metric_count)
-{
-	dsp_hw_shared_memory[0x0800] = 0;
-	dsp_hw_shared_memory[0x0801] = 0;
-	dsp_hw_shared_memory[0x0802] = configured_timestamp_count;
-	dsp_hw_shared_memory[0x0803] = 0;
-	dsp_hw_shared_memory[0x0804] = metric_count;
-	dsp_hw_shared_memory[0x0805] = 1;
-	dsp_hw_shared_memory[0x0806] = input_timestamp_count;
-	dsp_hw_shared_memory[0x0807] = 0xDEAD;
-	dsp_hw_shared_memory[0x0808] = 0;
-	dsp_hw_shared_memory[0x0809] = 0;
-	dsp_hw_shared_memory[0x080A] = 0xDEAD;
-	dsp_hw_shared_memory[0x080B] = 0;
+static void prepare_common_vector(
+	uint16_t configured_timestamp_count,
+	uint16_t input_timestamp_count,
+	uint16_t metric_count
+) {
+	dsp_hw_shared_memory[0x0200] = 0;
+	dsp_hw_shared_memory[0x0201] = 0;
+	dsp_hw_shared_memory[0x0202] = configured_timestamp_count;
+	dsp_hw_shared_memory[0x0203] = 0;
+	dsp_hw_shared_memory[0x0204] = metric_count;
+	dsp_hw_shared_memory[0x0205] = 1;
+	dsp_hw_shared_memory[0x0206] = input_timestamp_count;
+	dsp_hw_shared_memory[0x0207] = 0xDEAD;
+	dsp_hw_shared_memory[0x0208] = 0;
+	dsp_hw_shared_memory[0x0209] = 0;
+	dsp_hw_shared_memory[0x020A] = 0xDEAD;
+	dsp_hw_shared_memory[0x020B] = 0;
 	for (size_t i = 0; i < 8; i++)
-		dsp_hw_shared_memory[0x0810 + i] = 0;
+		dsp_hw_shared_memory[0x0210 + i] = 0;
 	for (size_t i = 0; i < metric_count; i++) {
-		dsp_hw_shared_memory[0x0820 + i] = 0;
-		dsp_hw_shared_memory[0x0860 + i] = 0;
-		dsp_hw_shared_memory[0x0940 + i] = 0xDEAD;
-		dsp_hw_shared_memory[0x0980 + i] = 0xDEAD;
+		dsp_hw_shared_memory[0x0220 + i] = 0;
+		dsp_hw_shared_memory[0x0260 + i] = 0;
+		dsp_hw_shared_memory[0x0340 + i] = 0xDEAD;
+		dsp_hw_shared_memory[0x0380 + i] = 0xDEAD;
 	}
 	for (size_t step = 0; step < input_timestamp_count; step++) {
-		dsp_hw_shared_memory[0x08A0 + step * 2] = 7;
-		dsp_hw_shared_memory[0x08A1 + step * 2] = 29;
-		dsp_hw_shared_memory[0x08E0 + step * 2] = 91;
-		dsp_hw_shared_memory[0x08E1 + step * 2] = 0;
+		dsp_hw_shared_memory[0x02A0 + step * 2] = 7;
+		dsp_hw_shared_memory[0x02A1 + step * 2] = 29;
+		dsp_hw_shared_memory[0x02E0 + step * 2] = 91;
+		dsp_hw_shared_memory[0x02E1 + step * 2] = 0;
 	}
-	dsp_hw_shared_memory[0x09C0] = 0xDEAD;
+	dsp_hw_shared_memory[0x03C0] = 0xDEAD;
 }
 
 static bool run_vector(void) {
@@ -472,13 +489,13 @@ static bool run_vector(void) {
 		return false;
 	if (!test_check("BRANCH starts channel-decoder vector runner", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
 		return false;
-	if (!test_check("channel-decoder vector runner becomes ready", dsp_hw_wait_shared(0x0800, READY_MARKER, 100)))
+	if (!test_check("channel-decoder vector runner becomes ready", dsp_hw_wait_shared(0x0200, READY_MARKER, 100)))
 		return false;
-	complete = dsp_hw_wait_shared(0x0801, COMPLETE_MARKER, 1000);
+	complete = dsp_hw_wait_shared(0x0201, COMPLETE_MARKER, 1000);
 	if (!complete) {
 		printf("# runner-timeout repeat=%04lX runs=%04lX trace=%04lX status=%04lX\n",
-			(uint32_t) dsp_hw_shared_memory[0x0808], (uint32_t) dsp_hw_shared_memory[0x0809],
-			(uint32_t) dsp_hw_shared_memory[0x09C0], (uint32_t) dsp_hw_shared_memory[0x0A41]);
+			(uint32_t) dsp_hw_shared_memory[0x0208], (uint32_t) dsp_hw_shared_memory[0x0209],
+			(uint32_t) dsp_hw_shared_memory[0x03C0], (uint32_t) dsp_hw_shared_memory[0x0441]);
 	}
 	return test_check("channel-decoder vector completes", complete);
 }
@@ -486,29 +503,29 @@ static bool run_vector(void) {
 static void print_metrics(const char *name) {
 	printf("# %s W1:", name);
 	for (size_t i = 0; i < METRIC_COUNT_16; i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0940 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0340 + i]);
 	printf("\n# %s W2:", name);
 	for (size_t i = 0; i < METRIC_COUNT_16; i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0980 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0380 + i]);
 	printf("\n# %s trace=%04lX start=%04lX busy=%04lX count=%04lX irq=%04lX\n", name,
-		(uint32_t) dsp_hw_shared_memory[0x09C0], (uint32_t) dsp_hw_shared_memory[0x0A40],
-		(uint32_t) dsp_hw_shared_memory[0x0A41], (uint32_t) dsp_hw_shared_memory[0x0A42],
-		(uint32_t) dsp_hw_shared_memory[0x0A43]);
+		(uint32_t) dsp_hw_shared_memory[0x03C0], (uint32_t) dsp_hw_shared_memory[0x0440],
+		(uint32_t) dsp_hw_shared_memory[0x0441], (uint32_t) dsp_hw_shared_memory[0x0442],
+		(uint32_t) dsp_hw_shared_memory[0x0443]);
 }
 
 static bool run_predecessor_vector(void) {
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
 	for (size_t i = 0; i < METRIC_COUNT_16; i++) {
-		dsp_hw_shared_memory[0x0820 + i] = i * 0x0100;
-		dsp_hw_shared_memory[0x0860 + i] = 0x7000 + i;
+		dsp_hw_shared_memory[0x0220 + i] = i * 0x0100;
+		dsp_hw_shared_memory[0x0260 + i] = 0x7000 + i;
 	}
 	if (!run_vector())
 		return false;
 	for (size_t i = 0; i < METRIC_COUNT_16; i++) {
 		test_eq_u32("RAMW1 metric survives pre-decode transport", i * 0x0100,
-			dsp_hw_shared_memory[0x0B00 + i]);
+			dsp_hw_shared_memory[0x0500 + i]);
 		test_eq_u32("RAMW2 metric survives pre-decode transport", 0x7000 + i,
-			dsp_hw_shared_memory[0x0B40 + i]);
+			dsp_hw_shared_memory[0x0540 + i]);
 	}
 	print_metrics("predecessor-map");
 	return true;
@@ -516,9 +533,9 @@ static bool run_predecessor_vector(void) {
 
 static bool run_trellis_probe(void) {
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 2;
+	dsp_hw_shared_memory[0x0205] = 2;
 	for (size_t i = 0; i < METRIC_COUNT_16; i++)
-		dsp_hw_shared_memory[0x0820 + i] = i * 0x0010;
+		dsp_hw_shared_memory[0x0220 + i] = i * 0x0010;
 	if (!run_vector())
 		return false;
 	print_metrics("trellis-probe");
@@ -530,15 +547,15 @@ static bool run_tie_vector(void) {
 	int16_t metrics[METRIC_COUNT_16] = { 0 };
 
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 2;
-	dsp_hw_shared_memory[0x08A0] = 0;
-	dsp_hw_shared_memory[0x08A1] = 0;
-	dsp_hw_shared_memory[0x08E0] = 0;
-	dsp_hw_shared_memory[0x08E1] = 0;
+	dsp_hw_shared_memory[0x0205] = 2;
+	dsp_hw_shared_memory[0x02A0] = 0;
+	dsp_hw_shared_memory[0x02A1] = 0;
+	dsp_hw_shared_memory[0x02E0] = 0;
+	dsp_hw_shared_memory[0x02E1] = 0;
 	if (!run_vector())
 		return false;
-	test_eq_u32("equal ACS candidates select the first lower predecessor", 0, dsp_hw_shared_memory[0x09C0]);
-	test_eq_u32("equal ACS candidates select the first upper predecessor", 0, dsp_hw_shared_memory[0x09C1]);
+	test_eq_u32("equal ACS candidates select the first lower predecessor", 0, dsp_hw_shared_memory[0x03C0]);
+	test_eq_u32("equal ACS candidates select the first upper predecessor", 0, dsp_hw_shared_memory[0x03C1]);
 	test_eq_u32("ACS model uses the hardware tie rule", 0,
 		channel_decoder_model_step(metrics, polynomial_references_16, &input));
 	return true;
@@ -546,48 +563,48 @@ static bool run_tie_vector(void) {
 
 static bool run_preferred_state_vector(uint16_t state) {
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 2;
-	dsp_hw_shared_memory[0x08A0] = 0;
-	dsp_hw_shared_memory[0x08A1] = 0;
-	dsp_hw_shared_memory[0x08E0] = 0;
-	dsp_hw_shared_memory[0x08E1] = 0;
-	dsp_hw_shared_memory[0x0820 + state] = 0x0100;
+	dsp_hw_shared_memory[0x0205] = 2;
+	dsp_hw_shared_memory[0x02A0] = 0;
+	dsp_hw_shared_memory[0x02A1] = 0;
+	dsp_hw_shared_memory[0x02E0] = 0;
+	dsp_hw_shared_memory[0x02E1] = 0;
+	dsp_hw_shared_memory[0x0220 + state] = 0x0100;
 	if (!run_vector())
 		return false;
 	printf("# preferred-state-%lu trace=%04lX,%04lX\n", (uint32_t) state,
-		(uint32_t) dsp_hw_shared_memory[0x09C0], (uint32_t) dsp_hw_shared_memory[0x09C1]);
+		(uint32_t) dsp_hw_shared_memory[0x03C0], (uint32_t) dsp_hw_shared_memory[0x03C1]);
 	return true;
 }
 
 static bool run_rejected_state_vector(uint16_t state) {
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 2;
-	dsp_hw_shared_memory[0x08A0] = 0;
-	dsp_hw_shared_memory[0x08A1] = 0;
-	dsp_hw_shared_memory[0x08E0] = 0;
-	dsp_hw_shared_memory[0x08E1] = 0;
+	dsp_hw_shared_memory[0x0205] = 2;
+	dsp_hw_shared_memory[0x02A0] = 0;
+	dsp_hw_shared_memory[0x02A1] = 0;
+	dsp_hw_shared_memory[0x02E0] = 0;
+	dsp_hw_shared_memory[0x02E1] = 0;
 	for (size_t i = 0; i < METRIC_COUNT_16; i++)
-		dsp_hw_shared_memory[0x0820 + i] = 0x0100;
-	dsp_hw_shared_memory[0x0820 + state] = 0;
+		dsp_hw_shared_memory[0x0220 + i] = 0x0100;
+	dsp_hw_shared_memory[0x0220 + state] = 0;
 	if (!run_vector())
 		return false;
 	printf("# rejected-state-%lu trace=%04lX,%04lX\n", (uint32_t) state,
-		(uint32_t) dsp_hw_shared_memory[0x09C0], (uint32_t) dsp_hw_shared_memory[0x09C1]);
+		(uint32_t) dsp_hw_shared_memory[0x03C0], (uint32_t) dsp_hw_shared_memory[0x03C1]);
 	return true;
 }
 
 static bool run_metric_impulse_vector(uint16_t state, uint16_t amplitude) {
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 2;
-	dsp_hw_shared_memory[0x08A0] = 0;
-	dsp_hw_shared_memory[0x08A1] = 0;
-	dsp_hw_shared_memory[0x08E0] = 0;
-	dsp_hw_shared_memory[0x08E1] = 0;
-	dsp_hw_shared_memory[0x0820 + state] = amplitude;
+	dsp_hw_shared_memory[0x0205] = 2;
+	dsp_hw_shared_memory[0x02A0] = 0;
+	dsp_hw_shared_memory[0x02A1] = 0;
+	dsp_hw_shared_memory[0x02E0] = 0;
+	dsp_hw_shared_memory[0x02E1] = 0;
+	dsp_hw_shared_memory[0x0220 + state] = amplitude;
 	if (!run_vector())
 		return false;
 	printf("# metric-impulse-%lu-%lu trace=%04lX,%04lX\n", (uint32_t) amplitude, (uint32_t) state,
-		(uint32_t) dsp_hw_shared_memory[0x09C0], (uint32_t) dsp_hw_shared_memory[0x09C1]);
+		(uint32_t) dsp_hw_shared_memory[0x03C0], (uint32_t) dsp_hw_shared_memory[0x03C1]);
 	return true;
 }
 
@@ -596,9 +613,9 @@ static bool run_branch_index_vector(uint16_t index) {
 	uint16_t references = index * 0x1111;
 
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 2;
+	dsp_hw_shared_memory[0x0205] = 2;
 	for (size_t i = 0; i < 8; i++)
-		dsp_hw_shared_memory[0x0810 + i] = references;
+		dsp_hw_shared_memory[0x0210 + i] = references;
 	if (!run_vector())
 		return false;
 	sprintf(name, "branch-index-%lu", (uint32_t) index);
@@ -610,17 +627,17 @@ static bool capture_reference_index_result(uint16_t index, struct decoder_result
 	uint16_t references = index * 0x1111;
 
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = ARRAY_SIZE(result->trace);
+	dsp_hw_shared_memory[0x0205] = ARRAY_SIZE(result->trace);
 	for (size_t state = 0; state < METRIC_COUNT_16; state++)
-		dsp_hw_shared_memory[0x0820 + state] = state * 0x0100 + state * state;
+		dsp_hw_shared_memory[0x0220 + state] = state * 0x0100 + state * state;
 	for (size_t register_index = 0; register_index < 8; register_index++)
-		dsp_hw_shared_memory[0x0810 + register_index] = references;
+		dsp_hw_shared_memory[0x0210 + register_index] = references;
 	if (!run_vector())
 		return false;
 	for (size_t state = 0; state < METRIC_COUNT_16; state++)
-		result->metrics[state] = dsp_hw_shared_memory[0x0980 + state];
+		result->metrics[state] = dsp_hw_shared_memory[0x0380 + state];
 	for (size_t i = 0; i < ARRAY_SIZE(result->trace); i++)
-		result->trace[i] = dsp_hw_shared_memory[0x09C0 + i];
+		result->trace[i] = dsp_hw_shared_memory[0x03C0 + i];
 	return true;
 }
 
@@ -657,18 +674,18 @@ static bool run_metric_wrap_vector(void) {
 		model_metrics[state] = (int16_t) initial_metrics[state];
 	model_trace = channel_decoder_model_step(model_metrics, references, &input);
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = ARRAY_SIZE(hardware_trace);
+	dsp_hw_shared_memory[0x0205] = ARRAY_SIZE(hardware_trace);
 	for (size_t state = 0; state < METRIC_COUNT_16; state++)
-		dsp_hw_shared_memory[0x0820 + state] = initial_metrics[state];
-	dsp_hw_shared_memory[0x08A0] = input.sin0;
-	dsp_hw_shared_memory[0x08A1] = input.sin1;
-	dsp_hw_shared_memory[0x08E0] = input.sin2;
+		dsp_hw_shared_memory[0x0220 + state] = initial_metrics[state];
+	dsp_hw_shared_memory[0x02A0] = input.sin0;
+	dsp_hw_shared_memory[0x02A1] = input.sin1;
+	dsp_hw_shared_memory[0x02E0] = input.sin2;
 	if (!run_vector())
 		return false;
-	hardware_trace[0] = dsp_hw_shared_memory[0x09C0];
-	hardware_trace[1] = dsp_hw_shared_memory[0x09C1];
+	hardware_trace[0] = dsp_hw_shared_memory[0x03C0];
+	hardware_trace[1] = dsp_hw_shared_memory[0x03C1];
 	test_eq_memory("signed 16-bit metric wrap matches the ACS model", model_metrics,
-		dsp_hw_shared_memory + 0x0980, sizeof(model_metrics));
+		dsp_hw_shared_memory + 0x0380, sizeof(model_metrics));
 	test_eq_u32("metric wrap traceback low byte matches the ACS model", model_trace & 0xFF, hardware_trace[0]);
 	test_eq_u32("metric wrap traceback high byte matches the ACS model", model_trace >> 8, hardware_trace[1]);
 	return true;
@@ -681,33 +698,33 @@ static bool run_64_state_probe(void) {
 	uint64_t model_decisions;
 
 	prepare_common_vector(1, 1, PHYSICAL_METRIC_COUNT);
-	dsp_hw_shared_memory[0x0803] = 0x8000;
-	dsp_hw_shared_memory[0x0805] = ARRAY_SIZE(model_trace);
+	dsp_hw_shared_memory[0x0203] = 0x8000;
+	dsp_hw_shared_memory[0x0205] = ARRAY_SIZE(model_trace);
 	for (size_t register_index = 0; register_index < 8; register_index++)
-		dsp_hw_shared_memory[0x0810 + register_index] = repeated_references_64[register_index];
+		dsp_hw_shared_memory[0x0210 + register_index] = repeated_references_64[register_index];
 	for (size_t state = 0; state < PHYSICAL_METRIC_COUNT; state++) {
 		uint16_t initial_metric = state * 0x1234 + state * state * 73;
 
 		model_metrics[state] = (int16_t) initial_metric;
-		dsp_hw_shared_memory[0x0820 + state] = initial_metric;
+		dsp_hw_shared_memory[0x0220 + state] = initial_metric;
 	}
-	dsp_hw_shared_memory[0x08A0] = (uint8_t) input.sin0;
-	dsp_hw_shared_memory[0x08A1] = (uint8_t) input.sin1;
-	dsp_hw_shared_memory[0x08E0] = (uint8_t) input.sin2;
+	dsp_hw_shared_memory[0x02A0] = (uint8_t) input.sin0;
+	dsp_hw_shared_memory[0x02A1] = (uint8_t) input.sin1;
+	dsp_hw_shared_memory[0x02E0] = (uint8_t) input.sin2;
 	model_decisions = channel_decoder_model_decisions(model_metrics, PHYSICAL_METRIC_COUNT,
 		repeated_references_64, &input);
 	channel_decoder_model_trace_64(model_decisions, model_trace);
 	if (!run_vector())
 		return false;
 	test_eq_memory("64-state metrics match the generalized ACS model", model_metrics,
-		dsp_hw_shared_memory + 0x0980, sizeof(model_metrics));
+		dsp_hw_shared_memory + 0x0380, sizeof(model_metrics));
 	test_eq_memory("64-state traceback matches the hardware golden", polynomial_64_probe_trace,
-		dsp_hw_shared_memory + 0x09C0, sizeof(polynomial_64_probe_trace));
+		dsp_hw_shared_memory + 0x03C0, sizeof(polynomial_64_probe_trace));
 	test_eq_memory("64-state traceback matches the generalized ACS model", model_trace,
-		dsp_hw_shared_memory + 0x09C0, sizeof(model_trace));
+		dsp_hw_shared_memory + 0x03C0, sizeof(model_trace));
 	printf("# 64-state traceback:");
 	for (size_t i = 0; i < ARRAY_SIZE(model_trace); i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x09C0 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x03C0 + i]);
 	printf("\n");
 	return true;
 }
@@ -717,17 +734,17 @@ static bool run_64_state_series(void) {
 	uint16_t model_trace[32];
 
 	prepare_common_vector(8, 8, PHYSICAL_METRIC_COUNT);
-	dsp_hw_shared_memory[0x0803] = 0x8000;
-	dsp_hw_shared_memory[0x0805] = ARRAY_SIZE(model_trace);
+	dsp_hw_shared_memory[0x0203] = 0x8000;
+	dsp_hw_shared_memory[0x0205] = ARRAY_SIZE(model_trace);
 	for (size_t register_index = 0; register_index < 8; register_index++)
-		dsp_hw_shared_memory[0x0810 + register_index] = repeated_references_64[register_index];
+		dsp_hw_shared_memory[0x0210 + register_index] = repeated_references_64[register_index];
 	for (size_t timestamp = 0; timestamp < 8; timestamp++) {
 		const struct decoder_input *input = &polynomial_scrambled_inputs[timestamp];
 		uint64_t decisions;
 
-		dsp_hw_shared_memory[0x08A0 + timestamp * 2] = (uint8_t) input->sin0;
-		dsp_hw_shared_memory[0x08A1 + timestamp * 2] = (uint8_t) input->sin1;
-		dsp_hw_shared_memory[0x08E0 + timestamp * 2] = (uint8_t) input->sin2;
+		dsp_hw_shared_memory[0x02A0 + timestamp * 2] = (uint8_t) input->sin0;
+		dsp_hw_shared_memory[0x02A1 + timestamp * 2] = (uint8_t) input->sin1;
+		dsp_hw_shared_memory[0x02E0 + timestamp * 2] = (uint8_t) input->sin2;
 		decisions = channel_decoder_model_decisions(model_metrics, PHYSICAL_METRIC_COUNT,
 			repeated_references_64, input);
 		channel_decoder_model_trace_64(decisions, model_trace + timestamp * 4);
@@ -735,14 +752,14 @@ static bool run_64_state_series(void) {
 	if (!run_vector())
 		return false;
 	test_eq_memory("64-state series metrics match the generalized ACS model", model_metrics,
-		dsp_hw_shared_memory + 0x0940, sizeof(model_metrics));
+		dsp_hw_shared_memory + 0x0340, sizeof(model_metrics));
 	test_eq_memory("64-state series traceback matches the hardware golden", polynomial_64_scrambled_trace,
-		dsp_hw_shared_memory + 0x09C0, sizeof(polynomial_64_scrambled_trace));
+		dsp_hw_shared_memory + 0x03C0, sizeof(polynomial_64_scrambled_trace));
 	test_eq_memory("64-state series traceback matches the generalized ACS model", model_trace,
-		dsp_hw_shared_memory + 0x09C0, sizeof(model_trace));
+		dsp_hw_shared_memory + 0x03C0, sizeof(model_trace));
 	printf("# 64-state traceback series:");
 	for (size_t i = 0; i < ARRAY_SIZE(model_trace); i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x09C0 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x03C0 + i]);
 	printf("\n");
 	return true;
 }
@@ -759,19 +776,19 @@ static bool run_64_reference_field_vector(size_t field) {
 	decisions = channel_decoder_model_decisions(model_metrics, PHYSICAL_METRIC_COUNT, references, &input);
 	channel_decoder_model_trace_64(decisions, model_trace);
 	prepare_common_vector(1, 1, PHYSICAL_METRIC_COUNT);
-	dsp_hw_shared_memory[0x0803] = 0x8000;
-	dsp_hw_shared_memory[0x0805] = ARRAY_SIZE(model_trace);
+	dsp_hw_shared_memory[0x0203] = 0x8000;
+	dsp_hw_shared_memory[0x0205] = ARRAY_SIZE(model_trace);
 	for (size_t register_index = 0; register_index < 8; register_index++)
-		dsp_hw_shared_memory[0x0810 + register_index] = references[register_index];
-	dsp_hw_shared_memory[0x08A0] = (uint8_t) input.sin0;
-	dsp_hw_shared_memory[0x08A1] = (uint8_t) input.sin1;
-	dsp_hw_shared_memory[0x08E0] = (uint8_t) input.sin2;
+		dsp_hw_shared_memory[0x0210 + register_index] = references[register_index];
+	dsp_hw_shared_memory[0x02A0] = (uint8_t) input.sin0;
+	dsp_hw_shared_memory[0x02A1] = (uint8_t) input.sin1;
+	dsp_hw_shared_memory[0x02E0] = (uint8_t) input.sin2;
 	if (!run_vector())
 		return false;
 	sprintf(assertion, "64-state reference field %lu routes to its butterfly metrics", (uint32_t) field);
-	test_eq_memory(assertion, model_metrics, dsp_hw_shared_memory + 0x0980, sizeof(model_metrics));
+	test_eq_memory(assertion, model_metrics, dsp_hw_shared_memory + 0x0380, sizeof(model_metrics));
 	sprintf(assertion, "64-state reference field %lu routes to its decisions", (uint32_t) field);
-	test_eq_memory(assertion, model_trace, dsp_hw_shared_memory + 0x09C0, sizeof(model_trace));
+	test_eq_memory(assertion, model_trace, dsp_hw_shared_memory + 0x03C0, sizeof(model_trace));
 	return true;
 }
 
@@ -787,19 +804,19 @@ static bool run_64_reference_bit_zero_vector(void) {
 	decisions = channel_decoder_model_decisions(model_metrics, PHYSICAL_METRIC_COUNT, references, &input);
 	channel_decoder_model_trace_64(decisions, model_trace);
 	prepare_common_vector(1, 1, PHYSICAL_METRIC_COUNT);
-	dsp_hw_shared_memory[0x0803] = 0x8000;
-	dsp_hw_shared_memory[0x0805] = ARRAY_SIZE(model_trace);
+	dsp_hw_shared_memory[0x0203] = 0x8000;
+	dsp_hw_shared_memory[0x0205] = ARRAY_SIZE(model_trace);
 	for (size_t register_index = 0; register_index < 8; register_index++)
-		dsp_hw_shared_memory[0x0810 + register_index] = references[register_index];
-	dsp_hw_shared_memory[0x08A0] = (uint8_t) input.sin0;
-	dsp_hw_shared_memory[0x08A1] = (uint8_t) input.sin1;
-	dsp_hw_shared_memory[0x08E0] = (uint8_t) input.sin2;
+		dsp_hw_shared_memory[0x0210 + register_index] = references[register_index];
+	dsp_hw_shared_memory[0x02A0] = (uint8_t) input.sin0;
+	dsp_hw_shared_memory[0x02A1] = (uint8_t) input.sin1;
+	dsp_hw_shared_memory[0x02E0] = (uint8_t) input.sin2;
 	if (!run_vector())
 		return false;
 	test_eq_memory("reference bit zero is ignored by all 64-state butterflies", model_metrics,
-		dsp_hw_shared_memory + 0x0980, sizeof(model_metrics));
+		dsp_hw_shared_memory + 0x0380, sizeof(model_metrics));
 	test_eq_memory("reference bit zero does not alter 64-state decisions", model_trace,
-		dsp_hw_shared_memory + 0x09C0, sizeof(model_trace));
+		dsp_hw_shared_memory + 0x03C0, sizeof(model_trace));
 	return true;
 }
 
@@ -859,23 +876,23 @@ static bool run_decoding_vector(const struct decoding_vector *vector) {
 	}
 
 	prepare_common_vector(timestamp_count, timestamp_count, vector->metric_count);
-	dsp_hw_shared_memory[0x0803] = vector->metric_count == PHYSICAL_METRIC_COUNT ? 0x8000 : 0;
-	dsp_hw_shared_memory[0x0805] = trace_word_count;
-	dsp_hw_shared_memory[0x0808] = vector->repeat_count;
+	dsp_hw_shared_memory[0x0203] = vector->metric_count == PHYSICAL_METRIC_COUNT ? 0x8000 : 0;
+	dsp_hw_shared_memory[0x0205] = trace_word_count;
+	dsp_hw_shared_memory[0x0208] = vector->repeat_count;
 	for (size_t register_index = 0; register_index < 8; register_index++)
-		dsp_hw_shared_memory[0x0810 + register_index] = references[register_index];
+		dsp_hw_shared_memory[0x0210 + register_index] = references[register_index];
 	for (size_t state = 0; state < vector->metric_count; state++)
-		dsp_hw_shared_memory[0x0820 + state] = state == 0 ? 0 : (uint16_t) -12000;
+		dsp_hw_shared_memory[0x0220 + state] = state == 0 ? 0 : (uint16_t) -12000;
 	for (size_t timestamp = 0; timestamp < timestamp_count; timestamp++) {
-		dsp_hw_shared_memory[0x08A0 + timestamp * 2] = (uint8_t) inputs[timestamp].sin0;
-		dsp_hw_shared_memory[0x08A1 + timestamp * 2] = (uint8_t) inputs[timestamp].sin1;
-		dsp_hw_shared_memory[0x08E0 + timestamp * 2] = (uint8_t) inputs[timestamp].sin2;
+		dsp_hw_shared_memory[0x02A0 + timestamp * 2] = (uint8_t) inputs[timestamp].sin0;
+		dsp_hw_shared_memory[0x02A1 + timestamp * 2] = (uint8_t) inputs[timestamp].sin1;
+		dsp_hw_shared_memory[0x02E0 + timestamp * 2] = (uint8_t) inputs[timestamp].sin2;
 	}
 	if (!run_vector())
 		return false;
-	active_metrics = dsp_hw_shared_memory + (timestamp_count & 1 ? 0x0980 : 0x0940);
+	active_metrics = dsp_hw_shared_memory + (timestamp_count & 1 ? 0x0380 : 0x0340);
 	for (size_t word = 0; word < trace_word_count; word++)
-		hardware_trace[word] = dsp_hw_shared_memory[0x09C0 + word];
+		hardware_trace[word] = dsp_hw_shared_memory[0x03C0 + word];
 	for (size_t timestamp = 0; timestamp < timestamp_count; timestamp++) {
 		hardware_decisions[timestamp] = channel_decoder_unpack_trace(
 			hardware_trace + timestamp * trace_words_per_timestamp, vector->metric_count);
@@ -886,13 +903,13 @@ static bool run_decoding_vector(const struct decoding_vector *vector) {
 	sprintf(assertion, "%s decision series matches the independent ACS model", vector->name);
 	test_eq_memory(assertion, model_trace, hardware_trace, trace_word_count * sizeof(model_trace[0]));
 	sprintf(assertion, "%s executes every requested decode without a DSP reset", vector->name);
-	test_eq_u32(assertion, vector->repeat_count + 1, dsp_hw_shared_memory[0x0809]);
+	test_eq_u32(assertion, vector->repeat_count + 1, dsp_hw_shared_memory[0x0209]);
 	sprintf(assertion, "%s acknowledges the previous completion before starting", vector->name);
-	test_eq_u32(assertion, 0, dsp_hw_shared_memory[0x080A] & 0x0100);
+	test_eq_u32(assertion, 0, dsp_hw_shared_memory[0x020A] & 0x0100);
 	sprintf(assertion, "%s observes every distinct completion source", vector->name);
-	test_eq_u32(assertion, vector->repeat_count + 1, dsp_hw_shared_memory[0x080B]);
+	test_eq_u32(assertion, vector->repeat_count + 1, dsp_hw_shared_memory[0x020B]);
 	sprintf(assertion, "%s final completion source is pending", vector->name);
-	test_eq_u32(assertion, 0x0100, dsp_hw_shared_memory[0x0A43] & 0x0100);
+	test_eq_u32(assertion, 0x0100, dsp_hw_shared_memory[0x0443] & 0x0100);
 	model_start_state = channel_decoder_traceback(model_decisions, timestamp_count, vector->metric_count,
 		model_decoded);
 	hardware_start_state = channel_decoder_traceback(hardware_decisions, timestamp_count, vector->metric_count,
@@ -934,19 +951,19 @@ static bool run_overflow_schedule_vector(uint16_t count, bool protection) {
 	char name[80];
 
 	prepare_common_vector(count, count, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0803] = protection ? 0x4000 : 0;
+	dsp_hw_shared_memory[0x0203] = protection ? 0x4000 : 0;
 	for (size_t state = 0; state < METRIC_COUNT_16; state++)
-		dsp_hw_shared_memory[0x0820 + state] = 0x5000;
+		dsp_hw_shared_memory[0x0220 + state] = 0x5000;
 	for (size_t timestamp = 0; timestamp < count; timestamp++) {
-		dsp_hw_shared_memory[0x08A0 + timestamp * 2] = 0;
-		dsp_hw_shared_memory[0x08A1 + timestamp * 2] = 0;
-		dsp_hw_shared_memory[0x08E0 + timestamp * 2] = 0;
+		dsp_hw_shared_memory[0x02A0 + timestamp * 2] = 0;
+		dsp_hw_shared_memory[0x02A1 + timestamp * 2] = 0;
+		dsp_hw_shared_memory[0x02E0 + timestamp * 2] = 0;
 	}
 	if (!run_vector())
 		return false;
 	for (size_t state = 0; state < METRIC_COUNT_16; state++)
 		expected_metrics[state] = protection && count >= 3 ? 0x4000 : 0x5000;
-	active_metrics = dsp_hw_shared_memory + (count & 1 ? 0x0980 : 0x0940);
+	active_metrics = dsp_hw_shared_memory + (count & 1 ? 0x0380 : 0x0340);
 	sprintf(name, "overflow %s count %lu follows the documented schedule",
 		protection ? "protection" : "disabled", (uint32_t) count);
 	test_eq_memory(name, expected_metrics, active_metrics, sizeof(expected_metrics));
@@ -957,16 +974,16 @@ static bool run_count_vector(uint16_t count) {
 	char name[64];
 
 	prepare_common_vector(count, count, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 16;
+	dsp_hw_shared_memory[0x0205] = 16;
 	if (!run_vector())
 		return false;
 	sprintf(name, "timestamp-count-%lu reaches the requested final count", (uint32_t) count);
-	test_eq_u32(name, count, dsp_hw_shared_memory[0x0A42]);
+	test_eq_u32(name, count, dsp_hw_shared_memory[0x0442]);
 	sprintf(name, "timestamp-count-%lu", (uint32_t) count);
 	print_metrics(name);
 	printf("# %s trace-series:", name);
 	for (size_t i = 0; i < 16; i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x09C0 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x03C0 + i]);
 	printf("\n");
 	return true;
 }
@@ -977,19 +994,19 @@ static bool run_trace_extent_vector(uint16_t count) {
 	size_t changed = 0;
 
 	prepare_common_vector(count, count, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = ARRAY_SIZE(first_capture);
-	dsp_hw_shared_memory[0x0807] = 0xBEEF;
+	dsp_hw_shared_memory[0x0205] = ARRAY_SIZE(first_capture);
+	dsp_hw_shared_memory[0x0207] = 0xBEEF;
 	if (!run_vector())
 		return false;
 	for (size_t i = 0; i < ARRAY_SIZE(first_capture); i++)
-		first_capture[i] = dsp_hw_shared_memory[0x09C0 + i];
+		first_capture[i] = dsp_hw_shared_memory[0x03C0 + i];
 	prepare_common_vector(count, count, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = ARRAY_SIZE(first_capture);
+	dsp_hw_shared_memory[0x0205] = ARRAY_SIZE(first_capture);
 	if (!run_vector())
 		return false;
 	printf("# trace-layout-%lu changed:", (uint32_t) count);
 	for (size_t i = 0; i < ARRAY_SIZE(first_capture); i++) {
-		uint16_t value = dsp_hw_shared_memory[0x09C0 + i];
+		uint16_t value = dsp_hw_shared_memory[0x03C0 + i];
 
 		if (value != first_capture[i])
 			continue;
@@ -1005,20 +1022,20 @@ static bool run_trace_extent_vector(uint16_t count) {
 static void print_changed_metrics(const char *name, uint16_t count) {
 	printf("# %s W1 changed:", name);
 	for (size_t i = 0; i < PHYSICAL_METRIC_COUNT; i++) {
-		uint16_t value = dsp_hw_shared_memory[0x0940 + i];
+		uint16_t value = dsp_hw_shared_memory[0x0340 + i];
 
 		if (value != 0)
 			printf(" %lu=%04lX", (uint32_t) i, (uint32_t) value);
 	}
 	printf("\n# %s W2 changed:", name);
 	for (size_t i = 0; i < PHYSICAL_METRIC_COUNT; i++) {
-		uint16_t value = dsp_hw_shared_memory[0x0980 + i];
+		uint16_t value = dsp_hw_shared_memory[0x0380 + i];
 
 		if (value != 0x7000 + i)
 			printf(" %lu=%04lX", (uint32_t) i, (uint32_t) value);
 	}
 	printf("\n# %s count=%lu trace=%04lX\n", name, (uint32_t) count,
-		(uint32_t) dsp_hw_shared_memory[0x09C0]);
+		(uint32_t) dsp_hw_shared_memory[0x03C0]);
 }
 
 static bool run_physical_layout_vector(uint16_t count) {
@@ -1026,7 +1043,7 @@ static bool run_physical_layout_vector(uint16_t count) {
 
 	prepare_common_vector(count, count, PHYSICAL_METRIC_COUNT);
 	for (size_t i = 0; i < PHYSICAL_METRIC_COUNT; i++)
-		dsp_hw_shared_memory[0x0860 + i] = 0x7000 + i;
+		dsp_hw_shared_memory[0x0260 + i] = 0x7000 + i;
 	if (!run_vector())
 		return false;
 	sprintf(name, "physical-layout-%lu", (uint32_t) count);
@@ -1036,36 +1053,38 @@ static bool run_physical_layout_vector(uint16_t count) {
 
 static bool run_firmware_configuration_vector(void) {
 	prepare_common_vector(16, 16, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 32;
+	dsp_hw_shared_memory[0x0205] = 32;
 	for (size_t i = 0; i < METRIC_COUNT_16; i++)
-		dsp_hw_shared_memory[0x0820 + i] = firmware_metrics_16[i];
+		dsp_hw_shared_memory[0x0220 + i] = firmware_metrics_16[i];
 	for (size_t i = 0; i < 8; i++)
-		dsp_hw_shared_memory[0x0810 + i] = firmware_references_16[i];
+		dsp_hw_shared_memory[0x0210 + i] = firmware_references_16[i];
 	if (!run_vector())
 		return false;
 	print_metrics("firmware-configuration");
 	printf("# firmware-configuration trace-series:");
 	for (size_t i = 0; i < 32; i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x09C0 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x03C0 + i]);
 	printf("\n");
 	return true;
 }
 
-static bool run_polynomial_configuration_vector(const char *name, const struct decoder_input inputs[16],
-	const uint16_t expected_trace[32])
-{
+static bool run_polynomial_configuration_vector(
+	const char *name,
+	const struct decoder_input inputs[16],
+	const uint16_t expected_trace[32]
+) {
 	char assertion[64];
 	uint16_t model_trace[32];
 
 	prepare_common_vector(16, 16, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 32;
+	dsp_hw_shared_memory[0x0205] = 32;
 	for (size_t i = 0; i < 8; i++)
-		dsp_hw_shared_memory[0x0810 + i] = polynomial_references_16[i];
+		dsp_hw_shared_memory[0x0210 + i] = polynomial_references_16[i];
 	for (size_t i = 0; i < 16; i++) {
-		dsp_hw_shared_memory[0x08A0 + i * 2] = (uint8_t) inputs[i].sin0;
-		dsp_hw_shared_memory[0x08A1 + i * 2] = (uint8_t) inputs[i].sin1;
-		dsp_hw_shared_memory[0x08E0 + i * 2] = (uint8_t) inputs[i].sin2;
-		dsp_hw_shared_memory[0x08E1 + i * 2] = 0;
+		dsp_hw_shared_memory[0x02A0 + i * 2] = (uint8_t) inputs[i].sin0;
+		dsp_hw_shared_memory[0x02A1 + i * 2] = (uint8_t) inputs[i].sin1;
+		dsp_hw_shared_memory[0x02E0 + i * 2] = (uint8_t) inputs[i].sin2;
+		dsp_hw_shared_memory[0x02E1 + i * 2] = 0;
 	}
 	if (!run_vector())
 		return false;
@@ -1073,10 +1092,10 @@ static bool run_polynomial_configuration_vector(const char *name, const struct d
 	sprintf(assertion, "%s ACS model matches hardware golden", name);
 	test_eq_memory(assertion, expected_trace, model_trace, sizeof(model_trace));
 	sprintf(assertion, "%s polynomial trace matches hardware", name);
-	test_eq_memory(assertion, expected_trace, dsp_hw_shared_memory + 0x09C0, sizeof(polynomial_constant_trace));
+	test_eq_memory(assertion, expected_trace, dsp_hw_shared_memory + 0x03C0, sizeof(polynomial_constant_trace));
 	printf("# polynomial-%s trace-series:", name);
 	for (size_t i = 0; i < 32; i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x09C0 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x03C0 + i]);
 	printf("\n");
 	return true;
 }
@@ -1087,19 +1106,19 @@ static bool run_soft_basis_vector(const struct soft_vector *vector) {
 	uint16_t expected_sin2 = (uint16_t) (int16_t) (int8_t) vector->sin2;
 
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x08A0] = vector->sin0;
-	dsp_hw_shared_memory[0x08A1] = vector->sin1;
-	dsp_hw_shared_memory[0x08E0] = vector->sin2;
+	dsp_hw_shared_memory[0x02A0] = vector->sin0;
+	dsp_hw_shared_memory[0x02A1] = vector->sin1;
+	dsp_hw_shared_memory[0x02E0] = vector->sin2;
 	if (!run_vector())
 		return false;
-	test_eq_u32("SIN0 survives runner packing", expected_sin0, dsp_hw_shared_memory[0x0B80]);
-	test_eq_u32("SIN1 survives runner packing", expected_sin1, dsp_hw_shared_memory[0x0B81]);
-	test_eq_u32("SIN2 survives runner packing", expected_sin2, dsp_hw_shared_memory[0x0BC0]);
+	test_eq_u32("SIN0 survives runner packing", expected_sin0, dsp_hw_shared_memory[0x0580]);
+	test_eq_u32("SIN1 survives runner packing", expected_sin1, dsp_hw_shared_memory[0x0581]);
+	test_eq_u32("SIN2 survives runner packing", expected_sin2, dsp_hw_shared_memory[0x05C0]);
 	printf("# soft-%s input=%02lX,%02lX,%02lX metric=%04lX,%04lX,%04lX,%04lX,%04lX\n", vector->name,
 		(uint32_t) vector->sin0, (uint32_t) vector->sin1, (uint32_t) vector->sin2,
-		(uint32_t) dsp_hw_shared_memory[0x0980], (uint32_t) dsp_hw_shared_memory[0x0981],
-		(uint32_t) dsp_hw_shared_memory[0x0982], (uint32_t) dsp_hw_shared_memory[0x0983],
-		(uint32_t) dsp_hw_shared_memory[0x0984]);
+		(uint32_t) dsp_hw_shared_memory[0x0380], (uint32_t) dsp_hw_shared_memory[0x0381],
+		(uint32_t) dsp_hw_shared_memory[0x0382], (uint32_t) dsp_hw_shared_memory[0x0383],
+		(uint32_t) dsp_hw_shared_memory[0x0384]);
 	return true;
 }
 
@@ -1107,16 +1126,16 @@ static bool capture_branch_trace(uint16_t index, uint16_t sin0, uint16_t sin1, u
 	uint16_t references = index * 0x1111;
 
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 2;
+	dsp_hw_shared_memory[0x0205] = 2;
 	for (size_t i = 0; i < 8; i++)
-		dsp_hw_shared_memory[0x0810 + i] = references;
-	dsp_hw_shared_memory[0x08A0] = sin0;
-	dsp_hw_shared_memory[0x08A1] = sin1;
-	dsp_hw_shared_memory[0x08E0] = sin2;
+		dsp_hw_shared_memory[0x0210 + i] = references;
+	dsp_hw_shared_memory[0x02A0] = sin0;
+	dsp_hw_shared_memory[0x02A1] = sin1;
+	dsp_hw_shared_memory[0x02E0] = sin2;
 	if (!run_vector())
 		return false;
-	trace[0] = dsp_hw_shared_memory[0x09C0];
-	trace[1] = dsp_hw_shared_memory[0x09C1];
+	trace[0] = dsp_hw_shared_memory[0x03C0];
+	trace[1] = dsp_hw_shared_memory[0x03C1];
 	return true;
 }
 
@@ -1154,12 +1173,12 @@ static bool run_reference_field_vector(uint16_t field) {
 	uint16_t shift = field % 4 * 4;
 
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 2;
-	dsp_hw_shared_memory[0x0810 + register_index] = 2 << shift;
+	dsp_hw_shared_memory[0x0205] = 2;
+	dsp_hw_shared_memory[0x0210 + register_index] = 2 << shift;
 	if (!run_vector())
 		return false;
 	printf("# reference-field-%lu trace=%04lX,%04lX\n", (uint32_t) field,
-		(uint32_t) dsp_hw_shared_memory[0x09C0], (uint32_t) dsp_hw_shared_memory[0x09C1]);
+		(uint32_t) dsp_hw_shared_memory[0x03C0], (uint32_t) dsp_hw_shared_memory[0x03C1]);
 	return true;
 }
 
@@ -1168,32 +1187,32 @@ static bool run_reference_polarity_vector(uint16_t field) {
 	uint16_t shift = field % 4 * 4;
 
 	prepare_common_vector(1, 1, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 2;
-	dsp_hw_shared_memory[0x0810 + register_index] = 1 << shift;
+	dsp_hw_shared_memory[0x0205] = 2;
+	dsp_hw_shared_memory[0x0210 + register_index] = 1 << shift;
 	if (!run_vector())
 		return false;
 	printf("# reference-polarity-field-%lu trace=%04lX,%04lX\n", (uint32_t) field,
-		(uint32_t) dsp_hw_shared_memory[0x09C0], (uint32_t) dsp_hw_shared_memory[0x09C1]);
+		(uint32_t) dsp_hw_shared_memory[0x03C0], (uint32_t) dsp_hw_shared_memory[0x03C1]);
 	return true;
 }
 
 static bool run_pipeline_alignment_vector(uint16_t impulse_timestamp) {
 	prepare_common_vector(13, 13, METRIC_COUNT_16);
-	dsp_hw_shared_memory[0x0805] = 26;
-	dsp_hw_shared_memory[0x0810] = 2;
+	dsp_hw_shared_memory[0x0205] = 26;
+	dsp_hw_shared_memory[0x0210] = 2;
 	for (size_t timestamp = 0; timestamp < 13; timestamp++) {
-		dsp_hw_shared_memory[0x08A0 + timestamp * 2] = 0;
-		dsp_hw_shared_memory[0x08A1 + timestamp * 2] = 0;
-		dsp_hw_shared_memory[0x08E0 + timestamp * 2] = 0;
-		dsp_hw_shared_memory[0x08E1 + timestamp * 2] = 0;
+		dsp_hw_shared_memory[0x02A0 + timestamp * 2] = 0;
+		dsp_hw_shared_memory[0x02A1 + timestamp * 2] = 0;
+		dsp_hw_shared_memory[0x02E0 + timestamp * 2] = 0;
+		dsp_hw_shared_memory[0x02E1 + timestamp * 2] = 0;
 	}
 	if (impulse_timestamp < 13)
-		dsp_hw_shared_memory[0x08E0 + impulse_timestamp * 2] = 64;
+		dsp_hw_shared_memory[0x02E0 + impulse_timestamp * 2] = 64;
 	if (!run_vector())
 		return false;
 	printf("# pipeline-impulse-%lu trace:", (uint32_t) impulse_timestamp);
 	for (size_t i = 0; i < 26; i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x09C0 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x03C0 + i]);
 	printf("\n");
 	return true;
 }

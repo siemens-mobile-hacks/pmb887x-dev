@@ -22,6 +22,8 @@ mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0026)]
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0027)]
 mov 0x$FFFF a0l
 mov a0l [0x$TEAK_INT_RINTA0]
+mov 0x$03FF a0l
+mov a0l [0x$TEAK_BB_INT_POINTER]
 mov 0x$0C00 a0l
 mov a0l [0x$TEAK_INT_EINTA0]
 mov 0x$A55A a0l
@@ -30,17 +32,6 @@ eint
 br 0x0000$0200 always
 
 segment p 0200
-mov [0x$TEAK_BB_STATUS] a0
-and 0x$TEAK_BB_STATUS_RXON a0
-br 0x0000$0200 eq
-mov [0x$TEAK_BB_CTRL] a0
-or 0x$TEAK_BB_CTRL_BB_STOP a0
-mov a0l [0x$TEAK_BB_CTRL]
-
-segment p 0220
-mov [0x$TEAK_BB_STATUS] a0
-and 0x$TEAK_BB_STATUS_RXON a0
-br 0x0000$0220 neq
 br 0x0000$0200 always
 
 segment p 0800
@@ -50,9 +41,16 @@ and 0x$0C00 a0
 mov a0l [0x$TEAK_INT_RINTA0]
 mov [0x$TEAK_BB_STATUS] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0023)]
-and 0x$TEAK_BB_STATUS_MONON a0
-br 0x0000$0860 eq
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0022)] a0
+and 0x$TEAK_INT_FINTA0_BBHI a0
+br 0x0000$0820 neq
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0022)] a0
+and 0x$TEAK_INT_FINTA0_BBLO a0
+br 0x0000$0860 neq
+nop
+retic true
 
+segment p 0820
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)] a0
 inc a0 always
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)]
@@ -78,6 +76,10 @@ clr a0 always
 mov a0l [0x$TEAK_INT_EINTA0]
 mov 0x$5AA5 a0l
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0000)]
+br 0x0000$08D0 always
 
 segment p 08C0
 retic true
+
+segment p 08D0
+br 0x0000$08D0 always

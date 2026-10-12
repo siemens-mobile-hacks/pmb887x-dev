@@ -26,16 +26,21 @@
 #define W1_EPL_INPUT_OFFSET 0x0130
 #define BPAR_INPUT_OFFSET 0x0200
 #define RX_INPUT_OFFSET 0x0280
-#define CONTINUE_BPAR_INPUT_OFFSET 0x0600
-#define CONTINUE_RX_INPUT_OFFSET 0x0680
-#define CONTINUE_STATUS_OFFSET 0x0700
-#define CONTINUE_COUNT_RESULT_OFFSET 0x0701
-#define CONTINUE_SOUT_OFFSET 0x0770
-#define CONTINUE2_BPAR_INPUT_OFFSET 0x0800
-#define CONTINUE2_RX_INPUT_OFFSET 0x0880
-#define CONTINUE2_STATUS_OFFSET 0x0900
-#define CONTINUE2_COUNT_RESULT_OFFSET 0x0901
-#define CONTINUE2_SOUT_OFFSET 0x0930
+#define CONTINUE_BPAR_INPUT_OFFSET 0x0010
+#define CONTINUE_RX_INPUT_OFFSET 0x0090
+#define CONTINUE_STATUS_OFFSET 0x00D0
+#define CONTINUE_COUNT_RESULT_OFFSET 0x00D1
+#define CONTINUE_SOUT_OFFSET 0x0140
+#define CONTINUE2_BPAR_INPUT_OFFSET 0x0400
+#define CONTINUE2_RX_INPUT_OFFSET 0x0480
+#define CONTINUE2_STATUS_OFFSET 0x0300
+#define CONTINUE2_COUNT_RESULT_OFFSET 0x0301
+#define CONTINUE2_SOUT_OFFSET 0x0340
+#define CONTINUE_INITIAL_W2_EMR_OFFSET 0x01A0
+#define CONTINUE_INITIAL_W2_EML_OFFSET 0x01B0
+#define CONTINUE_INITIAL_W2_EPR_OFFSET 0x01C0
+#define CONTINUE_INITIAL_W2_EPL_OFFSET 0x01D0
+#define CONTINUE_INITIAL_SOUT_OFFSET 0x01E0
 #define DONE_STATUS_OFFSET 0x0302
 #define DONE_IRQ_OFFSET 0x0304
 #define W2_EMR_OUTPUT_OFFSET 0x0390
@@ -110,6 +115,21 @@ static const uint16_t CONTINUATION_COMBINED[][3][24] = {
 		},
 	},
 };
+
+#ifdef PMB8875
+static const uint16_t CONTINUATION_SECOND_8875[][24] = {
+	{
+		0x0000, 0x7F01, 0x0000, 0x0101, 0x0000, 0x0101, 0x0000, 0x013E,
+		0x0000, 0x477F, 0x0000, 0x3366, 0x0000, 0x0101, 0x0000, 0x017F,
+		0x0000, 0x7F7F, 0x0000, 0x7F7F, 0x0000, 0x7F7F, 0x0000, 0x7F7F,
+	},
+	{
+		0x0000, 0x017F, 0x0000, 0x0101, 0x0000, 0x0101, 0x0000, 0x3E01,
+		0x0000, 0x7F47, 0x0000, 0x6633, 0x0000, 0x0101, 0x0000, 0x7F01,
+		0x0000, 0x7F7F, 0x0000, 0x7F7F, 0x0000, 0x7F7F, 0x0000, 0x7F7F,
+	},
+};
+#endif
 
 static uint16_t request_id;
 
@@ -197,9 +217,14 @@ static void load_segment_inputs(size_t bpar_offset, size_t rx_offset, size_t seg
 static bool run_continuation_probe(bool right) {
 	size_t metric_offset = right ? W1_EMR_INPUT_OFFSET : W1_EML_INPUT_OFFSET;
 	size_t path_offset = right ? W1_EPR_INPUT_OFFSET : W1_EPL_INPUT_OFFSET;
-	size_t metric_output_offset = right ? W2_EMR_OUTPUT_OFFSET : W2_EML_OUTPUT_OFFSET;
-	size_t path_output_offset = right ? W2_EPR_OUTPUT_OFFSET : W2_EPL_OUTPUT_OFFSET;
+	size_t metric_output_offset = right ? CONTINUE_INITIAL_W2_EMR_OFFSET : CONTINUE_INITIAL_W2_EML_OFFSET;
+	size_t path_output_offset = right ? CONTINUE_INITIAL_W2_EPR_OFFSET : CONTINUE_INITIAL_W2_EPL_OFFSET;
 	uint16_t flags = TEAK_EQ_CONF2_S_COMB | (right ? TEAK_EQ_CONF2_EQ_RIGHT : 0);
+	const uint16_t *second_expected = CONTINUATION_COMBINED[right][1];
+
+#ifdef PMB8875
+	second_expected = CONTINUATION_SECOND_8875[right];
+#endif
 
 	clear_inputs();
 	for (size_t state = 0; state < 16; state++)
@@ -234,8 +259,8 @@ static bool run_continuation_probe(bool right) {
 	test_eq_memory("first GMSK segment produces the hardware paths", CONTINUATION_PATHS,
 		dsp_hw_shared_memory + path_output_offset, sizeof(CONTINUATION_PATHS));
 	test_eq_memory("first GMSK segment produces the hardware combined output", CONTINUATION_COMBINED[right][0],
-		dsp_hw_shared_memory + SOUT_OUTPUT_OFFSET, sizeof(CONTINUATION_COMBINED[right][0]));
-	test_eq_memory("second GMSK segment preserves and extends the combined output", CONTINUATION_COMBINED[right][1],
+		dsp_hw_shared_memory + CONTINUE_INITIAL_SOUT_OFFSET, sizeof(CONTINUATION_COMBINED[right][0]));
+	test_eq_memory("second GMSK segment preserves and extends the combined output", second_expected,
 		dsp_hw_shared_memory + CONTINUE_SOUT_OFFSET, sizeof(CONTINUATION_COMBINED[right][1]));
 	test_eq_memory("third GMSK segment preserves and extends the combined output", CONTINUATION_COMBINED[right][2],
 		dsp_hw_shared_memory + CONTINUE2_SOUT_OFFSET, sizeof(CONTINUATION_COMBINED[right][2]));

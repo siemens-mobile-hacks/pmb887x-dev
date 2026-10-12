@@ -6,7 +6,7 @@ segment p 0100
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_MCS_CFR]
 mov 0x$A55A a0l
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0600)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0300)]
 
 // RAM2 SIN01, unpacked 16-bit transfers. Writes intentionally follow pointer reset directly.
 mov 0x$0001 a0l
@@ -33,7 +33,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0610) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0310) r0
 call 0x0000$0800 always
 
 // RAM2 SIN2 is independent of SIN01.
@@ -57,7 +57,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0620) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0320) r0
 call 0x0000$0820 always
 
 // RAM2 packs two 8-bit writes and sign-extends each unpacked read.
@@ -85,7 +85,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0630) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0330) r0
 call 0x0000$0800 always
 
 // RAMW1 packs low then high halfword into each 32-bit metric entry.
@@ -109,7 +109,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0640) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0340) r0
 call 0x0000$0820 always
 
 // RAMW2 uses the same pointer command with RES_RW1_RW2 set.
@@ -133,7 +133,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0650) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0350) r0
 call 0x0000$0820 always
 
 // Re-select RAMW1 and prove that RAMW2 writes did not alias it.
@@ -143,7 +143,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0660) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0360) r0
 call 0x0000$0820 always
 
 // RAMW1 unpacked mode preserves one 16-bit metric per ext0 transfer.
@@ -167,7 +167,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0672) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0372) r0
 call 0x0000$0820 always
 
 // Run a 16-state decode with an artificial reference table and a noiseless K=5 stream.
@@ -176,8 +176,8 @@ mov 0x000e icr // enable context switching for INT0/INT1/INT2.
 set 0x$000C st0
 set 0x$0040 st2
 clr a0 always
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0684)]
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0685)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0384)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0385)]
 mov a0l [0x$TEAK_INT_EINTA0]
 mov 0x$0100 a0l
 mov a0l [0x$TEAK_INT_RINTA0]
@@ -212,7 +212,7 @@ nop
 nop
 nop
 mov ext0 a0l
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x068F)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x038F)]
 // Load 16 old metrics in RAMW1, clear the ping-pong RAMW2 bank, then program eight references.
 mov 0x$1001 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
@@ -238,21 +238,21 @@ mov a0l [0x$TEAK_CHDEC_REF_BR_BFLY5]
 mov a0l [0x$TEAK_CHDEC_REF_BR_BFLY6]
 mov a0l [0x$TEAK_CHDEC_REF_BR_BFLY7]
 mov [0x$TEAK_CHDEC_REF_BR_BFLY0] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0686)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0386)]
 mov [0x$TEAK_CHDEC_REF_BR_BFLY1] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0687)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0387)]
 mov [0x$TEAK_CHDEC_REF_BR_BFLY2] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0688)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0388)]
 mov [0x$TEAK_CHDEC_REF_BR_BFLY3] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0689)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0389)]
 mov [0x$TEAK_CHDEC_REF_BR_BFLY4] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x068A)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x038A)]
 mov [0x$TEAK_CHDEC_REF_BR_BFLY5] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x068B)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x038B)]
 mov [0x$TEAK_CHDEC_REF_BR_BFLY6] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x068C)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x038C)]
 mov [0x$TEAK_CHDEC_REF_BR_BFLY7] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x068D)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x038D)]
 
 // Load 16 input triplets; the first 15 are processed by the configured decode.
 mov 0x$2001 a0l
@@ -273,14 +273,14 @@ mov a0l [0x$TEAK_CHDEC_CONF_CNT]
 mov 0x$0005 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
 mov [0x$TEAK_CHDEC_CONF2] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0680)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0380)]
 mov [0x$TEAK_CHDEC_STATUS] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0681)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0381)]
 call 0x0000$0840 always
 mov [0x$TEAK_CHDEC_STAT_CNT] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0682)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0382)]
 mov [0x$TEAK_INT_FINTA0] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0683)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0383)]
 
 // Read two 8-bit traceback halves for each of 15 timestamps.
 mov 0x$0801 a0l
@@ -291,7 +291,7 @@ nop
 nop
 nop
 nop
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0690) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0390) r0
 call 0x0000$0800 always
 call 0x0000$0800 always
 call 0x0000$0800 always
@@ -302,18 +302,18 @@ call 0x0000$0800 always
 mov 0x$0101 a0l
 mov a0l [0x$TEAK_CHDEC_CONF2]
 mov [0x$TEAK_CHDEC_CONF2] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0670)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0370)]
 nop
 nop
 nop
 nop
 mov [0x$TEAK_CHDEC_CONF2] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0671)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0371)]
 
 mov 0x$0001 a0l
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0602)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0302)]
 mov 0x$A55A a0l
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0601)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0301)]
 br 0x0000$0900 always
 
 // Copy six ext0 values to shared RAM.
@@ -357,10 +357,10 @@ br 0x0000$0900 always
 // INT0 handler records and acknowledges a natural CHADEC completion.
 segment p 0A00
 mov [0x$TEAK_INT_FINTA0] a0
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0685)]
-mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0684)] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0385)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0384)] a0
 inc a0 always
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0684)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0384)]
 mov 0x$0100 a0l
 mov a0l [0x$TEAK_INT_RINTA0]
 retic true

@@ -437,7 +437,7 @@ my @r7_offsets = (
 
 for my $offset (@r7_offsets) {
 	my ($name, $operand, $delta) = @$offset;
-	my $address = 0xD700 + $delta;
+	my $address = 0xDCFF + $delta;
 	my @setup = base_setup();
 	push @setup,
 		sprintf('mov 0x$%04X r0', $address & 0xFFFF),
@@ -737,8 +737,8 @@ for my $vector (@maxd_vectors) {
 }
 
 my @branch_conditions = qw(always eq neq gt ge lt le nn c v e l nr niu0 iu0 iu1);
-my $control_helper_address = 0x1000;
-my $program_fixture_address = 0x1100;
+my $control_helper_address = 0x0E00;
+my $program_fixture_address = 0x0F00;
 
 for my $condition (0 .. $#branch_conditions) {
 	for my $flags_set (0, 1) {
@@ -1342,7 +1342,7 @@ for my $value (0x00, 0x01, 0x7F, 0x80, 0xFF) {
 
 for my $offset (@r7_offsets[0 .. 3]) {
 	my ($name, $operand, $delta) = @$offset;
-	my $address = 0xD700 + $delta;
+	my $address = 0xDCFF + $delta;
 	my @setup = base_setup();
 	push @setup,
 		sprintf('mov 0x$%04X r0', $address & 0xFFFF),
@@ -1576,6 +1576,8 @@ for my $operation (@operand_multiply_operations) {
 }
 
 my @dual_multiply_steps;
+my $dual_multiply_x_address = 0x5000;
+my $dual_multiply_y_address = 0xFC00;
 for my $y_step ('', '++', '--', '++s') {
 	for my $x_step ('', '++', '--', '++s') {
 		push @dual_multiply_steps, [ $y_step, $x_step ];
@@ -1589,15 +1591,16 @@ for my $operation (@operand_multiply_operations) {
 					my ($y_step, $x_step) = @$steps;
 					my @setup = four_accumulator_setup();
 					push @setup,
-						'load 0x00d6u8 page',
+						sprintf('load 0x%04xu8 page', $dual_multiply_y_address >> 8),
 						'mov 0x$8001 r0',
-						'mov r0 [page:0x0040u8]',
+						'mov r0 [page:0x0000u8]',
+						sprintf('load 0x%04xu8 page', $dual_multiply_x_address >> 8),
 						'mov 0x$FFFF r0',
 						'mov r0 [page:0x0000u8]',
 						'nop',
 						'nop',
-						sprintf('mov 0x$D640 r%u', $y_register),
-						sprintf('mov 0x$D600 r%u', $x_register),
+						sprintf('mov 0x$%04X r%u', $dual_multiply_y_address, $y_register),
+						sprintf('mov 0x$%04X r%u', $dual_multiply_x_address, $x_register),
 						'load +0x0003 stepi',
 						'load 0x0003 ps';
 					add_case(sprintf('%s dual indirect r%u%s r%u%s %s', $operation, $y_register,
@@ -1793,7 +1796,7 @@ for my $source (qw(a0l a1l)) {
 			my @setup = four_accumulator_setup();
 			push @setup,
 				sprintf('mov 0x$%04X %s', $value, $source),
-				sprintf('mov 0x$%04X r7', (0xD680 - $delta) & 0xFFFF);
+				sprintf('mov 0x$%04X r7', (0xDC80 - $delta) & 0xFFFF);
 			my $body = defined($operand) ? "mov $source $operand" : [
 				sprintf('data %04X // mov %s,(rb+long offset); PDF Table 4-4',
 					$source eq 'a0l' ? 0xD49C : 0xDC9C, $source),
@@ -1809,7 +1812,7 @@ for my $operation (qw(add sub cmp and or xor)) {
 	for my $accumulator (qw(a0 a1)) {
 		for my $offset (@r7_offsets) {
 			my ($name, $operand, $delta) = @$offset;
-			my $address = 0xD700 + $delta;
+			my $address = 0xDCFF + $delta;
 			my @setup = four_accumulator_setup();
 			push @setup,
 				sprintf('mov 0x$%04X r0', $address & 0xFFFF),
@@ -1858,15 +1861,16 @@ for my $accumulator (qw(a0 a1)) {
 				my ($y_step, $x_step) = @$steps;
 				my @setup = four_accumulator_setup();
 				push @setup,
-					'load 0x00d6u8 page',
+					sprintf('load 0x%04xu8 page', $dual_multiply_y_address >> 8),
 					'mov 0x$8001 r0',
-					'mov r0 [page:0x0040u8]',
+					'mov r0 [page:0x0000u8]',
+					sprintf('load 0x%04xu8 page', $dual_multiply_x_address >> 8),
 					'mov 0x$FFFF r0',
 					'mov r0 [page:0x0000u8]',
 					'nop',
 					'nop',
-					sprintf('mov 0x$D640 r%u', $y_register),
-					sprintf('mov 0x$D600 r%u', $x_register),
+					sprintf('mov 0x$%04X r%u', $dual_multiply_y_address, $y_register),
+					sprintf('mov 0x$%04X r%u', $dual_multiply_x_address, $x_register),
 					'load +0x0003 stepi',
 					'load 0x0003 ps';
 				add_case(sprintf('msu dual indirect r%u%s r%u%s %s', $y_register,
@@ -2512,10 +2516,11 @@ sub select_alias_cases {
 	add_alias_family('break in block repeat', '1101001111......', [ accumulator_setup(0, 0, 0) ],
 		[ '@bkrep 0x0007u8 4', 'inc a0 always' ], [ 'inc a0 always' ]);
 	add_alias_family('br eq false', '0100000110..0001', \@false_condition, [],
-		[ 'data 1000 // absolute branch address expansion' ]);
+		[ sprintf('data %04X // absolute branch address expansion', $control_helper_address) ]);
 	add_alias_family('call eq false', '0100000111..0001', \@false_condition, [],
-		[ 'data 1000 // absolute call address expansion' ]);
-	add_alias_family('calla a0', '110101001..0....', [ @base, 'mov 0x$1000 a0l' ], [], []);
+		[ sprintf('data %04X // absolute call address expansion', $control_helper_address) ]);
+	add_alias_family('calla a0', '110101001..0....',
+		[ @base, sprintf('mov 0x$%04X a0l', $control_helper_address) ], [], []);
 	add_alias_family('ret eq false', '0100010110..0001', \@false_condition, [], []);
 	add_alias_family('reti eq false', '0100010111.00001', \@false_condition, [], []);
 	add_alias_family('retid', '1101011111.0....', \@base,
@@ -2635,9 +2640,22 @@ if (@ARGV == 1 && $ARGV[0] eq '--generate-aliases') {
 }
 make_path($generated_dir);
 
-my $result_address = 0xD900;
+my $result_address = 0xDA00;
+my $done_address = 0xDBF0;
 my $segment_limit = 480;
-my $cases_per_shard = 16;
+my $cases_per_shard = 14;
+
+sub relocate_fixture_line {
+	my ($line) = @_;
+	$line =~ s{0x\$([Dd][0-9A-Fa-f]{3})}{
+		my $address = hex($1);
+		$address >= 0xD600 && $address <= 0xD6FF ? sprintf('0x$%04X', $address + 0x0600) :
+			$address == 0xD700 ? '0x$DCFF' : $&;
+	}eg;
+	$line =~ s/load 0x00d6u8 page/load 0x00dcu8 page/;
+	$line =~ s/^data D600 (\/\/ long direct address expansion)$/data DC00 $1/;
+	return $line;
+}
 
 sub line_words {
 	my ($line) = @_;
@@ -2754,11 +2772,11 @@ sub write_assembly {
 	print {$asm} "// Generated by gen_instructions.pl.\n";
 	print {$asm} "segment p 0002\n";
 	print {$asm} "mov dvm a0 // TRAP vector handler.\n";
-	print {$asm} "mov a0l [0x\$D681]\n";
+	print {$asm} relocate_fixture_line('mov a0l [0x$D681]'), "\n";
 	print {$asm} "reti true // TRAP vector handler.\n";
 	printf {$asm} "\nsegment p %04X\n", $program_address;
 	print {$asm} "mov 0x\$0001 a0l\n";
-	print {$asm} "mov a0l [0x\$DE92]\n";
+	print {$asm} "mov a0l [0x\$0000] // MCS_CFR is patched by the ARM runner.\n";
 
 	for my $local_index (0 .. $count - 1) {
 		my $index = $first + $local_index;
@@ -2773,21 +2791,21 @@ sub write_assembly {
 
 		printf {$asm} "\n// Case %u: %s\n", $index, $case->{name};
 		for my $line (canary_setup()) {
-			print {$asm} "$line\n";
+			print {$asm} relocate_fixture_line($line), "\n";
 			$segment_words += line_words($line);
 		}
 		for my $line (@{$case->{setup}}) {
-			print {$asm} "$line\n";
+			print {$asm} relocate_fixture_line($line), "\n";
 			$segment_words += line_words($line);
 		}
 		for my $line (@{$case->{body}}) {
 			my $rendered = render_symbolic_line($line, $program_address + $segment_words);
-			print {$asm} "$rendered\n";
+			print {$asm} relocate_fixture_line($rendered), "\n";
 			$segment_words += line_words($line);
 		}
 
 		for my $line (capture_lines($record)) {
-			print {$asm} "$line\n";
+			print {$asm} relocate_fixture_line($line), "\n";
 			$segment_words += line_words($line);
 		}
 	}
@@ -2799,7 +2817,7 @@ sub write_assembly {
 	}
 	print {$asm} "\n// Completion marker.\n";
 	print {$asm} "mov 0x\$A55A a0l\n";
-	print {$asm} "mov a0l [0x\$D300]\n";
+	printf {$asm} "mov a0l [0x\$%04X]\n", $done_address;
 	my $branch_address = $program_address + $segment_words + 4;
 	printf {$asm} "br 0x0000\$%04X always\n", $branch_address;
 	die sprintf("main program overlaps helpers at %04X\n", $control_helper_address)
@@ -2836,7 +2854,7 @@ sub write_assembly {
 			$helper_address++;
 		}
 		for my $line (@lines) {
-			print {$asm} "$line\n";
+			print {$asm} relocate_fixture_line($line), "\n";
 			$helper_address += line_words($line);
 		}
 	}
@@ -2864,7 +2882,8 @@ sub print_uint16_array {
 open my $inc, '>', $cases_path or die "open($cases_path): $!";
 print {$inc} "// Generated by gen_instructions.pl.\n";
 print {$inc} "#define DSP_INSTRUCTION_RECORD_WORDS $record_words\n";
-printf {$inc} "#define DSP_INSTRUCTION_RESULT_OFFSET 0x%04X\n", $result_address - 0xD000;
+printf {$inc} "#define DSP_INSTRUCTION_RESULT_ADDRESS 0x%04X\n", $result_address;
+printf {$inc} "#define DSP_INSTRUCTION_DONE_ADDRESS 0x%04X\n", $done_address;
 print {$inc} '#define DSP_INSTRUCTION_CASE_COUNT ', scalar(@cases), "\n";
 print {$inc} "#define DSP_INSTRUCTION_SHARD_COUNT $shard_count\n";
 print_uint16_array($inc, 'DSP_INSTRUCTION_SHARD_FIRST', map { $_ * $cases_per_shard } 0 .. $shard_count - 1);

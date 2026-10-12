@@ -1,4 +1,4 @@
-// PMB8876 ROM-page selection, PRAM execution, and core idle/resume test.
+// ROM-page selection, PRAM execution, and core idle/resume test.
 segment p 0006
 br 0x0000$0800 always
 
@@ -32,7 +32,7 @@ nop
 nop
 nop
 nop
-mov [0x$8000] a0
+mov [0x$TEAK_DROM_PAGE0_BASE] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)]
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_DSP_PAGE]
@@ -40,7 +40,7 @@ nop
 nop
 nop
 nop
-mov [0x$8000] a0
+mov [0x$TEAK_DROM_PAGE0_BASE] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)]
 mov 0x$0002 a0l
 mov a0l [0x$TEAK_DSP_PAGE]
@@ -48,7 +48,7 @@ nop
 nop
 nop
 nop
-mov [0x$8000] a0
+mov [0x$TEAK_DROM_PAGE0_BASE] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0022)]
 mov 0x$0003 a0l
 mov a0l [0x$TEAK_DSP_PAGE]
@@ -56,11 +56,11 @@ nop
 nop
 nop
 nop
-mov [0x$8000] a0
+mov [0x$TEAK_DROM_PAGE0_BASE] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0023)]
 
 // Program-page switches must not redirect execution outside PRAM.
-mov 0x$0004 a0l
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0010)] a0
 mov a0l [0x$TEAK_DSP_PAGE]
 nop
 nop
@@ -68,7 +68,7 @@ nop
 nop
 mov 0x$1001 a0l
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)]
-mov 0x$0008 a0l
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0011)] a0
 mov a0l [0x$TEAK_DSP_PAGE]
 nop
 nop
@@ -84,7 +84,7 @@ nop
 nop
 mov 0x$1000 a0l
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0032)]
-mov [0x$8000] a0
+mov [0x$TEAK_DROM_PAGE0_BASE] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0033)]
 
 // MCU0 drives core INT0 after BRANCH. It must be enabled before entering idle.

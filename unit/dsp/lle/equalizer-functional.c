@@ -32,28 +32,28 @@ static const uint16_t SOFT_OUTPUT_EXPECTED[] = {
 static void validate_transport(void) {
 	test_category("Equalizer / RAM transport");
 	test_eq_memory("RX preserves unpacked 16-bit words", RX_UNPACKED,
-		dsp_hw_shared_memory + 0x0710, sizeof(RX_UNPACKED));
+		dsp_hw_shared_memory + 0x0310, sizeof(RX_UNPACKED));
 	test_eq_memory("BPAR has an independent pointer and storage area", BPAR_UNPACKED,
-		dsp_hw_shared_memory + 0x0720, sizeof(BPAR_UNPACKED));
+		dsp_hw_shared_memory + 0x0320, sizeof(BPAR_UNPACKED));
 	test_eq_memory("SOUT packed reads are ordered and sign-extended", SOUT_PACKED,
-		dsp_hw_shared_memory + 0x0730, sizeof(SOUT_PACKED));
+		dsp_hw_shared_memory + 0x0330, sizeof(SOUT_PACKED));
 	test_eq_memory("HOUT preserves unpacked words", HOUT_UNPACKED,
-		dsp_hw_shared_memory + 0x0740, sizeof(HOUT_UNPACKED));
+		dsp_hw_shared_memory + 0x0340, sizeof(HOUT_UNPACKED));
 	test_eq_memory("RAMW1 EML packs low and high halfwords", EML_PACKED,
-		dsp_hw_shared_memory + 0x0750, sizeof(EML_PACKED));
+		dsp_hw_shared_memory + 0x0350, sizeof(EML_PACKED));
 	test_eq_memory("RAMW2 EMR packs low and high halfwords", EMR_PACKED,
-		dsp_hw_shared_memory + 0x0760, sizeof(EMR_PACKED));
+		dsp_hw_shared_memory + 0x0360, sizeof(EMR_PACKED));
 	test_eq_memory("RAMW1 EML remains isolated from RAMW2 EMR", EML_PACKED,
-		dsp_hw_shared_memory + 0x0770, sizeof(EML_PACKED));
+		dsp_hw_shared_memory + 0x0370, sizeof(EML_PACKED));
 }
 
 static void print_outputs(void) {
 	printf("# Equalizer hard output:");
 	for (size_t i = 0; i < 16; i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0790 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x0390 + i]);
 	printf("\n# Equalizer soft output:");
 	for (size_t i = 0; i < 16; i++)
-		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x07A0 + i]);
+		printf(" %04lX", (uint32_t) dsp_hw_shared_memory[0x03A0 + i]);
 	printf("\n");
 }
 
@@ -61,16 +61,16 @@ static void validate_process(void) {
 	uint16_t start_mask = 0x0004 | 0x8000;
 
 	test_category("Equalizer / 32-symbol processing and interrupt");
-	test_check("EQ_ON is accepted or EQ_BUSY is already visible", dsp_hw_shared_memory[0x0780] & start_mask);
-	test_check("equalizer exposes busy state after start", dsp_hw_shared_memory[0x0781] & 0x8000);
-	test_eq_u32("equalizer completion resets the symbol counter", 0, dsp_hw_shared_memory[0x0782]);
-	test_eq_u32("EQ completion enters INT0 exactly once", 1, dsp_hw_shared_memory[0x0784]);
-	test_eq_u32("INT0 handler observes the EQ source", 0x0200, dsp_hw_shared_memory[0x0785] & 0x0200);
-	test_eq_u32("handler acknowledges the EQ source", 0, dsp_hw_shared_memory[0x0783] & 0x0200);
+	test_check("EQ_ON is accepted or EQ_BUSY is already visible", dsp_hw_shared_memory[0x0380] & start_mask);
+	test_check("equalizer exposes busy state after start", dsp_hw_shared_memory[0x0381] & 0x8000);
+	test_eq_u32("equalizer completion resets the symbol counter", 0, dsp_hw_shared_memory[0x0382]);
+	test_eq_u32("EQ completion enters INT0 exactly once", 1, dsp_hw_shared_memory[0x0384]);
+	test_eq_u32("INT0 handler observes the EQ source", 0x0200, dsp_hw_shared_memory[0x0385] & 0x0200);
+	test_eq_u32("handler acknowledges the EQ source", 0, dsp_hw_shared_memory[0x0383] & 0x0200);
 	test_eq_memory("hard outputs match the hardware vector", HARD_OUTPUT_EXPECTED,
-		dsp_hw_shared_memory + 0x0790, sizeof(HARD_OUTPUT_EXPECTED));
+		dsp_hw_shared_memory + 0x0390, sizeof(HARD_OUTPUT_EXPECTED));
 	test_eq_memory("soft outputs match the hardware vector", SOFT_OUTPUT_EXPECTED,
-		dsp_hw_shared_memory + 0x07A0, sizeof(SOFT_OUTPUT_EXPECTED));
+		dsp_hw_shared_memory + 0x03A0, sizeof(SOFT_OUTPUT_EXPECTED));
 	print_outputs();
 }
 
@@ -83,16 +83,16 @@ static bool run_pass(void) {
 		return false;
 	if (!test_check("BRANCH starts equalizer test", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
 		return false;
-	if (!test_check("equalizer test becomes ready", dsp_hw_wait_shared(0x0700, READY_MARKER, 100)))
+	if (!test_check("equalizer test becomes ready", dsp_hw_wait_shared(0x0300, READY_MARKER, 100)))
 		return false;
-	if (!test_check("equalizer scenarios complete", dsp_hw_wait_shared(0x0701, COMPLETE_MARKER, 1000)))
+	if (!test_check("equalizer scenarios complete", dsp_hw_wait_shared(0x0301, COMPLETE_MARKER, 1000)))
 		return false;
 
 	validate_transport();
 	validate_process();
 	test_eq_u32("RES_ALL clears before the first two-wait-state read completes", 0,
-		dsp_hw_shared_memory[0x0786]);
-	test_eq_u32("RES_ALL clears CONF2 and disables the accelerator", 0, dsp_hw_shared_memory[0x0787]);
+		dsp_hw_shared_memory[0x0386]);
+	test_eq_u32("RES_ALL clears CONF2 and disables the accelerator", 0, dsp_hw_shared_memory[0x0387]);
 	return true;
 }
 

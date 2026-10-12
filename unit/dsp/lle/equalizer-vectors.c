@@ -16,6 +16,7 @@
 #define CONTINUE_COUNT_OFFSET 0x0007
 #define CONTINUE_FLAGS_OFFSET 0x0008
 #define CONTINUE_SCALE_OFFSET 0x0009
+#define CONTINUE2_OFFSET 0x000A
 #define INPUT_FIRST_OFFSET 0x0100
 #define INPUT_LAST_OFFSET 0x02BF
 #define W1_EMR_INPUT_OFFSET 0x0100
@@ -28,18 +29,18 @@
 #define W2_EPL_INPUT_OFFSET 0x01B0
 #define BPAR_INPUT_OFFSET 0x0200
 #define RX_INPUT_OFFSET 0x0280
-#define CONTINUE_BPAR_INPUT_OFFSET 0x0600
-#define CONTINUE_RX_INPUT_OFFSET 0x0680
-#define CONTINUE_STATUS_OFFSET 0x0700
-#define CONTINUE_COUNT_RESULT_OFFSET 0x0701
-#define CONTINUE_IRQ_OFFSET 0x0702
-#define CONTINUE_W1_EML_OFFSET 0x0710
-#define CONTINUE_W1_EPL_OFFSET 0x0720
-#define CONTINUE_W2_EML_OFFSET 0x0730
-#define CONTINUE_W2_EPL_OFFSET 0x0740
-#define CONTINUE_HOUT_OFFSET 0x0750
-#define CONTINUE_SOUT_OFFSET 0x0770
-#define CONTINUE_ELAT_OFFSET 0x0790
+#define CONTINUE_BPAR_INPUT_OFFSET 0x0010
+#define CONTINUE_RX_INPUT_OFFSET 0x0090
+#define CONTINUE_STATUS_OFFSET 0x00D0
+#define CONTINUE_COUNT_RESULT_OFFSET 0x00D1
+#define CONTINUE_IRQ_OFFSET 0x00D2
+#define CONTINUE_W1_EML_OFFSET 0x00E0
+#define CONTINUE_W1_EPL_OFFSET 0x00F0
+#define CONTINUE_W2_EML_OFFSET 0x0100
+#define CONTINUE_W2_EPL_OFFSET 0x0110
+#define CONTINUE_HOUT_OFFSET 0x0120
+#define CONTINUE_SOUT_OFFSET 0x0140
+#define CONTINUE_ELAT_OFFSET 0x0160
 #define START_CONF2_OFFSET 0x0300
 #define START_STATUS_OFFSET 0x0301
 #define DONE_STATUS_OFFSET 0x0302
@@ -202,6 +203,7 @@ static uint32_t hash_region(size_t offset, size_t words) {
 
 static void clear_inputs(void) {
 	dsp_hw_shared_memory[CONTINUE_OFFSET] = 0;
+	dsp_hw_shared_memory[CONTINUE2_OFFSET] = 0;
 	for (size_t offset = INPUT_FIRST_OFFSET; offset <= INPUT_LAST_OFFSET; offset++)
 		dsp_hw_shared_memory[offset] = 0;
 }
@@ -302,9 +304,13 @@ static bool capture_compact_probe(const char *kind, size_t index, uint16_t value
 	return true;
 }
 
-static bool run_compact_probe(const char *kind, size_t index, uint16_t value, const struct equalizer_vector *vector,
-	uint16_t request)
-{
+static bool run_compact_probe(
+	const char *kind,
+	size_t index,
+	uint16_t value,
+	const struct equalizer_vector *vector,
+	uint16_t request
+) {
 	apply_vector(vector);
 	return capture_compact_probe(kind, index, value, vector->flags, request);
 }
@@ -438,9 +444,15 @@ static void load_constant_branch_sequence(uint16_t value) {
 		dsp_hw_shared_memory[BPAR_INPUT_OFFSET + group * 16] = value;
 }
 
-static bool run_metric_sum_probe(const char *kind, size_t index, uint16_t branch_value, uint16_t rx_real,
-	uint16_t rx_imaginary, uint16_t expected_metric, uint16_t request)
-{
+static bool run_metric_sum_probe(
+	const char *kind,
+	size_t index,
+	uint16_t branch_value,
+	uint16_t rx_real,
+	uint16_t rx_imaginary,
+	uint16_t expected_metric,
+	uint16_t request
+) {
 	clear_inputs();
 	dsp_hw_shared_memory[COUNT_OFFSET] = 0;
 	dsp_hw_shared_memory[FLAGS_OFFSET] = TEAK_EQ_CONF2_EQ_EDGE;
@@ -718,6 +730,34 @@ static const uint16_t output_mode_raw_expected[24] = {
 	0x007F, 0x007F, 0x007F, 0x0000, 0x007F, 0x007F, 0x007F, 0x0000,
 };
 
+#ifdef PMB8875
+static const uint16_t output_mode_combined_expected[24] = {
+	0x0101, 0x0101, 0x0101, 0x0000, 0x0101, 0x0101, 0x0101, 0x0000,
+	0x0101, 0x0101, 0x0101, 0x0000, 0x0101, 0x01FF, 0xFFFF, 0x0000,
+	0x0101, 0x01FF, 0xFFFF, 0x0000, 0x7F7F, 0x7F7F, 0x7F7F, 0x0000,
+};
+
+static const uint16_t output_mode_segment_expected[24] = {
+	0x0101, 0x0000, 0x0101, 0x0101, 0x0101, 0x0000, 0x0101, 0x0101,
+	0x0101, 0x0000, 0x0101, 0x0101, 0x0101, 0x0000, 0xFFFF, 0xFF01,
+	0x0101, 0x0000, 0xFFFF, 0xFF7F, 0x7F7F, 0x0000, 0x7F7F, 0x7F7F,
+};
+
+static const uint16_t output_mode_scaled_expected[][32] = {
+	{
+		0x0101, 0x0101, 0x0101, 0x0000, 0x0101, 0x0101, 0x0101, 0x0000,
+		0x0101, 0x0101, 0x0101, 0x0000, 0x0101, 0x01FF, 0xFFFF, 0x0000,
+		0x0101, 0x01FF, 0xFFFF, 0x0000, 0x172F, 0x5F0F, 0x1F40, 0x0000,
+		0x1020, 0x4210, 0x2042, 0x0000, 0x1020, 0x4110, 0x2041, 0x0000,
+	},
+	{
+		0x0101, 0x0000, 0x0101, 0x0101, 0x0101, 0x0000, 0x0101, 0x0101,
+		0x0101, 0x0000, 0x0101, 0x0101, 0x0101, 0x0000, 0xFFFF, 0xFF01,
+		0x0101, 0x0000, 0xFFFF, 0xFF17, 0x2F5F, 0x0000, 0x0F1F, 0x4010,
+		0x2042, 0x0000, 0x1020, 0x4210, 0x2041, 0x0000, 0x1020, 0x4110,
+	},
+};
+#else
 static const uint16_t output_mode_combined_expected[24] = {
 	0x0000, 0x0000, 0x0000, 0x0101, 0x0000, 0x0101, 0x0000, 0x01FF,
 	0x0000, 0x7FFF, 0x0000, 0x7F7F, 0x0000, 0x7F7F, 0x0000, 0x7F7F,
@@ -729,6 +769,7 @@ static const uint16_t output_mode_segment_expected[24] = {
 	0xFF7F, 0x0000, 0xFF7F, 0x0000, 0x7F7F, 0x0000, 0x7F7F, 0x0000,
 	0x7F7F, 0x0000, 0x7F7F, 0x0000, 0x7F7F, 0x0000, 0x0101, 0x0000,
 };
+#endif
 
 static const uint16_t output_mode_latency_expected[32] = {
 	0x1AEA, 0x1B6E, 0x1BF3, 0x1C7A, 0x1D01, 0x1D8A, 0x1E14, 0x1EA0,
@@ -795,6 +836,21 @@ static bool run_output_mode_characterization(uint16_t *request) {
 		test_eq_memory("ELAT is independent of the SOUT read mode", output_mode_latency_expected,
 			dsp_hw_shared_memory + ELAT_OUTPUT_OFFSET, sizeof(output_mode_latency_expected));
 	}
+
+#ifdef PMB8875
+	for (size_t mode = 2; mode < ARRAY_SIZE(mode_flags); mode++) {
+		load_multistep_inputs();
+		dsp_hw_shared_memory[COUNT_OFFSET] = 16;
+		dsp_hw_shared_memory[FLAGS_OFFSET] = TEAK_EQ_CONF2_EQ_EDGE | mode_flags[mode];
+		dsp_hw_shared_memory[SCALE_OFFSET] = 0x0008;
+		if (!capture_compact_probe("EQOM-SCALED", mode, mode_flags[mode],
+			TEAK_EQ_CONF2_EQ_EDGE | mode_flags[mode], (*request)++))
+			return false;
+		test_eq_memory("scaled combined SOUT follows the PMB8875 packing mode",
+			output_mode_scaled_expected[mode - 2], dsp_hw_shared_memory + SOUT_OUTPUT_OFFSET,
+			sizeof(output_mode_scaled_expected[mode - 2]));
+	}
+#endif
 	return true;
 }
 

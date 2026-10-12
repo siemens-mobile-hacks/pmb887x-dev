@@ -4,9 +4,9 @@
 #include "test.h"
 
 #define READY_MARKER 0xA55A
-#define KGCORE_COMMAND 0x0904
-#define KGCORE_PARAMETER_BASE 0x0B00
-#define KGCORE_RESULT_BASE 0x0B20
+#define KGCORE_COMMAND 0x0304
+#define KGCORE_PARAMETER_BASE 0x0500
+#define KGCORE_RESULT_BASE 0x0520
 #define KGCORE_KEY_WORDS 8
 #define KGCORE_KDATA_WORDS 4
 #define KGCORE_RESULT_WORDS 16
@@ -88,7 +88,7 @@ int main(void) {
 		return test_finish();
 	if (!test_check("BRANCH starts KGCORE vector server", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
 		return test_finish();
-	if (!test_check("KGCORE vector server becomes ready", dsp_hw_wait_shared(0x0900, READY_MARKER, 100)))
+	if (!test_check("KGCORE vector server becomes ready", dsp_hw_wait_shared(0x0300, READY_MARKER, 100)))
 		return test_finish();
 
 	for (size_t i = 0; i < ARRAY_SIZE(vectors); i++) {

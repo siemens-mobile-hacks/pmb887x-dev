@@ -1,7 +1,14 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
 
+#ifdef PMB8875
+#include "baseband-functional-8875.inc"
+#define DSP_BASEBAND_FUNCTIONAL DSP_BASEBAND_FUNCTIONAL_8875
+#endif
+#ifdef PMB8876
 #include "baseband-functional-8876.inc"
+#define DSP_BASEBAND_FUNCTIONAL DSP_BASEBAND_FUNCTIONAL_8876
+#endif
 #include "dsp/dsp-hw.h"
 #include "test.h"
 
@@ -39,8 +46,13 @@
 #define WRAPPED_JOB_WORDS 40
 #define REPEATED_JOB_WORDS 480
 #define DECIMATED_JOB_WORDS 300
+#ifdef PMB8875
+#define BASEBAND_FIXED_CONTROL 0x0000
+#endif
+#ifdef PMB8876
 // Undocumented readback bit that remains set on PMB8876 across every tested Baseband control mode.
 #define BASEBAND_FIXED_CONTROL 0x0100
+#endif
 #define NORMAL_BBHI_POINTER 2
 #define DECIMATED_BBHI_POINTER 1
 
@@ -376,7 +388,7 @@ static bool run_scenario(const struct baseband_scenario *scenario, size_t pass) 
 		return false;
 	DSP_COM_CLEAR = 0xFFFF;
 	if (!test_check("boot commands load the baseband runner",
-		dsp_hw_load_image(DSP_BASEBAND_FUNCTIONAL_8876, sizeof(DSP_BASEBAND_FUNCTIONAL_8876)))) {
+		dsp_hw_load_image(DSP_BASEBAND_FUNCTIONAL, sizeof(DSP_BASEBAND_FUNCTIONAL)))) {
 		return false;
 	}
 	if (!test_check("BRANCH starts the baseband runner", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))

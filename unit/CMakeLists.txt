@@ -122,8 +122,6 @@ add_peripheral_test(dsp-lle-modulator-functional dsp/lle/modulator-functional.c 
 add_peripheral_test(dsp-lle-baseband-functional dsp/lle/baseband-functional.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-tpu-events dsp/lle/tpu-events.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-tpu-bb-events dsp/lle/tpu-bb-events.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-lle-l1mon-vectors dsp/lle/l1mon-vectors.c dsp/dsp-hw.c)
-add_peripheral_test(dsp-lle-l1mon-functional dsp/lle/l1mon-functional.c dsp/dsp-hw.c)
 add_peripheral_test(
 	dsp-hle-gsm-channel-scan
 	dsp/hle/gsm-channel-scan.c

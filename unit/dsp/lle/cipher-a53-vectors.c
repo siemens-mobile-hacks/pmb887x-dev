@@ -6,19 +6,19 @@
 
 #define READY_MARKER 0xA55A
 #define COMPLETE_MARKER 0xA55A
-#define A53_COMMAND 0x0904
-#define A53_PARAMETER_BASE 0x0A00
-#define A53_RESULT_BASE 0x0A20
+#define A53_COMMAND 0x0304
+#define A53_PARAMETER_BASE 0x0400
+#define A53_RESULT_BASE 0x0420
 #define A53_KEY_WORDS 8
 #define A53_COUNTER_WORDS 3
 #define A53_RESULT_WORDS 16
 #define A53_WORDS_PER_STREAM 8
 #define A53_TAIL_MASK 0x0003
-#define A53_IRQ_COUNT 0x0902
-#define A53_IRQ_FLAGS 0x0903
-#define A53_IRQ_CSTAT 0x0905
-#define A53_IRQ_FLAGS_AFTER_ACK 0x0906
-#define A53_IRQ_FLAGS_IDLE 0x0907
+#define A53_IRQ_COUNT 0x0302
+#define A53_IRQ_FLAGS 0x0303
+#define A53_IRQ_CSTAT 0x0305
+#define A53_IRQ_FLAGS_AFTER_ACK 0x0306
+#define A53_IRQ_FLAGS_IDLE 0x0307
 #define CIPHER_IRQ BIT(0)
 #define IRQ_TIMEOUT_MS 100
 // Hardware command-to-ISR latency is 92-101 us; allow over twice that latency
@@ -182,9 +182,9 @@ int main(void) {
 		return test_finish();
 	if (!test_check("BRANCH starts A5/3 vector server", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
 		return test_finish();
-	if (!test_check("A5/3 vector server becomes ready", dsp_hw_wait_shared(0x0900, READY_MARKER, 100)))
+	if (!test_check("A5/3 vector server becomes ready", dsp_hw_wait_shared(0x0300, READY_MARKER, 100)))
 		return test_finish();
-	if (!test_check("A5/3 vector scenarios become available", dsp_hw_wait_shared(0x0901, COMPLETE_MARKER, 3000)))
+	if (!test_check("A5/3 vector scenarios become available", dsp_hw_wait_shared(0x0301, COMPLETE_MARKER, 3000)))
 		return test_finish();
 	test_eq_u32("cipher IRQ count starts at zero", 0, dsp_hw_shared_memory[A53_IRQ_COUNT]);
 	stopwatch_usleep_wd(INITIAL_IDLE_US);

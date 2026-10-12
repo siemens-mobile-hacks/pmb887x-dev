@@ -48,8 +48,10 @@ struct dsp_mask_config {
 	uint16_t tone_duration_address;
 	uint16_t tone_result_offset;
 	uint16_t switch_state_addresses[3];
-	bool vb_set_biquad_supported;
 	uint16_t vb_biquad_coefficients_address;
+	uint16_t vb_biquad_overlay_handler;
+	uint16_t vb_cbuf_gain_state_addresses[5];
+	uint16_t vb_cbuf_gain_noop_handler;
 	uint16_t program_rom_addresses[4];
 	uint16_t program_rom_fingerprints[4][8];
 	size_t program_rom_fingerprint_count;
@@ -75,6 +77,8 @@ static const struct dsp_mask_config DSP_MASK_CONFIGS[] = {
 		.tone_duration_address = 0x3AE1,
 		.tone_result_offset = 0x00D6,
 		.switch_state_addresses = { 0x5D7D, 0x5D8E, 0x5D95 },
+		.vb_biquad_overlay_handler = 0x1A4D,
+		.vb_cbuf_gain_noop_handler = 0x1867,
 		.program_rom_addresses = { 0x1000, 0x2000, 0x2779, 0x9520 },
 		.program_rom_fingerprints = {
 			{ 0x0602, 0xFFFF, 0x4180, 0x1010, 0x4180, 0x314B, 0x4180, 0x318B },
@@ -103,6 +107,8 @@ static const struct dsp_mask_config DSP_MASK_CONFIGS[] = {
 		.tone_duration_address = 0x5DAD,
 		.tone_result_offset = 0x00D6,
 		.switch_state_addresses = { 0x5D7E, 0x5D8F, 0x5D98 },
+		.vb_biquad_coefficients_address = 0xF51A,
+		.vb_cbuf_gain_state_addresses = { 0x5DF5, 0x5DF6, 0x5DD4, 0x5DD5, 0x5DF7 },
 		.program_rom_addresses = { 0x1000, 0x2000, 0x2779, 0x9520 },
 		.program_rom_fingerprints = {
 			{ 0x0604, 0xFFFF, 0x4180, 0x1010, 0x4180, 0x2B51, 0x4180, 0x2B91 },
@@ -132,8 +138,8 @@ static const struct dsp_mask_config DSP_MASK_CONFIGS[] = {
 		.tone_duration_address = 0x7DA8,
 		.tone_result_offset = 0x00EE,
 		.switch_state_addresses = { 0x7D7A, 0x7D8B, 0x7D92 },
-		.vb_set_biquad_supported = true,
 		.vb_biquad_coefficients_address = 0xF71A,
+		.vb_cbuf_gain_state_addresses = { 0x7DF1, 0x7DF2, 0x7DCB, 0x7DCC, 0x7DF3 },
 		.program_rom_addresses = { 0x2000, 0x2779, 0x9520 },
 		.program_rom_fingerprints = {
 			{ 0x0801, 0xFFFF, 0x4180, 0x2010, 0x4180, 0x4DED, 0x4180, 0x4E2D },
@@ -545,8 +551,10 @@ static void test_vb_set_biquad(void) {
 		0x4001, 0x4002, 0x4003, 0x4004, 0x4005,
 	};
 
-	if (!dsp_mask_config->vb_set_biquad_supported) {
-		test_skip("VB_SET_BIQUAD built-in command", "this Mask ROM requires voiceband initialization");
+	if (dsp_mask_config->vb_biquad_overlay_handler != 0) {
+		test_runtime_read("VB_SET_BIQUAD command table overlay handler",
+			dsp_mask_config->command_table_address + 16, 0x0460,
+			&dsp_mask_config->vb_biquad_overlay_handler, 1);
 		return;
 	}
 	if (!test_check("VB_SET_BIQUAD built-in command is accepted", submit_runtime_command(0, 16, PARAMETERS,
@@ -580,19 +588,26 @@ static void test_vb_tone_duration(void) {
 		DSP_SHARED_MEMORY[dsp_mask_config->tone_result_offset]);
 }
 
-#ifndef PMB8875
 static void test_vb_set_cbuf_gain(void) {
 	static const uint16_t PARAMETERS[] = { 0x1111, 0x2222, 0x3333, 0x4444, 0x5555 };
-	const uint16_t F1_EXPECTED[] = { PARAMETERS[0], PARAMETERS[1], PARAMETERS[4] };
 
+	if (dsp_mask_config->vb_cbuf_gain_noop_handler != 0) {
+		test_runtime_read("VB_SET_CBUF_GAIN command table no-op handler",
+			dsp_mask_config->command_table_address + 26, 0x04A0,
+			&dsp_mask_config->vb_cbuf_gain_noop_handler, 1);
+		return;
+	}
 	if (!test_check("VB_SET_CBUF_GAIN built-in command is accepted", submit_runtime_command(0, 26, PARAMETERS,
 		ARRAY_SIZE(PARAMETERS))))
 		return;
-	test_runtime_read("VB_SET_CBUF_GAIN 7DCB..7DCC state", 0x7DCB, 0x04A0, PARAMETERS + 2, 2);
-	test_runtime_read("VB_SET_CBUF_GAIN 7DF1..7DF3 state", 0x7DF1, 0x04B0, F1_EXPECTED,
-		ARRAY_SIZE(F1_EXPECTED));
+	for (size_t i = 0; i < ARRAY_SIZE(PARAMETERS); i++) {
+		char name[64];
+
+		sprintf(name, "VB_SET_CBUF_GAIN stores parameter %lu", (uint32_t) i);
+		test_runtime_read(name, dsp_mask_config->vb_cbuf_gain_state_addresses[i], 0x04A0 + i,
+			PARAMETERS + i, 1);
+	}
 }
-#endif
 
 static void test_runtime_commands(void) {
 	static const uint16_t WRITE_DSP_PARAMETERS[] = { 0x0360, 0x0100, ARRAY_SIZE(RUNTIME_DATA_PATTERN) };
@@ -614,9 +629,7 @@ static void test_runtime_commands(void) {
 	test_modu_init();
 	test_loop();
 	test_vb_tone_duration();
-#ifndef PMB8875
 	test_vb_set_cbuf_gain();
-#endif
 
 	if (!test_check("READ_DSP built-in command is accepted",
 		submit_runtime_command(0, 33, read_data_rom_parameters, ARRAY_SIZE(read_data_rom_parameters))))

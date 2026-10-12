@@ -22,10 +22,10 @@ static volatile uint32_t irq_count;
 static volatile uint32_t irq_number;
 
 static uint32_t pulse_dsp_reset(void) {
-	SCU_RST_REQ = SCU_RST_REQ_DSP;
+	SCU_RST_REQ |= SCU_RST_REQ_DSP;
 	/* Firmware uses the same readback before deasserting reset; back-to-back writes are too short. */
 	uint32_t asserted_requests = SCU_RST_REQ;
-	SCU_RST_REQ = 0;
+	SCU_RST_REQ &= ~SCU_RST_REQ_DSP;
 
 	return asserted_requests;
 }
@@ -170,6 +170,7 @@ int main(void) {
 	test_start("DSP peripheral test");
 
 	test_category("Reset values");
+	pulse_dsp_reset();
 	test_reset_values();
 	test_category("Communication flags");
 	test_communication_flags();

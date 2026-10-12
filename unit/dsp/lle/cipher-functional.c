@@ -6,9 +6,9 @@
 #define READY_MARKER 0xA55A
 #define COMPLETE_MARKER 0xA55A
 #define CIPHER_IRQ BIT(0)
-#define A53_COMMAND 0x0904
-#define A53_PARAMETER_BASE 0x0A00
-#define A53_RESULT_BASE 0x0A20
+#define A53_COMMAND 0x0304
+#define A53_PARAMETER_BASE 0x0400
+#define A53_RESULT_BASE 0x0420
 
 #ifdef PMB8875
 #include "cipher-a512-functional-8875.inc"
@@ -105,25 +105,25 @@ static bool run_a53_request(const uint16_t *key, const uint16_t *counters, uint1
 
 static void run_a512(void) {
 	test_category("Cipher / A5/1 and A5/2");
-	if (!run_image(DSP_CIPHER_A512_IMAGE, sizeof(DSP_CIPHER_A512_IMAGE), 0x0700, 0x0701))
+	if (!run_image(DSP_CIPHER_A512_IMAGE, sizeof(DSP_CIPHER_A512_IMAGE), 0x0100, 0x0101))
 		return;
 
-	test_check("A5/1 exposes active state immediately after start", dsp_hw_shared_memory[0x0710] & 1);
-	test_eq_u32("A5/1 returns to idle after generation", 0, dsp_hw_shared_memory[0x0711] & 1);
-	test_check("masked CIPH completion remains pending", dsp_hw_shared_memory[0x0712] & CIPHER_IRQ);
-	test_eq_u32("masked CIPH completion does not enter INT1 handler", 0, dsp_hw_shared_memory[0x0713]);
-	test_eq_u32("enabling pending CIPH delivers one INT1", 1, dsp_hw_shared_memory[0x0716]);
-	test_eq_u32("RINT1 acknowledgement clears CIPH request", 0, dsp_hw_shared_memory[0x0717] & CIPHER_IRQ);
-	test_eq_u32("next cipher operation delivers a new INT1", 2, dsp_hw_shared_memory[0x0718]);
-	test_eq_u32("all A5/1 and A5/2 operations deliver completion interrupts", 5, dsp_hw_shared_memory[0x0702]);
-	test_eq_u32("INT1 handler observes CIPH source", CIPHER_IRQ, dsp_hw_shared_memory[0x0703] & CIPHER_IRQ);
-	test_check("A5/1 matches published GSM streams", streams_match(0x0740, A51_GSM_EXPECTED, 8, 0x0003));
-	test_check("identical A5/1 input repeats exactly", shared_regions_equal(0x0740, 0x0760, 16));
-	test_check("A5/2 matches published GSM streams", streams_match(0x0780, A52_GSM_EXPECTED, 8, 0x0003));
-	test_check("key and frame changes affect A5/1 output", !shared_regions_equal(0x0740, 0x07A0, 16));
-	test_check("A5/1 EDGE exposes active state", dsp_hw_shared_memory[0x0714] & 1);
-	test_eq_u32("A5/1 EDGE returns to idle", 0, dsp_hw_shared_memory[0x0715] & 1);
-	test_check("A5/1 EDGE generates both 348-bit streams", streams_match(0x0800, A51_EDGE_EXPECTED, 22, 0x0FFF));
+	test_check("A5/1 exposes active state immediately after start", dsp_hw_shared_memory[0x0110] & 1);
+	test_eq_u32("A5/1 returns to idle after generation", 0, dsp_hw_shared_memory[0x0111] & 1);
+	test_check("masked CIPH completion remains pending", dsp_hw_shared_memory[0x0112] & CIPHER_IRQ);
+	test_eq_u32("masked CIPH completion does not enter INT1 handler", 0, dsp_hw_shared_memory[0x0113]);
+	test_eq_u32("enabling pending CIPH delivers one INT1", 1, dsp_hw_shared_memory[0x0116]);
+	test_eq_u32("RINT1 acknowledgement clears CIPH request", 0, dsp_hw_shared_memory[0x0117] & CIPHER_IRQ);
+	test_eq_u32("next cipher operation delivers a new INT1", 2, dsp_hw_shared_memory[0x0118]);
+	test_eq_u32("all A5/1 and A5/2 operations deliver completion interrupts", 5, dsp_hw_shared_memory[0x0102]);
+	test_eq_u32("INT1 handler observes CIPH source", CIPHER_IRQ, dsp_hw_shared_memory[0x0103] & CIPHER_IRQ);
+	test_check("A5/1 matches published GSM streams", streams_match(0x0140, A51_GSM_EXPECTED, 8, 0x0003));
+	test_check("identical A5/1 input repeats exactly", shared_regions_equal(0x0140, 0x0160, 16));
+	test_check("A5/2 matches published GSM streams", streams_match(0x0180, A52_GSM_EXPECTED, 8, 0x0003));
+	test_check("key and frame changes affect A5/1 output", !shared_regions_equal(0x0140, 0x01A0, 16));
+	test_check("A5/1 EDGE exposes active state", dsp_hw_shared_memory[0x0114] & 1);
+	test_eq_u32("A5/1 EDGE returns to idle", 0, dsp_hw_shared_memory[0x0115] & 1);
+	test_check("A5/1 EDGE generates both 348-bit streams", streams_match(0x0200, A51_EDGE_EXPECTED, 22, 0x0FFF));
 }
 
 static void run_a53(void) {
@@ -132,7 +132,7 @@ static void run_a53(void) {
 	uint16_t changed_counters[ARRAY_SIZE(A53_COUNTERS)];
 
 	test_category("Cipher / A5/3");
-	if (!run_image(DSP_CIPHER_A53_IMAGE, sizeof(DSP_CIPHER_A53_IMAGE), 0x0900, 0x0901))
+	if (!run_image(DSP_CIPHER_A53_IMAGE, sizeof(DSP_CIPHER_A53_IMAGE), 0x0300, 0x0301))
 		return;
 
 	if (!test_check("A5/3 MASK ROM register sequence completes",
@@ -144,7 +144,8 @@ static void run_a53(void) {
 		baseline[i] = dsp_hw_shared_memory[A53_RESULT_BASE + i];
 
 	test_check("identical A5/3 input completes without reset", run_a53_request(A53_COMMAND_KEY, A53_COUNTERS, 2));
-	test_check("identical A5/3 input repeats exactly", shared_words_equal(A53_RESULT_BASE, baseline, ARRAY_SIZE(baseline)));
+	test_check("identical A5/3 input repeats exactly",
+		shared_words_equal(A53_RESULT_BASE, baseline, ARRAY_SIZE(baseline)));
 
 	for (size_t i = 0; i < ARRAY_SIZE(changed_key); i++)
 		changed_key[i] = A53_COMMAND_KEY[i];
@@ -153,20 +154,21 @@ static void run_a53(void) {
 	changed_key[0] ^= 1;
 	changed_counters[0] ^= 1;
 	test_check("changed A5/3 key and frame complete", run_a53_request(changed_key, changed_counters, 3));
-	test_check("key and frame changes affect A5/3 output", !shared_words_equal(A53_RESULT_BASE, baseline, ARRAY_SIZE(baseline)));
+	test_check("key and frame changes affect A5/3 output",
+		!shared_words_equal(A53_RESULT_BASE, baseline, ARRAY_SIZE(baseline)));
 
-	test_eq_u32("A5/3 start exposes CACT and INIT", 0x0009, dsp_hw_shared_memory[0x0910] & 0x0009);
-	test_eq_u32("A5/3 completion clears CACT and INIT", 0, dsp_hw_shared_memory[0x0911] & 0x0009);
-	test_eq_u32("all A5/3 operations deliver completion interrupts", 3, dsp_hw_shared_memory[0x0902]);
-	test_eq_u32("INT1 handler observes A5/3 CIPH source", CIPHER_IRQ, dsp_hw_shared_memory[0x0903] & CIPHER_IRQ);
+	test_eq_u32("A5/3 start exposes CACT and INIT", 0x0009, dsp_hw_shared_memory[0x0310] & 0x0009);
+	test_eq_u32("A5/3 completion clears CACT and INIT", 0, dsp_hw_shared_memory[0x0311] & 0x0009);
+	test_eq_u32("all A5/3 operations deliver completion interrupts", 3, dsp_hw_shared_memory[0x0302]);
+	test_eq_u32("INT1 handler observes A5/3 CIPH source", CIPHER_IRQ, dsp_hw_shared_memory[0x0303] & CIPHER_IRQ);
 }
 
 int main(void) {
 	test_start("DSP cipher functional test");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 
-	run_a512();
 	run_a53();
+	run_a512();
 
 	DSP_COM_CLEAR = UINT16_MAX;
 	(void) dsp_hw_reset();

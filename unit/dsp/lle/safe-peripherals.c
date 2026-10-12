@@ -11,6 +11,16 @@
 #define RESET_REGISTER(name, address, value) { name, address, value, UINT16_MAX }
 #define RESET_REGISTER_MASKED(name, address, value, mask) { name, address, value, mask }
 
+#ifdef PMB8875
+#define BASEBAND_CTRL_RESET 0x0010
+#define DSP_ID_RESET 0xE001
+#define MODULATOR_CTRL_RESET 0x0000
+#else
+#define BASEBAND_CTRL_RESET 0x0110
+#define DSP_ID_RESET 0xE101
+#define MODULATOR_CTRL_RESET 0x0600
+#endif
+
 static volatile uint16_t *const DSP_SHARED_MEMORY = (volatile uint16_t *) DSP_RAM_BASE;
 
 struct dsp_reset_register {
@@ -34,7 +44,6 @@ struct dsp_i2s_registers {
 	uint16_t txintaddr;
 };
 
-// Expected reset values were captured twice from the connected EL71 hardware.
 static const struct dsp_reset_register INT_RESET_REGISTERS[] = {
 	RESET_REGISTER("FINTA0", TEAK_INT_FINTA0, 0x0000),
 	RESET_REGISTER("EINTA0", TEAK_INT_EINTA0, 0x0000),
@@ -112,7 +121,7 @@ static const struct dsp_reset_register AFE_RESET_REGISTERS[] = {
 };
 
 static const struct dsp_reset_register BASEBAND_RESET_REGISTERS[] = {
-	RESET_REGISTER("CTRL", TEAK_BB_CTRL, 0x0110),
+	RESET_REGISTER("CTRL", TEAK_BB_CTRL, BASEBAND_CTRL_RESET),
 	RESET_REGISTER("INT_POINTER", TEAK_BB_INT_POINTER, 0x0000),
 	RESET_REGISTER("WR_POINTER", TEAK_BB_WR_POINTER, 0x0000),
 	RESET_REGISTER("STATUS", TEAK_BB_STATUS, 0x0000),
@@ -134,14 +143,14 @@ static const struct dsp_reset_register MCS_RESET_REGISTERS[] = {
 };
 
 static const struct dsp_reset_register DSP_RESET_REGISTERS[] = {
-	RESET_REGISTER("ID", TEAK_DSP_ID, 0xE101),
+	RESET_REGISTER("ID", TEAK_DSP_ID, DSP_ID_RESET),
 	RESET_REGISTER("DEBUG", TEAK_DSP_DEBUG, 0x0000),
 	RESET_REGISTER("PAGE", TEAK_DSP_PAGE, 0x0000),
 	RESET_REGISTER("DSPOUT", TEAK_DSP_DSPOUT, 0x0000),
 };
 
 static const struct dsp_reset_register MODULATOR_RESET_REGISTERS[] = {
-	RESET_REGISTER("CTRL", TEAK_MOD_CTRL, 0x0600),
+	RESET_REGISTER("CTRL", TEAK_MOD_CTRL, MODULATOR_CTRL_RESET),
 	RESET_REGISTER("STAT", TEAK_MOD_STAT, 0x0000),
 	RESET_REGISTER("INT_ADDR", TEAK_MOD_INT_ADDR, 0x0000),
 	RESET_REGISTER("OCI", TEAK_MOD_OCI, 0x0000),
@@ -456,7 +465,6 @@ static void test_afe(void) {
 
 	uint16_t rates = TEAK_AFE_BCON_RXRATE_KHZ_44_444 | TEAK_AFE_BCON_TXRATE_KHZ_16;
 	test_readback("AFE rates while stopped", TEAK_AFE_BCON, rates, TEAK_AFE_BCON_RXRATE | TEAK_AFE_BCON_TXRATE);
-	test_skip("AFE analog controls", "power and routing behavior is not safe without board-specific audio isolation");
 }
 
 static void test_baseband(void) {
@@ -492,11 +500,6 @@ static void test_mcs(void) {
 
 static void test_dsp_control(void) {
 	test_reset_registers("DSP", DSP_RESET_REGISTERS, ARRAY_SIZE(DSP_RESET_REGISTERS));
-	if (!prepare_behavior("DSP"))
-		return;
-
-	test_skip("DSP.CTRL behavior", "DSPDIS stops the Mask ROM command transport used by this test");
-	test_skip("DSP.PAGE behavior", "changing the active Mask ROM page would invalidate the command transport");
 }
 
 static void test_modulator(void) {
@@ -529,9 +532,12 @@ static void test_ssc(void) {
 	(void) write_checked("SSC clock disable completes", TEAK_SSC_CON, 0);
 }
 
-static void test_i2s(const char *module, const struct dsp_reset_register *reset_registers, size_t reset_count,
-	const struct dsp_i2s_registers *registers)
-{
+static void test_i2s(
+	const char *module,
+	const struct dsp_reset_register *reset_registers,
+	size_t reset_count,
+	const struct dsp_i2s_registers *registers
+) {
 	test_reset_registers(module, reset_registers, reset_count);
 	if (!prepare_behavior(module))
 		return;

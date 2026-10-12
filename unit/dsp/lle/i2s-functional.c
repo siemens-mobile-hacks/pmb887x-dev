@@ -47,22 +47,33 @@
 #define TEST_TXCONF TEAK_I2S3_TXCONF
 #define TEST_TXINTADDR TEAK_I2S3_TXINTADDR
 #define TEST_RAM_BASE TEAK_I2S3_RAM_BASE
+#ifdef PMB8875
+#define TEST_TX_IRQ BIT(4)
+#else
 #define TEST_TX_IRQ TEAK_INT_FINTB0_I2S3TX
+#endif
 #else
 #error Unsupported I2S instance
 #endif
 
 #ifdef PMB8875
 #include "i2s-functional-8875.inc"
+#if I2S_INSTANCE != 3
+#include "i2s-rx-functional-8875.inc"
+#include "i2s-rx-pcm-functional-8875.inc"
+#define DSP_I2S_RX_IMAGE DSP_I2S_RX_FUNCTIONAL_8875
+#define DSP_I2S_RX_PCM_IMAGE DSP_I2S_RX_PCM_FUNCTIONAL_8875
+#endif
 #define DSP_I2S_IMAGE DSP_I2S_FUNCTIONAL_8875
 #else
 #include "i2s-functional-8876.inc"
-#define DSP_I2S_IMAGE DSP_I2S_FUNCTIONAL_8876
-#endif
-
-#if I2S_INSTANCE != 3 && !defined(PMB8875)
+#if I2S_INSTANCE != 3
 #include "i2s-rx-functional-8876.inc"
 #include "i2s-rx-pcm-functional-8876.inc"
+#define DSP_I2S_RX_IMAGE DSP_I2S_RX_FUNCTIONAL_8876
+#define DSP_I2S_RX_PCM_IMAGE DSP_I2S_RX_PCM_FUNCTIONAL_8876
+#endif
+#define DSP_I2S_IMAGE DSP_I2S_FUNCTIONAL_8876
 #endif
 
 static void load_parameters(void) {
@@ -121,7 +132,7 @@ static void validate_record(void) {
 	test_eq_u32("the PCM pointer remains stable after automatic stop", 6, stopped_pcm_pointer);
 }
 
-#if I2S_INSTANCE != 3 && !defined(PMB8875)
+#if I2S_INSTANCE != 3
 static void load_receive_parameters(void) {
 	dsp_hw_shared_memory[0x0000] = 0;
 	dsp_hw_shared_memory[0x0010] = TEST_CTRL;
@@ -211,8 +222,7 @@ static bool run_receive_test(void) {
 		return false;
 	DSP_COM_CLEAR = UINT16_MAX;
 	if (!test_check("boot commands load I2S RX runner",
-		dsp_hw_load_image(DSP_I2S_RX_FUNCTIONAL_8876, sizeof(DSP_I2S_RX_FUNCTIONAL_8876))))
-	{
+		dsp_hw_load_image(DSP_I2S_RX_IMAGE, sizeof(DSP_I2S_RX_IMAGE)))) {
 		return false;
 	}
 	load_receive_parameters();
@@ -232,8 +242,7 @@ static bool run_receive_pcm_test(void) {
 		return false;
 	DSP_COM_CLEAR = UINT16_MAX;
 	if (!test_check("boot commands load I2S PCM RX runner",
-		dsp_hw_load_image(DSP_I2S_RX_PCM_FUNCTIONAL_8876, sizeof(DSP_I2S_RX_PCM_FUNCTIONAL_8876))))
-	{
+		dsp_hw_load_image(DSP_I2S_RX_PCM_IMAGE, sizeof(DSP_I2S_RX_PCM_IMAGE)))) {
 		return false;
 	}
 	load_receive_parameters();
@@ -267,7 +276,7 @@ int main(void) {
 	print_record();
 	validate_record();
 
-#if I2S_INSTANCE != 3 && !defined(PMB8875)
+#if I2S_INSTANCE != 3
 	(void) run_receive_test();
 	(void) run_receive_pcm_test();
 #endif

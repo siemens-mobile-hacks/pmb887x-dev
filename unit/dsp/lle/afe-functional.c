@@ -62,6 +62,10 @@ static void print_record(void) {
 		hash_words(TX_SNAPSHOT_OFFSET, AFE_RING_WORDS),
 		(uint32_t) dsp_hw_shared_memory[TX_SNAPSHOT_OFFSET],
 		(uint32_t) dsp_hw_shared_memory[TX_SNAPSHOT_OFFSET + AFE_RING_WORDS - 1]);
+	printf("# AFE active RX rate change running=%lu poll_remaining=%lu\n",
+		(uint32_t) dsp_hw_shared_memory[0x0030], (uint32_t) dsp_hw_shared_memory[0x0031]);
+	printf("# AFE active TX rate change running=%lu poll_remaining=%lu\n",
+		(uint32_t) dsp_hw_shared_memory[0x0032], (uint32_t) dsp_hw_shared_memory[0x0033]);
 }
 
 static void validate_receive_path(void) {
@@ -101,7 +105,14 @@ static void validate_transmit_path(void) {
 }
 
 static void validate_ring_data(void) {
-	test_check("power-down decimation produces the PMB8876 TX-ring vector", tx_ring_matches_vector());
+	test_check("power-down decimation produces the hardware TX-ring vector", tx_ring_matches_vector());
+}
+
+static void validate_rate_change(void) {
+	test_eq_u32("changing the active receive rate keeps the AFE running", 1,
+		dsp_hw_shared_memory[0x0030]);
+	test_eq_u32("changing the active transmit rate keeps the AFE running", 1,
+		dsp_hw_shared_memory[0x0032]);
 }
 
 int main(void) {
@@ -124,6 +135,7 @@ int main(void) {
 	validate_receive_path();
 	validate_transmit_path();
 	validate_ring_data();
+	validate_rate_change();
 
 	DSP_COM_CLEAR = UINT16_MAX;
 	(void) dsp_hw_reset();

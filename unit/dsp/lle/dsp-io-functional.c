@@ -2,7 +2,13 @@
 #include <gen/dsp.h>
 
 #include "dsp/dsp-hw.h"
+#ifdef PMB8875
+#include "dsp-io-functional-8875.inc"
+#define DSP_IO_FUNCTIONAL DSP_IO_FUNCTIONAL_8875
+#else
 #include "dsp-io-functional-8876.inc"
+#define DSP_IO_FUNCTIONAL DSP_IO_FUNCTIONAL_8876
+#endif
 #include "test.h"
 
 #define COMPLETE_MARKER 0xA55A
@@ -55,8 +61,7 @@ static void test_dspout0(uint16_t initial_outputs) {
 	test_eq_u32("GPIO input sampler observes the push-pull low level", 0, GPIO_PIN(GPIO_DSPOUT0) & GPIO_DATA);
 
 	if (!test_check("DSP writes DSPOUT0 high in push-pull mode",
-		write_dspout(preserved_outputs | TEAK_DSP_DSPOUT_DSPOUT0)))
-	{
+		write_dspout(preserved_outputs | TEAK_DSP_DSPOUT_DSPOUT0))) {
 		return;
 	}
 	test_eq_u32("DSP readback reports DSPOUT0 high", TEAK_DSP_DSPOUT_DSPOUT0,
@@ -69,8 +74,7 @@ static void test_dspout0(uint16_t initial_outputs) {
 		return;
 	test_eq_u32("open-drain zero actively pulls the pad low", 0, GPIO_PIN(GPIO_DSPOUT0) & GPIO_DATA);
 	if (!test_check("DSP releases DSPOUT0 in open-drain mode",
-		write_dspout(preserved_outputs | TEAK_DSP_DSPOUT_DSPOUT0)))
-	{
+		write_dspout(preserved_outputs | TEAK_DSP_DSPOUT_DSPOUT0))) {
 		return;
 	}
 	test_eq_u32("released open-drain output matches the tristated pad level", released_level,
@@ -91,8 +95,7 @@ static void test_dspin0(void) {
 
 	configure_dspin0(GPIO_PDPU_PULLUP);
 	if (!test_check("DSPIN0 rising edge enters the real INT1 handler",
-		dsp_hw_wait_shared(IRQ_COUNT_OFFSET, 1, UINT32_MAX)))
-	{
+		dsp_hw_wait_shared(IRQ_COUNT_OFFSET, 1, UINT32_MAX))) {
 		return;
 	}
 	test_eq_u32("INT1 identifies the DSPIN0 rising edge", TEAK_INT_FINT1_DSPIN0HI,
@@ -108,8 +111,7 @@ static void test_dspin0(void) {
 
 	configure_dspin0(GPIO_PDPU_PULLDOWN);
 	if (!test_check("DSPIN0 falling edge enters the real INT1 handler",
-		dsp_hw_wait_shared(IRQ_COUNT_OFFSET, 2, UINT32_MAX)))
-	{
+		dsp_hw_wait_shared(IRQ_COUNT_OFFSET, 2, UINT32_MAX))) {
 		return;
 	}
 	test_eq_u32("INT1 identifies the DSPIN0 falling edge", TEAK_INT_FINT1_DSPIN0LO,
@@ -127,7 +129,7 @@ static void test_dsp_shared_ram(void) {
 	test_category("DSP shared RAM test");
 
 	bool success = true;
-	for (uint32_t i = 0; i < (DSP_RAM_SIZE / 4); i++) {
+	for (uint32_t i = 0; i < (TEAK_SHARED_RAM_SIZE / 2); i++) {
 		DSP_RAM(i) = i;
 		success &= DSP_RAM(i) == i;
 		DSP_RAM(i) = 0;
@@ -150,8 +152,7 @@ int main(void) {
 		return test_finish();
 	DSP_COM_CLEAR = UINT16_MAX;
 	if (!test_check("boot commands load the DSP pad runner",
-		dsp_hw_load_image(DSP_IO_FUNCTIONAL_8876, sizeof(DSP_IO_FUNCTIONAL_8876))))
-	{
+		dsp_hw_load_image(DSP_IO_FUNCTIONAL, sizeof(DSP_IO_FUNCTIONAL)))) {
 		return test_finish();
 	}
 	if (!test_check("BRANCH starts the DSP pad runner", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))

@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <gen/dsp.h>
 
 #include "dsp/dsp-container.h"
 #include "test.h"
@@ -9,9 +10,8 @@
 #define DSP_BOOT_DATA_OFFSET 2
 #define DSP_BOOT_MAX_WORDS 507
 #define DSP_WAIT_ITERATIONS 1000000
-#define DSP_EXPECTED_MASK_ID 0x0801
 #define DSP_STARTUP_ADDRESS 0x0100
-#define DSP_DONE_OFFSET 0x0300
+#define DSP_MCS_CFR_EXPANSION_ADDRESS 0x0103
 #define DSP_DONE_VALUE 0xA55A
 
 static volatile uint16_t *const DSP_SHARED_MEMORY = (volatile uint16_t *) DSP_RAM_BASE;
@@ -26,6 +26,9 @@ static volatile uint16_t *const DSP_SHARED_MEMORY = (volatile uint16_t *) DSP_RA
 #include DSP_INSTRUCTION_CASES_INCLUDE
 #include DSP_INSTRUCTION_GOLDEN_INCLUDE
 #include DSP_INSTRUCTION_IMAGES_INCLUDE
+
+#define DSP_INSTRUCTION_RESULT_OFFSET (DSP_INSTRUCTION_RESULT_ADDRESS - TEAK_SHARED_RAM_BASE)
+#define DSP_DONE_OFFSET (DSP_INSTRUCTION_DONE_ADDRESS - TEAK_SHARED_RAM_BASE)
 
 #if defined(DSP_INSTRUCTION_IMAGES_PACKED) || defined(DSP_INSTRUCTION_GOLDEN_PACKED)
 /* Packed blocks end on token boundaries and retain this history between shards. */
@@ -123,8 +126,12 @@ static bool load_words(uint16_t command, uint16_t destination, const uint8_t *da
 	boot_data[0] = command;
 	boot_data[1] = destination;
 	boot_data[2] = (uint16_t) words;
-	for (size_t i = 0; i < words; i++)
-		boot_data[3 + i] = (uint16_t) data[i * 2] | ((uint16_t) data[i * 2 + 1] << 8);
+	for (size_t i = 0; i < words; i++) {
+		uint16_t word = (uint16_t) data[i * 2] | ((uint16_t) data[i * 2 + 1] << 8);
+		if (command == DSP_BOOT_PLOAD && destination + i == DSP_MCS_CFR_EXPANSION_ADDRESS)
+			word = TEAK_MCS_CFR;
+		boot_data[3 + i] = word;
+	}
 
 	return submit_boot_command();
 }
@@ -193,7 +200,8 @@ int main(void) {
 		return test_finish();
 	uint16_t mask_id = DSP_SHARED_MEMORY[0];
 	printf("# DSP mask ID: %04lX\n", (uint32_t) mask_id);
-	if (!test_eq_u32("EL71 DSP Mask ROM is 0801", DSP_EXPECTED_MASK_ID, mask_id))
+	bool mask_is_supported = mask_id == 0x0602 || mask_id == 0x0604 || mask_id == 0x0801;
+	if (!test_check("DSP Mask ROM is supported", mask_is_supported))
 		return test_finish();
 
 	bool compare_results = DSP_INSTRUCTION_GOLDEN_COUNT != 0;
@@ -238,6 +246,6 @@ int main(void) {
 
 	test_category("Hardware golden comparison");
 	if (!compare_results)
-		test_skip("instruction results match EL71", "hardware capture has not been imported");
+		test_skip("instruction results match hardware", "hardware capture has not been imported");
 	return test_finish();
 }

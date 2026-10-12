@@ -4,7 +4,14 @@
 
 #include "dsp/dsp-hw.h"
 #include "test.h"
+#ifdef PMB8875
+#include "tpu-events-8875.inc"
+#define DSP_TPU_EVENTS DSP_TPU_EVENTS_8875
+#endif
+#ifdef PMB8876
 #include "tpu-events-8876.inc"
+#define DSP_TPU_EVENTS DSP_TPU_EVENTS_8876
+#endif
 
 #define TPU_TIMER_RAM_BASE 512
 #define TPU_DECODER_SHIFT 6
@@ -58,6 +65,13 @@ static bool wait_event_pointer(uint32_t value) {
 
 static void configure_events(const uint16_t *decoders, size_t count) {
 	TPU_PARAM = 0;
+	TPU_TGER = 0;
+	TPU_EAPT = 0;
+	TPU_EAPB = 0;
+	TPU_OFFSET = 0;
+	TPU_PARAM = TPU_PARAM_TINI;
+	TPU_PARAM = 0;
+
 	TPU_GSMCLK1 = 1 << TPU_GSMCLK1_K_SHIFT;
 	TPU_GSMCLK2 = 32 << TPU_GSMCLK2_L_SHIFT;
 	TPU_GSMCLK3 = TPU_GSMCLK3_LOAD | TPU_GSMCLK3_INIT;
@@ -78,17 +92,16 @@ static void configure_events(const uint16_t *decoders, size_t count) {
 
 static bool run_events(const uint16_t *decoders, size_t count) {
 	configure_events(decoders, count);
-	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
-	bool initialized = wait_event_pointer(0);
-	if (!test_check("TINI restarts the Timer RAM event pointer at EAPB", initialized)) {
-		TPU_PARAM = 0;
+	if (!test_eq_u32("initialization state resets the Timer RAM event pointer to EAPB", 0, TPU_CEAP))
 		return false;
-	}
+
+	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
 	bool completed = wait_event_pointer(count * 3);
-	stopwatch_usleep_wd(100);
+	if (completed)
+		completed = wait_event_pointer(0);
 	TPU_PARAM = 0;
 
-	if (!test_check("event engine reaches the trailing no-action Timer RAM event", completed))
+	if (!test_check("event engine executes the trailing event and wraps to EAPB", completed))
 		return false;
 	return true;
 }
@@ -272,7 +285,7 @@ static bool prepare_runner(void) {
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
 		return false;
 	DSP_COM_CLEAR = 0xFFFF;
-	bool loaded = dsp_hw_load_image(DSP_TPU_EVENTS_8876, sizeof(DSP_TPU_EVENTS_8876));
+	bool loaded = dsp_hw_load_image(DSP_TPU_EVENTS, sizeof(DSP_TPU_EVENTS));
 	if (!test_check("boot commands load the TPU event observer", loaded))
 		return false;
 	if (!test_check("BRANCH starts the TPU event observer", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))

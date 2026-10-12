@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <gen/dsp.h>
 
 #include "dsp/dsp-container.h"
 #include "test.h"
@@ -13,12 +14,16 @@
 #define DSP_PROBE_PAGE_ADDRESS 0x0154
 #define DSP_PROBE_OPCODE_ADDRESS 0x0160
 #define DSP_PROBE_PAGE_ZERO_WORD 0x0400
-#define DSP_PROBE_PAGE_D6_WORD 0x04D6
+#define DSP_PROBE_SHARED_PAGE_WORD (0x0400 | (TEAK_SHARED_RAM_BASE >> 8))
 #define DSP_EXPANSION_PAGE_FIRST_WORD 0xE100
-#define DSP_EXPANSION_PAGE_TARGET 0xD600
-#define DSP_EXPANSION_FIXED_SOURCE_ADDRESS 0xD6A0
+#define DSP_EXPANSION_PAGE_TARGET (TEAK_SHARED_RAM_BASE + 0x0400)
+#define DSP_EXPANSION_FIXED_SOURCE_ADDRESS (TEAK_SHARED_RAM_BASE + 0x04A0)
+#define DSP_EXPANSION_R7_ADDRESS (TEAK_SHARED_RAM_BASE + 0x04C0)
+#ifdef PMB8875
+#define DSP_PROGRAM_BACKING_LAST_ADDRESS 0x0FFF
+#else
 #define DSP_PROGRAM_BACKING_LAST_ADDRESS 0x1FFF
-#define DSP_SHARED_ADDRESS_MASK 0x0FFF
+#endif
 #define DSP_PROBE_TIMEOUT_MS 25
 #define DSP_MARKER_DONE_OFFSET 0x0300
 #define DSP_MARKER_TRAP_OFFSET 0x0301
@@ -46,11 +51,26 @@ _Static_assert(DSP_OPCODE_PROBE_LAST >= DSP_OPCODE_PROBE_FIRST && DSP_OPCODE_PRO
 
 static volatile uint16_t *const DSP_SHARED_MEMORY = (volatile uint16_t *) DSP_RAM_BASE;
 
-#include "opcode-probe/probe-image.inc"
+#ifdef PMB8875
+#include "opcode-probe/probe-image-8875.inc"
+#define DSP_OPCODE_PROBE_IMAGE DSP_OPCODE_PROBE_IMAGE_8875
+#else
+#include "opcode-probe/probe-image-8876.inc"
+#define DSP_OPCODE_PROBE_IMAGE DSP_OPCODE_PROBE_IMAGE_8876
+#endif
 
 #ifdef DSP_EXPANSION_PROBE
-#include "opcode-probe/expansion-probe-image.inc"
-#include "opcode-probe/program-backing-image.inc"
+#ifdef PMB8875
+#include "opcode-probe/expansion-probe-image-8875.inc"
+#include "opcode-probe/program-backing-image-8875.inc"
+#define DSP_EXPANSION_PROBE_IMAGE DSP_EXPANSION_PROBE_IMAGE_8875
+#define DSP_PROGRAM_BACKING_IMAGE DSP_PROGRAM_BACKING_IMAGE_8875
+#else
+#include "opcode-probe/expansion-probe-image-8876.inc"
+#include "opcode-probe/program-backing-image-8876.inc"
+#define DSP_EXPANSION_PROBE_IMAGE DSP_EXPANSION_PROBE_IMAGE_8876
+#define DSP_PROGRAM_BACKING_IMAGE DSP_PROGRAM_BACKING_IMAGE_8876
+#endif
 
 enum expansion_address_mode {
 	EXPANSION_VALUE,
@@ -150,9 +170,16 @@ static bool submit_boot_command(void) {
 	return wait_for_boot_ready();
 }
 
-static bool load_words(uint16_t command, uint16_t destination, const uint8_t *data, size_t words, uint16_t first_word,
-	uint16_t second_word, uint16_t page_word, bool patch_words)
-{
+static bool load_words(
+	uint16_t command,
+	uint16_t destination,
+	const uint8_t *data,
+	size_t words,
+	uint16_t first_word,
+	uint16_t second_word,
+	uint16_t page_word,
+	bool patch_words
+) {
 	volatile uint16_t *boot_data = DSP_SHARED_MEMORY + DSP_BOOT_DATA_OFFSET;
 
 	boot_data[0] = command;
@@ -190,8 +217,7 @@ static bool load_dsp_image(
 		if (record.words > DSP_BOOT_MAX_WORDS)
 			return false;
 		if (!load_words(record.command, record.destination, record.data, record.words,
-			first_word, second_word, page_word, patch_words))
-		{
+			first_word, second_word, page_word, patch_words)) {
 			return false;
 		}
 	}
@@ -201,7 +227,8 @@ static bool load_dsp_image(
 
 static bool load_probe_image(uint16_t first_word, uint16_t second_word) {
 #ifdef DSP_EXPANSION_PROBE
-	uint16_t page_word = first_word == DSP_EXPANSION_PAGE_FIRST_WORD ? DSP_PROBE_PAGE_D6_WORD : DSP_PROBE_PAGE_ZERO_WORD;
+	uint16_t page_word = first_word == DSP_EXPANSION_PAGE_FIRST_WORD ?
+		DSP_PROBE_SHARED_PAGE_WORD : DSP_PROBE_PAGE_ZERO_WORD;
 	return load_dsp_image(DSP_EXPANSION_PROBE_IMAGE, sizeof(DSP_EXPANSION_PROBE_IMAGE),
 		first_word, second_word, page_word, true);
 #else
@@ -229,8 +256,7 @@ static void clear_markers(void) {
 static bool wait_for_completion(void) {
 	stopwatch_t start = stopwatch_get();
 	while (DSP_SHARED_MEMORY[DSP_MARKER_DONE_OFFSET] != DSP_MARKER_DONE &&
-		stopwatch_elapsed_ms(start) < DSP_PROBE_TIMEOUT_MS)
-	{
+		stopwatch_elapsed_ms(start) < DSP_PROBE_TIMEOUT_MS) {
 		test_watchdog_serve();
 	}
 
@@ -308,7 +334,7 @@ int main(void) {
 #else
 static uint16_t expansion_address(const struct expansion_family *family, uint16_t expansion) {
 	if (family->address_mode == EXPANSION_R7_READ || family->address_mode == EXPANSION_R7_WRITE)
-		return 0xD6C0 + expansion;
+		return DSP_EXPANSION_R7_ADDRESS + expansion;
 	return expansion;
 }
 
@@ -324,10 +350,11 @@ static bool expansion_is_safe(const struct expansion_family *family, uint16_t ex
 		return expansion <= DSP_PROGRAM_BACKING_LAST_ADDRESS;
 	case EXPANSION_ABSOLUTE_READ:
 	case EXPANSION_R7_READ:
-		return address >= 0xD005 && address <= 0xD7FF;
+		return address >= TEAK_SHARED_RAM_BASE + 5 && address < TEAK_SHARED_RAM_BASE + TEAK_SHARED_RAM_SIZE;
 	case EXPANSION_ABSOLUTE_WRITE:
 	case EXPANSION_R7_WRITE:
-		return address >= 0xD600 && address <= 0xD7FF;
+		return address >= TEAK_SHARED_RAM_BASE + 0x0400 &&
+			address < TEAK_SHARED_RAM_BASE + TEAK_SHARED_RAM_SIZE;
 	}
 
 	return false;
@@ -345,11 +372,11 @@ static uint16_t expansion_observation_address(const struct expansion_family *fam
 
 static void prepare_expansion_operand(const struct expansion_family *family, uint16_t expansion) {
 	if (family->address_mode == EXPANSION_FIXED_SOURCE) {
-		DSP_SHARED_MEMORY[DSP_EXPANSION_FIXED_SOURCE_ADDRESS & DSP_SHARED_ADDRESS_MASK] = 0x8001;
+		DSP_SHARED_MEMORY[DSP_EXPANSION_FIXED_SOURCE_ADDRESS - TEAK_SHARED_RAM_BASE] = 0x8001;
 		return;
 	}
 	if (family->address_mode == EXPANSION_PAGE_WRITE) {
-		DSP_SHARED_MEMORY[DSP_EXPANSION_PAGE_TARGET & DSP_SHARED_ADDRESS_MASK] = 0;
+		DSP_SHARED_MEMORY[DSP_EXPANSION_PAGE_TARGET - TEAK_SHARED_RAM_BASE] = 0;
 		return;
 	}
 	if (family->address_mode != EXPANSION_ABSOLUTE_READ && family->address_mode != EXPANSION_R7_READ)
@@ -357,9 +384,11 @@ static void prepare_expansion_operand(const struct expansion_family *family, uin
 
 	uint16_t address = expansion_address(family, expansion);
 	uint16_t value = expansion ^ 0xA55A;
-	if (address >= 0xD300 && address <= 0xD303)
+	if (address >= TEAK_SHARED_RAM_BASE + DSP_MARKER_DONE_OFFSET &&
+		address <= TEAK_SHARED_RAM_BASE + DSP_MARKER_POST_OFFSET) {
 		value = 0;
-	DSP_SHARED_MEMORY[address & DSP_SHARED_ADDRESS_MASK] = value;
+	}
+	DSP_SHARED_MEMORY[address - TEAK_SHARED_RAM_BASE] = value;
 }
 
 static int fail_expansion_transport(const char *operation, uint32_t family, uint16_t expansion) {
@@ -386,14 +415,12 @@ int main(void) {
 	uint32_t timed_out = 0;
 
 	for (uint32_t family_index = DSP_EXPANSION_PROBE_FAMILY_FIRST;
-		family_index <= DSP_EXPANSION_PROBE_FAMILY_LAST; family_index++)
-	{
+		family_index <= DSP_EXPANSION_PROBE_FAMILY_LAST; family_index++) {
 		const struct expansion_family *family = &DSP_EXPANSION_FAMILIES[family_index];
 
 		printf("# DSPEXP-FAMILY %lu %04lX \"%s\"\n", family_index, (uint32_t) family->first_word, family->name);
 		for (uint32_t expansion = DSP_EXPANSION_PROBE_WORD_FIRST;
-			expansion <= DSP_EXPANSION_PROBE_WORD_LAST; expansion++)
-		{
+			expansion <= DSP_EXPANSION_PROBE_WORD_LAST; expansion++) {
 			if (!expansion_is_safe(family, (uint16_t) expansion)) {
 				printf("# DSPEXP %lu %04lX unsafe-skip", family_index, expansion);
 				for (size_t i = 0; i < 4 + DSP_EXPANSION_RESULT_WORDS; i++)
@@ -455,7 +482,7 @@ int main(void) {
 			uint16_t observation_address = expansion_observation_address(family, (uint16_t) expansion);
 			uint16_t observed_memory = UINT16_MAX;
 			if (done)
-				observed_memory = DSP_SHARED_MEMORY[observation_address & DSP_SHARED_ADDRESS_MASK];
+				observed_memory = DSP_SHARED_MEMORY[observation_address - TEAK_SHARED_RAM_BASE];
 			results[DSP_EXPANSION_DSP_RESULT_WORDS] = observed_memory;
 
 			printf("# DSPEXP %lu %04lX %s %04lX %04lX %04lX %04lX", family_index, expansion, outcome,

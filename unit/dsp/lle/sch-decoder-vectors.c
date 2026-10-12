@@ -1,16 +1,17 @@
 #include <pmb887x.h>
 
 #include "dsp/dsp-hw.h"
+#ifdef PMB8875
+#include "sch-decoder-vector-runner-8875.inc"
+#define DSP_SCH_DECODER_VECTOR_RUNNER DSP_SCH_DECODER_VECTOR_RUNNER_8875
+#else
 #include "sch-decoder-vector-runner-8876.inc"
+#define DSP_SCH_DECODER_VECTOR_RUNNER DSP_SCH_DECODER_VECTOR_RUNNER_8876
+#endif
 #include "test.h"
 
-#define MASK_ROM_ID 0x0801
-#define INPUT_ADDRESS 0x03E2
 #define INPUT_WORD_COUNT 39
-#define STATE_FIRST_ADDRESS 0x0373
-#define STATE_LAST_ADDRESS 0x0430
-#define STATE_WORD_COUNT (STATE_LAST_ADDRESS - STATE_FIRST_ADDRESS + 1)
-#define CALLBACK_ADDRESS 0x779E
+#define STATE_WORD_COUNT 190
 #define RESULT_OFFSET 0x0100
 #define COMPLETE_OFFSET 0x0108
 #define REGISTER_OFFSET 0x0109
@@ -41,6 +42,19 @@ struct sch_golden {
 	uint16_t data1;
 };
 
+struct sch_mask_profile {
+	uint16_t mask_id;
+	uint16_t decoder_address;
+	uint16_t callback_address;
+	uint16_t input_address;
+	uint16_t state_first_address;
+	uint16_t state_result_address;
+	uint16_t state_work_address;
+	uint16_t state_last_address;
+	uint16_t st1;
+	uint16_t stack_pointer;
+};
+
 static const struct sch_vector SCH_VECTORS[] = {
 	{ "valid", SCH_VECTOR_VALID },
 	{ "correctable", SCH_VECTOR_DISTURBED },
@@ -50,6 +64,54 @@ static const struct sch_vector SCH_VECTORS[] = {
 static const struct sch_golden SCH_GOLDENS[] = {
 #include "sch-decoder-golden.inc"
 };
+
+static const struct sch_mask_profile SCH_MASK_PROFILES[] = {
+	{
+		.mask_id = 0x0602,
+		.decoder_address = 0xB115,
+		.callback_address = 0x587D,
+		.input_address = 0x02C5,
+		.state_first_address = 0x025A,
+		.state_result_address = 0x025B,
+		.state_work_address = 0x025D,
+		.state_last_address = 0x0317,
+		.st1 = 0x005D,
+		.stack_pointer = 0x5C28,
+	},
+	{
+		.mask_id = 0x0604,
+		.decoder_address = 0xB2FE,
+		.callback_address = 0x58CE,
+		.input_address = 0x02CA,
+		.state_first_address = 0x025F,
+		.state_result_address = 0x0260,
+		.state_work_address = 0x0262,
+		.state_last_address = 0x031C,
+		.st1 = 0x005D,
+		.stack_pointer = 0x5C28,
+	},
+	{
+		.mask_id = 0x0801,
+		.decoder_address = 0xA115,
+		.callback_address = 0x779E,
+		.input_address = 0x03E2,
+		.state_first_address = 0x0373,
+		.state_result_address = 0x0374,
+		.state_work_address = 0x0376,
+		.state_last_address = 0x0430,
+		.st1 = 0x007D,
+		.stack_pointer = 0x7C14,
+	},
+};
+
+static const struct sch_mask_profile *find_sch_mask_profile(uint16_t mask_id) {
+	for (size_t i = 0; i < ARRAY_SIZE(SCH_MASK_PROFILES); i++) {
+		if (SCH_MASK_PROFILES[i].mask_id == mask_id)
+			return &SCH_MASK_PROFILES[i];
+	}
+
+	return NULL;
+}
 
 static uint8_t parity(uint8_t value) {
 	value ^= value >> 4;
@@ -120,14 +182,15 @@ static void prepare_input(enum sch_vector_kind kind, uint16_t words[INPUT_WORD_C
 		if (kind == SCH_VECTOR_DISTURBED && i >= 24 && i < 32)
 			soft = 0;
 		// A115 consumes consecutive signed bytes, low byte first.
-		if ((i & 1) == 0)
+		if ((i & 1) == 0) {
 			words[i / 2] = (uint8_t) soft;
-		else
+		} else {
 			words[i / 2] |= (uint16_t) (uint8_t) soft << 8;
+		}
 	}
 }
 
-static bool load_vector(enum sch_vector_kind kind) {
+static bool load_vector(const struct sch_mask_profile *profile, enum sch_vector_kind kind) {
 	uint16_t state[STATE_WORD_COUNT] = { 0 };
 	uint16_t input[INPUT_WORD_COUNT] = { 0 };
 	uint16_t callback = 0;
@@ -135,13 +198,13 @@ static bool load_vector(enum sch_vector_kind kind) {
 	state[0] = CANARY_BEFORE;
 	state[STATE_WORD_COUNT - 1] = CANARY_AFTER;
 	prepare_input(kind, input);
-	return dsp_hw_write_data(STATE_FIRST_ADDRESS, state, ARRAY_SIZE(state)) &&
-		dsp_hw_write_data(INPUT_ADDRESS, input, ARRAY_SIZE(input)) &&
-		dsp_hw_write_data(CALLBACK_ADDRESS, &callback, 1);
+	return dsp_hw_write_data(profile->state_first_address, state, ARRAY_SIZE(state)) &&
+		dsp_hw_write_data(profile->input_address, input, ARRAY_SIZE(input)) &&
+		dsp_hw_write_data(profile->callback_address, &callback, 1);
 }
 
-static void print_capture(const char *name) {
-	printf("# SCH_GOLDEN_BEGIN name=%s mask=%04X\n", name, MASK_ROM_ID);
+static void print_capture(const struct sch_mask_profile *profile, const char *name) {
+	printf("# SCH_GOLDEN_BEGIN name=%s mask=%04X\n", name, profile->mask_id);
 	printf("# RESULT A0=%04lX:%04lX A1=%04lX:%04lX DATA0=%04lX DATA1=%04lX\n",
 		(uint32_t) dsp_hw_shared_memory[RESULT_OFFSET + 1],
 		(uint32_t) dsp_hw_shared_memory[RESULT_OFFSET],
@@ -222,30 +285,41 @@ static void check_golden(const struct sch_golden *golden) {
 		dsp_hw_shared_memory[RESULT_OFFSET + 5]);
 }
 
-static void run_vector(const struct sch_vector *vector, const struct sch_golden *golden) {
+static void configure_runner(const struct sch_mask_profile *profile) {
+	dsp_hw_shared_memory[0x0000] = profile->decoder_address;
+	dsp_hw_shared_memory[0x0001] = profile->input_address;
+	dsp_hw_shared_memory[0x0002] = profile->state_result_address;
+	dsp_hw_shared_memory[0x0003] = profile->state_work_address;
+	dsp_hw_shared_memory[0x0004] = profile->state_first_address;
+	dsp_hw_shared_memory[0x0005] = profile->st1;
+	dsp_hw_shared_memory[0x0006] = profile->state_last_address;
+	dsp_hw_shared_memory[0x0007] = profile->stack_pointer;
+}
+
+static void run_vector(const struct sch_mask_profile *profile, const struct sch_vector *vector,
+	const struct sch_golden *golden) {
 	test_category(vector->name);
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
 		return;
-	if (!test_eq_u32("Mask ROM revision is 0801", MASK_ROM_ID, dsp_hw_shared_memory[0]))
+	if (!test_eq_u32("Mask ROM revision remains selected", profile->mask_id, dsp_hw_shared_memory[0]))
 		return;
 	for (size_t i = RESULT_OFFSET; i < STATE_COPY_OFFSET + STATE_WORD_COUNT; i++)
 		dsp_hw_shared_memory[i] = 0;
-	if (!test_check("DLOAD initializes every decoder input", load_vector(vector->kind)))
+	if (!test_check("DLOAD initializes every decoder input", load_vector(profile, vector->kind)))
 		return;
 	if (!test_check("PLOAD installs the direct SCH decoder wrapper",
-		dsp_hw_load_image(DSP_SCH_DECODER_VECTOR_RUNNER_8876, sizeof(DSP_SCH_DECODER_VECTOR_RUNNER_8876))))
-	{
+		dsp_hw_load_image(DSP_SCH_DECODER_VECTOR_RUNNER, sizeof(DSP_SCH_DECODER_VECTOR_RUNNER)))) {
 		return;
 	}
+	configure_runner(profile);
 	if (!test_check("BRANCH starts the direct SCH decoder wrapper", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
 		return;
 	if (!test_check("Mask ROM SCH decoder returns",
-		dsp_hw_wait_shared(COMPLETE_OFFSET, COMPLETE_MARKER, 1000)))
-	{
+		dsp_hw_wait_shared(COMPLETE_OFFSET, COMPLETE_MARKER, 1000))) {
 		return;
 	}
 
-	print_capture(vector->name);
+	print_capture(profile, vector->name);
 	check_golden(golden);
 	if (vector->kind != SCH_VECTOR_INVALID)
 		check_decoded_fields();
@@ -258,10 +332,17 @@ static void run_vector(const struct sch_vector *vector, const struct sch_golden 
 int main(void) {
 	test_start("DSP Mask ROM SCH decoder vectors");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
+		return test_finish();
+	uint16_t mask_id = dsp_hw_shared_memory[0];
+	printf("# DSP mask ID: %04lX\n", (uint32_t) mask_id);
+	const struct sch_mask_profile *profile = find_sch_mask_profile(mask_id);
+	if (!test_check("DSP Mask ROM SCH decoder profile is supported", profile != NULL))
+		return test_finish();
 
 	_Static_assert(ARRAY_SIZE(SCH_VECTORS) == ARRAY_SIZE(SCH_GOLDENS), "SCH golden count");
 	for (size_t i = 0; i < ARRAY_SIZE(SCH_VECTORS); i++)
-		run_vector(&SCH_VECTORS[i], &SCH_GOLDENS[i]);
+		run_vector(profile, &SCH_VECTORS[i], &SCH_GOLDENS[i]);
 
 	DSP_COM_CLEAR = UINT16_MAX;
 	(void) dsp_hw_reset();

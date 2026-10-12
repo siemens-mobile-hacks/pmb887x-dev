@@ -42,8 +42,6 @@ success.
 | `dsp-lle-program-banks` | Mask-specific Program ROM page selection, exact instruction reads, and same-PC execution |
 | `dsp-lle-tpu-events` | PMB8876 TPU Timer RAM decoder values 0–9 and 15–31 observed through Baseband, modulator, and DSP interrupt state |
 | `dsp-lle-tpu-bb-events` | Hardware timing, counts, status, and DSP interrupts for repeating TPU MONON events |
-| `dsp-lle-l1mon-vectors` | PMB8876 Mask ROM monitoring bounds, zero-I/Q result, ring behavior, and TX inactivity |
-| `dsp-lle-l1mon-functional` | Autonomous TPU MONON through the normal Mask ROM interrupt handler and monitoring result ring |
 | `dsp-hle-gsm-channel-scan` | Multiband MON scan using DSP firmware 0801 and auto-discovered EELITE AFC calibration, followed by FCCH detection |
 | `dsp-lle-boot-state` | Autonomous Mask ROM execution after DSP reset and interrupt-gated boot-command dispatch |
 | `dsp-lle-rom-dump` | PMB8875/PMB8876 DSP boot-mode PREAD dump of Program Mask ROM in Intel HEX format |

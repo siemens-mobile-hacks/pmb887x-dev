@@ -8,12 +8,12 @@ mov a0l [0x$TEAK_MCS_CFR]
 set 0x$000C st0
 set 0x$0040 st2
 mov 0x$A55A a0l
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0900)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0300)]
 br 0x0000$0A00 always
 
 // Execute requests supplied through shared RAM by the MCU side.
 segment p 0A00
-mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0904)] a0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0304)] a0
 cmp 0x0000u8 a0
 br 0x0000$0A00 eq
 clr a0 always
@@ -31,7 +31,7 @@ nop
 nop
 nop
 
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0B00) r0
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0500) r0
 mov [r0++] a0l
 mov a0l [0x$TEAK_CIPH_KEY0]
 mov [r0++] a0l
@@ -61,10 +61,10 @@ mov 0x$0019 a0l
 mov a0l [0x$TEAK_CIPH_CSTAT]
 call 0x0000$0B80 always
 mov 0x$TEAK_CIPHER_RAM_BASE r0
-mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0B20) r1
+mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0520) r1
 call 0x0000$0BA0 always
 clr a0 always
-mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0904)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0304)]
 br 0x0000$0A00 always
 
 // Wait until CACT clears.

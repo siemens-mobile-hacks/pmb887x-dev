@@ -2,30 +2,92 @@
 #include <gen/dsp.h>
 #include <stopwatch.h>
 
+#ifdef PMB8875
+#include "dsp-control-functional-8875.inc"
+#define DSP_CONTROL_IMAGE DSP_CONTROL_FUNCTIONAL_8875
+#else
 #include "dsp-control-functional-8876.inc"
+#define DSP_CONTROL_IMAGE DSP_CONTROL_FUNCTIONAL_8876
+#endif
 #include "dsp/dsp-hw.h"
 #include "test.h"
 
 #define COMPLETE_MARKER 0xA55A
-// PMB8876 has no fixed Data ROM: the data page selects the whole window.
-#define DSP_DATA_WINDOW_FIRST 0x8000
-#define DSP_DATA_WINDOW_WORDS 0x5000
-#define DSP_PROGRAM_FIXED_FIRST 0x2000
-#define DSP_PROGRAM_FIXED_WORDS 0x8000
-#define DSP_PROGRAM_WINDOW_FIRST 0xA000
-#define DSP_PROGRAM_WINDOW_WORDS 0x6000
+#define DSP_MAX_PROGRAM_PAGES 4
+#define DSP_MAX_DATA_PAGES 4
+
+struct dsp_rom_layout {
+	uint16_t program_fixed_first;
+	size_t program_fixed_words;
+	uint16_t program_window_first;
+	size_t program_window_words;
+	size_t program_page_shift;
+	size_t program_page_count;
+	uint16_t data_fixed_first;
+	size_t data_fixed_words;
+	uint16_t data_window_first;
+	size_t data_window_words;
+	size_t data_page_count;
+};
 
 struct dsp_mask_expectations {
 	uint16_t mask_id;
+	const struct dsp_rom_layout *layout;
 	uint32_t fixed_program_hash;
-	uint32_t program_page_hashes[4];
-	uint32_t data_page_hashes[4];
-	uint16_t data_page_signatures[4];
+	uint32_t program_page_hashes[DSP_MAX_PROGRAM_PAGES];
+	uint32_t fixed_data_hash;
+	uint32_t data_page_hashes[DSP_MAX_DATA_PAGES];
+	uint16_t data_page_signatures[DSP_MAX_DATA_PAGES];
+};
+
+static const struct dsp_rom_layout ROM_LAYOUT_06XX = {
+	.program_fixed_first = 0x1000,
+	.program_fixed_words = 0xA000,
+	.program_window_first = 0xB000,
+	.program_window_words = 0x5000,
+	.program_page_shift = 1,
+	.program_page_count = 2,
+	.data_fixed_first = 0x6000,
+	.data_fixed_words = 0x3000,
+	.data_window_first = 0x9000,
+	.data_window_words = 0x4800,
+	.data_page_count = 2,
+};
+
+static const struct dsp_rom_layout ROM_LAYOUT_08XX = {
+	.program_fixed_first = 0x2000,
+	.program_fixed_words = 0x8000,
+	.program_window_first = 0xA000,
+	.program_window_words = 0x6000,
+	.program_page_shift = 2,
+	.program_page_count = 4,
+	.data_window_first = 0x8000,
+	.data_window_words = 0x5000,
+	.data_page_count = 4,
 };
 
 static const struct dsp_mask_expectations DSP_MASK_EXPECTATIONS[] = {
 	{
+		.mask_id = 0x0602,
+		.layout = &ROM_LAYOUT_06XX,
+		.fixed_program_hash = 0x833458ED,
+		.program_page_hashes = { 0x8CF47EA9, 0x91076EF9 },
+		.fixed_data_hash = 0xBE0C6441,
+		.data_page_hashes = { 0x034D0BCD, 0xE28E1781 },
+		.data_page_signatures = { 0x0002, 0x3666 },
+	},
+	{
+		.mask_id = 0x0604,
+		.layout = &ROM_LAYOUT_06XX,
+		.fixed_program_hash = 0x76AD132F,
+		.program_page_hashes = { 0x46B514FD, 0xDA5A5CA6 },
+		.fixed_data_hash = 0x759B1A54,
+		.data_page_hashes = { 0x80EF7943, 0x8B20DBA6 },
+		.data_page_signatures = { 0x00CD, 0x3666 },
+	},
+	{
 		.mask_id = 0x0801,
+		.layout = &ROM_LAYOUT_08XX,
 		.fixed_program_hash = 0x3B018B00,
 		.program_page_hashes = { 0x61DCDE5D, 0x041E8769, 0x436D3807, 0xF4101DC5 },
 		.data_page_hashes = { 0xEB1485E1, 0xFCF12CBB, 0x6E384738, 0x6E3CDDC5 },
@@ -87,52 +149,67 @@ static bool check_rom_hash(
 }
 
 static bool test_program_pages(const struct dsp_mask_expectations *expectations) {
+	const struct dsp_rom_layout *layout = expectations->layout;
+
 	if (!check_rom_hash("PREAD reads fixed Program ROM", "fixed Program ROM FNV-1a", true,
-		DSP_PROGRAM_FIXED_FIRST, DSP_PROGRAM_FIXED_WORDS, expectations->fixed_program_hash))
+		layout->program_fixed_first, layout->program_fixed_words, expectations->fixed_program_hash))
 		return false;
 
-	for (size_t page = 0; page < ARRAY_SIZE(expectations->program_page_hashes); page++) {
-		uint16_t page_value = (uint16_t) page << TEAK_DSP_PAGE_PROG_PAGE_SHIFT;
+	for (size_t page = 0; page < layout->program_page_count; page++) {
+		uint16_t page_value = (uint16_t) page << layout->program_page_shift;
 
 		if (!test_check("DLOAD selects a Program ROM page", dsp_hw_write_reg(TEAK_DSP_PAGE, page_value)))
 			return false;
 		if (!check_rom_hash("PREAD reads the selected Program ROM page", "Program ROM page FNV-1a", true,
-			DSP_PROGRAM_WINDOW_FIRST, DSP_PROGRAM_WINDOW_WORDS, expectations->program_page_hashes[page]))
+			layout->program_window_first, layout->program_window_words, expectations->program_page_hashes[page]))
 			return false;
 	}
 	return true;
 }
 
 static bool test_data_pages(const struct dsp_mask_expectations *expectations) {
-	for (size_t page = 0; page < ARRAY_SIZE(expectations->data_page_hashes); page++) {
+	const struct dsp_rom_layout *layout = expectations->layout;
+
+	if (layout->data_fixed_words != 0 &&
+		!check_rom_hash("DREAD reads fixed Data ROM", "fixed Data ROM FNV-1a", false,
+			layout->data_fixed_first, layout->data_fixed_words, expectations->fixed_data_hash))
+		return false;
+
+	for (size_t page = 0; page < layout->data_page_count; page++) {
 		if (!test_check("DLOAD selects a Data ROM page", dsp_hw_write_reg(TEAK_DSP_PAGE, (uint16_t) page)))
 			return false;
 		if (!check_rom_hash("DREAD reads the selected Data ROM page", "Data ROM page FNV-1a", false,
-			DSP_DATA_WINDOW_FIRST, DSP_DATA_WINDOW_WORDS, expectations->data_page_hashes[page]))
+			layout->data_window_first, layout->data_window_words, expectations->data_page_hashes[page]))
 			return false;
 	}
 	return true;
 }
 
 static void validate_pram_pages(const struct dsp_mask_expectations *expectations) {
-	for (size_t page = 0; page < ARRAY_SIZE(expectations->data_page_signatures); page++) {
+	for (size_t page = 0; page < expectations->layout->data_page_count; page++) {
 		char name[64];
 
 		sprintf(name, "PRAM reads the Data ROM page %lu signature", (uint32_t) page);
 		test_eq_u32(name, expectations->data_page_signatures[page], dsp_hw_shared_memory[0x0020 + page]);
 	}
-	test_eq_u32("PRAM continues on Program ROM page 1", 0x1001, dsp_hw_shared_memory[0x0030]);
-	test_eq_u32("PRAM continues on Program ROM page 2", 0x1002, dsp_hw_shared_memory[0x0031]);
+	test_eq_u32("PRAM continues after the first Program ROM page switch", 0x1001,
+		dsp_hw_shared_memory[0x0030]);
+	test_eq_u32("PRAM continues after the second Program ROM page switch", 0x1002,
+		dsp_hw_shared_memory[0x0031]);
 	test_eq_u32("PRAM continues after restoring Program ROM page 0", 0x1000, dsp_hw_shared_memory[0x0032]);
 	test_eq_u32("PRAM restores Data ROM page 0 without the ROM dispatcher",
 		expectations->data_page_signatures[0], dsp_hw_shared_memory[0x0033]);
 }
 
-static bool start_pram_runner(void) {
+static bool start_pram_runner(const struct dsp_mask_expectations *expectations) {
 	DSP_COM_CLEAR = UINT16_MAX;
-	if (!test_check("boot commands load the PMB8876 control runner",
-		dsp_hw_load_image(DSP_CONTROL_FUNCTIONAL_8876, sizeof(DSP_CONTROL_FUNCTIONAL_8876))))
+	if (!test_check("boot commands load the DSP control runner",
+		dsp_hw_load_image(DSP_CONTROL_IMAGE, sizeof(DSP_CONTROL_IMAGE))))
 		return false;
+	const struct dsp_rom_layout *layout = expectations->layout;
+
+	dsp_hw_shared_memory[0x0010] = 1 << layout->program_page_shift;
+	dsp_hw_shared_memory[0x0011] = (layout->program_page_count - 1) << layout->program_page_shift;
 	return test_check("BRANCH starts the PRAM control runner", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS));
 }
 
@@ -140,7 +217,7 @@ int main(void) {
 	test_start("DSP control functional test");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 
-	test_category("PMB8876 Program and Data ROM pages");
+	test_category("Program and Data ROM pages");
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
 		return test_finish();
 	uint16_t mask_id = dsp_hw_shared_memory[0];
@@ -157,7 +234,7 @@ int main(void) {
 		return test_finish();
 
 	test_category("PRAM execution across page switches");
-	if (!start_pram_runner())
+	if (!start_pram_runner(expectations))
 		return test_finish();
 	if (!test_check("PRAM runner reaches the core-idle point", dsp_hw_wait_shared(0x0040, 0x1111, 500)))
 		return test_finish();

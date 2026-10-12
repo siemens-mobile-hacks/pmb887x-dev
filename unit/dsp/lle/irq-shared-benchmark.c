@@ -3,7 +3,13 @@
 #include <stopwatch.h>
 
 #include "dsp/dsp-hw.h"
+#ifdef PMB8875
+#include "irq-shared-benchmark-8875.inc"
+#define DSP_IRQ_SHARED_BENCHMARK DSP_IRQ_SHARED_BENCHMARK_8875
+#else
 #include "irq-shared-benchmark-8876.inc"
+#define DSP_IRQ_SHARED_BENCHMARK DSP_IRQ_SHARED_BENCHMARK_8876
+#endif
 #include "test.h"
 
 #define READY_OFFSET 0x0000
@@ -11,12 +17,15 @@
 #define DONE_OFFSET 0x0002
 #define IRQ_REQUEST_OFFSET 0x0003
 #define IRQ_ACK_OFFSET 0x0004
+#define PROGRESS_OFFSET 0x0005
+#define IRQ_EXPECTED_OFFSET 0x0006
+#define IRQ_OBSERVED_OFFSET 0x0007
 #define IRQ_ENTRY_BASE 0x0010
 #define IRQ_ROUND_TRIP_TICKS_OFFSET 0x0018
 #define IRQ_ROUND_TRIP_COUNT_OFFSET 0x0019
 #define MEMORY_RESULTS_BASE 0x0020
 #define BUFFER_OFFSET 0x0100
-#define BUFFER_WORDS 1024
+#define BUFFER_WORDS 256
 #define DSP_MEMORY_OPERATIONS 65536
 #define ARM_MEMORY_OPERATIONS 262144
 #define ARM_IRQ_SAMPLES 128
@@ -166,7 +175,13 @@ static void benchmark_arm_to_dsp_irq(size_t channel) {
 		(uint32_t) channel, minimum_ns, average_ns, median_ns, percentile95_ns, maximum_ns);
 }
 
-static void print_arm_memory_score(const char *name, size_t operations, size_t bytes, stopwatch_t elapsed, uint32_t checksum) {
+static void print_arm_memory_score(
+	const char *name,
+	size_t operations,
+	size_t bytes,
+	stopwatch_t elapsed,
+	uint32_t checksum
+) {
 	if (elapsed == 0) {
 		printf("# ARM-MEMORY,%s,accesses=%lu,ticks=0,checksum=%08lX\n",
 			name, (uint32_t) operations, checksum);
@@ -236,7 +251,7 @@ int main(void) {
 		return test_finish();
 
 	DSP_COM_CLEAR = 0xFFFF;
-	bool loaded = dsp_hw_load_image(DSP_IRQ_SHARED_BENCHMARK_8876, sizeof(DSP_IRQ_SHARED_BENCHMARK_8876));
+	bool loaded = dsp_hw_load_image(DSP_IRQ_SHARED_BENCHMARK, sizeof(DSP_IRQ_SHARED_BENCHMARK));
 	if (!test_check("boot commands load the benchmark runner", loaded))
 		return test_finish();
 
@@ -256,6 +271,12 @@ int main(void) {
 	test_category("DSP-side IRQ and memory measurements");
 	dsp_hw_shared_memory[COMMAND_OFFSET] = BENCHMARK_SEQUENCE;
 	bool completed = dsp_hw_wait_shared(DONE_OFFSET, BENCHMARK_SEQUENCE, BENCHMARK_TIMEOUT_MS);
+	if (!completed) {
+		printf("# DSP-BENCHMARK-TIMEOUT,progress=%04lX,expected=%04lX,observed=%04lX\n",
+			(uint32_t) dsp_hw_shared_memory[PROGRESS_OFFSET],
+			(uint32_t) dsp_hw_shared_memory[IRQ_EXPECTED_OFFSET],
+			(uint32_t) dsp_hw_shared_memory[IRQ_OBSERVED_OFFSET]);
+	}
 	if (!test_check("DSP-side benchmark completes", completed))
 		return test_finish();
 

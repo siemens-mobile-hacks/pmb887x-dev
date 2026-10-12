@@ -1,7 +1,13 @@
 #include <pmb887x.h>
 
 #include "cgu/clock.h"
+#ifdef PMB8875
+#include "dsp/lle/baseband-functional-8875.inc"
+#define DSP_BASEBAND_FUNCTIONAL DSP_BASEBAND_FUNCTIONAL_8875
+#else
 #include "dsp/lle/baseband-functional-8876.inc"
+#define DSP_BASEBAND_FUNCTIONAL DSP_BASEBAND_FUNCTIONAL_8876
+#endif
 #include "dsp/dsp-hw.h"
 #include "test.h"
 
@@ -93,7 +99,7 @@ static bool dsp_baseband_runner_start(void) {
 	if (!dsp_hw_reset())
 		return false;
 	DSP_COM_CLEAR = 0xFFFF;
-	if (!dsp_hw_load_image(DSP_BASEBAND_FUNCTIONAL_8876, sizeof(DSP_BASEBAND_FUNCTIONAL_8876)))
+	if (!dsp_hw_load_image(DSP_BASEBAND_FUNCTIONAL, sizeof(DSP_BASEBAND_FUNCTIONAL)))
 		return false;
 	if (!dsp_hw_branch(DSP_HW_STARTUP_ADDRESS))
 		return false;

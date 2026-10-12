@@ -110,6 +110,75 @@ mov a0l [0x$TEAK_INT_RINTB0]
 mov 0x$TEAK_AFE_RAM_BASE r0
 mov 0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0100) r2
 call 0x0000$0707 always
+br 0x0000$0400 always
+
+// Changing an active receive path from 8 kHz to 47.619 kHz must not stall it.
+segment p 0400
+clr a0 always
+mov a0l [0x$TEAK_AFE_BCON]
+mov 0x$003F a0l
+mov a0l [0x$TEAK_AFE_INTPTR]
+mov 0x$0003 a0l
+mov a0l [0x$TEAK_AFE_BCON]
+rep 0x00ffu8
+nop
+mov 0x$0013 a0l
+mov a0l [0x$TEAK_AFE_BCON]
+mov 0x$1000 a1l
+br 0x0000$0420 always
+
+segment p 0420
+mov [0x$TEAK_AFE_RWADDR] a0
+and 0x$003F a0
+br 0x0000$0440 neq
+dec a1 always
+br 0x0000$0420 neq
+clr a0 always
+br 0x0000$0450 always
+
+segment p 0440
+mov 0x$0001 a0l
+br 0x0000$0450 always
+
+segment p 0450
+mov a1l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0031)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)]
+clr a0 always
+mov a0l [0x$TEAK_AFE_BCON]
+br 0x0000$0480 always
+
+// Changing an active transmit path from 8 kHz to 16 kHz must not stall it.
+segment p 0480
+mov 0x$3F00 a0l
+mov a0l [0x$TEAK_AFE_INTPTR]
+mov 0x$0021 a0l
+mov a0l [0x$TEAK_AFE_BCON]
+mov 0x$2FFF r0
+rep r0
+nop
+mov 0x$0061 a0l
+mov a0l [0x$TEAK_AFE_BCON]
+mov 0x$1000 a1l
+br 0x0000$04A0 always
+
+segment p 04A0
+mov [0x$TEAK_AFE_RWADDR] a0
+and 0x$3F00 a0
+br 0x0000$04C0 neq
+dec a1 always
+br 0x0000$04A0 neq
+clr a0 always
+br 0x0000$04D0 always
+
+segment p 04C0
+mov 0x$0001 a0l
+br 0x0000$04D0 always
+
+segment p 04D0
+mov a1l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0033)]
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0032)]
+clr a0 always
+mov a0l [0x$TEAK_AFE_BCON]
 mov 0x$A55A a0l
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0000)]
 br 0x0000$07F0 always
