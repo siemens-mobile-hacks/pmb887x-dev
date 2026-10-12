@@ -21,6 +21,11 @@ enum transfer_result {
 	TRANSFER_TIMEOUT,
 };
 
+enum transfer_flags {
+	TRANSFER_REPEATED_START = BIT(0),
+	TRANSFER_LEAVE_FINAL_DATA_IRQ_PENDING = BIT(1),
+};
+
 static volatile struct transfer_state {
 	const uint8_t *tx;
 	uint8_t *rx;
@@ -31,6 +36,8 @@ static volatile struct transfer_state {
 	bool repeated_start;
 	bool nack;
 	bool end_before_data;
+	bool leave_final_data_irq_pending;
+	bool end_while_data_irq_pending;
 	bool synthetic_irq;
 	enum transfer_result result;
 	uint32_t data_irqs;
@@ -107,6 +114,8 @@ static void handle_data_irq(void) {
 			I2C_PROTO_SRC = MOD_SRC_CLRR;
 			I2C_END_SRC = MOD_SRC_CLRR;
 			transfer.result = TRANSFER_DONE;
+		} else if (transfer.leave_final_data_irq_pending) {
+			I2C_WHBSYSCON = I2C_WHBSYSCON_CLRBUM;
 		} else {
 			I2C_WHBSYSCON = I2C_WHBSYSCON_CLRBUM | I2C_WHBSYSCON_CLRIRQD;
 		}
@@ -125,8 +134,10 @@ static void handle_data_irq(void) {
 		set_buffer_size(count);
 		if (transfer.remaining <= 4)
 			I2C_WHBSYSCON = I2C_WHBSYSCON_SETACKDIS | I2C_WHBSYSCON_SETSTP;
+		(void) I2C_RTB;
+	} else if (!transfer.leave_final_data_irq_pending) {
+		(void) I2C_RTB;
 	}
-	(void) I2C_RTB;
 }
 
 static void handle_protocol_irq(void) {
@@ -138,6 +149,7 @@ static void handle_protocol_irq(void) {
 static void handle_end_irq(void) {
 	transfer.end_irqs++;
 	transfer.end_before_data |= transfer.reading && transfer.remaining != 0;
+	transfer.end_while_data_irq_pending |= (I2C_SYSCON & I2C_SYSCON_IRQD) != 0;
 	I2C_END_SRC |= MOD_SRC_CLRR;
 	I2C_WHBSYSCON = I2C_WHBSYSCON_CLRIRQE;
 	if (!transfer.synthetic_irq) {
@@ -169,7 +181,7 @@ static enum transfer_result transfer_bytes(
 	const uint8_t *tx,
 	uint8_t *rx,
 	uint32_t size,
-	bool repeated_start
+	enum transfer_flags flags
 ) {
 	cpu_enable_irq(false);
 	transfer = (struct transfer_state) {
@@ -177,7 +189,8 @@ static enum transfer_result transfer_bytes(
 		.rx = rx,
 		.remaining = size,
 		.reading = rx != NULL,
-		.repeated_start = repeated_start,
+		.repeated_start = (flags & TRANSFER_REPEATED_START) != 0,
+		.leave_final_data_irq_pending = (flags & TRANSFER_LEAVE_FINAL_DATA_IRQ_PENDING) != 0,
 		.result = TRANSFER_PENDING,
 	};
 	if (tx != NULL) {
@@ -206,27 +219,36 @@ static enum transfer_result transfer_bytes(
 static enum transfer_result probe_write_address(uint8_t address) {
 	uint8_t unused;
 
-	return transfer_bytes(address, &unused, NULL, 0, false);
+	return transfer_bytes(address, &unused, NULL, 0, 0);
 }
 
 static enum transfer_result probe_read_address(uint8_t address) {
 	uint8_t unused;
 
-	return transfer_bytes(address, NULL, &unused, 0, false);
+	return transfer_bytes(address, NULL, &unused, 0, 0);
 }
 
 static enum transfer_result smbus_read(uint8_t reg, uint8_t *data, uint32_t size, bool repeated_start) {
-	enum transfer_result result = transfer_bytes(PMIC_I2C_ADDR, &reg, NULL, 1, repeated_start);
+	enum transfer_flags flags = repeated_start ? TRANSFER_REPEATED_START : 0;
+	enum transfer_result result = transfer_bytes(PMIC_I2C_ADDR, &reg, NULL, 1, flags);
 
 	if (result == TRANSFER_DONE)
-		result = transfer_bytes(PMIC_I2C_ADDR, NULL, data, size, false);
+		result = transfer_bytes(PMIC_I2C_ADDR, NULL, data, size, 0);
+	return result;
+}
+
+static enum transfer_result smbus_read_with_pending_data_irq(uint8_t reg, uint8_t *data) {
+	enum transfer_result result = transfer_bytes(PMIC_I2C_ADDR, &reg, NULL, 1, TRANSFER_REPEATED_START);
+
+	if (result == TRANSFER_DONE)
+		result = transfer_bytes(PMIC_I2C_ADDR, NULL, data, 1, TRANSFER_LEAVE_FINAL_DATA_IRQ_PENDING);
 	return result;
 }
 
 static enum transfer_result smbus_write(uint8_t reg, uint8_t value) {
 	uint8_t data[] = {reg, value};
 
-	return transfer_bytes(PMIC_I2C_ADDR, data, NULL, sizeof(data), false);
+	return transfer_bytes(PMIC_I2C_ADDR, data, NULL, sizeof(data), 0);
 }
 
 static void configure_i2c(void) {
@@ -284,6 +306,34 @@ static void test_hardware_bits(void) {
 	);
 }
 
+static void test_transmit_stop_with_pending_data_irq(void) {
+	uint8_t value;
+
+	test_category("Transmit STOP with pending data IRQ");
+	bool complete = smbus_read(PMIC_LED_CONTROL_REG, &value, sizeof(value), false) == TRANSFER_DONE;
+	if (complete) {
+		uint8_t data[] = {PMIC_LED_CONTROL_REG, value};
+		complete = transfer_bytes(PMIC_I2C_ADDR, data, NULL, sizeof(data),
+			TRANSFER_LEAVE_FINAL_DATA_IRQ_PENDING) == TRANSFER_DONE;
+	}
+	test_check("transmit STOP completes with data IRQ pending", complete && transfer.end_while_data_irq_pending);
+}
+
+static void test_receive_stop_with_pending_data_irq(void) {
+	uint8_t value;
+	enum transfer_result result;
+
+	test_category("Receive STOP with pending data IRQ");
+	result = smbus_read_with_pending_data_irq(PMIC_LED_CONTROL_REG, &value);
+	test_check("receive STOP completes with data IRQ pending",
+		result == TRANSFER_DONE && transfer.end_while_data_irq_pending);
+	cpu_enable_irq(false);
+	stop_transfer();
+	I2C_SYSCON = I2C_SYSCON_MOD_DISABLED;
+	I2C_SYSCON = I2C_SYSCON_MOD_MASTER;
+	cpu_enable_irq(true);
+}
+
 static void test_software_irqs(void) {
 	test_category("Interrupts");
 	transfer = (struct transfer_state) {.synthetic_irq = true};
@@ -333,13 +383,13 @@ static void test_repeated_start(void) {
 	test_eq_u32(
 		"repeated START command completes",
 		TRANSFER_DONE,
-		transfer_bytes(PMIC_I2C_ADDR, &reg, NULL, sizeof(reg), true)
+		transfer_bytes(PMIC_I2C_ADDR, &reg, NULL, sizeof(reg), TRANSFER_REPEATED_START)
 	);
 	test_check("bus is held before repeated START", (I2C_SYSCON & (I2C_SYSCON_BB | I2C_SYSCON_BUM)) != 0);
 	test_eq_u32(
 		"repeated START read completes",
 		TRANSFER_DONE,
-		transfer_bytes(PMIC_I2C_ADDR, NULL, &actual, sizeof(actual), false)
+		transfer_bytes(PMIC_I2C_ADDR, NULL, &actual, sizeof(actual), 0)
 	);
 	test_eq_u32("repeated START data", expected, actual);
 }
@@ -436,6 +486,8 @@ int i2c_v1_test(void) {
 
 	test_registers();
 	test_hardware_bits();
+	test_transmit_stop_with_pending_data_irq();
+	test_receive_stop_with_pending_data_irq();
 	test_software_irqs();
 	configure_i2c();
 	test_pmic();
