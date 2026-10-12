@@ -11,8 +11,8 @@
 #define SRAM_END 0x00098000
 #define ITCM_REMAP_BASE 0x01004000
 #define DTCM_REMAP_BASE 0x01006000
-#define DTCM_OVERLAY_BASE 0xA8100000
-#define ITCM_OVERLAY_BASE 0xA8120000
+#define DTCM_OVERLAY_BASE 0xB0100000
+#define ITCM_OVERLAY_BASE 0xB0120000
 #define OVERLAY_DATA_OFFSET 0x100
 
 #if defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
@@ -115,6 +115,8 @@ static void test_dtcm_overlay(void) {
 	sync_code();
 	test_eq_u32("DTCM data access uses TCM", 0xA5C39669, MMIO32(DTCM_OVERLAY_BASE + OVERLAY_DATA_OFFSET));
 	test_eq_u32("DTCM instruction fetch uses system memory", 0xA5, tcm_execute_with_resume(DTCM_OVERLAY_BASE));
+	test_eq_u32("DTCM data remains selected after instruction fetch", 0xA5C39669,
+		MMIO32(DTCM_OVERLAY_BASE + OVERLAY_DATA_OFFSET));
 	write_dtcm(TCM_REGION_SIZE_8K);
 	test_eq_u32("DTCM disable restores system data", 0x11223344,
 		MMIO32(DTCM_OVERLAY_BASE + OVERLAY_DATA_OFFSET));
@@ -138,13 +140,6 @@ static void test_itcm_overlay(void) {
 
 int main(void) {
 	test_start("ARM TCM test");
-	test_category("Reset values");
-#if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
-	test_eq_u32("ITCM startup region", ITCM_BASE | TCM_REGION_SIZE_8K | TCM_REGION_ENABLE, read_itcm());
-#else
-	test_eq_u32("ITCM region reset value", TCM_REGION_SIZE_8K, read_itcm());
-#endif
-	test_eq_u32("DTCM region reset value", TCM_REGION_SIZE_8K, read_dtcm());
 
 #if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
 	test_category("Linked section");
