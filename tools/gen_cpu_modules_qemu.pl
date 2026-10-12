@@ -200,6 +200,7 @@ sub genDspConfig {
 	my @program_pages = getDspPages($cpu_meta, "P", "PROM_PAGE");
 	my @data_pages = getDspPages($cpu_meta, "D", "DROM_PAGE");
 	die "Missing $cpu DSP ROM version" if !defined($cpu_meta->dspRomVersion());
+	die "Missing $cpu DSP hardware version" if !defined($cpu_meta->dspHardwareVersion());
 	die "Missing $cpu DSP ROM pages" if !@program_pages || !@data_pages;
 	# A CPU without a fixed data ROM pages its whole data ROM window.
 	my $has_data_fixed = grep { $_->{space} eq "D" && $_->{name} eq "DROM_FIXED" } @{$cpu_meta->dspMemory()};
@@ -230,7 +231,6 @@ sub genDspConfig {
 		push @peripherals, {
 			name => $module->{name},
 			type => $type,
-			model => $module->{model},
 			base => $module->{base},
 			size => $module->{size},
 			memory => $memory,
@@ -243,7 +243,6 @@ sub genDspConfig {
 		$str .= "\t{\n";
 		$str .= "\t\t.name = \"$peripheral->{name}\",\n";
 		$str .= "\t\t.type = PMB887X_DSP_PERIPHERAL_$peripheral->{type},\n";
-		$str .= "\t\t.model = PMB887X_DSP_MODEL_$peripheral->{model},\n" if $peripheral->{model};
 		$str .= sprintf("\t\t.base = 0x%04X,\n", $peripheral->{base});
 		$str .= sprintf("\t\t.size = 0x%04X,\n", $peripheral->{size});
 		$str .= $memory ? "\t\t.ram_base = ${prefix}$memory->{name}_BASE,\n" : "\t\t.ram_base = 0,\n";
@@ -255,6 +254,7 @@ sub genDspConfig {
 	$str .= sprintf(qq|static const pmb887x_dsp_config_t ${cpu}_dsp_config = {
 	.name = "$cpu",
 	.default_rom_version = 0x%04X,
+	.hardware_version = 0x%04X,
 	.page_field_mask = 0x%04X,
 	.program_page_shift = %u,
 	.program_rom_base = ${prefix}PROM_FIXED_BASE,
@@ -272,7 +272,8 @@ sub genDspConfig {
 	.peripheral_count = ARRAY_SIZE(${cpu}_dsp_peripherals),
 };
 
-|, $cpu_meta->dspRomVersion(), $page_mask, $program_page_shift, scalar(@program_pages), scalar(@data_pages),
+|, $cpu_meta->dspRomVersion(), $cpu_meta->dspHardwareVersion(), $page_mask, $program_page_shift,
+		scalar(@program_pages), scalar(@data_pages),
 		$mmio_end - $mmio_base);
 	return $str;
 }

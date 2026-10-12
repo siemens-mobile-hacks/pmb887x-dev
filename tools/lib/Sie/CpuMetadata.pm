@@ -47,6 +47,11 @@ sub dspRomVersion {
 	return $self->{dsp_rom_version};
 }
 
+sub dspHardwareVersion {
+	my ($self) = @_;
+	return $self->{dsp_hardware_version};
+}
+
 sub monitorSignals {
 	my ($self) = @_;
 	return $self->{monitor_signals};
@@ -244,6 +249,10 @@ sub loadCPU {
 			my ($key, $version) = split("\t", $line);
 			die "Invalid DSP ROM version: $line" if !defined($version);
 			$self->{dsp_rom_version} = parseAnyInt($version);
+		} elsif ($line =~ /^\.dsp_hardware_version/) {
+			my ($key, $version) = split("\t", $line);
+			die "Invalid DSP hardware version: $line" if !defined($version);
+			$self->{dsp_hardware_version} = parseAnyInt($version);
 		} elsif ($line =~ /^\.dsp_memory/) {
 			my ($key, $space, $name, $base, $size, $type, $page) = split("\t", $line);
 			die "Invalid DSP memory: $line" if !defined($page);
@@ -256,13 +265,12 @@ sub loadCPU {
 				page		=> $page eq '-' ? undef : parseAnyInt($page),
 			};
 		} elsif ($line =~ /^\.dsp_module/) {
-			my ($key, $name, $base, $definition, $model) = split("\t", $line);
+			my ($key, $name, $base, $definition) = split("\t", $line);
 			die "Invalid DSP module: $line" if !defined($definition);
 			push @{$self->{available_dsp_modules}}, {
 				name		=> $name,
 				base		=> parseAnyInt($base),
 				definition	=> $definition,
-				model		=> $model,
 			};
 		} elsif ($line =~ /^\.irq_count/) {
 			my ($key, $count) = split("\t", $line);
@@ -340,7 +348,6 @@ sub loadDspModules {
 		$module->{base} = $def->{base};
 		$module->{name} = $def->{name};
 		$module->{definition} = $def->{definition};
-		$module->{model} = $def->{model};
 		$self->{dsp_modules}->{$def->{name}} = $module;
 	}
 }
