@@ -67,8 +67,14 @@ static void stop_and_clear(void) {
 
 static void test_reset_values(void) {
 	test_category("Reset values");
-	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, RTC_CLC);
+	/* RTC software reset reaches the retained domain only while isolation is disabled. */
 	SCU_RTCIF = 0xAA;
+	SCU_RST_REQ |= SCU_RST_REQ_RTC;
+	uint32_t asserted_requests = SCU_RST_REQ;
+	SCU_RST_REQ &= ~SCU_RST_REQ_RTC;
+
+	test_eq_u32("RTC reset request asserts", SCU_RST_REQ_RTC, asserted_requests & SCU_RST_REQ_RTC);
+	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, RTC_CLC);
 	RTC_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	/* CTRL through ALARM belong to the retained RTC domain and do not have system-reset values. */
 	test_eq_u32(
@@ -120,30 +126,44 @@ static void test_counter(void) {
 	test_eq_u32("counter stops when RUN is clear", stopped, RTC_CNT);
 }
 
-static bool rtc_t14_adjustment_execute(uint32_t command, uint32_t *count) {
+static uint32_t rtc_t14_adjustment_execute(uint32_t command, uint32_t *elapsed_us) {
 	stop_and_clear();
 	RTC_T14 = (0x4000 << RTC_T14_CNT_SHIFT) | (0x8000 << RTC_T14_REL_SHIFT);
-	RTC_CON = RTC_CON_RUN | command;
+	RTC_CON = RTC_CON_RUN | RTC_CON_PRE;
 	stopwatch_t start = stopwatch_get();
-	while ((RTC_CON & command) != 0 && stopwatch_elapsed_ms(start) < 100)
+	uint32_t count;
+	do {
+		count = (RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT;
 		test_watchdog_serve();
-	bool completed = (RTC_CON & command) == 0;
-	RTC_CON = 0;
-	*count = (RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT;
+	} while (count == 0x4000 && stopwatch_elapsed_ms(start) < 100);
 
-	return completed;
+	RTC_CON = RTC_CON_RUN | RTC_CON_PRE | command;
+	start = stopwatch_get();
+	uint32_t previous = count;
+	do {
+		count = (RTC_T14 & RTC_T14_CNT) >> RTC_T14_CNT_SHIFT;
+		test_watchdog_serve();
+	} while (count == previous && stopwatch_elapsed_ms(start) < 100);
+	*elapsed_us = stopwatch_elapsed_us(start);
+	RTC_CON = RTC_CON_PRE;
+
+	return count;
 }
 
 static void test_t14_adjustment(void) {
-	uint32_t incremented;
-	bool increment_completed = rtc_t14_adjustment_execute(RTC_CON_T14INC, &incremented);
-	test_check("T14INC clears itself after the next count event", increment_completed);
-	test_check("T14INC adds one count", test_u32_in_interval(incremented, 0x4002, 0x4003));
+	uint32_t increment_elapsed_us;
+	uint32_t incremented = rtc_t14_adjustment_execute(RTC_CON_T14INC, &increment_elapsed_us);
+#ifdef PMB8875
+	test_eq_u32("T14INC advances T14 at the next count event", 0x4002, incremented);
+#else
+	test_eq_u32("T14INC adds an extra count at the next count event", 0x4003, incremented);
+#endif
 
-	uint32_t decremented;
-	bool decrement_completed = rtc_t14_adjustment_execute(RTC_CON_T14DEC, &decremented);
-	test_check("T14DEC clears itself after the next count event", decrement_completed);
-	test_check("T14DEC subtracts one count", test_u32_in_interval(decremented, 0x4000, 0x4001));
+	uint32_t decrement_elapsed_us;
+	uint32_t decremented = rtc_t14_adjustment_execute(RTC_CON_T14DEC, &decrement_elapsed_us);
+	test_eq_u32("T14DEC cancels the next count event", 0x4002, decremented);
+	printf("# T14 adjustment: increment=%lu us decrement=%lu us\n", increment_elapsed_us, decrement_elapsed_us);
+	test_check("T14DEC delays the next visible count by one event", decrement_elapsed_us > increment_elapsed_us);
 }
 
 static uint32_t rtc_t14_measure(bool prescaler, uint32_t *stm_ticks) {

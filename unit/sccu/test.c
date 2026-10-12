@@ -9,6 +9,7 @@
 #define SCCU_DURATION_TOLERANCE_PERCENT 20
 #define SCCU_FREQUENCY_MEASUREMENT_FRAMES 32
 #define SCCU_SYSTEM_SLEEP_FRAMES 32
+#define SCCU_PREWAKE_FRAME_OFFSET (SCCU_WAIT_PREWUP >> SCCU_WAIT_PREWUP_SHIFT)
 #define SCCU_POWER_DOWN_CONTROL (SCCU_SPCR_DPDN | SCCU_SPCR_DREN)
 
 static volatile uint32_t irq_count;
@@ -240,7 +241,7 @@ static void test_wakeup_interrupt(void) {
 	printf("# wakeup IRQ: TDMAOUT=%u\n", (unsigned int) irq_tdmout);
 	test_eq_u32("wakeup IRQ fires once", 1, irq_count);
 	test_eq_u32("wakeup IRQ number", VIC_SCCU_WAKE_IRQ, irq_number);
-	test_eq_u32("wakeup IRQ occurs on final frame", 7, irq_tdmout);
+	test_eq_u32("wakeup IRQ honors PREWUP", 7 - SCCU_PREWAKE_FRAME_OFFSET, irq_tdmout);
 	test_check("wakeup IRQ sees active timer", (irq_slpctrl & SCCU_SLPCTRL_SLPEN) != 0);
 	test_check("wakeup SRC is cleared", (SCCU_WAKE_SRC & MOD_SRC_SRR) == 0);
 }
@@ -295,7 +296,11 @@ static void test_system_sleep(uint32_t power_control) {
 	test_check("WFI returns on SCCU IRQ", irq_received);
 	test_eq_u32("system sleep wakeup IRQ count", 1, irq_count);
 	test_eq_u32("system sleep wakeup IRQ number", VIC_SCCU_WAKE_IRQ, irq_number);
-	test_eq_u32("system sleep completes programmed frames", SCCU_SYSTEM_SLEEP_FRAMES - 1, irq_tdmout);
+	test_eq_u32(
+		"system sleep IRQ honors PREWUP",
+		SCCU_SYSTEM_SLEEP_FRAMES - 1 - SCCU_PREWAKE_FRAME_OFFSET,
+		irq_tdmout
+	);
 	test_check("sleep timer completes after WFI", timer_completed);
 	test_check("wakeup restores CPU clock", (SCCU_SCCUCLKSTA & SCCU_SCCUCLKSTA_CPUCLK) != 0);
 	test_check("wakeup restores GSM clock", (SCCU_SCCUCLKSTA & SCCU_SCCUCLKSTA_GSMCLK) != 0);

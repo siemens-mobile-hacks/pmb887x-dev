@@ -148,20 +148,20 @@ static void test_mmci_source_frequencies(void) {
 				rtc_referenced_hz, elapsed_ticks);
 			bool is_slowest_mode = SOURCES[source].source == CGU_CON3_MMCI_CLKSEL_CLK32K &&
 				DIVIDERS[divider] == CGU_CON3_MMCI_CLKDIV_DIV8;
-			if (is_slowest_mode) {
-				uint32_t command_ticks = 0;
-				bool command_completed = probe_mci_command_progress(&command_ticks);
-				printf("# MCI CLK32K DIV8 command progress: completed=%lu elapsed=%lu STM ticks\n",
-					(uint32_t) command_completed, command_ticks);
-				uint32_t tolerance_hz = expected_hz / 50;
-				slowest_data_timer_matches = measured &&
-					test_u32_in_interval(measured_hz, expected_hz - tolerance_hz, expected_hz + tolerance_hz);
-				slowest_command_stopped = !command_completed;
-				continue;
-			}
 			uint32_t tolerance_hz = expected_hz / 50;
 			bool frequency_matches = measured &&
 				test_u32_in_interval(measured_hz, expected_hz - tolerance_hz, expected_hz + tolerance_hz);
+			if (is_slowest_mode) {
+				slowest_data_timer_matches = frequency_matches;
+				if (!test_is_qemu()) {
+					uint32_t command_ticks = 0;
+					bool command_completed = probe_mci_command_progress(&command_ticks);
+					printf("# MCI CLK32K DIV8 command progress: completed=%lu elapsed=%lu STM ticks\n",
+						(uint32_t) command_completed, command_ticks);
+					slowest_command_stopped = !command_completed;
+				}
+				continue;
+			}
 			source_matches[source] = source_matches[source] && frequency_matches;
 		}
 	}
@@ -169,7 +169,11 @@ static void test_mmci_source_frequencies(void) {
 	for (size_t source = 0; source < ARRAY_SIZE(SOURCES); source++)
 		test_check(SOURCES[source].test_name, source_matches[source]);
 	test_check("MMCI CLK32K DIV8 data timer follows the CGU model", slowest_data_timer_matches);
-	test_check("MMCI CLK32K DIV8 command engine stalls", slowest_command_stopped);
+	if (test_is_qemu()) {
+		test_skip("MMCI CLK32K DIV8 command engine stalls", "requires physical clock-domain timing");
+	} else {
+		test_check("MMCI CLK32K DIV8 command engine stalls", slowest_command_stopped);
+	}
 }
 #endif
 

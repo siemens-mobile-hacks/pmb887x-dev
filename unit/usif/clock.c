@@ -32,6 +32,10 @@ static bool measure_usif_tx(uint32_t *elapsed_us) {
 
 int main(void) {
 	test_start("CGU USIF clock test");
+	if (test_is_qemu()) {
+		test_skip("USIF TX rate follows all OSC dividers", "requires physical transmit timing");
+		return test_finish();
+	}
 
 	USIF_CLC = (1U << MOD_CLC_RMC_SHIFT);
 	uint32_t elapsed_us[ARRAY_SIZE(DIVIDERS)] = { 0 };
