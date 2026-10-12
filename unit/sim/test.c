@@ -33,6 +33,9 @@ static bool wait_for_irq(void) {
 }
 
 static void test_reset_values(void) {
+	SCU_RST_REQ |= SCU_RST_REQ_SIM;
+	SCU_RST_REQ &= ~SCU_RST_REQ_SIM;
+
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, SIM_CLC);
 	test_module_id("ID", 0xF000C032, SIM_ID);
 

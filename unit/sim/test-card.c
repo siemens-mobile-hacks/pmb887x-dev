@@ -114,28 +114,28 @@ static bool sim_receive_procedure(uint8_t *value) {
 	return true;
 }
 
-static bool sim_supply_set(bool enabled) {
+static bool sim_supply_set(bool _enabled __attribute__((unused))) {
 #if defined(BOARD_HAS_PMIC_PMB6812)
 	uint8_t control;
 
 	if (!i2c_smbus_read_byte(PMB6812_I2C_ADDR, PMB6812_PWCTRL5, &control))
 		return false;
 	control &= ~PMB6812_PWCTRL5_LSIMMD;
-	control |= (enabled ? PMB6812_PWCTRL5_LSIMMD_ON : PMB6812_PWCTRL5_LSIMMD_OFF);
+	control |= (_enabled ? PMB6812_PWCTRL5_LSIMMD_ON : PMB6812_PWCTRL5_LSIMMD_OFF);
 	return pmb681x_reg_write(PMB6812_PWCTRL5, control);
 #elif defined(BOARD_HAS_PMIC_D1094XX)
 	uint8_t supply_enable;
 
 	if (!i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, &supply_enable))
 		return false;
-	if (enabled)
+	if (_enabled) {
 		supply_enable |= PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
-	else
+	} else {
 		supply_enable &= ~PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
+	}
 
 	return i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, supply_enable);
 #else
-	(void) enabled;
 	return true;
 #endif
 }
@@ -691,6 +691,9 @@ int main(void) {
 	dmac_request_select(SIM_DMA_TX_REQUEST, SIM_DMA_TX_SELECT);
 	dmac_request_select(SIM_DMA_RX_REQUEST, SIM_DMA_RX_SELECT);
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_SIM;
+	SCU_RST_REQ &= ~SCU_RST_REQ_SIM;
+
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, SIM_CLC);
 	test_module_id("ID", 0xF000C032, SIM_ID);
 

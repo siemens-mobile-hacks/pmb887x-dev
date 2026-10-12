@@ -100,6 +100,9 @@ int main(void) {
 	test_start("SIM DMA");
 
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_SIM;
+	SCU_RST_REQ &= ~SCU_RST_REQ_SIM;
+
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, SIM_CLC);
 	SIM_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_module_clock("CLC enables module", SIM_CLC);
