@@ -22,8 +22,7 @@ ebu.cs = 1
 ram.size = 0x1000000 # 16 Mb
 
 [peripheral.PMIC]
-out.ON_OFF = "KP_IN0"
-key.ON = "END_CALL"
+out.ON_OFF_OUT = "KP_IN0"
 
 #[peripheral.RF]
 #type = "hd155153np"
@@ -127,13 +126,9 @@ PTT			= [2, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 VOLUME_UP	= [3, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 VOLUME_DOWN	= [4, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 
+[keyboard.gpio]
+END_CALL = [{ target = "PMIC:ON_OFF" }]
+
 [startup.ONLINE]
 duration = 5
 keys = ["END_CALL"]
-
-[startup.PTEST]
-duration = 5
-keys = ["STAR", "HASH", "END_CALL"]
-
-[startup.OFFLINE]
-keys = []

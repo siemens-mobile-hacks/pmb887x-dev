@@ -37,6 +37,7 @@ in = { CS = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF
 [peripheral.PMIC]
 type = "d1094xx"
 port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX" }
+out.ON_OFF_OUT = "KP_IN0"
 addr = 0x31
 revision = 0xED
 
@@ -150,3 +151,10 @@ VOLUME_UP	= [2, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 VOLUME_DOWN	= [1, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 CAMERA		= [3, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 PLAY_PAUSE	= [4, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+[keyboard.gpio]
+END_CALL = [{ target = "PMIC:ON_OFF" }]
+
+[startup.ONLINE]
+duration = 5
+keys = ["END_CALL"]

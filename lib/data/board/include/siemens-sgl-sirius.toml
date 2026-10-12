@@ -41,6 +41,7 @@ out = { INT = "AAC_INT" }
 [peripheral.PMIC]
 type = "d1094xx"
 port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX" }
+out.ON_OFF_OUT = "KP_IN1"
 addr = 0x31
 revision = 0xEC
 
@@ -138,3 +139,10 @@ BROWSER		= [0, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 END_CALL	= [1, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 VOLUME_DOWN	= [3, 0, 1, 2, 3, 4, 5, 6, 7, 8]
 VOLUME_UP	= [4, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+[keyboard.gpio]
+END_CALL = [{ target = "PMIC:ON_OFF" }]
+
+[startup.ONLINE]
+duration = 5
+keys = ["END_CALL"]
