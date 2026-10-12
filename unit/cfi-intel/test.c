@@ -121,9 +121,12 @@ static void test_electronic_signature(const struct flash_device *flash) {
 }
 
 static void test_block_lock_status(const struct flash_device *flash) {
+	cfi_enter_query(flash->base);
+	uint16_t status_mask = cfi_read_u16(flash->base, flash->primary_address + 0xA);
+	cfi_enter_read_array(flash->base);
+
 	uint32_t offset = 0;
 	bool valid = true;
-	uint16_t status_mask = flash->manufacturer == 0x0020 ? 0x33 : 0x03;
 	for (uint32_t region = 0; region < flash->regions; region++) {
 		uint32_t states[4] = {0};
 		for (uint32_t block = 0; block < flash->erase[region].blocks; block++) {
@@ -176,6 +179,14 @@ static void print_otp_value(const char *name, const uint16_t words[4]) {
 }
 
 static void test_otp(const struct flash_device *flash) {
+	cfi_enter_query(flash->base);
+	uint32_t features = cfi_read_u32(flash->base, flash->primary_address + 5);
+	cfi_enter_read_array(flash->base);
+	if ((features & BIT(6)) == 0) {
+		test_skip("protection registers", "not supported by primary extended query");
+		return;
+	}
+
 	uint16_t esn[4];
 	uint16_t imei[4];
 	read_otp_words(flash, 0x81, esn);
