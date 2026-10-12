@@ -12,18 +12,6 @@
 #define DMA_SOURCE_REQUEST 0
 #define DMA_DESTINATION_REQUEST 1
 
-#ifdef PMB8875
-#define ENDIAN_DESTINATION_AHB DMAC_CH_CONTROL_D_AHB1
-#define ENDIAN_DESTINATION_CONFIG DMAC_CONFIG_M1_BE
-#define ENDIAN_LLI_AHB1_DATA_MASTER (DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1)
-#define ENDIAN_LLI_AHB1_NAME "AHB1 endian setting does not change LLI format"
-#else
-#define ENDIAN_DESTINATION_AHB DMAC_CH_CONTROL_D_AHB2
-#define ENDIAN_DESTINATION_CONFIG DMAC_CONFIG_M2_BE
-#define ENDIAN_LLI_AHB1_DATA_MASTER (DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2)
-#define ENDIAN_LLI_AHB1_NAME "LLI loads through big-endian AHB1"
-#endif
-
 struct dmac_lli {
 	uint32_t src;
 	uint32_t dst;
@@ -108,6 +96,14 @@ static volatile uint32_t irq_err_status;
 static volatile uint32_t irq_raw_err_status;
 static volatile uint8_t irq_order[8];
 
+static bool dmac_has_second_master(void) {
+	return (DMAC_PERIPH_ID3 & BIT(3)) != 0;
+}
+
+static bool dmac_lli_uses_master_endian(void) {
+	return (DMAC_PERIPH_ID2 & GENMASK(7, 4)) != 0;
+}
+
 static void clear_destination(void) {
 	for (size_t i = 0; i < ARRAY_SIZE(destination); i++)
 		destination[i] = 0xDEADBEEF;
@@ -135,6 +131,9 @@ static void reset_dmac(void) {
 
 static void test_reset_values(void) {
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_DMA1;
+	SCU_RST_REQ &= ~SCU_RST_REQ_DMA1;
+
 	test_eq_u32("interrupt status reset value", 0, DMAC_INT_STATUS);
 	test_eq_u32("terminal-count status reset value", 0, DMAC_TC_STATUS);
 	test_eq_u32("error status reset value", 0, DMAC_ERR_STATUS);
@@ -245,6 +244,7 @@ static void test_endian_transfer(
 	uint32_t expected
 ) {
 	reset_dmac();
+	uint32_t destination_ahb = dmac_has_second_master() ? DMAC_CH_CONTROL_D_AHB2 : DMAC_CH_CONTROL_D_AHB1;
 	endian_source = 0x87654321;
 	endian_destination = 0;
 	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) &endian_source;
@@ -256,7 +256,7 @@ static void test_endian_transfer(
 		DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
 		width |
 		DMAC_CH_CONTROL_S_AHB1 |
-		ENDIAN_DESTINATION_AHB |
+		destination_ahb |
 		DMAC_CH_CONTROL_SI |
 		DMAC_CH_CONTROL_DI |
 		DMAC_CH_CONTROL_I
@@ -275,15 +275,17 @@ static void test_endianness(void) {
 		1,
 		0x87654321
 	);
-#ifdef PMB8875
-	test_endian_transfer(
-		"32-bit AHB1 big endian preserves memory byte order",
-		DMAC_CONFIG_M1_BE,
-		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD,
-		1,
-		0x87654321
-	);
-#else
+	if (!dmac_has_second_master()) {
+		test_endian_transfer(
+			"32-bit AHB1 big endian preserves memory byte order",
+			DMAC_CONFIG_M1_BE,
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD,
+			1,
+			0x87654321
+		);
+		return;
+	}
+
 	test_endian_transfer(
 		"32-bit LE to BE swaps bytes",
 		DMAC_CONFIG_M2_BE,
@@ -319,7 +321,6 @@ static void test_endianness(void) {
 		1,
 		0x21436587
 	);
-#endif
 }
 
 static void test_endian_matrix_transfer(const struct dmac_endian_case *item) {
@@ -329,13 +330,14 @@ static void test_endian_matrix_transfer(const struct dmac_endian_case *item) {
 		endian_matrix_source[i] = (uint8_t) (i * 29 + 0x13);
 		endian_matrix_destination[i] = 0xA5;
 	}
-#ifdef PMB8875
-	memcpy(endian_matrix_expected, endian_matrix_source, size);
-#else
-	for (uint32_t unit = 0; unit < size; unit += item->dst_width_bytes)
-		for (uint32_t byte = 0; byte < item->dst_width_bytes; byte++)
-			endian_matrix_expected[unit + byte] = endian_matrix_source[unit + item->dst_width_bytes - 1 - byte];
-#endif
+	if (dmac_has_second_master()) {
+		for (uint32_t unit = 0; unit < size; unit += item->dst_width_bytes)
+			for (uint32_t byte = 0; byte < item->dst_width_bytes; byte++)
+				endian_matrix_expected[unit + byte] =
+					endian_matrix_source[unit + item->dst_width_bytes - 1 - byte];
+	} else {
+		memcpy(endian_matrix_expected, endian_matrix_source, size);
+	}
 
 	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_source;
 	DMAC_CH_DST_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_destination;
@@ -347,39 +349,43 @@ static void test_endian_matrix_transfer(const struct dmac_endian_case *item) {
 		item->src_width |
 		item->dst_width |
 		DMAC_CH_CONTROL_S_AHB1 |
-		ENDIAN_DESTINATION_AHB |
+		(dmac_has_second_master() ? DMAC_CH_CONTROL_D_AHB2 : DMAC_CH_CONTROL_D_AHB1) |
 		DMAC_CH_CONTROL_SI |
 		DMAC_CH_CONTROL_DI |
 		DMAC_CH_CONTROL_I
 	);
-	DMAC_CONFIG = ENDIAN_DESTINATION_CONFIG | DMAC_CONFIG_ENABLE;
+	DMAC_CONFIG = (dmac_has_second_master() ? DMAC_CONFIG_M2_BE : DMAC_CONFIG_M1_BE) | DMAC_CONFIG_ENABLE;
 	DMAC_CH_CONFIG(DMA_CHANNEL) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2MEM | DMAC_CH_CONFIG_ENABLE;
 	test_check("big-endian matrix transfer completes", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_eq_memory(item->name, endian_matrix_expected, endian_matrix_destination, size);
 }
 
 static void test_endian_matrix(void) {
-	static const struct dmac_endian_case cases[] = {
+	static const struct dmac_endian_case common_cases[] = {
 		{"SB1, three dwords", 3, 4, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_1,
 			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
 		{"SB4, five dwords with partial burst", 5, 4, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
 			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
 		{"SB8, nine dwords with partial burst", 9, 4, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_8,
 			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
-#ifndef PMB8875
+		{"SB4, dword to halfword splitting", 4, 4, 2, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
+			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_WORD},
+	};
+	static const struct dmac_endian_case two_master_cases[] = {
 		{"SB4, seven halfwords", 7, 2, 2, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
 			DMAC_CH_CONTROL_S_WIDTH_WORD, DMAC_CH_CONTROL_D_WIDTH_WORD},
 		{"SB8, byte to dword packing", 16, 1, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_8,
 			DMAC_CH_CONTROL_S_WIDTH_BYTE, DMAC_CH_CONTROL_D_WIDTH_DWORD},
 		{"SB4, halfword to dword packing", 8, 2, 4, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
 			DMAC_CH_CONTROL_S_WIDTH_WORD, DMAC_CH_CONTROL_D_WIDTH_DWORD},
-		{"SB4, dword to halfword splitting", 4, 4, 2, DMAC_CH_CONTROL_SB_SIZE_SZ_4,
-			DMAC_CH_CONTROL_S_WIDTH_DWORD, DMAC_CH_CONTROL_D_WIDTH_WORD},
-#endif
 	};
 
-	for (size_t i = 0; i < ARRAY_SIZE(cases); i++)
-		test_endian_matrix_transfer(&cases[i]);
+	for (size_t i = 0; i < ARRAY_SIZE(common_cases); i++)
+		test_endian_matrix_transfer(&common_cases[i]);
+
+	if (dmac_has_second_master())
+		for (size_t i = 0; i < ARRAY_SIZE(two_master_cases); i++)
+			test_endian_matrix_transfer(&two_master_cases[i]);
 }
 
 static void test_paced_endianness(void) {
@@ -390,13 +396,13 @@ static void test_paced_endianness(void) {
 		endian_matrix_source[i] = (uint8_t) (i * 29 + 0x13);
 		endian_matrix_destination[i] = 0xA5;
 	}
-#ifdef PMB8875
-	memcpy(expected, endian_matrix_source, sizeof(expected));
-#else
-	for (size_t unit = 0; unit < sizeof(expected); unit += sizeof(uint32_t))
-		for (size_t byte = 0; byte < sizeof(uint32_t); byte++)
-			expected[unit + byte] = endian_matrix_source[unit + sizeof(uint32_t) - 1 - byte];
-#endif
+	if (dmac_has_second_master()) {
+		for (size_t unit = 0; unit < sizeof(expected); unit += sizeof(uint32_t))
+			for (size_t byte = 0; byte < sizeof(uint32_t); byte++)
+				expected[unit + byte] = endian_matrix_source[unit + sizeof(uint32_t) - 1 - byte];
+	} else {
+		memcpy(expected, endian_matrix_source, sizeof(expected));
+	}
 
 	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_source;
 	DMAC_CH_DST_ADDR(DMA_CHANNEL) = (uint32_t) endian_matrix_destination;
@@ -404,10 +410,11 @@ static void test_paced_endianness(void) {
 	DMAC_CH_CONTROL(DMA_CHANNEL) = (
 		8 | DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
 		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD |
-		DMAC_CH_CONTROL_S_AHB1 | ENDIAN_DESTINATION_AHB | DMAC_CH_CONTROL_SI |
+		DMAC_CH_CONTROL_S_AHB1 |
+		(dmac_has_second_master() ? DMAC_CH_CONTROL_D_AHB2 : DMAC_CH_CONTROL_D_AHB1) | DMAC_CH_CONTROL_SI |
 		DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
-	DMAC_CONFIG = DMAC_CONFIG_ENABLE | ENDIAN_DESTINATION_CONFIG;
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE | (dmac_has_second_master() ? DMAC_CONFIG_M2_BE : DMAC_CONFIG_M1_BE);
 	DMAC_CH_CONFIG(DMA_CHANNEL) = DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER | DMAC_CH_CONFIG_ENABLE;
 	DMAC_SOFT_BREQ = BIT(0);
 	test_check("big-endian source first paced burst clears", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
@@ -1144,6 +1151,28 @@ static void test_peripheral_flow_widths(void) {
 		wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
 	test_eq_memory("source-controlled P2P mixed-width burst data", matrix_source, matrix_destination, 16);
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
+
+	reset_dmac();
+	fill_matrix_buffers();
+	start_transfer(
+		(uint32_t) matrix_source,
+		(uint32_t) matrix_destination,
+		0,
+		(
+			DMAC_CH_CONTROL_SB_SIZE_SZ_1 | DMAC_CH_CONTROL_DB_SIZE_SZ_1 |
+			DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_BYTE |
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_SI |
+			DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		),
+		peripherals | DMAC_CH_CONFIG_FLOW_CTRL_PER2PER_SRC | DMAC_CH_CONFIG_INT_MASK_TC
+	);
+	DMAC_SOFT_BREQ = paired_requests;
+	test_check("source-controlled narrow P2P requests clear",
+		wait_for_value(&DMAC_SOFT_BREQ, paired_requests, 0));
+	test_eq_u32("source-controlled narrow P2P transfers one destination byte",
+		matrix_source[0], matrix_destination[0]);
+	test_eq_u32("source-controlled narrow P2P keeps source remainder buffered",
+		0xA5, matrix_destination[1]);
 }
 
 static void test_destination_flow_narrow_tail(void) {
@@ -1206,6 +1235,7 @@ static void test_request_tails(void) {
 		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
 	DMAC_SOFT_BREQ = BIT(0);
 	test_check("MEM2PER BREQ transfers a partial tail", wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL)));
+	test_check("MEM2PER partial-tail BREQ clears", wait_for_value(&DMAC_SOFT_BREQ, BIT(0), 0));
 	test_eq_memory("MEM2PER partial tail data", matrix_source, matrix_destination, 5 * sizeof(uint32_t));
 	DMAC_TC_CLEAR = BIT(DMA_CHANNEL);
 
@@ -2015,19 +2045,19 @@ static void test_endian_lli(const char *name, uint32_t lli_master, uint32_t glob
 		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | data_master |
 		DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
-#ifdef PMB8875
-	endian_lli = (struct dmac_lli) {
-		.src = (uint32_t) (matrix_source + 16),
-		.dst = (uint32_t) (matrix_destination + 16),
-		.control = control,
-	};
-#else
-	endian_lli = (struct dmac_lli) {
-		.src = __builtin_bswap32((uint32_t) (matrix_source + 16)),
-		.dst = __builtin_bswap32((uint32_t) (matrix_destination + 16)),
-		.control = __builtin_bswap32(control),
-	};
-#endif
+	if (dmac_lli_uses_master_endian()) {
+		endian_lli = (struct dmac_lli) {
+			.src = __builtin_bswap32((uint32_t) (matrix_source + 16)),
+			.dst = __builtin_bswap32((uint32_t) (matrix_destination + 16)),
+			.control = __builtin_bswap32(control),
+		};
+	} else {
+		endian_lli = (struct dmac_lli) {
+			.src = (uint32_t) (matrix_source + 16),
+			.dst = (uint32_t) (matrix_destination + 16),
+			.control = control,
+		};
+	}
 
 	DMAC_CH_SRC_ADDR(DMA_CHANNEL) = (uint32_t) matrix_source;
 	DMAC_CH_DST_ADDR(DMA_CHANNEL) = (uint32_t) matrix_destination;
@@ -2041,20 +2071,23 @@ static void test_endian_lli(const char *name, uint32_t lli_master, uint32_t glob
 }
 
 static void test_lli_endianness(void) {
+	bool has_second_master = dmac_has_second_master();
 	test_endian_lli(
-		ENDIAN_LLI_AHB1_NAME,
+		dmac_lli_uses_master_endian() ?
+			"LLI loads through big-endian AHB1" : "AHB1 endian setting does not change LLI format",
 		DMAC_CH_LLI_LM_AHB1,
 		DMAC_CONFIG_M1_BE,
-		ENDIAN_LLI_AHB1_DATA_MASTER
+		has_second_master ?
+			(DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_D_AHB2) :
+			(DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1)
 	);
-#ifndef PMB8875
-	test_endian_lli(
-		"LLI loads through big-endian AHB2",
-		DMAC_CH_LLI_LM_AHB2,
-		DMAC_CONFIG_M2_BE,
-		DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1
-	);
-#endif
+	if (has_second_master)
+		test_endian_lli(
+			"LLI loads through big-endian AHB2",
+			DMAC_CH_LLI_LM_AHB2,
+			DMAC_CONFIG_M2_BE,
+			DMAC_CH_CONTROL_S_AHB1 | DMAC_CH_CONTROL_D_AHB1
+		);
 }
 
 static void test_lli_alignment(void) {
@@ -2265,15 +2298,15 @@ static void test_ahb2_integration(void) {
 	);
 
 	bool completed = wait_for_status(&DMAC_RAW_TC_STATUS, BIT(DMA_CHANNEL));
-#ifdef PMB8875
-	test_check("AHB2 memory transfer remains pending", !completed);
-	test_eq_u32("AHB2 transfer count remains unchanged", ARRAY_SIZE(source),
-		DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
-	test_eq_u32("AHB2 destination remains unchanged", 0xDEADBEEF, destination[0]);
-#else
-	test_check("AHB2 memory transfer completes", completed);
-	test_eq_memory("AHB2 memory transfer data", source, destination, sizeof(source));
-#endif
+	if (dmac_has_second_master()) {
+		test_check("AHB2 memory transfer completes", completed);
+		test_eq_memory("AHB2 memory transfer data", source, destination, sizeof(source));
+	} else {
+		test_check("AHB2 memory transfer remains pending", !completed);
+		test_eq_u32("AHB2 transfer count remains unchanged", ARRAY_SIZE(source),
+			DMAC_CH_CONTROL(DMA_CHANNEL) & DMAC_CH_CONTROL_TRANSFER_SIZE);
+		test_eq_u32("AHB2 destination remains unchanged", 0xDEADBEEF, destination[0]);
+	}
 }
 
 int main(void) {
