@@ -143,9 +143,10 @@ static void __attribute__((noreturn)) exception_report(char type, uint32_t lr, u
 
 /* A suite that knows its own register map names the block here (see test.h); the decode runs
    only after the fields have reached the log. */
-__attribute__((weak)) void test_fault_decode(uint32_t pc, uint32_t far) {
-	(void) pc;
-	(void) far;
+__attribute__((weak)) void test_fault_decode(
+	uint32_t _pc __attribute__((unused)),
+	uint32_t _far __attribute__((unused))
+) {
 }
 
 __IRQ void data_abort_handler(void) {
@@ -226,10 +227,11 @@ static void print_hardware(void) {
 
 	if (!read_phone_info(vendor, model, 0xA003E000, 0xA003E010))
 		read_phone_info(vendor, model, 0xA0000210, 0xA0000220);
-	if (chip == 0x1A)
+	if (chip == 0x1A) {
 		cpu = "PMB8875";
-	else if (chip == 0x1B)
+	} else if (chip == 0x1B) {
 		cpu = "PMB8876";
+	}
 	printf("# Hardware: vendor=%s, phone=%s, CPU=%s rev=%02X\n", vendor, model, cpu, (unsigned int) revision);
 }
 
@@ -315,6 +317,17 @@ int test_finish(void) {
 	usart_putc(USART0, 0);
 
 	return state.failures ? 1 : 0;
+}
+
+void test_expect_reset(const char *name) {
+	USART_RXFCON(USART0) |= USART_RXFCON_RXFFLU;
+	printf("# HOST-CMD: EXPECT_RESET %u %u %s\n", state.assertions + 1, state.failures, name);
+	while (true) {
+		while (usart_get_rx_fifo_level(USART0) == 0)
+			test_watchdog_serve();
+		if (USART_RXB(USART0) == 'R')
+			return;
+	}
 }
 
 void test_skip(const char *name, const char *reason) {

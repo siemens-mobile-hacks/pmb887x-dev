@@ -17,6 +17,8 @@ except ImportError:
 
 BOOT_SPEED = 115200
 DEFAULT_SPEED = 1625000
+EXPECTED_RESET_OBSERVATION_TIMEOUT = 1
+EXPECTED_RESET_RELEASE = b"R"
 EXTRAM_ADDRESS = 0xB0000000
 EXTRAM_SIZE = 0x02000000
 SRAM_START = 0x00080000
@@ -389,6 +391,16 @@ def execute_host_command(port, command, argument, restore_configuration=None):
 		if not isinstance(data, str):
 			raise ProtocolError("HOST-CMD SEND argument must be a string")
 		send_host_data(port, data.encode("utf-8"), "SEND")
+	elif command == b"EXPECT":
+		if not argument:
+			raise ProtocolError("HOST-CMD EXPECT has no argument")
+		expected = json.loads(argument)
+		if not isinstance(expected, str) or not expected:
+			raise ProtocolError("HOST-CMD EXPECT argument must be a non-empty string")
+		expected = expected.encode("utf-8")
+		actual = port.read(len(expected))
+		if actual != expected:
+			raise ProtocolError("HOST-CMD EXPECT received %r, expected %r" % (actual, expected))
 	elif command == b"SEND_XORSHIFT32":
 		fields = argument.split()
 		if len(fields) != 3:
@@ -423,16 +435,55 @@ def execute_host_command(port, command, argument, restore_configuration=None):
 		raise ProtocolError("unknown HOST-CMD: %s" % command.decode("ascii", "replace"))
 
 
+def complete_expected_reset(port, output, argument):
+	fields = argument.split(b" ", 2)
+	if len(fields) != 3 or not fields[2]:
+		raise ProtocolError("HOST-CMD EXPECT_RESET requires assertion number, failure count, and name")
+
+	assertion = int(fields[0])
+	failures = int(fields[1])
+	if assertion <= 0 or failures < 0 or failures >= assertion:
+		raise ProtocolError("HOST-CMD EXPECT_RESET has invalid assertion or failure count")
+
+	send_host_data(port, EXPECTED_RESET_RELEASE, "EXPECT_RESET")
+	deadline = time.monotonic() + EXPECTED_RESET_OBSERVATION_TIMEOUT
+	continued_output = b""
+	while time.monotonic() < deadline:
+		data = port.read(port.in_waiting or 1)
+		continued_output += data
+		if b"# ERROR: execution continued" in continued_output:
+			output.write(continued_output.replace(b"\0", b""))
+			output.flush()
+			raise ProtocolError("execution continued after expected reset")
+	status = b"PASS" if failures == 0 else b"FAIL"
+	output.write(b"ok %d - %s\n" % (assertion, fields[2]))
+	output.write(b"1..%d\n" % assertion)
+	output.write(b"# result: %s (%d failed)\n" % (status, failures))
+	output.flush()
+
+
 def forward_output(port, output):
 	pending = b""
 	command_block = None
+	previous_byte = None
 	while True:
 		data = port.read(port.in_waiting or 1)
 		if not data:
 			continue
+		terminator = -1
+		for offset, value in enumerate(data):
+			if value == 0:
+				if previous_byte != ord("\n"):
+					raise ProtocolError("unexpected completion byte inside test output")
+				terminator = offset
+				break
+			previous_byte = value
+		if terminator >= 0:
+			data = data[:terminator]
 
 		lines = (pending + data).split(b"\n")
 		pending = lines.pop()
+		expected_reset = None
 		for line in lines:
 			parsed = parse_host_command(line)
 			if parsed is None:
@@ -456,12 +507,15 @@ def forward_output(port, output):
 						command_block["configuration"],
 					)
 				command_block = None
+			elif command == b"EXPECT_RESET":
+				if command_block is not None or expected_reset is not None:
+					raise ProtocolError("invalid HOST-CMD EXPECT_RESET")
+				expected_reset = argument
 			elif command_block is None:
 				execute_host_command(port, command, argument)
 			else:
 				command_block["commands"].append((command, argument))
 
-		terminator = data.find(b"\0")
 		if terminator >= 0:
 			if command_block is not None:
 				raise ProtocolError("unfinished HOST-CMD block")
@@ -471,6 +525,9 @@ def forward_output(port, output):
 
 		output.write(data)
 		output.flush()
+		if expected_reset is not None:
+			complete_expected_reset(port, output, expected_reset)
+			return
 
 
 def parse_address(value):

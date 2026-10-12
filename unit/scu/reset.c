@@ -15,8 +15,11 @@ int main(void) {
 	));
 
 	struct scu_watchdog_access_result unlock = scu_watchdog_set_endinit(false);
-	test_check("reset registers are unlocked", unlock.unlocked && unlock.modified);
-	printf("# Requesting software reset; the CPU must reset before the next message.\n");
+	struct scu_watchdog_access_result lock = scu_watchdog_set_endinit(true);
+	test_check("reset registers can be unlocked and relocked",
+		unlock.unlocked && unlock.modified && lock.unlocked && lock.modified);
+	test_expect_reset("software reset stops current execution");
+	scu_watchdog_set_endinit(false);
 	SCU_BOOT_FLAG = 0;
 	SCU_RST_CON = 0;
 	scu_watchdog_set_endinit(true);

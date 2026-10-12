@@ -7,6 +7,7 @@
 void test_start(const char *name);
 void test_category(const char *name);
 int test_finish(void);
+void test_expect_reset(const char *name);
 void test_skip(const char *name, const char *reason);
 bool test_check(const char *name, bool condition);
 bool test_eq_u32(const char *name, uint32_t expected, uint32_t actual);
