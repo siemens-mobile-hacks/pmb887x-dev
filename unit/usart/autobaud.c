@@ -10,6 +10,7 @@
 #define AUTOBAUD_TIMEOUT_MS 500
 #define AUTOBAUD_HANDOFF_FRAME "atREADY"
 #define HOST_TRIGGER '!'
+#define HOST_READY '?'
 
 struct usart_configuration {
 	uint32_t pin_select;
@@ -90,10 +91,9 @@ static void send_autobaud_frame(const struct autobaud_case *test_case) {
 	USART_RXFCON(USART0) |= USART_RXFCON_RXFFLU;
 	printf("# HOST-CMD: BEGIN\n");
 	printf("# HOST-CMD: SEND \"%c\"\n", HOST_TRIGGER);
-	printf("# HOST-CMD: WAIT 50\n");
+	printf("# HOST-CMD: EXPECT \"%c\"\n", HOST_READY);
 	printf("# HOST-CMD: FORMAT %s\n", test_case->format);
 	printf("# HOST-CMD: BAUDRATE %lu\n", test_case->baud_rate);
-	printf("# HOST-CMD: WAIT 50\n");
 	printf("# HOST-CMD: SEND \"%s\"\n", test_case->frame);
 	printf("# HOST-CMD: WAIT 100\n");
 	printf("# HOST-CMD: RESTORE\n");
@@ -102,6 +102,11 @@ static void send_autobaud_frame(const struct autobaud_case *test_case) {
 	printf("# HOST-CMD: END\n");
 	usart_flush(USART0);
 	wait_for_host_trigger();
+}
+
+static void notify_host_ready(void) {
+	USART_TXB(USART0) = HOST_READY;
+	usart_flush(USART0);
 }
 
 static void configure_autobaud(uint32_t divider_frequency, uint32_t options) {
@@ -134,6 +139,7 @@ static struct autobaud_result run_autobaud(
 	bool abort_detection
 ) {
 	send_autobaud_frame(test_case);
+	notify_host_ready();
 	configure_autobaud(divider_frequency, options);
 
 	struct autobaud_result result = {
@@ -143,8 +149,10 @@ static struct autobaud_result run_autobaud(
 	};
 	stopwatch_t start = stopwatch_get();
 	while ((USART_ABCON(USART0) & USART_ABCON_ABEN) != 0 &&
-		stopwatch_elapsed_ms(start) < AUTOBAUD_TIMEOUT_MS)
-		test_watchdog_serve();
+		stopwatch_elapsed_ms(start) < AUTOBAUD_TIMEOUT_MS) {
+		if (abort_detection)
+			test_watchdog_serve();
+	}
 
 	result.detected = (USART_ABCON(USART0) & USART_ABCON_ABEN) == 0;
 	result.control = USART_CON(USART0);
@@ -173,6 +181,17 @@ static void check_detected_case(
 	test_eq_u32("detected frame format", test_case->mode, result.control & (USART_CON_M | USART_CON_ODD));
 	test_eq_u32("detected character case", test_case->status, result.status & AUTOBAUD_STATUS_MASK);
 	test_eq_u32("successful detection raises one ABDET IRQ", 1, result.detect_irqs);
+}
+
+static void test_qemu_detection(const struct usart_configuration *console) {
+	static const struct autobaud_case cases[] = {
+		{ 115200, 0x005, "8N1", "at", USART_CON_M_ASYNC_8BIT, USART_ABSTAT_SCSDET },
+		{ 115200, 0x005, "8N1", "AT", USART_CON_M_ASYNC_8BIT, USART_ABSTAT_SCCDET },
+	};
+
+	test_category("115200 8N1 detection");
+	for (uint32_t i = 0; i < ARRAY_SIZE(cases); i++)
+		check_detected_case(console, &cases[i], AUTOBAUD_STANDARD_DIVIDER_FREQUENCY);
 }
 
 static void test_standard_baud_rates(const struct usart_configuration *console) {
@@ -268,14 +287,14 @@ static void test_receive_handoff(const struct usart_configuration *console) {
 
 	test_category("Firmware autobaud-to-RX handoff");
 	send_autobaud_frame(&test_case);
+	notify_host_ready();
 	autobaud_handoff_length = 0;
 	autobaud_handoff_active = true;
 	configure_autobaud(AUTOBAUD_STANDARD_DIVIDER_FREQUENCY, 0);
 
 	stopwatch_t start = stopwatch_get();
 	while (autobaud_handoff_length < sizeof(autobaud_handoff_data) &&
-		stopwatch_elapsed_ms(start) < AUTOBAUD_TIMEOUT_MS)
-	{
+		stopwatch_elapsed_ms(start) < AUTOBAUD_TIMEOUT_MS) {
 		test_watchdog_serve();
 	}
 	autobaud_handoff_active = false;
@@ -308,9 +327,16 @@ int main(void) {
 	VIC_CON(VIC_USART0_RX_IRQ) = 1;
 	cpu_enable_irq(true);
 
-	test_standard_baud_rates(&console);
-	test_nonstandard_baud_rates(&console);
-	test_frame_formats(&console);
+	if (test_is_qemu()) {
+		test_qemu_detection(&console);
+		test_skip("standard baud-rate matrix", "QEMU models autobaud at fixed 115200 baud");
+		test_skip("non-standard divider matrix", "QEMU models autobaud at fixed 115200 baud");
+		test_skip("frame-format matrix", "QEMU models autobaud with 8N1 frames");
+	} else {
+		test_standard_baud_rates(&console);
+		test_nonstandard_baud_rates(&console);
+		test_frame_formats(&console);
+	}
 	test_detection_controls(&console);
 	test_mixed_case_rejected(&console);
 	test_receive_handoff(&console);
@@ -344,8 +370,7 @@ __IRQ void irq_handler(void) {
 			USART_IMSC(USART0) = USART_IMSC_RX;
 	} else if (irq == VIC_USART0_RX_IRQ) {
 		while (autobaud_handoff_length < sizeof(autobaud_handoff_data) &&
-			(USART_FSTAT(USART0) & USART_FSTAT_RXFFL) != 0)
-		{
+			(USART_FSTAT(USART0) & USART_FSTAT_RXFFL) != 0) {
 			autobaud_handoff_data[autobaud_handoff_length++] = USART_RXB(USART0);
 		}
 		USART_ICR(USART0) = USART_ICR_RX;

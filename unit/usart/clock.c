@@ -3,15 +3,18 @@
 #include "cgu/clock.h"
 #include "test.h"
 
-#define USART_WAIT_ITERATIONS 100000
+#define USART_WAIT_TIMEOUT_MS 100
+#define USART_TIMEOUT_CHECK_INTERVAL 256
 #define LOOPBACK_FRAMES 16
 #define USART_FRAME_BITS 10
-/* Slow framing makes receive-polling overhead negligible in the clock measurement. */
-#define USART_BG_RELOAD 0x7C
+/* Slow framing makes IRQ entry latency negligible in the clock measurement. */
+#define USART_BG_RELOAD 0x3E7
 #define USART_FDV_VALUE 0x1D8
 #define USART_FDV_SCALE 512
 
 static const uint32_t PLL_NDIV_VALUES[] = { 4, 5 };
+static volatile uint8_t received_byte;
+static volatile bool receive_complete;
 
 static void configure_usart(uint32_t rmc) {
 	uint32_t control = USART_CON_M_ASYNC_8BIT | USART_CON_FDE | USART_CON_LB;
@@ -21,7 +24,7 @@ static void configure_usart(uint32_t rmc) {
 	USART_FDV(USART1) = USART_FDV_VALUE;
 	USART_TMO(USART1) = 0;
 	USART_DMAE(USART1) = 0;
-	USART_IMSC(USART1) = 0;
+	USART_IMSC(USART1) = USART_IMSC_RX;
 	USART_ICR(USART1) = 0xFF;
 	USART_RXFCON(USART1) = 0;
 	USART_TXFCON(USART1) = 0;
@@ -31,17 +34,18 @@ static void configure_usart(uint32_t rmc) {
 }
 
 static bool loopback_byte(uint8_t value) {
+	receive_complete = false;
 	USART_ICR(USART1) = 0xFF;
 	USART_TXB(USART1) = value;
-	uint32_t wait = 0;
-	while (wait < USART_WAIT_ITERATIONS && (USART_RIS(USART1) & USART_RIS_RX) == 0) {
-		__asm__ volatile("nop");
-		wait++;
+	stopwatch_t deadline = stopwatch_get() + (stopwatch_t) USART_WAIT_TIMEOUT_MS * stopwatch_ticks_per_ms();
+	uint32_t polls = 0;
+	while (!receive_complete) {
+		polls++;
+		if (polls % USART_TIMEOUT_CHECK_INTERVAL == 0 && stopwatch_get() >= deadline)
+			return false;
 	}
-	if ((USART_RIS(USART1) & USART_RIS_RX) == 0)
-		return false;
 
-	return (USART_RXB(USART1) & 0xFF) == value;
+	return received_byte == value;
 }
 
 static bool measure_loopback(uint32_t *ticks) {
@@ -62,6 +66,8 @@ int main(void) {
 
 	cgu_fpi1_select(CGU_FPI1_DISABLED, 0);
 	cgu_pll_set(3, 0);
+	VIC_CON(VIC_USART1_RX_IRQ) = 1;
+	cpu_enable_irq(true);
 
 	uint32_t osc_ticks = 0;
 	uint32_t rmc4_ticks = 0;
@@ -102,6 +108,8 @@ int main(void) {
 		completed = measure_loopback(&pll_ticks[index + 1]) && completed;
 	}
 	cgu_fpi1_select(CGU_FPI1_OSC, 0);
+	cpu_enable_irq(false);
+	VIC_CON(VIC_USART1_RX_IRQ) = 0;
 
 	printf("# OSC=%lu PLL104=%lu DIV2/4/8=%lu/%lu/%lu fSYS_PLL=%lu PLL130/156=%lu/%lu STM ticks\n",
 		osc_ticks, pll_ticks[0], divided_ticks[1],
@@ -141,4 +149,14 @@ int main(void) {
 	}
 	test_check("FPI1 PLL/2 rates match 130 and 156 MHz PLL", pll_rates_match);
 	return test_finish();
+}
+
+__IRQ void irq_handler(void) {
+	if (VIC_IRQ_CURRENT == VIC_USART1_RX_IRQ) {
+		received_byte = USART_RXB(USART1);
+		USART_ICR(USART1) = USART_ICR_RX;
+		receive_complete = true;
+	}
+
+	VIC_IRQ_ACK = 1;
 }

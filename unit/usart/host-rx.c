@@ -4,11 +4,17 @@
 #include "test.h"
 
 #define RECEIVE_TIMEOUT_MS 2500
+#define RECEIVE_TIMEOUT_CHECK_INTERVAL 256
 #define MAX_PAYLOAD_SIZE 32768
 #define CRC32_POLYNOMIAL 0xEDB88320
 #define CRC32_INITIAL_VALUE 0xFFFFFFFF
 #define RECEIVER_DISABLED_FRAME "ignored"
 #define HOST_TRIGGER '!'
+#ifdef PMB8875
+#define USART_HIGH_BAUD_RATE 460800
+#else
+#define USART_HIGH_BAUD_RATE 921600
+#endif
 
 struct usart_configuration {
 	uint32_t baud_reload;
@@ -88,6 +94,14 @@ static void wait_for_host_trigger(void) {
 	USART_ICR(USART0) = USART_ICR_RX;
 }
 
+static void request_host_trigger(void) {
+	printf("# HOST-CMD: BEGIN\n");
+	printf("# HOST-CMD: SEND \"%c\"\n", HOST_TRIGGER);
+	printf("# HOST-CMD: END\n");
+	usart_flush(USART0);
+	wait_for_host_trigger();
+}
+
 static void send_payload(const struct receive_case *test_case) {
 	usart_flush(USART0);
 	USART_RXFCON(USART0) |= USART_RXFCON_RXFFLU;
@@ -105,8 +119,6 @@ static void send_payload(const struct receive_case *test_case) {
 	);
 	printf("# HOST-CMD: WAIT 500\n");
 	printf("# HOST-CMD: RESTORE\n");
-	printf("# HOST-CMD: WAIT 50\n");
-	printf("# HOST-CMD: SEND \"%c\"\n", HOST_TRIGGER);
 	printf("# HOST-CMD: END\n");
 	usart_flush(USART0);
 	wait_for_host_trigger();
@@ -124,8 +136,6 @@ static void send_text(uint32_t baud_rate, const char *text) {
 	printf("# HOST-CMD: SEND \"%s\"\n", text);
 	printf("# HOST-CMD: WAIT 500\n");
 	printf("# HOST-CMD: RESTORE\n");
-	printf("# HOST-CMD: WAIT 50\n");
-	printf("# HOST-CMD: SEND \"%c\"\n", HOST_TRIGGER);
 	printf("# HOST-CMD: END\n");
 	usart_flush(USART0);
 	wait_for_host_trigger();
@@ -148,14 +158,19 @@ static struct receive_result receive_payload(
 
 	uint32_t received = 0;
 	stopwatch_t start = stopwatch_get();
+	uint32_t empty_polls = 0;
 	while (received < test_case->length) {
 		uint32_t fifo_level = usart_get_rx_fifo_level(USART0);
 		if (fifo_level == 0) {
-			if (stopwatch_elapsed_ms(start) >= RECEIVE_TIMEOUT_MS)
-				break;
-			test_watchdog_serve();
+			if (++empty_polls == RECEIVE_TIMEOUT_CHECK_INTERVAL) {
+				empty_polls = 0;
+				if (stopwatch_elapsed_ms(start) >= RECEIVE_TIMEOUT_MS)
+					break;
+				test_watchdog_serve();
+			}
 			continue;
 		}
+		empty_polls = 0;
 		while (fifo_level-- != 0 && received < test_case->length)
 			payload[received++] = (uint8_t) USART_RXB(USART0);
 	}
@@ -167,7 +182,7 @@ static struct receive_result receive_payload(
 		.fifo_level = usart_get_rx_fifo_level(USART0),
 	};
 	restore_usart_configuration(console);
-	wait_for_host_trigger();
+	request_host_trigger();
 
 	return result;
 }
@@ -182,7 +197,7 @@ static void test_receiver_enable(const struct usart_configuration *console) {
 	uint32_t disabled_fifo_level = usart_get_rx_fifo_level(USART0);
 	uint32_t disabled_rx_request = USART_RIS(USART0) & USART_RIS_RX;
 	restore_usart_configuration(console);
-	wait_for_host_trigger();
+	request_host_trigger();
 
 	test_eq_u32("disabled receiver rejects complete host frame", 0, disabled_fifo_level);
 	test_eq_u32("disabled receiver raises no RX request", 0, disabled_rx_request);
@@ -196,14 +211,14 @@ static void test_receiver_enable(const struct usart_configuration *console) {
 	uint32_t enabled_byte = enabled_fifo_level != 0 ? USART_RXB(USART0) : 0;
 
 	restore_usart_configuration(console);
-	wait_for_host_trigger();
+	request_host_trigger();
 	test_eq_u32("re-enabled receiver accepts next host frame", 1, enabled_fifo_level);
 	test_eq_u32("re-enabled receiver preserves next byte", 'R', enabled_byte);
 }
 
 int main(void) {
 	static const struct receive_case cases[] = {
-		{ 921600, 32768, 0x12345678, 0xD1BA9EC0 },
+		{ USART_HIGH_BAUD_RATE, 32768, 0x12345678, 0xD1BA9EC0 },
 		{ 115200, 16384, 0xC001D00D, 0xAA5AD126 },
 		{   9600,  1024, 0xA5A5A5A5, 0x2CFF2098 },
 	};
