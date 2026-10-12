@@ -12,13 +12,9 @@
 #define RESET_REGISTER_MASKED(name, address, value, mask) { name, address, value, mask }
 
 #ifdef PMB8875
-#define BASEBAND_CTRL_RESET 0x0010
 #define DSP_ID_RESET 0xE001
-#define MODULATOR_CTRL_RESET 0x0000
 #else
-#define BASEBAND_CTRL_RESET 0x0110
 #define DSP_ID_RESET 0xE101
-#define MODULATOR_CTRL_RESET 0x0600
 #endif
 
 static volatile uint16_t *const DSP_SHARED_MEMORY = (volatile uint16_t *) DSP_RAM_BASE;
@@ -121,7 +117,6 @@ static const struct dsp_reset_register AFE_RESET_REGISTERS[] = {
 };
 
 static const struct dsp_reset_register BASEBAND_RESET_REGISTERS[] = {
-	RESET_REGISTER("CTRL", TEAK_BB_CTRL, BASEBAND_CTRL_RESET),
 	RESET_REGISTER("INT_POINTER", TEAK_BB_INT_POINTER, 0x0000),
 	RESET_REGISTER("WR_POINTER", TEAK_BB_WR_POINTER, 0x0000),
 	RESET_REGISTER("STATUS", TEAK_BB_STATUS, 0x0000),
@@ -150,7 +145,6 @@ static const struct dsp_reset_register DSP_RESET_REGISTERS[] = {
 };
 
 static const struct dsp_reset_register MODULATOR_RESET_REGISTERS[] = {
-	RESET_REGISTER("CTRL", TEAK_MOD_CTRL, MODULATOR_CTRL_RESET),
 	RESET_REGISTER("STAT", TEAK_MOD_STAT, 0x0000),
 	RESET_REGISTER("INT_ADDR", TEAK_MOD_INT_ADDR, 0x0000),
 	RESET_REGISTER("OCI", TEAK_MOD_OCI, 0x0000),
