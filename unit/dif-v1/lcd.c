@@ -21,6 +21,7 @@ static const struct lcd_controller *select_display_controller(enum lcd_controlle
 	case LCD_CONTROLLER_LS020:
 	case LCD_CONTROLLER_L5F30539P00:
 	case LCD_CONTROLLER_JBT6K71:
+	case LCD_CONTROLLER_R61505:
 		return NULL;
 	}
 
@@ -29,12 +30,12 @@ static const struct lcd_controller *select_display_controller(enum lcd_controlle
 
 int main(void) {
 	test_start("DIFv1 S1D13732 LCD controller");
-	lcd_board_initialize_light();
+	test_check("LCD light controller initializes", lcd_board_initialize_light());
 	lcd_transport_init();
 	test_eq_u32(
 		"CX75 DIF is enabled as master",
-		SSC_CON_MS_MASTER | DIF_CON_PH,
-		DIF_CON & (DIF_CON_PH | DIF_CON_EN)
+		DIF_CON_MS_MASTER | DIF_CON_EN,
+		DIF_CON & (DIF_CON_MS | DIF_CON_EN)
 	);
 
 	test_category("S1D13732 bridge");
@@ -65,6 +66,7 @@ int main(void) {
 	}
 	test_eq_u32("probe stops after the first high response", expected_sampled_patterns, detection.sampled_patterns);
 	test_id_u32("display detect response bits", expected_high_patterns, detection.high_patterns);
+	test_eq_u32("CX75 display controller", LCD_CONTROLLER_PCF8882, detection.controller_type);
 
 	const struct lcd_controller *lcd = select_display_controller(detection.controller_type);
 	test_check("supported LCD controller selected", lcd != NULL);
@@ -82,9 +84,9 @@ int main(void) {
 	test_eq_u32("controller type matches selected backend", expected_type, lcd->type);
 
 	test_category("Display power and initialization");
-	lcd_board_enable_vboost();
+	test_check("LCD VBOOST enables", lcd_board_enable_vboost());
 	stopwatch_usleep_wd(10000);
-	lcd_board_enable_backlight();
+	test_check("LCD backlight enables", lcd_board_enable_backlight());
 	lcd_transport_reset_controller();
 	test_check("LCD controller initializes", lcd->initialize());
 

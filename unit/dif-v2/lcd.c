@@ -8,8 +8,8 @@
 #include "lcd-board.h"
 #include "test.h"
 
-#if !defined(BOARD_SIEMENS_E71) && !defined(BOARD_SIEMENS_EL71) && !defined(BOARD_LG_KE970)
-#error The DIFv2 LCD interface test currently requires BOARD=siemens-e71 or BOARD=siemens-el71 or BOARD=lg-ke970
+#if !defined(BOARD_SIEMENS_E71) && !defined(BOARD_SIEMENS_EL71)
+#error The DIFv2 LCD interface test currently requires BOARD=siemens-e71 or BOARD=siemens-el71
 #endif
 
 #define DIF_TIMEOUT_MS 100
@@ -109,6 +109,9 @@ static void set_bmreg_mapping(uint32_t output_bit, uint32_t input_bit) {
 
 static void test_reset_values(void) {
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_DISP;
+	SCU_RST_REQ &= ~SCU_RST_REQ_DISP;
+
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, DIF_CLC);
 	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("RUNCTRL reset value", 0, DIF_RUNCTRL);

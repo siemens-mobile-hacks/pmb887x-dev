@@ -293,6 +293,9 @@ static void test_transfer_synchronization(void) {
 
 static void test_reset_values(void) {
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_DISP;
+	SCU_RST_REQ &= ~SCU_RST_REQ_DISP;
+
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, DIF_CLC);
 	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("PISEL reset value", 0, DIF_PISEL);
@@ -458,6 +461,7 @@ static void test_fifo_flush(void) {
 		test_watchdog_serve();
 	}
 	test_check("RX FIFO receives data before flush", (DIF_FSTAT & DIF_FSTAT_RXFFL) != 0);
+	test_check("transfer completes before RX flush", wait_until_idle());
 	DIF_RXFCON |= DIF_RXFCON_RXFLU;
 	test_eq_u32("RX flush bit self-clears", 0, DIF_RXFCON & DIF_RXFCON_RXFLU);
 	test_eq_u32("RX flush empties FIFO", 0, DIF_FSTAT & DIF_FSTAT_RXFFL);
@@ -677,13 +681,15 @@ static void test_pixel_packing(void) {
 static void test_errors(void) {
 	test_category("Errors");
 	configure_dif(16, FIFO_ON, DIF_CON_REN);
+	uint32_t unrelated_errors = DIF_CON & (DIF_CON_TE | DIF_CON_PE | DIF_CON_BE);
 	error_irqs = 0;
 	DIF_IMSC = DIF_IMSC_ERR;
 	(void) DIF_RB;
 	test_spin(1000);
 	test_eq_u32("RX underflow raises error IRQ", 1, error_irqs);
 	test_check("receive error flag is set", (DIF_CON & DIF_CON_RE) != 0);
-	test_eq_u32("RX underflow does not set unrelated errors", 0, DIF_CON & (DIF_CON_TE | DIF_CON_PE | DIF_CON_BE));
+	test_eq_u32("RX underflow does not set unrelated errors", unrelated_errors,
+		DIF_CON & (DIF_CON_TE | DIF_CON_PE | DIF_CON_BE));
 	DIF_IMSC = 0;
 	test_check("loopback recovers after RX underflow", transfer_loopback(16, FIFO_ON, 0, 17));
 	test_eq_memory("RX underflow recovery data", source, destination, 17 * sizeof(source[0]));

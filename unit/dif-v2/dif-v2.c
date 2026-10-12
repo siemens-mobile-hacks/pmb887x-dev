@@ -332,6 +332,9 @@ static void test_registers(void) {
 
 static void test_reset_values(void) {
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_DISP;
+	SCU_RST_REQ &= ~SCU_RST_REQ_DISP;
+
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, DIF_CLC);
 	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("RUNCTRL reset value", 0, DIF_RUNCTRL);
@@ -2199,10 +2202,11 @@ __IRQ void irq_handler(void) {
 		);
 		DIF_ICR = status & (DIF_ICR_TXLSREQ | DIF_ICR_TXSREQ | DIF_ICR_TXLBREQ | DIF_ICR_TXBREQ);
 	} else if (irq == VIC_DIF_RX_SINGLE_IRQ || irq == VIC_DIF_RX_BURST_IRQ) {
-		if (irq == VIC_DIF_RX_SINGLE_IRQ)
+		if (irq == VIC_DIF_RX_SINGLE_IRQ) {
 			transfer.rx_single_irqs++;
-		else
+		} else {
 			transfer.rx_burst_irqs++;
+		}
 		transfer.rx_status |= status;
 		read_rx_fifo(
 			(status & (DIF_RIS_RXBREQ | DIF_RIS_RXLBREQ)) != 0 ? irq_transfer.rx_burst_stages : 1

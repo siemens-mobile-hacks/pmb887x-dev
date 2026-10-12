@@ -19,6 +19,9 @@ static const struct lcd_color TEST_COLORS[] = {
 
 static void test_reset_values(void) {
 	test_category("Reset values");
+	SCU_RST_REQ |= SCU_RST_REQ_DISP;
+	SCU_RST_REQ &= ~SCU_RST_REQ_DISP;
+
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, DIF_CLC);
 	DIF_CLC = 1U << MOD_CLC_RMC_SHIFT;
 	test_module_id("module ID", 0xF043C000, DIF_ID);

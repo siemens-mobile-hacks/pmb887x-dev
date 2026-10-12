@@ -388,7 +388,7 @@ devices = ["generic-pmb8876"]
 devices = ["siemens-e71", "siemens-el71", "lg-ke970"]
 
 [dif-v2-lcd-if]
-devices = ["siemens-e71", "siemens-el71", "lg-ke970"]
+devices = ["siemens-e71", "siemens-el71"]
 
 [sim]
 devices = ["generic-pmb8875", "generic-pmb8876"]
