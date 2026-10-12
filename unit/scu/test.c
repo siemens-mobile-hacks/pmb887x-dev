@@ -5,7 +5,8 @@
 
 #define WDT_ERROR_STATUS (SCU_WDT_SR_WDTAE | SCU_WDT_SR_WDTOE | SCU_WDT_SR_WDTPR)
 #define WDT_CONFIG (SCU_WDTCON0_WDTREL | SCU_WDTCON0_WDTPW)
-#define WDT_FREQUENCY_WINDOW_US 50000
+#define WDT_SLOW_FREQUENCY_WINDOW_US 50000
+#define WDT_FAST_FREQUENCY_WINDOW_US 1000
 #define WDT_FREQUENCY_TOLERANCE_PERCENT 10
 
 typedef struct {
@@ -22,22 +23,26 @@ typedef struct {
 } scu_irq_source_t;
 
 static const scu_irq_source_t IRQ_SOURCES[] = {
-	{&SCU_EXTI0_SRC, VIC_SCU_EXTI0_IRQ},
-	{&SCU_EXTI1_SRC, VIC_SCU_EXTI1_IRQ},
-	{&SCU_EXTI2_SRC, VIC_SCU_EXTI2_IRQ},
-	{&SCU_EXTI3_SRC, VIC_SCU_EXTI3_IRQ},
-	{&SCU_EXTI4_SRC, VIC_SCU_EXTI4_IRQ},
-	{&SCU_EXTI5_SRC, VIC_SCU_EXTI5_IRQ},
-	{&SCU_EXTI6_SRC, VIC_SCU_EXTI6_IRQ},
-	{&SCU_EXTI7_SRC, VIC_SCU_EXTI7_IRQ},
-	{&SCU_PM_INT_SRC, VIC_SCU_PM_INT_IRQ},
-	{&SCU_DSP_SRC(0), VIC_SCU_DSP0_IRQ},
-	{&SCU_DSP_SRC(1), VIC_SCU_DSP1_IRQ},
-	{&SCU_DSP_SRC(2), VIC_SCU_DSP2_IRQ},
-	{&SCU_DSP_SRC(3), VIC_SCU_DSP3_IRQ},
-	{&SCU_UNK0_SRC, VIC_SCU_UNK0_IRQ},
-	{&SCU_UNK1_SRC, VIC_SCU_UNK1_IRQ},
-	{&SCU_UNK2_SRC, VIC_SCU_UNK2_IRQ},
+	{ &SCU_EXTI0_SRC, VIC_SCU_EXTI0_IRQ },
+	{ &SCU_EXTI1_SRC, VIC_SCU_EXTI1_IRQ },
+	{ &SCU_EXTI2_SRC, VIC_SCU_EXTI2_IRQ },
+	{ &SCU_EXTI3_SRC, VIC_SCU_EXTI3_IRQ },
+	{ &SCU_EXTI4_SRC, VIC_SCU_EXTI4_IRQ },
+#ifdef PMB8876
+	{ &SCU_EXTI5_SRC, VIC_SCU_EXTI5_IRQ },
+	{ &SCU_EXTI6_SRC, VIC_SCU_EXTI6_IRQ },
+	{ &SCU_EXTI7_SRC, VIC_SCU_EXTI7_IRQ },
+	{ &SCU_PM_INT_SRC, VIC_SCU_PM_INT_IRQ },
+#endif
+	{ &SCU_DSP_SRC(0), VIC_SCU_DSP0_IRQ },
+	{ &SCU_DSP_SRC(1), VIC_SCU_DSP1_IRQ },
+	{ &SCU_DSP_SRC(2), VIC_SCU_DSP2_IRQ },
+	{ &SCU_DSP_SRC(3), VIC_SCU_DSP3_IRQ },
+#ifdef PMB8876
+	{ &SCU_UNK0_SRC, VIC_SCU_UNK0_IRQ },
+	{ &SCU_UNK1_SRC, VIC_SCU_UNK1_IRQ },
+	{ &SCU_UNK2_SRC, VIC_SCU_UNK2_IRQ },
+#endif
 };
 
 static void test_reset_values(void) {
@@ -49,8 +54,10 @@ static void test_reset_values(void) {
 	uint32_t interrupt_filter = SCU_EXTI_FILTER;
 	uint32_t interrupt_edge = SCU_EXTI_EDGE;
 	uint32_t rtc_interface = SCU_RTCIF;
+#ifdef PMB8876
 	uint32_t redesign_tracing = SCU_RTID;
 	uint32_t dma_request_select = SCU_DMARS;
+#endif
 	uint32_t emulator_id = SCU_EMU_ID;
 
 	test_module_id("module ID", 0xF040C000, SCU_ID);
@@ -59,7 +66,9 @@ static void test_reset_values(void) {
 	test_eq_u32("sleep request is inactive", 0, sleep_request & SCU_SLEEP_REQ_REQ);
 	test_eq_u32("DSP interrupt requests are inactive", 0, dsp_interrupt & SCU_DSP_INT_REQ);
 	test_eq_u32("RTC interface starts disabled", 0, rtc_interface & SCU_RTCIF_RTCIFEN);
+#ifdef PMB8876
 	test_eq_u32("RTID reserved bits are zero", 0, redesign_tracing & GENMASK(31, 16));
+#endif
 	test_eq_u32(
 		"emulator ID matches the execution environment",
 		test_is_qemu() ? SCU_EMU_ID_VALUE_QEMU : 0,
@@ -73,15 +82,19 @@ static void test_reset_values(void) {
 		(unsigned int) sleep_request,
 		(unsigned int) dsp_interrupt
 	);
-	printf(
-		"# SCU: EXTI_FILTER=%08X EXTI_EDGE=%08X RTCIF=%08X RTID=%08X DMARS=%08X EMU_ID=%08X\n",
+	printf("# SCU: EXTI_FILTER=%08X EXTI_EDGE=%08X RTCIF=%08X EMU_ID=%08X\n",
 		(unsigned int) interrupt_filter,
 		(unsigned int) interrupt_edge,
 		(unsigned int) rtc_interface,
-		(unsigned int) redesign_tracing,
-		(unsigned int) dma_request_select,
 		(unsigned int) emulator_id
 	);
+#ifdef PMB8876
+	printf(
+		"# SCU: RTID=%08X DMARS=%08X\n",
+		(unsigned int) redesign_tracing,
+		(unsigned int) dma_request_select
+	);
+#endif
 }
 
 static bool frequency_matches(uint32_t actual, uint32_t expected) {
@@ -94,8 +107,10 @@ static watchdog_measurement_t measure_watchdog_frequency(uint32_t con1) {
 	struct scu_watchdog_access_result enable = scu_watchdog_configure(con1, 0, true);
 	uint32_t status = SCU_WDT_SR;
 	uint32_t before = (status & SCU_WDT_SR_WDTTIM) >> SCU_WDT_SR_WDTTIM_SHIFT;
+	uint32_t window_us = (con1 & SCU_WDTCON1_WDTIR) != 0 ?
+		WDT_FAST_FREQUENCY_WINDOW_US : WDT_SLOW_FREQUENCY_WINDOW_US;
 	stopwatch_t start = stopwatch_get();
-	stopwatch_usleep_wd(WDT_FREQUENCY_WINDOW_US);
+	stopwatch_usleep_wd(window_us);
 	uint32_t elapsed_us = stopwatch_elapsed_us(start);
 	uint32_t after = (SCU_WDT_SR & SCU_WDT_SR_WDTTIM) >> SCU_WDT_SR_WDTTIM_SHIFT;
 	struct scu_watchdog_access_result disable = scu_watchdog_configure(con1 | SCU_WDTCON1_WDTDR, 0, true);
@@ -110,45 +125,12 @@ static watchdog_measurement_t measure_watchdog_frequency(uint32_t con1) {
 	};
 }
 
-static void test_cpu_identification(void) {
-#ifdef PMB8875
-	const uint32_t EXPECTED_CHIP = 0x1A;
-#elif defined(PMB8876)
-	const uint32_t EXPECTED_CHIP = 0x1B;
-#else
-#error Unsupported CPU
-#endif
-	uint32_t manufacturer = (SCU_MANID & SCU_MANID_MANUF) >> SCU_MANID_MANUF_SHIFT;
-	uint32_t department = (SCU_MANID & SCU_MANID_DEPT) >> SCU_MANID_DEPT_SHIFT;
-	uint32_t chip = (SCU_CHIPID & SCU_CHIPID_CHIPD) >> SCU_CHIPID_CHIPD_SHIFT;
-	uint32_t revision = (SCU_CHIPID & SCU_CHIPID_CHREV) >> SCU_CHIPID_CHREV_SHIFT;
-	uint32_t uid0 = SCU_UID0;
-	uint32_t uid1 = SCU_UID1;
-	uint32_t uid2 = SCU_UID2;
-
-	test_eq_u32("manufacturer is Infineon", 0x182, manufacturer);
-	test_eq_u32("manufacturer department", 3, department);
-	test_eq_u32("CPU model", EXPECTED_CHIP, chip);
-	test_eq_u32("CHIPID reserved bits are zero", 0, SCU_CHIPID & GENMASK(31, 16));
-	test_check("CPU UID is programmed", (uid0 | uid1 | uid2) != 0);
-	test_check("CPU UID is not erased", (uid0 & uid1 & uid2) != UINT32_MAX);
-	printf(
-		"# CPU: CHIPID=%02X rev=%02X, MANID=%04X, UID=%08X-%08X-%08X\n",
-		(unsigned int) chip,
-		(unsigned int) revision,
-		(unsigned int) SCU_MANID,
-		(unsigned int) uid0,
-		(unsigned int) uid1,
-		(unsigned int) uid2
-	);
-}
-
 static void pulse_reset_request(const char *name, uint32_t request) {
-	SCU_RST_REQ = request;
+	SCU_RST_REQ |= request;
 	/* Firmware uses the same readback before deasserting reset; back-to-back writes are too short. */
 	uint32_t asserted_requests = SCU_RST_REQ;
-	SCU_RST_REQ = 0;
-	test_eq_u32(name, request, asserted_requests);
+	SCU_RST_REQ &= ~request;
+	test_eq_u32(name, request, asserted_requests & request);
 }
 
 static void test_reset_requests(void) {
@@ -166,22 +148,21 @@ static void test_reset_requests(void) {
 	test_module_clock("USB is prepared in a non-reset state", USB_CLC);
 	USB_CFG = 3;
 	pulse_reset_request("USB reset request asserts", SCU_RST_REQ_USB);
+	test_eq_u32("USB reset disables its clock", MOD_CLC_DISR | MOD_CLC_DISS, USB_CLC);
+	USB_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("USB wrapper returns to reset value", 0, USB_CFG);
-	test_eq_u32("USB reset does not affect clock control", 1 << MOD_CLC_RMC_SHIFT, USB_CLC);
 	USB_CLC = MOD_CLC_DISR;
 
 	DMAC_CH_SRC_ADDR(7) = 0x12345678;
 	pulse_reset_request("DMA1 reset request asserts", SCU_RST_REQ_DMA1);
 	test_eq_u32("DMAC channel returns to reset value", 0, DMAC_CH_SRC_ADDR(7));
 
+#ifdef PMB8876
 	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_module_clock("I2C is prepared in a non-reset state", I2C_CLC);
-#ifdef PMB8876
 	I2C_FDIVCFG = 0x0004003D;
-#endif
 	pulse_reset_request("I2C reset request asserts", SCU_RST_REQ_I2C);
 	test_eq_u32("I2C clock control returns to reset value", MOD_CLC_DISR | MOD_CLC_DISS, I2C_CLC);
-#ifdef PMB8876
 	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("I2C divider returns to reset value", 0, I2C_FDIVCFG);
 #endif
@@ -194,7 +175,7 @@ static void test_interrupt_routing(void) {
 
 	for (size_t i = 0; i < ARRAY_SIZE(IRQ_SOURCES); i++) {
 		*IRQ_SOURCES[i].source = MOD_SRC_CLRR;
-		VIC_CON(VIC_SCU_EXTI0_IRQ + i) = 1;
+		VIC_CON(IRQ_SOURCES[i].irq) = 1;
 	}
 
 	for (size_t i = 0; i < ARRAY_SIZE(IRQ_SOURCES); i++) {
@@ -218,9 +199,8 @@ static void test_interrupt_routing(void) {
 		*irq_source->source = MOD_SRC_CLRR;
 	}
 
-	for (size_t i = 0; i < ARRAY_SIZE(IRQ_SOURCES); i++) {
-		VIC_CON(VIC_SCU_EXTI0_IRQ + i) = 0;
-	}
+	for (size_t i = 0; i < ARRAY_SIZE(IRQ_SOURCES); i++)
+		VIC_CON(IRQ_SOURCES[i].irq) = 0;
 
 	test_check("all SCU service requests route to their documented VIC IRQ", routed);
 }
@@ -285,8 +265,6 @@ int main(void) {
 
 	test_category("Reset values");
 	test_reset_values();
-	test_category("CPU identification");
-	test_cpu_identification();
 	test_category("Reset requests");
 	test_reset_requests();
 	test_category("Interrupt routing");

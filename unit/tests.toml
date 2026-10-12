@@ -216,6 +216,9 @@ devices = ["generic-pmb8876", "siemens-c81"]
 [scu]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[scu-id]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [scu-reset]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
