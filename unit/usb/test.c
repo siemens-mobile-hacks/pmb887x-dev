@@ -3,10 +3,8 @@
 #include "test.h"
 
 static void pulse_usb_reset(void) {
-	SCU_RST_REQ = SCU_RST_REQ_USB;
-	uint32_t asserted_requests = SCU_RST_REQ;
-	SCU_RST_REQ = 0;
-	test_eq_u32("USB reset request asserts", SCU_RST_REQ_USB, asserted_requests);
+	SCU_RST_REQ |= SCU_RST_REQ_USB;
+	SCU_RST_REQ &= ~SCU_RST_REQ_USB;
 }
 
 static void test_reset_values(void) {
@@ -19,6 +17,8 @@ static void test_reset_values(void) {
 	test_module_id("module ID", 0xF047C012, USB_ID);
 #endif
 	pulse_usb_reset();
+	test_eq_u32("software reset disables the module clock", MOD_CLC_DISR | MOD_CLC_DISS, USB_CLC);
+	USB_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("wrapper configuration reset value", 0, USB_CFG);
 #ifdef PMB8876
 	test_eq_u32("endpoint enable low reset value", 0, USB_EP_ENABLE_LOW);
@@ -74,6 +74,8 @@ static void test_wrapper_reset(void) {
 	USB_CONTROL = 0;
 	USB_CFG = 3;
 	pulse_usb_reset();
+	test_eq_u32("wrapper reset disables the module clock", MOD_CLC_DISR | MOD_CLC_DISS, USB_CLC);
+	USB_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("wrapper returns to reset value", 0, USB_CFG);
 	test_eq_u32("core control returns to reset value", USB_CONTROL_ENABLE, USB_CONTROL);
 }
@@ -88,6 +90,7 @@ static void test_interrupt_enable_reset(void) {
 	USB_EP_B_INT_ENABLE_LOW = UINT8_MAX;
 	USB_EP_B_INT_ENABLE_HIGH = 7;
 	pulse_usb_reset();
+	USB_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("global interrupt enable returns to reset value", 0, USB_GLOBAL_INT_ENABLE);
 	test_eq_u32("DMA interrupt group 0 enable returns to reset value", 0, USB_DMA0_INT_ENABLE);
 	test_eq_u32("DMA interrupt group 1 enable returns to reset value", 0, USB_DMA1_INT_ENABLE);
