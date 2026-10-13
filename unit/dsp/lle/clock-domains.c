@@ -29,6 +29,7 @@ enum dsp_clock_control {
 struct dsp_clock_window {
 	uint16_t count;
 	uint16_t timer_count;
+	uint32_t stm_ticks;
 	uint32_t core_active;
 	uint16_t shared_marker;
 	uint16_t com_status;
@@ -58,34 +59,50 @@ static void dsp_clock_control_restore(void) {
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
 }
 
-// Shared RAM is sampled while the module is controlled, then the module is restored before reading counters.
+// Hidden Shared RAM is read after restoring the interface; clock-disabled RAM is sampled while the clock is stopped.
 static struct dsp_clock_window dsp_clock_measure(enum dsp_clock_control control, uint32_t rmc) {
 	struct dsp_clock_window result;
+	uint32_t stm_start = STM_TIM0;
 	uint16_t start = dsp_hw_shared_memory[DSP_CLOCK_COUNTER_OFFSET];
 	uint16_t timer_start = dsp_hw_shared_memory[DSP_CLOCK_TIMER_OFFSET];
 
 	DSP_COM_CLEAR = DSP_CLOCK_TEST_COM_FLAG;
 	DSP_COM_SET = DSP_CLOCK_TEST_COM_FLAG;
 	dsp_clock_control_apply(control, rmc);
+	if (control == DSP_CLOCK_CONTROL_SOURCE_DISABLED) {
+		start = dsp_hw_shared_memory[DSP_CLOCK_COUNTER_OFFSET];
+		timer_start = dsp_hw_shared_memory[DSP_CLOCK_TIMER_OFFSET];
+		stm_start = STM_TIM0;
+	}
 	stopwatch_usleep_wd(DSP_CLOCK_WINDOW_US / 2);
 	result.core_active = CGU_STAT & CGU_STAT_DSP_CLK;
 	result.shared_marker = dsp_hw_shared_memory[DSP_CLOCK_READY_OFFSET];
 	result.com_status = DSP_COM_STATUS & DSP_CLOCK_TEST_COM_FLAG;
 	stopwatch_usleep_wd(DSP_CLOCK_WINDOW_US / 2);
+	if (control == DSP_CLOCK_CONTROL_SOURCE_DISABLED) {
+		result.count = dsp_hw_shared_memory[DSP_CLOCK_COUNTER_OFFSET] - start;
+		result.timer_count = dsp_hw_shared_memory[DSP_CLOCK_TIMER_OFFSET] - timer_start;
+		result.stm_ticks = STM_TIM0 - stm_start;
+	}
 	dsp_clock_control_restore();
-	result.count = dsp_hw_shared_memory[DSP_CLOCK_COUNTER_OFFSET] - start;
-	result.timer_count = dsp_hw_shared_memory[DSP_CLOCK_TIMER_OFFSET] - timer_start;
+	if (control != DSP_CLOCK_CONTROL_SOURCE_DISABLED) {
+		result.count = dsp_hw_shared_memory[DSP_CLOCK_COUNTER_OFFSET] - start;
+		result.timer_count = dsp_hw_shared_memory[DSP_CLOCK_TIMER_OFFSET] - timer_start;
+		result.stm_ticks = STM_TIM0 - stm_start;
+	}
 	result.restored_com_status = DSP_COM_STATUS & DSP_CLOCK_TEST_COM_FLAG;
 	DSP_COM_CLEAR = DSP_CLOCK_TEST_COM_FLAG;
 	return result;
 }
 
-static bool is_full_speed(uint16_t count, uint16_t reference) {
-	return count * 10U >= reference * 9U && count * 10U <= reference * 11U;
+static bool is_full_speed(uint16_t count, uint32_t stm_ticks, uint16_t reference, uint32_t reference_stm_ticks) {
+	uint64_t measured_rate = (uint64_t) count * reference_stm_ticks * 10;
+	uint64_t reference_rate = (uint64_t) reference * stm_ticks;
+	return measured_rate >= reference_rate * 9 && measured_rate <= reference_rate * 11;
 }
 
-static bool is_stopped(uint16_t count, uint16_t reference) {
-	return count * 100U < reference;
+static bool is_stopped(uint16_t count, uint32_t stm_ticks, uint16_t reference, uint32_t reference_stm_ticks) {
+	return (uint64_t) count * reference_stm_ticks * 100 < (uint64_t) reference * stm_ticks;
 }
 
 static bool is_com_visible(struct dsp_clock_window result) {
@@ -100,8 +117,8 @@ static void test_dsp_clock_controls(void) {
 	char name[96];
 
 	test_category("DSP core clock controls");
-	printf("# running: core=%u timer=%u active=%04lX shared=%04X COM=%04X/%04X\n",
-		reference, timer_reference, running.core_active, running.shared_marker,
+	printf("# running: core=%u timer=%u STM=%lu active=%04lX shared=%04X COM=%04X/%04X\n",
+		reference, timer_reference, running.stm_ticks, running.core_active, running.shared_marker,
 		running.com_status, running.restored_com_status);
 	test_check("running core counter advances", reference != 0);
 	test_check("running Timer 2 advances", timer_reference != 0);
@@ -110,11 +127,13 @@ static void test_dsp_clock_controls(void) {
 	test_check("running COM interface exposes and preserves a pending flag", is_com_visible(running));
 
 	struct dsp_clock_window disr = dsp_clock_measure(DSP_CLOCK_CONTROL_DISR, 0);
-	printf("# DISR: core=%u timer=%u active=%04lX shared=%04X COM=%04X/%04X\n",
-		disr.count, disr.timer_count, disr.core_active, disr.shared_marker,
+	printf("# DISR: core=%u timer=%u STM=%lu active=%04lX shared=%04X COM=%04X/%04X\n",
+		disr.count, disr.timer_count, disr.stm_ticks, disr.core_active, disr.shared_marker,
 		disr.com_status, disr.restored_com_status);
-	test_check("DSP_CLC.DISR does not slow the DSP core", is_full_speed(disr.count, reference));
-	test_check("DSP_CLC.DISR does not slow Timer 2", is_full_speed(disr.timer_count, timer_reference));
+	test_check("DSP_CLC.DISR does not slow the DSP core",
+		is_full_speed(disr.count, disr.stm_ticks, reference, running.stm_ticks));
+	test_check("DSP_CLC.DISR does not slow Timer 2",
+		is_full_speed(disr.timer_count, disr.stm_ticks, timer_reference, running.stm_ticks));
 	test_eq_u32("DSP_CLK stays set while DISR leaves the core active", CGU_STAT_DSP_CLK, disr.core_active);
 	test_check("DSP_CLC.DISR hides Shared RAM from the MCU", disr.shared_marker != DSP_CLOCK_READY_MARKER);
 	test_check("DSP_CLC.DISR leaves the COM interface accessible", is_com_visible(disr));
@@ -123,13 +142,14 @@ static void test_dsp_clock_controls(void) {
 	for (size_t i = 0; i < ARRAY_SIZE(RMC_VALUES); i++) {
 		struct dsp_clock_window divided = dsp_clock_measure(DSP_CLOCK_CONTROL_RMC, RMC_VALUES[i]);
 
-		printf("# RMC=%lu: core=%u timer=%u active=%04lX shared=%04X COM=%04X/%04X\n",
-			RMC_VALUES[i], divided.count, divided.timer_count, divided.core_active,
+		printf("# RMC=%lu: core=%u timer=%u STM=%lu active=%04lX shared=%04X COM=%04X/%04X\n",
+			RMC_VALUES[i], divided.count, divided.timer_count, divided.stm_ticks, divided.core_active,
 			divided.shared_marker, divided.com_status, divided.restored_com_status);
 		sprintf(name, "DSP_CLC.RMC=%lu does not slow the DSP core", RMC_VALUES[i]);
-		test_check(name, is_full_speed(divided.count, reference));
+		test_check(name, is_full_speed(divided.count, divided.stm_ticks, reference, running.stm_ticks));
 		sprintf(name, "DSP_CLC.RMC=%lu does not slow Timer 2", RMC_VALUES[i]);
-		test_check(name, is_full_speed(divided.timer_count, timer_reference));
+		test_check(name,
+			is_full_speed(divided.timer_count, divided.stm_ticks, timer_reference, running.stm_ticks));
 		sprintf(name, "DSP_CLC.RMC=%lu leaves the core active", RMC_VALUES[i]);
 		test_eq_u32(name, CGU_STAT_DSP_CLK, divided.core_active);
 		sprintf(name, "DSP_CLC.RMC=%lu leaves Shared RAM and COM accessible", RMC_VALUES[i]);
@@ -137,11 +157,13 @@ static void test_dsp_clock_controls(void) {
 	}
 
 	struct dsp_clock_window rmc0 = dsp_clock_measure(DSP_CLOCK_CONTROL_RMC, 0);
-	printf("# RMC=0: core=%u timer=%u active=%04lX shared=%04X COM=%04X/%04X\n",
-		rmc0.count, rmc0.timer_count, rmc0.core_active, rmc0.shared_marker,
+	printf("# RMC=0: core=%u timer=%u STM=%lu active=%04lX shared=%04X COM=%04X/%04X\n",
+		rmc0.count, rmc0.timer_count, rmc0.stm_ticks, rmc0.core_active, rmc0.shared_marker,
 		rmc0.com_status, rmc0.restored_com_status);
-	test_check("DSP_CLC.RMC=0 does not stop the DSP core", is_full_speed(rmc0.count, reference));
-	test_check("DSP_CLC.RMC=0 does not stop Timer 2", is_full_speed(rmc0.timer_count, timer_reference));
+	test_check("DSP_CLC.RMC=0 does not stop the DSP core",
+		is_full_speed(rmc0.count, rmc0.stm_ticks, reference, running.stm_ticks));
+	test_check("DSP_CLC.RMC=0 does not stop Timer 2",
+		is_full_speed(rmc0.timer_count, rmc0.stm_ticks, timer_reference, running.stm_ticks));
 	test_eq_u32("DSP_CLC.RMC=0 leaves the core active", CGU_STAT_DSP_CLK, rmc0.core_active);
 	test_check("DSP_CLC.RMC=0 hides Shared RAM from the MCU", rmc0.shared_marker != DSP_CLOCK_READY_MARKER);
 	test_check("DSP_CLC.RMC=0 leaves the COM interface accessible", is_com_visible(rmc0));
@@ -152,11 +174,13 @@ static void test_dsp_clock_controls(void) {
 	test_eq_u32("DSP_CLC.RMC=0 reports the module as disabled", MOD_CLC_DISS, rmc0_clc & MOD_CLC_DISS);
 
 	struct dsp_clock_window stopped = dsp_clock_measure(DSP_CLOCK_CONTROL_SOURCE_DISABLED, 0);
-	printf("# source disabled: core=%u timer=%u active=%04lX shared=%04X COM=%04X/%04X\n",
-		stopped.count, stopped.timer_count, stopped.core_active, stopped.shared_marker,
+	printf("# source disabled: core=%u timer=%u STM=%lu active=%04lX shared=%04X COM=%04X/%04X\n",
+		stopped.count, stopped.timer_count, stopped.stm_ticks, stopped.core_active, stopped.shared_marker,
 		stopped.com_status, stopped.restored_com_status);
-	test_check("disabled CGU DSP source stops the DSP core", is_stopped(stopped.count, reference));
-	test_check("disabled CGU DSP source stops Timer 2", is_stopped(stopped.timer_count, timer_reference));
+	test_check("disabled CGU DSP source stops the DSP core",
+		is_stopped(stopped.count, stopped.stm_ticks, reference, running.stm_ticks));
+	test_check("disabled CGU DSP source stops Timer 2",
+		is_stopped(stopped.timer_count, stopped.stm_ticks, timer_reference, running.stm_ticks));
 	test_eq_u32("DSP_CLK reports the stopped non-idle core as active", CGU_STAT_DSP_CLK,
 		stopped.core_active);
 	test_eq_u32("disabled CGU DSP source leaves Shared RAM accessible", DSP_CLOCK_READY_MARKER,
