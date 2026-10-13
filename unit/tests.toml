@@ -48,7 +48,7 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 devices = ["generic-pmb8875", "generic-pmb8876", "siemens-c81"]
 
 [dsp-hle-runtime-transport]
-devices = ["generic-pmb8875", "generic-pmb8876", "siemens-c81"]
+devices = ["siemens-cx75", "panasonic-vs7", "siemens-sl98", "siemens-el71"]
 
 [dsp-hle-runtime-notifications]
 devices = ["siemens-c81"]
