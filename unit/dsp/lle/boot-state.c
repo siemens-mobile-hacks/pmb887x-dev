@@ -12,6 +12,11 @@
 #define BOOT_WATCHDOG_INTERVAL_MASK 0x3FFF
 #define BOOT_COMMAND_TIMEOUT_US 10000
 #define BOOT_PENDING_OBSERVATION_US 100
+#ifdef PMB8876
+// EL71 waits 0x1E STM ticks at 1 MHz for the DSP boot flag to clear.
+#define EL71_FIRMWARE_STM_HZ 1000000
+#define EL71_DSP_WAIT_TICKS 0x1E
+#endif
 #define FW_VERSION_OFFSET 0
 #define HW_VERSION_OFFSET 1
 #ifdef PMB8875
@@ -44,6 +49,49 @@ static bool mask_rom_is_supported(uint16_t mask_id) {
 	return mask_id == 0x0801;
 #endif
 }
+
+#ifdef PMB8876
+static void test_el71_boot_wait_budget(void) {
+	DSP_COM_CLEAR = 0xFFFF;
+	SCU_DSP_INT = 0;
+	SCU_RST_REQ = SCU_RST_REQ_DSP;
+	(void) SCU_RST_REQ;
+	SCU_RST_REQ = 0;
+
+	bool busy_seen = false;
+	for (uint32_t i = 0; i < BOOT_SAMPLE_LIMIT; i++) {
+		if ((DSP_COM_STATUS & BOOT_FLAG) != 0) {
+			busy_seen = true;
+			break;
+		}
+		if ((i & BOOT_WATCHDOG_INTERVAL_MASK) == BOOT_WATCHDOG_INTERVAL_MASK)
+			test_watchdog_serve();
+	}
+
+	uint32_t test_stm_hz = stopwatch_ticks_per_s();
+	stopwatch_t timeout_ticks = (stopwatch_t) EL71_DSP_WAIT_TICKS * test_stm_hz / EL71_FIRMWARE_STM_HZ;
+	stopwatch_t start = stopwatch_get();
+	bool ready;
+	for (;;) {
+		if ((DSP_COM_STATUS & BOOT_FLAG) == 0) {
+			ready = true;
+			break;
+		}
+		if (stopwatch_elapsed(start) > timeout_ticks) {
+			ready = (DSP_COM_STATUS & BOOT_FLAG) == 0;
+			break;
+		}
+		test_watchdog_serve();
+	}
+	stopwatch_t elapsed_ticks = stopwatch_elapsed(start);
+
+	printf("# firmware DSP wait: firmware=%lu ticks at %lu Hz, test=%lu ticks at %lu Hz, elapsed=%lu\n",
+		(uint32_t) EL71_DSP_WAIT_TICKS, (uint32_t) EL71_FIRMWARE_STM_HZ,
+		(uint32_t) timeout_ticks, test_stm_hz, (uint32_t) elapsed_ticks);
+	test_check("DSP reset publishes the busy communication flag", busy_seen);
+	test_check("DSP boot flag clears before the EL71 timeout assertion", ready);
+}
+#endif
 
 static struct boot_observation reset_and_observe(void) {
 	struct boot_observation observation = { 0 };
@@ -171,6 +219,10 @@ static void run_pass(size_t pass) {
 int main(void) {
 	test_start("DSP boot-state functional test");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
+#ifdef PMB8876
+	test_category("Firmware boot wait budget");
+	test_el71_boot_wait_budget();
+#endif
 
 	for (size_t pass = 1; pass <= 2; pass++)
 		run_pass(pass);
