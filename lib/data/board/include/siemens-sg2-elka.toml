@@ -26,7 +26,7 @@ out.ON_OFF_OUT = "KP_IN0"
 
 #[peripheral.RF]
 #type = "hd155153np"
-#port = { RFSSC = "TPU:RFSSC", IQ_TX = "DSP:IQ_RX" }
+#port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }
