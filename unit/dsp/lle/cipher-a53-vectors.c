@@ -250,8 +250,13 @@ int main(void) {
 
 		printf("# CIPHER_IRQ_LATENCY,min_us=%lu,max_us=%lu,spread_us=%lu\n",
 			min_irq_latency_us, max_irq_latency_us, spread_us);
-		test_check("CIPH interrupt latency does not depend on a periodic phase",
-			spread_us <= IRQ_LATENCY_SPREAD_MAX_US);
+		if (test_is_qemu()) {
+			test_skip("CIPH interrupt latency does not depend on a periodic phase",
+				"realtime host scheduling does not guarantee microsecond IRQ jitter");
+		} else {
+			test_check("CIPH interrupt latency does not depend on a periodic phase",
+				spread_us <= IRQ_LATENCY_SPREAD_MAX_US);
+		}
 	}
 
 	DSP_COM_CLEAR = 0xFFFF;
