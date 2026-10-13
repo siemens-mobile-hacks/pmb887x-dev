@@ -9,7 +9,8 @@
 #define I2S_PLAYBACK_DURATION_SECONDS 3
 #define I2S_PLAYBACK_DURATION_TOLERANCE_MS 250
 #define I2S_PLAYBACK_MAX_TONE_PERIOD_FRAMES 2205
-#define I2S_PLAYBACK_TONE_HZ 440
+#define I2S_PLAYBACK_FIRST_TONE_HZ 440
+#define I2S_PLAYBACK_SECOND_TONE_HZ 880
 
 static int16_t tone_samples[I2S_PLAYBACK_MAX_TONE_PERIOD_FRAMES];
 
@@ -63,9 +64,11 @@ int main(void) {
 		audio_output_configure(AUDIO_OUTPUT_I2S))) {
 		return test_finish();
 	}
-	test_check("three-second PCM tone traverses the original firmware I2S route",
-		play_tone(I2S_PLAYBACK_TONE_HZ, I2S_PLAYBACK_DURATION_SECONDS));
-	test_check("board I2S output stops after playback",
+	test_check("first three-second PCM tone traverses the original firmware I2S route",
+		play_tone(I2S_PLAYBACK_FIRST_TONE_HZ, I2S_PLAYBACK_DURATION_SECONDS));
+	test_check("second three-second PCM tone restarts the original firmware I2S route",
+		play_tone(I2S_PLAYBACK_SECOND_TONE_HZ, I2S_PLAYBACK_DURATION_SECONDS));
+	test_check("board audio driver completes PCM playback",
 		audio_output_stop(AUDIO_OUTPUT_I2S));
 
 	return test_finish();

@@ -25,10 +25,17 @@ mov a0l [r0]
 mov 0x$0001 a0l
 mov a0l [r0]
 
-// Transmit zeros while receiving.
+// Fill the transmit and receive halves with distinct values. Reception must not
+// overwrite the transmit half of the dual-port RAM.
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0019)] a0
 mov a0l r0
-clr a0 always
+mov 0x$A55A a0l
+rep 0x003fu8
+mov a0l [r0++]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0019)] a0
+add 0x$0040 a0
+mov a0l r0
+mov 0x$5AA5 a0l
 rep 0x003fu8
 mov a0l [r0++]
 
@@ -83,6 +90,17 @@ mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0012)] a0
 mov a0l r0
 mov [r0] a0
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)]
+
+// Save the first word of each RAM half after reception reached position 4.
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0019)] a0
+mov a0l r0
+mov [r0] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0030)]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0019)] a0
+add 0x$0040 a0
+mov a0l r0
+mov [r0] a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0031)]
 call 0x0000$0840 always
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0012)] a0
 mov a0l r0

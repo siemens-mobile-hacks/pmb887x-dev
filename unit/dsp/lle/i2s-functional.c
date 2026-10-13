@@ -158,12 +158,13 @@ static uint16_t transmit_pointer(uint16_t value) {
 
 static void print_receive_record(void) {
 	printf("# %s RX reset=%04lX first=%04lX stopped=%04lX second=%04lX wrap=%04lX reset2=%04lX "
-		"irqs=%04lX flags=%04lX pending=%04lX ctrl=%04lX\n",
+		"irqs=%04lX flags=%04lX pending=%04lX ctrl=%04lX txram=%04lX rxram=%04lX\n",
 		TEST_MODULE, (uint32_t) dsp_hw_shared_memory[0x0020], (uint32_t) dsp_hw_shared_memory[0x0021],
 		(uint32_t) dsp_hw_shared_memory[0x0022], (uint32_t) dsp_hw_shared_memory[0x0023],
 		(uint32_t) dsp_hw_shared_memory[0x0024], (uint32_t) dsp_hw_shared_memory[0x0025],
 		(uint32_t) dsp_hw_shared_memory[0x002E], (uint32_t) dsp_hw_shared_memory[0x002F],
-		(uint32_t) dsp_hw_shared_memory[0x0028], (uint32_t) dsp_hw_shared_memory[0x0029]);
+		(uint32_t) dsp_hw_shared_memory[0x0028], (uint32_t) dsp_hw_shared_memory[0x0029],
+		(uint32_t) dsp_hw_shared_memory[0x0030], (uint32_t) dsp_hw_shared_memory[0x0031]);
 }
 
 static void validate_receive_record(void) {
@@ -177,9 +178,11 @@ static void validate_receive_record(void) {
 
 	test_eq_u32("I2SON resets both receive and transmit pointers", 0, reset & 0x3F3F);
 	test_eq_u32("synchronous normal-mode receive reaches position 4", 4, receive_pointer(first));
-	test_eq_u32("the companion zero-filled transmitter reaches position 4", 4, transmit_pointer(first));
+	test_eq_u32("the companion transmitter reaches position 4", 4, transmit_pointer(first));
 	test_eq_u32("the stopped receive pointer remains at position 4", 4, receive_pointer(stopped));
 	test_eq_u32("the stopped companion transmit pointer remains at position 4", 4, transmit_pointer(stopped));
+	test_eq_u32("receive leaves the separate transmit RAM half unchanged", 0xA55A,
+		dsp_hw_shared_memory[0x0030]);
 	test_eq_u32("receive restart continues to position 8", 8, receive_pointer(second));
 	test_eq_u32("receive wraps and stops at position 2", 2, receive_pointer(wrapped));
 	test_eq_u32("three receive positions enter the real INT0 handler", 3, dsp_hw_shared_memory[0x002E]);

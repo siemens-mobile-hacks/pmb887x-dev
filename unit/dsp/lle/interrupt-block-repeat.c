@@ -18,9 +18,14 @@
 #define DSP_INTERRUPT_BLOCK_REPEAT_HANDLER_ITERATIONS_OFFSET 0x0402
 #define DSP_INTERRUPT_BLOCK_REPEAT_HANDLER_ENTRIES_OFFSET 0x0403
 #define DSP_INTERRUPT_BLOCK_REPEAT_COMPLETE_OFFSET 0x0404
-// BKREP Rn runs Rn + 1 iterations: the runner loads R5 = 15 and R7 = 4.
+#define DSP_SUBROUTINE_BLOCK_REPEAT_ITERATIONS_OFFSET 0x0405
+#define DSP_SUBROUTINE_BLOCK_REPEAT_CALLS_OFFSET 0x0406
+#define DSP_SUBROUTINE_BLOCK_REPEAT_COMPLETE_OFFSET 0x0407
+// BKREP Rn runs Rn + 1 iterations.
 #define DSP_INTERRUPT_BLOCK_REPEAT_MAINLINE_ITERATIONS 16
 #define DSP_INTERRUPT_BLOCK_REPEAT_HANDLER_ITERATIONS 5
+#define DSP_SUBROUTINE_BLOCK_REPEAT_CALLS 4
+#define DSP_SUBROUTINE_BLOCK_REPEAT_ITERATIONS 3
 
 int main(void) {
 	test_start("DSP interrupt block repeat test");
@@ -30,7 +35,7 @@ int main(void) {
 		return test_finish();
 	DSP_COM_CLEAR = UINT16_MAX;
 	for (size_t offset = DSP_INTERRUPT_BLOCK_REPEAT_READY_OFFSET;
-		offset <= DSP_INTERRUPT_BLOCK_REPEAT_COMPLETE_OFFSET; offset++) {
+		offset <= DSP_SUBROUTINE_BLOCK_REPEAT_COMPLETE_OFFSET; offset++) {
 		dsp_hw_shared_memory[offset] = 0;
 	}
 	bool loaded = dsp_hw_load_image(DSP_INTERRUPT_BLOCK_REPEAT_IMAGE, sizeof(DSP_INTERRUPT_BLOCK_REPEAT_IMAGE));
@@ -60,6 +65,20 @@ int main(void) {
 		test_eq_u32("interrupted block repeat resumes with its own count",
 			DSP_INTERRUPT_BLOCK_REPEAT_MAINLINE_ITERATIONS,
 			dsp_hw_shared_memory[DSP_INTERRUPT_BLOCK_REPEAT_MAINLINE_ITERATIONS_OFFSET]);
+	}
+
+	test_category("Block repeat in a subroutine called from a block repeat");
+	completed = dsp_hw_wait_shared(DSP_SUBROUTINE_BLOCK_REPEAT_COMPLETE_OFFSET, 0xCA11, 100);
+	printf("# DSP_SUBROUTINE_BKREP,calls=%lu,iterations=%lu\n",
+		(uint32_t) dsp_hw_shared_memory[DSP_SUBROUTINE_BLOCK_REPEAT_CALLS_OFFSET],
+		(uint32_t) dsp_hw_shared_memory[DSP_SUBROUTINE_BLOCK_REPEAT_ITERATIONS_OFFSET]);
+	if (test_check("called subroutine block repeat completes", completed)) {
+		test_eq_u32("outer block repeat calls the subroutine every iteration",
+			DSP_SUBROUTINE_BLOCK_REPEAT_CALLS,
+			dsp_hw_shared_memory[DSP_SUBROUTINE_BLOCK_REPEAT_CALLS_OFFSET]);
+		test_eq_u32("subroutine block repeat runs within every outer iteration",
+			DSP_SUBROUTINE_BLOCK_REPEAT_CALLS * DSP_SUBROUTINE_BLOCK_REPEAT_ITERATIONS,
+			dsp_hw_shared_memory[DSP_SUBROUTINE_BLOCK_REPEAT_ITERATIONS_OFFSET]);
 	}
 
 	return test_finish();
