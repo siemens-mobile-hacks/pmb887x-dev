@@ -32,10 +32,11 @@
 #define TPU_FRAME_TICKS 10000
 #define TPU_FRAME_US 4615
 
-/* Compare raw counters over 10 ms and average frame periods across 16 wraps. */
+/* Compare median counter rates over 10 ms samples and frame periods across 16 wraps. */
 #define TPU_TOLERANCE_PPM 1000
 #define TPU_CROSSCHECK_PPM 1000
 #define TPU_CROSSCHECK_US 10000
+#define TPU_CROSSCHECK_SAMPLES 5
 #define TPU_FRAME_PERIODS 16
 /* TPU_CLC.RMC = 1, GSMCLK1.K = 1, GSMCLK2.L = 2 -> fcounter = fSYS / 12. */
 #define TPU_CROSSCHECK_TPU_DIVISOR 12
@@ -233,9 +234,9 @@ __IRQ void irq_handler(void) {
  * wraps, so a clock halved by any cause leaves the wrap count and the "1 kHz"
  * tone identical - the tone is 1 kHz in samples.)
  *
- * This category counts three divider chains against each other, from raw
- * counter values sampled over the same window, with no microsecond conversion
- * anywhere:
+ * This category counts three divider chains against each other.  Each
+ * peripheral counter is bracketed by STM reads and converted over its own STM
+ * interval, with no microsecond conversion anywhere:
  *
  *   GPTU0 T0   fSYS / GPTU_CLC.RMC                    (RMC = 1 -> fSYS)
  *   TPU        fSYS / TPU_CLC.RMC / 6L * K            (= fSYS / 12 here)
@@ -243,10 +244,11 @@ __IRQ void irq_handler(void) {
  *
  * The ratios they must hold are fixed by register programming, so the
  * observable is the DISAGREEMENT: agreement to ppm is what clocks off one
- * crystal owe each other, and a disagreement is a constant or a divider, never
- * noise.  What this cannot see is an absolute crystal error - all three scale
- * together and cancel.  The RTC's 32.768 kHz crystal is the only reference in
- * the part that could see that; cgu-fsys checks the fSYS rate against it.
+ * crystal owe each other, while the median rejects isolated sampling jitter.
+ * A persistent disagreement is a constant or a divider.  What this cannot see
+ * is an absolute crystal error - all three scale together and cancel.  The
+ * RTC's 32.768 kHz crystal is the only reference in the part that could see
+ * that; cgu-fsys checks the fSYS rate against it.
  */
 static void gptu0_counter_start(void) {
 	GPTU_CLC(GPTU0) = 1 << MOD_CLC_RMC_SHIFT;
@@ -264,64 +266,123 @@ static void gptu0_counter_stop(void) {
 	GPTU_CLC(GPTU0) = MOD_CLC_DISR;
 }
 
+struct counter_sample {
+	stopwatch_t stm;
+	uint32_t counter;
+};
+
+static struct counter_sample tpu_counter_sample(void) {
+	stopwatch_t before = stopwatch_get();
+	uint32_t counter = TPU_COUNTER;
+	stopwatch_t after = stopwatch_get();
+
+	return (struct counter_sample) {
+		.stm = before + (after - before) / 2,
+		.counter = counter,
+	};
+}
+
+static struct counter_sample gptu0_counter_sample(void) {
+	stopwatch_t before = stopwatch_get();
+	uint32_t counter = GPTU_T0DCBA(GPTU0);
+	stopwatch_t after = stopwatch_get();
+
+	return (struct counter_sample) {
+		.stm = before + (after - before) / 2,
+		.counter = counter,
+	};
+}
+
+static uint32_t median_u32(uint32_t values[TPU_CROSSCHECK_SAMPLES]) {
+	for (uint32_t i = 1; i < TPU_CROSSCHECK_SAMPLES; i++) {
+		uint32_t value = values[i];
+		uint32_t j = i;
+
+		while (j > 0 && values[j - 1] > value) {
+			values[j] = values[j - 1];
+			j--;
+		}
+		values[j] = value;
+	}
+
+	return values[TPU_CROSSCHECK_SAMPLES / 2];
+}
+
 static void test_clock_agreement(void) {
 	test_category("TPU / STM / GPTU: clocks off one crystal must agree");
 
-	/* OVERFLOW is 15 bit, so the counter must stay below 32768 ticks for the
-	   whole window: fSYS / 12 * 10 ms = 21667 ticks. */
+	/* OVERFLOW is 15 bit, so each sample must span less than one wrap:
+	   fSYS / 12 * 10 ms = 21667 ticks. */
 	TPU_PARAM = 0;
 	tpu_configure_clock(1, 1, 2);
 	TPU_OVERFLOW = TPU_OVERFLOW_VALUE;
 	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
 	gptu0_counter_start();
 
-	/* Sample the two ends in opposite orders, so the read skew of the three
-	   MMIO reads cancels between them instead of biasing the ratios. */
-	stopwatch_t stm_first = stopwatch_get();
-	uint32_t tpu_first = TPU_COUNTER;
-	uint32_t gptu_first = GPTU_T0DCBA(GPTU0);
+	uint32_t stm_hz = stopwatch_ticks_per_s();
+	uint32_t tpu_rates[TPU_CROSSCHECK_SAMPLES];
+	uint32_t gptu_rates[TPU_CROSSCHECK_SAMPLES];
+	bool counters_ran = true;
 
-	stopwatch_usleep_wd(TPU_CROSSCHECK_US);
+	for (uint32_t i = 0; i < TPU_CROSSCHECK_SAMPLES; i++) {
+		/* Bracket each peripheral read with STM reads.  The midpoint gives each
+		   independent MMIO counter its own STM interval, without assuming that
+		   the three registers can be sampled at one instant. */
+		struct counter_sample tpu_first = tpu_counter_sample();
+		struct counter_sample gptu_first = gptu0_counter_sample();
 
-	uint32_t gptu_last = GPTU_T0DCBA(GPTU0);
-	uint32_t tpu_last = TPU_COUNTER;
-	stopwatch_t stm_last = stopwatch_get();
+		stopwatch_usleep_wd(TPU_CROSSCHECK_US);
+
+		struct counter_sample gptu_last = gptu0_counter_sample();
+		struct counter_sample tpu_last = tpu_counter_sample();
+		uint64_t tpu_stm_ticks = tpu_last.stm - tpu_first.stm;
+		uint64_t gptu_stm_ticks = gptu_last.stm - gptu_first.stm;
+		uint64_t tpu_ticks = (tpu_last.counter - tpu_first.counter) & TPU_OVERFLOW_VALUE;
+		uint64_t gptu_ticks = gptu_last.counter - gptu_first.counter;
+
+		if (tpu_stm_ticks == 0 || gptu_stm_ticks == 0 || tpu_ticks == 0 || gptu_ticks == 0) {
+			counters_ran = false;
+			tpu_rates[i] = 0;
+			gptu_rates[i] = 0;
+		} else {
+			tpu_rates[i] = (uint32_t) ((uint64_t) stm_hz * tpu_ticks / tpu_stm_ticks);
+			gptu_rates[i] = (uint32_t) ((uint64_t) stm_hz * gptu_ticks / gptu_stm_ticks);
+		}
+
+		printf("# cross-check %u/%u: TPU=%u ticks/%u STM ticks, GPTU0 T0=%u ticks/%u STM ticks\n",
+			(unsigned int) (i + 1), (unsigned int) TPU_CROSSCHECK_SAMPLES,
+			(unsigned int) tpu_ticks, (unsigned int) tpu_stm_ticks,
+			(unsigned int) gptu_ticks, (unsigned int) gptu_stm_ticks);
+	}
 
 	gptu0_counter_stop();
 	TPU_PARAM = 0;
 
-	uint64_t stm_ticks = (uint64_t) (stm_last - stm_first);
-	uint64_t tpu_ticks = tpu_last - tpu_first;
-	uint64_t gptu_ticks = gptu_last - gptu_first;
 	uint32_t f_sys = cpu_get_sys_freq();
 	uint32_t f_stm = cpu_get_stm_freq();
-	/* The stopwatch's own constant is the only unit here; the raw ratios above
-	   hold regardless of it, and the last check is the two constants agreeing. */
-	uint32_t stm_hz = stopwatch_ticks_per_s();
-	uint32_t tpu_hz = (uint32_t) (stm_ticks ? stm_hz * tpu_ticks / stm_ticks : 0);
-	uint32_t gptu_hz = (uint32_t) (stm_ticks ? stm_hz * gptu_ticks / stm_ticks : 0);
+	/* The stopwatch's own constant is the only unit here, and the last check is
+	   the two constants agreeing. */
+	uint32_t tpu_hz = median_u32(tpu_rates);
+	uint32_t gptu_hz = median_u32(gptu_rates);
 
-	/* The window bounds every count below 2^32 (fSYS / 12 * 10 ms = 21667 TPU
+	/* Each window bounds every count below 2^32 (fSYS / 12 * 10 ms = 21667 TPU
 	   ticks; even a 208 MHz fSYS gives 2.6e6 STM ticks), and the BSP printf does
 	   not implement the length modifiers. */
-	printf("# cross-check over %u us: STM=%u ticks, TPU=%u ticks, GPTU0 T0=%u ticks\n",
-		(unsigned int) TPU_CROSSCHECK_US,
-		(unsigned int) stm_ticks, (unsigned int) tpu_ticks, (unsigned int) gptu_ticks);
-	printf("# cross-check rates in the stopwatch's own unit: STM=%u Hz, TPU=%u Hz, GPTU0=%u Hz\n",
+	printf("# median rates in the stopwatch's own unit: STM=%u Hz, TPU=%u Hz, GPTU0=%u Hz\n",
 		(unsigned int) stm_hz, (unsigned int) tpu_hz, (unsigned int) gptu_hz);
 
-	if (stm_ticks == 0 || tpu_ticks == 0 || gptu_ticks == 0 || f_stm == 0) {
-		test_check("the three counters all ran for the whole window", false);
+	if (!counters_ran || f_stm == 0) {
+		test_check("the three counters all ran for every sample", false);
 		return;
 	}
 
 	/* Model-free: two chains off fSYS, one divided by 12 by its own registers. */
 	test_check("the TPU counter is exactly fSYS/12 of the GPTU T0 counter",
-		value_matches_ppm(tpu_ticks * TPU_CROSSCHECK_TPU_DIVISOR, gptu_ticks, TPU_CROSSCHECK_PPM));
+		value_matches_ppm((uint64_t) tpu_hz * TPU_CROSSCHECK_TPU_DIVISOR, gptu_hz, TPU_CROSSCHECK_PPM));
 
 	/* The STM chain against the register-derived STM and fSYS frequencies. */
 	test_check("the STM counter agrees with the register-derived frequency",
-		value_matches_ppm(stm_ticks * f_sys, gptu_ticks * f_stm, TPU_CROSSCHECK_PPM));
+		value_matches_ppm((uint64_t) stm_hz * f_sys, (uint64_t) gptu_hz * f_stm, TPU_CROSSCHECK_PPM));
 
 	/* The headline: the two constants the phone disagreed about, compared with
 	   each other rather than each against its nominal. */
