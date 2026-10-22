@@ -341,6 +341,20 @@ static void test_priority(void) {
 	test_eq_u32("lower IRQ number wins equal priority", VIC_USART1_TX_IRQ, irq_order[0]);
 	test_eq_u32("higher IRQ number follows equal priority", VIC_SCU_EXTI0_IRQ, irq_order[1]);
 
+	clear_sources();
+	reset_irq_capture();
+	VIC_CON(VIC_USART1_TX_IRQ) = 4;
+	VIC_CON(VIC_SCU_EXTI0_IRQ) = 4;
+	SCU_EXTI0_SRC = MOD_SRC_SRE | MOD_SRC_SETR;
+	test_eq_u32("first equal-priority IRQ is pending", VIC_SCU_EXTI0_IRQ, VIC_IRQ_CON & VIC_IRQ_CON_NUM);
+	USART_ISR(USART1) = USART_ISR_TX;
+	test_eq_u32("later lower IRQ number becomes pending", VIC_USART1_TX_IRQ, VIC_IRQ_CON & VIC_IRQ_CON_NUM);
+	cpu_enable_irq(true);
+	test_check("both reverse equal-priority IRQs arrive", wait_for_irq_count(2));
+	cpu_enable_irq(false);
+	test_eq_u32("later lower IRQ number is served first", VIC_USART1_TX_IRQ, irq_order[0]);
+	test_eq_u32("earlier higher IRQ number follows", VIC_SCU_EXTI0_IRQ, irq_order[1]);
+
 	VIC_CON(VIC_USART1_TX_IRQ) = 0;
 	VIC_CON(VIC_SCU_EXTI0_IRQ) = 0;
 }

@@ -194,8 +194,8 @@ uint32_t cpu_get_ahb_per_freq(void) {
 
 	switch (CGU_CON3 & CGU_CON3_AHB_PER_CLKSEL) {
 		case CGU_CON3_AHB_PER_CLKSEL_OSC:
-			frequency = CPU_OSC_FREQ;
-			break;
+			/* The divider applies only to the PLL source (unit/dif-v2/clock.c). */
+			return CPU_OSC_FREQ;
 		case CGU_CON3_AHB_PER_CLKSEL_CLK32K:
 			return CPU_CLK32K_FREQ;
 		case CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2:

@@ -57,6 +57,9 @@ devices = ["siemens-c81"]
 devices = ["generic-pmb8875", "generic-pmb8876", "siemens-c81"]
 
 [dsp-hle-runtime-idle]
+devices = ["generic-pmb8875", "generic-pmb8876", "siemens-el71"]
+
+[dsp-shared-memory-latency]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [dsp-hle-i2s-playback]
@@ -78,6 +81,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [dsp-lle-irq-shared-benchmark]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-lle-interface-concurrency]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [dsp-lle-timers-functional]
@@ -228,6 +234,9 @@ devices = ["siemens-cx75", "siemens-el71"]
 [afc]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[cpu-timing]
+devices = ["generic-pmb8876"]
+
 [cgu-ahb]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
@@ -324,6 +333,12 @@ devices = ["siemens-el71", "lg-ke970"]
 [i2c-v2-dma]
 devices = ["siemens-el71", "lg-ke970"]
 
+[i2c-v2-timing]
+devices = ["siemens-el71"]
+
+[i2c-v2-clock]
+devices = ["siemens-el71"]
+
 [pmic-d1094xx]
 devices = ["siemens-cx75", "siemens-el71"]
 
@@ -376,6 +391,12 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 devices = ["generic-pmb8876"]
 
 [dif-v2-dma]
+devices = ["generic-pmb8876"]
+
+[dif-v2-timings]
+devices = ["generic-pmb8876"]
+
+[dif-v2-clock]
 devices = ["generic-pmb8876"]
 
 [dif-v2-lcd]

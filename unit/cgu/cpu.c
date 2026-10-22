@@ -3,7 +3,7 @@
 #include "test.h"
 
 #define MEASURE_NOPS 512
-#define MEASURE_ITERATIONS 1000
+#define MEASURE_ITERATIONS 5000
 
 static __TCM void run_cpu_loop(uint32_t selected_con2, uint32_t restore_con2) {
 	CGU_CON2 = selected_con2;

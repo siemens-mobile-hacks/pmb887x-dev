@@ -11,6 +11,8 @@
 #define DSP_LOW_TRANSFER_VIEW_OFFSET 0x0304
 #define DSP_COMPLETE_TRANSFER_VIEW_OFFSET 0x0305
 #define DSP_RESET_VIEW_OFFSET 0x0306
+#define STRESS_REQUEST_OFFSET 0x0310
+#define STRESS_RESPONSE_OFFSET 0x0311
 #define READY_MARKER 0xA55A
 #define COMPLETE_MARKER 0xA55A
 #define SINGLE_SEMAPHORE BIT(5)
@@ -21,6 +23,8 @@
 #define LOW_HALF_MASK 0x00FF
 #define HIGH_HALF_MASK 0xFF00
 #define ALL_SEMAPHORE_ENTRY_ADDRESS 0x0220
+#define COMM_STRESS_ENTRY_ADDRESS 0x0320
+#define COMM_STRESS_ITERATIONS 4096
 
 #ifdef PMB8875
 #include "mcs-functional-8875.inc"
@@ -100,6 +104,32 @@ static bool test_communication_flags(void) {
 	test_eq_u32("DSP clears inverse response flag", 0, DSP_COM_STATUS & BIT(4));
 
 	return true;
+}
+
+static bool test_communication_flag_stress(void) {
+	test_category("MCS / Repeated communication flag handoff");
+	if (!load_mcs_program(COMM_STRESS_ENTRY_ADDRESS))
+		return false;
+
+	uint32_t completed = 0;
+	for (uint32_t sequence = 1; sequence <= COMM_STRESS_ITERATIONS; sequence++) {
+		DSP_COM_CLEAR = RESPONSE_FLAG;
+		dsp_hw_shared_memory[STRESS_REQUEST_OFFSET] = sequence;
+		DSP_COM_SET = REQUEST_FLAG;
+		if (!wait_for_response())
+			break;
+		if ((DSP_COM_STATUS & REQUEST_FLAG) != 0)
+			break;
+		if (dsp_hw_shared_memory[STRESS_RESPONSE_OFFSET] != (uint16_t) (sequence + 1))
+			break;
+		completed++;
+	}
+
+	test_eq_u32("DSP completes every request/response handoff", COMM_STRESS_ITERATIONS, completed);
+	test_eq_u32("DSP leaves no consumed request flag visible", 0, DSP_COM_STATUS & REQUEST_FLAG);
+	test_eq_u32("last response payload matches the last request", COMM_STRESS_ITERATIONS + 1,
+		dsp_hw_shared_memory[STRESS_RESPONSE_OFFSET]);
+	return completed == COMM_STRESS_ITERATIONS;
 }
 
 static bool test_single_semaphore_transfer(void) {
@@ -237,6 +267,8 @@ int main(void) {
 	if (!test_single_semaphore_transfer())
 		return test_finish();
 	if (!test_all_semaphore_arbitration())
+		return test_finish();
+	if (!test_communication_flag_stress())
 		return test_finish();
 
 	return test_finish();

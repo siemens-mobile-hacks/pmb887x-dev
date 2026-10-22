@@ -5,7 +5,7 @@
 
 /* Matches the NOP block in cgu_itcm_source_loop() in measure.S. */
 #define MEASURE_NOPS 512
-#define MEASURE_ITERATIONS 1000
+#define MEASURE_ITERATIONS 5000
 
 struct phase_case {
 	const char *name;
@@ -61,10 +61,6 @@ static void check_frequency(const char *name, uint32_t expected_khz, uint32_t me
 
 int main(void) {
 	test_start("CGU AHB source clock test");
-	if (test_is_qemu()) {
-		test_skip("AHB instruction timing", "requires real hardware");
-		return test_finish();
-	}
 
 	uint32_t base_con1 = CGU_CON1 & ~CGU_CON1_AHB_CLKSEL;
 	check_frequency("AHB bypass selects the 26 MHz oscillator", 26000,

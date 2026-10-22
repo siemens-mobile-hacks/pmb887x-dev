@@ -10,6 +10,7 @@
 #define DIF_TIMEOUT_MS 100
 #define DMA_RX_CHANNEL 0
 #define DMA_TX_CHANNEL 1
+#define DMA_CONCURRENCY_WORDS 2048
 #define DIF_BCSEL0_LOW_BYTE_FROM_TX 0x55550000
 #define DIF_BCSEL_ALL_FROM_BCREG 0x55555555
 #define DIF_BCSEL_ALL_MODE_2 0xAAAAAAAA
@@ -29,6 +30,7 @@ static const uint8_t TX_DATA[] = {
 static uint8_t rx_data[sizeof(TX_DATA)];
 static uint32_t dma_tx[sizeof(TX_DATA)] __attribute__((aligned(16)));
 static uint32_t dma_rx[sizeof(TX_DATA)] __attribute__((aligned(16)));
+static uint32_t concurrency_dma_tx[DMA_CONCURRENCY_WORDS] __attribute__((aligned(16)));
 static struct transfer_config {
 	uint32_t tx_size;
 	uint32_t rx_size;
@@ -49,6 +51,12 @@ static volatile struct transfer_state {
 	uint32_t rx_single_irqs;
 	uint32_t rx_burst_irqs;
 } transfer;
+
+static volatile struct tpu_irq_state {
+	uint32_t count;
+	uint32_t counter;
+	uint32_t dma_tc_status;
+} tpu_irq;
 
 enum dma_flow {
 	DMA_CONTROLLED,
@@ -1961,6 +1969,112 @@ static void test_continuous_tx_dma(void) {
 	finish_continuous_tx();
 }
 
+static void test_tpu_progress_during_dma(void) {
+	const struct fifo_config fifo = {
+		.rx = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1,
+		.tx = DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	};
+	const uint32_t tpu_compare = 200;
+
+	bool irq_was_disabled = cpu_enable_irq(false);
+	tpu_irq = (struct tpu_irq_state) { 0 };
+	for (uint32_t word = 0; word < ARRAY_SIZE(concurrency_dma_tx); word++)
+		concurrency_dma_tx[word] = 0xE007E007;
+
+	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	configure_dif(DIF_CON_BM_8, fifo);
+	DIF_RUNCTRL = 0;
+	DIF_CON = DIF_CON_BM_8;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_CSREG = DIF_CSREG_BSCONF_4x8BIT;
+	DIF_LCDTIM1 = 0x00000400;
+	DIF_LCDTIM2 = 0x02000400;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
+	DMAC_TC_CLEAR = BIT(DMA_TX_CHANNEL);
+	DMAC_ERR_CLEAR = BIT(DMA_TX_CHANNEL);
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	dmac_request_select(DIF_DMA_TX_REQUEST, DIF_DMA_TX_SELECT);
+	DMAC_CH_SRC_ADDR(DMA_TX_CHANNEL) = (uint32_t) concurrency_dma_tx;
+	DMAC_CH_DST_ADDR(DMA_TX_CHANNEL) = (uint32_t) &DIF_TXD;
+	DMAC_CH_LLI(DMA_TX_CHANNEL) = 0;
+	DMAC_CH_CONTROL(DMA_TX_CHANNEL) = (
+		DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_8 |
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
+		DIF_DMA_TX_AHB | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+	);
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = (
+		(DIF_DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) |
+		DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER | DMAC_CH_CONFIG_INT_MASK_ERR | DMAC_CH_CONFIG_INT_MASK_TC |
+		DMAC_CH_CONFIG_ENABLE
+	);
+	DIF_IMSC = DIF_IMSC_TXLSREQ | DIF_IMSC_TXSREQ | DIF_IMSC_TXLBREQ | DIF_IMSC_TXBREQ;
+	DIF_DMAE = DIF_DMAE_TXLSREQ | DIF_DMAE_TXSREQ | DIF_DMAE_TXLBREQ | DIF_DMAE_TXBREQ;
+
+	TPU_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	TPU_PARAM = 0;
+	TPU_GSMCLK1 = 1 << TPU_GSMCLK1_K_SHIFT;
+	TPU_GSMCLK2 = 32 << TPU_GSMCLK2_L_SHIFT;
+	TPU_GSMCLK3 = TPU_GSMCLK3_LOAD | TPU_GSMCLK3_INIT;
+	TPU_OVERFLOW = 9999;
+	TPU_INT(1) = tpu_compare;
+	TPU_SRC(1) = MOD_SRC_CLRR | MOD_SRC_SRE;
+	VIC_CON(VIC_TPU_INT1_IRQ) = 8;
+	cpu_enable_irq(true);
+	TPU_PARAM = TPU_PARAM_TINI | TPU_PARAM_FDIS;
+	DIF_TPS_CTRL = ARRAY_SIZE(concurrency_dma_tx);
+
+	stopwatch_t start = stopwatch_get();
+	while (tpu_irq.count == 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+	bool compare_seen = tpu_irq.count != 0;
+	bool compare_precedes_tc = (tpu_irq.dma_tc_status & BIT(DMA_TX_CHANNEL)) == 0;
+	uint32_t compare_counter = tpu_irq.counter;
+
+	while ((DMAC_RAW_TC_STATUS & BIT(DMA_TX_CHANNEL)) == 0 &&
+		(DMAC_RAW_ERR_STATUS & BIT(DMA_TX_CHANNEL)) == 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+	uint32_t elapsed_us = stopwatch_elapsed_us(start);
+	uint32_t tc_status = DMAC_RAW_TC_STATUS;
+	uint32_t error_status = DMAC_RAW_ERR_STATUS;
+	uint32_t fifo_at_tc = DIF_TXFFS_STAT;
+	uint32_t status_at_tc = DIF_STAT;
+	stopwatch_t drain_start = stopwatch_get();
+	bool drained = wait_until_idle();
+	uint32_t drain_us = stopwatch_elapsed_us(drain_start);
+	printf("# concurrent DIF DMA: words=%u FPI1=%u CLC=%08X LCDTIM1=%08X LCDTIM2=%08X elapsed=%u us "
+		"FIFO@TC=%u STAT@TC=%08X drain=%u us\n",
+		(unsigned int) ARRAY_SIZE(concurrency_dma_tx),
+		(unsigned int) cpu_get_fpi1_freq(),
+		(unsigned int) DIF_CLC,
+		(unsigned int) DIF_LCDTIM1,
+		(unsigned int) DIF_LCDTIM2,
+		(unsigned int) elapsed_us,
+		(unsigned int) fifo_at_tc,
+		(unsigned int) status_at_tc,
+		(unsigned int) drain_us);
+
+	TPU_PARAM = 0;
+	TPU_SRC(1) = MOD_SRC_CLRR;
+	VIC_CON(VIC_TPU_INT1_IRQ) = 0;
+	cpu_enable_irq(!irq_was_disabled);
+	DIF_DMAE = 0;
+	DIF_IMSC = 0;
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
+	DIF_RUNCTRL = 0;
+	DIF_CLC = 1 << MOD_CLC_RMC_SHIFT;
+
+	test_check("TPU compare occurs during DIF DMA", compare_seen);
+	test_check("TPU compare precedes DIF DMA terminal count", compare_precedes_tc);
+	test_check("TPU INT1 handler runs after compare", compare_counter >= tpu_compare);
+	test_check("TPU INT1 handler meets firmware latency", compare_counter - tpu_compare <= 900);
+	test_eq_u32("concurrent DIF DMA reaches terminal count", BIT(DMA_TX_CHANNEL),
+		tc_status & BIT(DMA_TX_CHANNEL));
+	test_eq_u32("concurrent DIF DMA has no bus errors", 0, error_status & BIT(DMA_TX_CHANNEL));
+	test_check("concurrent DIF DMA drains FIFO", drained);
+}
+
 static void test_dma(void) {
 	uint32_t channels = BIT(DMA_RX_CHANNEL) | BIT(DMA_TX_CHANNEL);
 	struct dma_transfer dma = {
@@ -2121,6 +2235,9 @@ static void test_dma(void) {
 
 	test_category("Continuous DMA TX without TPS_CTRL");
 	test_continuous_tx_dma();
+
+	test_category("TPU progress during DMA");
+	test_tpu_progress_during_dma();
 }
 
 int dif_v2_test(void) {
@@ -2216,6 +2333,11 @@ __IRQ void irq_handler(void) {
 		transfer.error_status |= DIF_ERRIRQSS;
 		DIF_ERRIRQSC = DIF_ERRIRQSS;
 		DIF_ICR = DIF_ICR_ERR;
+	} else if (irq == VIC_TPU_INT1_IRQ) {
+		tpu_irq.counter = TPU_COUNTER;
+		tpu_irq.dma_tc_status = DMAC_RAW_TC_STATUS;
+		tpu_irq.count++;
+		TPU_SRC(1) = MOD_SRC_CLRR;
 	}
 
 	VIC_IRQ_ACK = 1;

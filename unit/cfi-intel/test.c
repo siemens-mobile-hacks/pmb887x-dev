@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <stopwatch.h>
 
 #include <string.h>
 
@@ -6,6 +7,8 @@
 #include "test.h"
 
 #define EFA_SIZE 0x8000
+#define LOCK_COMMAND_BURST_ITERATIONS 64
+#define LOCK_COMMAND_MAX_US 100
 #define WRITE_TEST_ALIGNMENT (1u << 20)
 
 static struct flash_device flashes[FLASH_CHIP_SELECT_COUNT];
@@ -150,6 +153,52 @@ static void test_block_lock_status(const struct flash_device *flash) {
 	}
 	test_check("all erase block lock status values are valid", valid);
 	test_eq_u32("lock status covers the complete flash", flash->size, offset);
+}
+
+static void test_lock_command_burst(const struct flash_device *flash) {
+	uint32_t address = flash->base;
+	uint16_t initial_lock = cfi_read_lock_status(address) & 0x3;
+
+	if ((initial_lock & BIT(0)) == 0) {
+		test_skip("repeated lock commands preserve block state", "first block is unlocked");
+		return;
+	}
+
+	bool irq_was_disabled = cpu_enable_irq(false);
+	stopwatch_t started = stopwatch_get();
+	uint32_t maximum_ticks = 0;
+	for (uint32_t iteration = 0; iteration < LOCK_COMMAND_BURST_ITERATIONS; iteration++) {
+		stopwatch_t command_started = stopwatch_get();
+
+		/* Block Lock Setup, Block Lock Confirm, Read Array. */
+		MMIO16(address) = 0x60;
+		MMIO16(address) = 0x01;
+		MMIO16(address) = 0xFF;
+		uint32_t command_ticks = (uint32_t) stopwatch_elapsed(command_started);
+
+		if (command_ticks > maximum_ticks)
+			maximum_ticks = command_ticks;
+	}
+	uint32_t elapsed_ticks = (uint32_t) stopwatch_elapsed(started);
+	cpu_enable_irq(!irq_was_disabled);
+
+	uint16_t final_lock = cfi_read_lock_status(address) & 0x3;
+	printf(
+		"# %lu lock/status/array sequences: total %lu ticks (%lu us), maximum %lu ticks (%lu us) at %lu Hz\n",
+		(uint32_t) LOCK_COMMAND_BURST_ITERATIONS,
+		elapsed_ticks,
+		(uint32_t) ((uint64_t) elapsed_ticks * 1000000 / stopwatch_ticks_per_s()),
+		maximum_ticks,
+		(uint32_t) ((uint64_t) maximum_ticks * 1000000 / stopwatch_ticks_per_s()),
+		stopwatch_ticks_per_s()
+	);
+	test_eq_u32("repeated lock commands preserve block state", initial_lock, final_lock);
+#if defined(BOARD_SIEMENS_EL71)
+	test_check(
+		"block lock command completes within the realtime IRQ budget",
+		(uint64_t) maximum_ticks * 1000000 <= (uint64_t) stopwatch_ticks_per_s() * LOCK_COMMAND_MAX_US
+	);
+#endif
 }
 
 static void read_otp_words(const struct flash_device *flash, uint32_t offset, uint16_t words[4]) {
@@ -773,6 +822,8 @@ int main(void) {
 		test_electronic_signature(&flashes[i]);
 		test_category("Erase block locks");
 		test_block_lock_status(&flashes[i]);
+		test_category("Block lock command latency");
+		test_lock_command_burst(&flashes[i]);
 		test_category("OTP");
 		test_otp(&flashes[i]);
 		test_category("Extended flash array");

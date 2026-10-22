@@ -25,6 +25,8 @@ my @images = (
 	[ 'lle/benchmark.asm', 'lle/benchmark-8876.inc', 'DSP_BENCHMARK_8876', 'pmb8876' ],
 	[ 'lle/irq-shared-benchmark.asm', 'lle/irq-shared-benchmark-8875.inc', 'DSP_IRQ_SHARED_BENCHMARK_8875', 'pmb8875' ],
 	[ 'lle/irq-shared-benchmark.asm', 'lle/irq-shared-benchmark-8876.inc', 'DSP_IRQ_SHARED_BENCHMARK_8876', 'pmb8876' ],
+	[ 'lle/interface-concurrency.asm', 'lle/interface-concurrency-8875.inc', 'DSP_INTERFACE_IMAGE_8875', 'pmb8875' ],
+	[ 'lle/interface-concurrency.asm', 'lle/interface-concurrency-8876.inc', 'DSP_INTERFACE_IMAGE_8876', 'pmb8876' ],
 	[ 'lle/timers-functional.asm', 'lle/timers-functional-8875.inc', 'DSP_TIMERS_IMAGE_8875', 'pmb8875' ],
 	[ 'lle/timers-functional.asm', 'lle/timers-functional-8876.inc', 'DSP_TIMERS_IMAGE_8876', 'pmb8876' ],
 	[ 'lle/mcs-functional.asm', 'lle/mcs-functional-8875.inc', 'DSP_MCS_IMAGE_8875', 'pmb8875' ],

@@ -25,6 +25,7 @@ success.
 | `dsp-lle-clock-domains` | DSP core, Timer 2, Shared RAM, and command-interface behavior under CGU and CLC controls |
 | `dsp-lle-interrupt-sources` | All documented DSP interrupt-unit source bits, line routing, masking, coalescing, and acknowledgement |
 | `dsp-lle-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
+| `dsp-lle-interface-concurrency` | MCU Shared RAM, communication flag, semaphore, and interrupt access while the DSP executes |
 | `dsp-lle-mask-rom-commands` | PMB8875/PMB8876 Mask ROM boot commands, one user command, and built-in runtime commands |
 | `dsp-hle-runtime-firmware` | PMB8876 runtime startup, command transport, and platform-specific command behavior |
 | `dsp-hle-runtime-semaphores` | Runtime command traffic, MCU semaphore ownership, and DSP-reset interaction |
@@ -81,6 +82,8 @@ success.
 | `sim-card-timers` | Hardware T=0 character timeout; BWT is skipped without a T=1 card |
 | `dif-v2` | DIFv2 IRQ loopback, serial modes, FIFO alignment and bursts, BSCONF, LCD reads, and conversion |
 | `dif-v2-dma` | DIFv2 DMA flows, FIFO alignment and bursts, BSCONF, parallel LCD reads, and recovery |
+| `dif-v2-clock` | DIFv2 parallel bus clock source: AHB_PER sources and dividers versus FPI1 and AHB |
+| `dif-v2-timings` | DIFv2 parallel bus time per byte for every LCDTIM field, firmware profiles, lane formats, and RMC |
 | `dif-v2-lcd` | EL71 JBT6K71 command/data I/O, polling/TPS BSCONF modes, GRAM, and conversion gating |
 | `cfi-intel` | Safe Intel/ST CFI discovery, identification, geometry, and read commands |
 | `cfi-intel-rw` | Intel/ST CFI program, erase, lock, and suspend/resume operations |

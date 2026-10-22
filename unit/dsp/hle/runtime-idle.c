@@ -6,6 +6,7 @@
 
 #define DSP_RUNTIME_IDLE_RESULT_OFFSET 0x0200
 #define DSP_RUNTIME_IDLE_TIMEOUT_US 2000
+#define EL71_IDLE_WAIT_US 0x259
 
 static bool wait_core_idle(uint32_t *elapsed_us) {
 	stopwatch_t start = stopwatch_get();
@@ -25,7 +26,9 @@ static void test_runtime_idle(void) {
 	static const uint16_t READ_DSP_PARAMETERS[] = {
 		0xE000, DSP_RUNTIME_IDLE_RESULT_OFFSET, 1,
 	};
-	if (!test_check("platform User ROM starts for IDLE tests", dsp_runtime_start(NULL)))
+	const struct dsp_user_rom *rom;
+
+	if (!test_check("platform User ROM starts for IDLE tests", dsp_runtime_start(&rom)))
 		return;
 
 	uint32_t initial_idle_us;
@@ -40,6 +43,8 @@ static void test_runtime_idle(void) {
 	bool idle = wait_core_idle(&idle_us);
 	test_eq_u32("IDLE command interrupt activates the DSP core", CGU_STAT_DSP_CLK, active_after_interrupt);
 	test_check("IDLE command returns the DSP core to idle", idle);
+	if (rom->uses_stm_command_timeout)
+		test_check("IDLE command completes within the EL71 firmware wait budget", idle_us <= EL71_IDLE_WAIT_US);
 	test_eq_u32("IDLE command is acknowledged before the core becomes idle",
 		(uint16_t) -DSP_COMMAND_IDLE, dsp_runtime_pipe_get(0)[0]);
 	test_eq_u32("IDLE command leaves no pending communication flag", 0, DSP_COM_STATUS & BIT(0));

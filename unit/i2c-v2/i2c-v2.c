@@ -839,6 +839,148 @@ static void test_receive_restart_transition(void) {
 	test_eq_u32("SETRSC receive has no FIFO error", 0, error_status);
 }
 
+static uint32_t wait_request_status(uint32_t request) {
+	stopwatch_t start = stopwatch_get();
+
+	while ((I2C_RIS & request) == 0 && stopwatch_elapsed_ms(start) < I2C_DMA_TIMEOUT_MS)
+		test_watchdog_serve();
+	return I2C_RIS & request;
+}
+
+static uint32_t rx_stages(void) {
+	return I2C_FFSSTAT & I2C_FFSSTAT_FFS;
+}
+
+static void unread_rx_start(uint32_t fifocfg, uint32_t addrcfg, uint32_t packet_size) {
+	cpu_enable_irq(false);
+	I2C_IMSC = 0;
+	I2C_RUNCTRL = 0;
+	I2C_ADDRCFG = addrcfg;
+	I2C_FIFOCFG = fifocfg;
+	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
+	I2C_ICR = I2C_STATUS_CLEAR;
+	I2C_PIRQSC = I2C_PROTOCOL_CLEAR;
+	I2C_ERRIRQSC = I2C_ERROR_CLEAR;
+	I2C_MRPSCTRL = packet_size;
+	I2C_TPSCTRL = 1;
+
+	uint32_t tx_request = wait_request_status(I2C_REQUEST_STATUS);
+	I2C_TXD = (I2C_TEST_TARGET.address << 1) | 1;
+	I2C_ICR = tx_request;
+}
+
+static void unread_rx_finish(void) {
+	while (rx_stages() != 0)
+		(void) I2C_RXD;
+	I2C_ICR = I2C_STATUS_CLEAR;
+	I2C_PIRQSC = I2C_PROTOCOL_CLEAR;
+	I2C_ERRIRQSC = I2C_ERROR_CLEAR;
+	I2C_RUNCTRL = 0;
+	I2C_FIFOCFG = I2C_FIFOCFG_RXBS_1_WORD | I2C_FIFOCFG_TXBS_1_WORD | I2C_FIFOCFG_RXFA_1 |
+		I2C_FIFOCFG_RXFC | I2C_FIFOCFG_TXFC;
+	I2C_ADDRCFG = I2C_ADDRCFG_MnS | I2C_ADDRCFG_SONA | I2C_ADDRCFG_SOPE;
+	I2C_RUNCTRL = I2C_RUNCTRL_RUN;
+	cpu_enable_irq(true);
+}
+
+/* The firmware's PASIC read configuration; its IRQ handler may clear the RX request without reading RXD. */
+#define UNREAD_RX_FIFOCFG (I2C_FIFOCFG_RXBS_4_WORD | I2C_FIFOCFG_TXBS_4_WORD | I2C_FIFOCFG_RXFC | I2C_FIFOCFG_TXFC)
+
+static void unread_rx_last_request(bool clear_in_rx) {
+	unread_rx_start(UNREAD_RX_FIFOCFG, I2C_ADDRCFG_MnS, 1);
+	uint32_t request = wait_request_status(I2C_REQUEST_STATUS);
+	stopwatch_usleep_wd(1000);
+	uint32_t protocol_status = I2C_PIRQSS;
+	uint32_t stages = rx_stages();
+
+	if (clear_in_rx) {
+		I2C_ICR = request;
+		stopwatch_usleep_wd(1000);
+		test_eq_u32("cleared last request is not raised again", 0, I2C_RIS & I2C_REQUEST_STATUS);
+		test_eq_u32("clearing the last request discards the unread stage", 0, rx_stages());
+	}
+
+	I2C_PIRQSC = I2C_PIRQSC_TX_END;
+	I2C_ENDDCTRL = I2C_ENDDCTRL_SETEND;
+	I2C_PIRQSC = I2C_PIRQSC_RX;
+	wait_for_bus_free();
+	stopwatch_usleep_wd(1000);
+	uint32_t request_after_end = I2C_RIS & I2C_REQUEST_STATUS;
+	uint32_t stages_after_end = rx_stages();
+
+	I2C_ICR = I2C_REQUEST_STATUS;
+	stopwatch_usleep_wd(1000);
+	uint32_t request_after_clear = I2C_RIS & I2C_REQUEST_STATUS;
+	uint32_t stages_after_clear = rx_stages();
+	uint32_t error_status = I2C_ERRIRQSS;
+	unread_rx_finish();
+
+	test_eq_u32("one-byte read raises a last-single request", I2C_RIS_LSREQ_INT, request);
+	test_eq_u32("one-byte read raises RX and TX_END", I2C_READ_COMPLETION_STATUS,
+		protocol_status & I2C_READ_COMPLETION_STATUS);
+	test_eq_u32("one-byte read fills one stage", 1, stages);
+	if (!clear_in_rx) {
+		test_eq_u32("STOP keeps the unread last request", I2C_RIS_LSREQ_INT, request_after_end);
+		test_eq_u32("STOP keeps the unread stage", 1, stages_after_end);
+	}
+	test_eq_u32("cleared last request stays clear after STOP", 0, request_after_clear);
+	test_eq_u32("cleared last request leaves the FIFO empty", 0, stages_after_clear);
+	test_eq_u32("unread last request has no FIFO error", 0, error_status);
+}
+
+struct unread_rx_bursts {
+	uint32_t count;
+	uint32_t requests[4];
+	uint32_t stages[4];
+	uint32_t stages_after;
+	uint32_t packet_size;
+};
+
+/* 12 bytes, four per stage, two-stage bursts: reads @read_words stages per request before clearing it. */
+static struct unread_rx_bursts unread_rx_bursts(uint32_t read_words) {
+	struct unread_rx_bursts r = {0};
+
+	unread_rx_start(I2C_FIFOCFG_RXBS_2_WORD | I2C_FIFOCFG_TXBS_1_WORD | I2C_FIFOCFG_RXFC | I2C_FIFOCFG_TXFC,
+		I2C_ADDRCFG_MnS | I2C_ADDRCFG_SONA | I2C_ADDRCFG_SOPE, 12);
+	while (r.count < ARRAY_SIZE(r.requests) && wait_request_status(I2C_REQUEST_STATUS) != 0) {
+		stopwatch_usleep_wd(1000);
+		r.requests[r.count] = I2C_RIS & I2C_REQUEST_STATUS;
+		r.stages[r.count] = rx_stages();
+		for (uint32_t i = 0; i < read_words && rx_stages() != 0; i++)
+			(void) I2C_RXD;
+		I2C_ICR = r.requests[r.count];
+		r.count++;
+	}
+	wait_for_bus_free();
+	r.packet_size = I2C_RPSSTAT & I2C_RPSSTAT_RPS;
+	r.stages_after = rx_stages();
+	unread_rx_finish();
+	return r;
+}
+
+static void test_unread_rx_request(void) {
+	unread_rx_last_request(false);
+	unread_rx_last_request(true);
+
+	struct unread_rx_bursts none = unread_rx_bursts(0);
+	test_eq_u32("unread burst: whole packet received", 12, none.packet_size);
+	test_eq_u32("unread burst: request raised again", ARRAY_SIZE(none.requests), none.count);
+	test_eq_u32("unread burst: still a burst request", I2C_RIS_BREQ_INT, none.requests[ARRAY_SIZE(none.requests) - 1]);
+	test_eq_u32("unread burst: data kept", 3, none.stages_after);
+
+	struct unread_rx_bursts one = unread_rx_bursts(1);
+	test_eq_u32("partial burst read: two requests", 2, one.count);
+	test_eq_u32("partial burst read: burst request", I2C_RIS_BREQ_INT, one.requests[0]);
+	test_eq_u32("partial burst read: last burst request for the rest", I2C_RIS_LBREQ_INT, one.requests[1]);
+	test_eq_u32("partial burst read: two stages left for the last burst", 2, one.stages[1]);
+	test_eq_u32("clearing the last burst request discards the unread stage", 0, one.stages_after);
+
+	struct unread_rx_bursts two = unread_rx_bursts(2);
+	test_eq_u32("whole burst read: two requests", 2, two.count);
+	test_eq_u32("whole burst read: last single request for the rest", I2C_RIS_LSREQ_INT, two.requests[1]);
+	test_eq_u32("whole burst read: FIFO empty after the last request", 0, two.stages_after);
+}
+
 static void test_tx_non_flow_requests(void) {
 	static const struct {
 		const char *name;
@@ -1181,6 +1323,8 @@ int i2c_v2_test(void) {
 	test_nack_transitions();
 	test_category("Polling API");
 	test_polling_api();
+	test_category("Unread RX request");
+	test_unread_rx_request();
 	test_category("TX FIFO overflow");
 	test_tx_fifo_overflow();
 

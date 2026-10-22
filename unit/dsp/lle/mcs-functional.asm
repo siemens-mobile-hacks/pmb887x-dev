@@ -198,3 +198,23 @@ br 0x0000$0300 always
 
 segment p 0300
 br 0x0000$0300 always
+
+// Repeated MCU-to-DSP request/response handoff.
+segment p 0320
+mov 0x$01FF a0l
+mov a0l [0x$TEAK_MCS_CFR]
+mov 0x$A55A a0l
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0300)]
+
+segment p 0328
+mov [0x$TEAK_MCS_CFSTA] a0
+cmp 0x$0001 a0
+br 0x0000$0328 neq
+mov 0x$0001 a0l
+mov a0l [0x$TEAK_MCS_CFR]
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0310)] a0
+inc a0 always
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0311)]
+mov 0x$0002 a0l
+mov a0l [0x$TEAK_MCS_CFSET]
+br 0x0000$0328 always

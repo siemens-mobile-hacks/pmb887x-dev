@@ -4,6 +4,11 @@
 
 #define PROBE_CS 5
 #define SDRSTAT_STATUS_MASK (EBU_SDRSTAT_SDRM_BUSY | EBU_SDRSTAT_REFERR)
+#define WRITE_PROBE_INITIAL 0x12345678
+#define WRITE_PROBE_BLOCKED 0x89ABCDEF
+#define WRITE_PROBE_ALLOWED 0x55AA33CC
+
+static volatile uint32_t write_probe;
 
 typedef struct {
 	uint32_t addrsel;
@@ -97,12 +102,32 @@ static void test_reset_values(const ebu_cs1_guard_t *guard) {
 	);
 }
 
+static void test_write_protection(const ebu_cs1_guard_t *guard) {
+	uint32_t writable_buscon = guard->cs1.buscon & ~EBU_BUSCON_WRITE;
+
+	EBU_BUSCON(1) = writable_buscon;
+	write_probe = WRITE_PROBE_INITIAL;
+	EBU_BUSCON(1) = writable_buscon | EBU_BUSCON_WRITE;
+	write_probe = WRITE_PROBE_BLOCKED;
+	uint32_t protected_value = write_probe;
+
+	EBU_BUSCON(1) = writable_buscon;
+	write_probe = WRITE_PROBE_ALLOWED;
+	uint32_t writable_value = write_probe;
+	EBU_BUSCON(1) = guard->cs1.buscon;
+
+	test_eq_u32("write protection blocks an external-memory write", WRITE_PROBE_INITIAL, protected_value);
+	test_eq_u32("clearing write protection enables external-memory writes", WRITE_PROBE_ALLOWED, writable_value);
+}
+
 int main(void) {
 	test_start("EBU peripheral test");
 	ebu_cs1_guard_t cs1_guard = read_cs1_guard();
 
 	test_category("Reset values");
 	test_reset_values(&cs1_guard);
+	test_category("Write protection");
+	test_write_protection(&cs1_guard);
 
 	return test_finish();
 }

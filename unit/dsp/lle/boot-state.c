@@ -93,7 +93,7 @@ static void test_el71_boot_wait_budget(void) {
 }
 #endif
 
-static struct boot_observation reset_and_observe(void) {
+static struct boot_observation prepare_boot_observation(void) {
 	struct boot_observation observation = { 0 };
 
 	DSP_COM_CLEAR = 0xFFFF;
@@ -105,12 +105,12 @@ static struct boot_observation reset_and_observe(void) {
 	dsp_hw_shared_memory[FW_VERSION_OFFSET] = FW_VERSION_SENTINEL;
 	dsp_hw_shared_memory[HW_VERSION_OFFSET] = HW_VERSION_SENTINEL;
 	observation.status_before_reset = DSP_COM_STATUS;
+	return observation;
+}
 
-	SCU_RST_REQ = SCU_RST_REQ_DSP;
-	(void) SCU_RST_REQ;
-	SCU_RST_REQ = 0;
-
+static struct boot_observation observe_boot_transition(struct boot_observation observation) {
 	stopwatch_t start = stopwatch_get();
+
 	for (uint32_t i = 0; i < BOOT_SAMPLE_LIMIT; i++) {
 		uint32_t status = DSP_COM_STATUS;
 		if (!observation.busy_seen && (status & BOOT_FLAG) != 0) {
@@ -131,6 +131,27 @@ static struct boot_observation reset_and_observe(void) {
 	return observation;
 }
 
+static struct boot_observation reset_and_observe(void) {
+	struct boot_observation observation = prepare_boot_observation();
+
+	SCU_RST_REQ = SCU_RST_REQ_DSP;
+	(void) SCU_RST_REQ;
+	SCU_RST_REQ = 0;
+	return observe_boot_transition(observation);
+}
+
+static struct boot_observation clock_start_and_observe(void) {
+	uint32_t cgu_con2 = CGU_CON2;
+
+	CGU_CON2 = (cgu_con2 & ~CGU_CON2_DSP_CLKSEL) | CGU_CON2_DSP_CLKSEL_DISABLE;
+	struct boot_observation observation = prepare_boot_observation();
+	SCU_RST_REQ = SCU_RST_REQ_DSP;
+	(void) SCU_RST_REQ;
+	SCU_RST_REQ = 0;
+	CGU_CON2 = cgu_con2;
+	return observe_boot_transition(observation);
+}
+
 static bool wait_for_boot_command(void) {
 	stopwatch_t start = stopwatch_get();
 	while ((DSP_COM_STATUS & BOOT_FLAG) != 0 && stopwatch_elapsed_us(start) < BOOT_COMMAND_TIMEOUT_US)
@@ -138,7 +159,7 @@ static bool wait_for_boot_command(void) {
 	return (DSP_COM_STATUS & BOOT_FLAG) == 0;
 }
 
-static void validate_reset_start(size_t pass, const struct boot_observation *observation) {
+static void validate_boot_start(size_t pass, const struct boot_observation *observation) {
 	printf(
 		"# DSP-BOOT,pass=%lu,busy=%u,ready=%u,busy_iter=%lu,ready_iter=%lu,elapsed_us=%lu,status=%08lX\n",
 		(uint32_t) pass,
@@ -166,6 +187,13 @@ static void validate_reset_start(size_t pass, const struct boot_observation *obs
 		DSP_SUBSYSTEM_VERSION,
 		dsp_hw_shared_memory[HW_VERSION_OFFSET]
 	);
+}
+
+static void test_clock_start(void) {
+	test_category("Autonomous Mask ROM boot after DSP clock start");
+	struct boot_observation observation = clock_start_and_observe();
+
+	validate_boot_start(0, &observation);
 }
 
 static void test_boot_dispatcher_wait(void) {
@@ -209,7 +237,7 @@ static void run_pass(size_t pass) {
 	sprintf(category, "Autonomous Mask ROM boot after DSP reset / pass %lu", (uint32_t) pass);
 	test_category(category);
 	struct boot_observation observation = reset_and_observe();
-	validate_reset_start(pass, &observation);
+	validate_boot_start(pass, &observation);
 	if (!observation.ready_seen)
 		return;
 
@@ -219,6 +247,7 @@ static void run_pass(size_t pass) {
 int main(void) {
 	test_start("DSP boot-state functional test");
 	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_clock_start();
 #ifdef PMB8876
 	test_category("Firmware boot wait budget");
 	test_el71_boot_wait_budget();
