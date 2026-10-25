@@ -327,6 +327,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [i2c-v1]
 devices = ["siemens-cx75"]
 
+[i2c-v1-clock]
+devices = ["siemens-cx75"]
+
 [i2c-v2]
 devices = ["siemens-el71", "lg-ke970"]
 
@@ -358,6 +361,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 devices = ["generic-pmb8875"]
 
 [dif-v1-dma]
+devices = ["generic-pmb8875"]
+
+[dif-v1-clock]
 devices = ["generic-pmb8875"]
 
 [dif-v1-lcd]

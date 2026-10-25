@@ -190,6 +190,7 @@ add_peripheral_test(mmci-clock mmci/clock.c cgu/clock.c)
 add_peripheral_test(usif-clock usif/clock.c)
 add_peripheral_test(usb usb/test.c)
 add_peripheral_test(i2c-v1 i2c-v1/test.c i2c-v1/i2c-v1.c)
+add_peripheral_test(i2c-v1-clock i2c-v1/clock.c cgu/clock.c)
 add_peripheral_test(i2c-v2 i2c-v2/test.c i2c-v2/i2c-v2.c i2c-v2/driver.c)
 add_peripheral_test(i2c-v2-dma i2c-v2/test-dma.c i2c-v2/i2c-v2.c i2c-v2/driver.c)
 add_peripheral_test(i2c-v2-timing i2c-v2/timing.c i2c-v2/driver.c)
@@ -201,6 +202,7 @@ add_peripheral_test(ssc ssc/test.c ssc/ssc.c)
 add_peripheral_test(ssc-dma ssc/test-dma.c ssc/ssc.c)
 add_peripheral_test(dif-v1 dif-v1/test.c dif-v1/dif-v1.c dif-v1/common.c)
 add_peripheral_test(dif-v1-dma dif-v1/test-dma.c dif-v1/dma.c dif-v1/common.c)
+add_peripheral_test(dif-v1-clock dif-v1/clock.c dif-v1/common.c cgu/clock.c)
 add_peripheral_test(
 	dif-v1-lcd
 	dif-v1/lcd.c
