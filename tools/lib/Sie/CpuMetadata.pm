@@ -317,13 +317,14 @@ sub loadCPU {
 				}
 			}
 		} else {
-			my ($name, $addr, $type, $id, $irqs) = split("\t", $line);
+			my ($name, $addr, $type, $id, $clock, $irqs) = split("\t", $line);
 			
 			push @{$self->{available_modules}}, {
 				id		=> parseAnyInt($id),
 				type	=> $type,
 				base	=> parseAnyInt($addr),
 				name	=> $name,
+				clock	=> $clock eq "-" ? undef : $clock,
 				irqs	=> $irqs ? [split(/\s*,\s*/, $irqs)] : []
 			};
 		}
@@ -467,6 +468,7 @@ sub loadModules {
 				$new_module->{base_name} = $new_module->{name};
 				$new_module->{base} = $def->{base};
 				$new_module->{name} = $def->{name};
+				$new_module->{clock} = $def->{clock};
 				
 				if (@{$def->{irqs}} && $def->{irqs}->[0] ne "-") {
 					if (scalar(@{$def->{irqs}}) != scalar(@{$new_module->{irqs_needed}})) {
