@@ -239,6 +239,25 @@ thumb_loop timing_thumb_push_pop
 	.endr
 thumb_loop_end
 
+arm_loop timing_arm_icache_line_invalidate
+	.rept 8
+	mcr p15, 0, r1, c7, c5, 1
+	.endr
+arm_loop_end
+
+arm_loop timing_arm_dcache_line_invalidate
+	add r6, r1, #65536
+	.rept 8
+	mcr p15, 0, r6, c7, c6, 1
+	.endr
+arm_loop_end
+
+arm_loop timing_arm_drain_write_buffer
+	.rept 8
+	mcr p15, 0, r1, c7, c10, 4
+	.endr
+arm_loop_end
+
 thumb_loop timing_thumb_call
 	.rept 8
 	bl 3f
