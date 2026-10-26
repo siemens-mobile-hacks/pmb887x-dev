@@ -139,6 +139,7 @@ add_peripheral_test(
 add_peripheral_test(dsp-lle-boot-state dsp/lle/boot-state.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-control-functional dsp/lle/dsp-control-functional.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-program-banks dsp/lle/program-banks.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-data-ram dsp/lle/data-ram.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-io-functional dsp/lle/dsp-io-functional.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-rom-dump dsp/lle/rom-dump.c)
 add_peripheral_test(dsp-lle-data-rom-dump dsp/lle/rom-dump.c)

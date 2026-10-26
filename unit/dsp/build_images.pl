@@ -96,6 +96,8 @@ my @images = (
 	[ 'lle/program-banks.asm', 'lle/program-banks-8876.inc', 'DSP_PROGRAM_BANKS_8876', 'pmb8876' ],
 	[ 'lle/dsp-io-functional.asm', 'lle/dsp-io-functional-8875.inc', 'DSP_IO_FUNCTIONAL_8875', 'pmb8875' ],
 	[ 'lle/dsp-io-functional.asm', 'lle/dsp-io-functional-8876.inc', 'DSP_IO_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/data-ram.asm', 'lle/data-ram-8875.inc', 'DSP_DATA_RAM_8875', 'pmb8875' ],
+	[ 'lle/data-ram.asm', 'lle/data-ram-8876.inc', 'DSP_DATA_RAM_8876', 'pmb8876' ],
 );
 my @embedded_images = (
 	[ '../../rom/dsp/cx75/0602/container.bin', 'hle/user-rom-siemens-0602.inc',
