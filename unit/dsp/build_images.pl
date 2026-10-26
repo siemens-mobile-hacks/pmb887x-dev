@@ -35,6 +35,8 @@ my @images = (
 	[ 'lle/delay-slot-functional.asm', 'lle/delay-slot-functional-8876.inc', 'DSP_DELAY_SLOT_IMAGE_8876', 'pmb8876' ],
 	[ 'lle/interrupt-functional.asm', 'lle/interrupt-functional-8875.inc', 'DSP_INTERRUPT_IMAGE_8875', 'pmb8875' ],
 	[ 'lle/interrupt-functional.asm', 'lle/interrupt-functional-8876.inc', 'DSP_INTERRUPT_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/interrupt-repeat.asm', 'lle/interrupt-repeat-8875.inc', 'DSP_INTERRUPT_REPEAT_8875', 'pmb8875' ],
+	[ 'lle/interrupt-repeat.asm', 'lle/interrupt-repeat-8876.inc', 'DSP_INTERRUPT_REPEAT_8876', 'pmb8876' ],
 	[ 'lle/interrupt-block-repeat.asm', 'lle/interrupt-block-repeat-8875.inc',
 		'DSP_INTERRUPT_BLOCK_REPEAT_8875', 'pmb8875' ],
 	[ 'lle/interrupt-block-repeat.asm', 'lle/interrupt-block-repeat-8876.inc',

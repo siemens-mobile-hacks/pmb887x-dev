@@ -22,6 +22,7 @@ success.
 | `dsp-lle-irqs` | Real DSP-generated INT_TOMCU requests, VIC routing, and acknowledgement for all four DSP SRC lines |
 | `dsp-lle-interrupt-functional` | DSP interrupt masking, acknowledgement, simultaneous priority, nested arbitration, and repeat delivery |
 | `dsp-lle-interrupt-block-repeat` | Independent block-repeat state across interrupt preemption |
+| `dsp-lle-interrupt-repeat` | Single-instruction repeat preemption and resume |
 | `dsp-lle-clock-domains` | DSP core, Timer 2, Shared RAM, and command-interface behavior under CGU and CLC controls |
 | `dsp-lle-interrupt-sources` | All documented DSP interrupt-unit source bits, line routing, masking, coalescing, and acknowledgement |
 | `dsp-lle-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
