@@ -152,6 +152,12 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-i2s3-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-lle-i2s1-clock-select]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-lle-i2s2-clock-select]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dsp-lle-afe-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 

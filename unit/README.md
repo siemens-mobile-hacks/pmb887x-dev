@@ -30,6 +30,7 @@ success.
 | `dsp-hle-runtime-firmware` | PMB8876 runtime startup, command transport, and platform-specific command behavior |
 | `dsp-hle-runtime-semaphores` | Runtime command traffic, MCU semaphore ownership, and DSP-reset interaction |
 | `dsp-hle-runtime-idle` | Runtime IDLE acknowledgement, DSP clock status, wakeup, and command recovery |
+| `dsp-lle-i2s1-clock-select`, `dsp-lle-i2s2-clock-select` | I2S clock selection, divider and word-width rates, transmit start load, and interrupt addresses |
 | `dsp-hle-i2s-playback` | Three-second 440 Hz PCM playback through the original User ROM and board I2S route |
 | `dsp-hle-afe-playback` | Three-second 440 Hz PCM playback through the original User ROM and the EL71 AFE line output to the loudspeaker |
 | `dsp-lle-mcs-functional` | Communication flags, all-semaphore arbitration, queued transfer, and DSP-reset behavior |
