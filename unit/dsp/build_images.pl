@@ -81,6 +81,8 @@ my @images = (
 	[ 'lle/i2s-functional.asm', 'lle/i2s-functional-8876.inc', 'DSP_I2S_FUNCTIONAL_8876', 'pmb8876' ],
 	[ 'lle/i2s-rx-functional.asm', 'lle/i2s-rx-functional-8875.inc', 'DSP_I2S_RX_FUNCTIONAL_8875', 'pmb8875' ],
 	[ 'lle/i2s-rx-functional.asm', 'lle/i2s-rx-functional-8876.inc', 'DSP_I2S_RX_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/i2s-rx-interrupt.asm', 'lle/i2s-rx-interrupt-8875.inc', 'DSP_I2S_RX_INTERRUPT_8875', 'pmb8875' ],
+	[ 'lle/i2s-rx-interrupt.asm', 'lle/i2s-rx-interrupt-8876.inc', 'DSP_I2S_RX_INTERRUPT_8876', 'pmb8876' ],
 	[ 'lle/i2s-rx-pcm-functional.asm', 'lle/i2s-rx-pcm-functional-8875.inc',
 		'DSP_I2S_RX_PCM_FUNCTIONAL_8875', 'pmb8875' ],
 	[ 'lle/i2s-rx-pcm-functional.asm', 'lle/i2s-rx-pcm-functional-8876.inc', 'DSP_I2S_RX_PCM_FUNCTIONAL_8876', 'pmb8876' ],

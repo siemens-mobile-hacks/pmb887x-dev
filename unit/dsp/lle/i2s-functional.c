@@ -5,6 +5,9 @@
 #include "test.h"
 
 #define COMPLETE_MARKER 0xA55A
+#define RX_INTERRUPT_RECORDS 0x0040
+#define RX_INTERRUPTS_POLLING 16
+#define RX_INTERRUPTS_IDLE 16
 
 #if I2S_INSTANCE == 1
 #define TEST_TITLE "DSP I2S1 functional test"
@@ -61,8 +64,10 @@
 #if I2S_INSTANCE != 3
 #include "i2s-rx-functional-8875.inc"
 #include "i2s-rx-pcm-functional-8875.inc"
+#include "i2s-rx-interrupt-8875.inc"
 #define DSP_I2S_RX_IMAGE DSP_I2S_RX_FUNCTIONAL_8875
 #define DSP_I2S_RX_PCM_IMAGE DSP_I2S_RX_PCM_FUNCTIONAL_8875
+#define DSP_I2S_RX_INTERRUPT_IMAGE DSP_I2S_RX_INTERRUPT_8875
 #endif
 #define DSP_I2S_IMAGE DSP_I2S_FUNCTIONAL_8875
 #else
@@ -70,8 +75,10 @@
 #if I2S_INSTANCE != 3
 #include "i2s-rx-functional-8876.inc"
 #include "i2s-rx-pcm-functional-8876.inc"
+#include "i2s-rx-interrupt-8876.inc"
 #define DSP_I2S_RX_IMAGE DSP_I2S_RX_FUNCTIONAL_8876
 #define DSP_I2S_RX_PCM_IMAGE DSP_I2S_RX_PCM_FUNCTIONAL_8876
+#define DSP_I2S_RX_INTERRUPT_IMAGE DSP_I2S_RX_INTERRUPT_8876
 #endif
 #define DSP_I2S_IMAGE DSP_I2S_FUNCTIONAL_8876
 #endif
@@ -258,6 +265,48 @@ static bool run_receive_pcm_test(void) {
 	validate_receive_pcm_record();
 	return true;
 }
+
+static uint16_t receive_interrupt_lag(size_t interrupt) {
+	uint16_t rwaddr = dsp_hw_shared_memory[RX_INTERRUPT_RECORDS + (interrupt * 2)];
+	uint16_t interrupt_address = dsp_hw_shared_memory[RX_INTERRUPT_RECORDS + (interrupt * 2) + 1];
+	return (receive_pointer(rwaddr) - interrupt_address) & 0x003F;
+}
+
+static uint16_t receive_interrupt_max_lag(size_t first, size_t count) {
+	uint16_t max_lag = 0;
+
+	for (size_t i = first; i < first + count; i++)
+		max_lag = MAX(max_lag, receive_interrupt_lag(i));
+	return max_lag;
+}
+
+static bool run_receive_interrupt_test(void) {
+	test_category("I2S receive interrupt at the programmed position");
+	if (!test_check("Mask ROM boot dispatcher becomes ready for RX interrupts", dsp_hw_reset()))
+		return false;
+	DSP_COM_CLEAR = UINT16_MAX;
+	if (!test_check("boot commands load I2S RX interrupt runner",
+		dsp_hw_load_image(DSP_I2S_RX_INTERRUPT_IMAGE, sizeof(DSP_I2S_RX_INTERRUPT_IMAGE)))) {
+		return false;
+	}
+	load_receive_parameters();
+	if (!test_check("BRANCH starts I2S RX interrupt runner", dsp_hw_branch(DSP_HW_STARTUP_ADDRESS)))
+		return false;
+	if (!test_check("I2S RX interrupt runner completes", dsp_hw_wait_shared(0, COMPLETE_MARKER, 1000)))
+		return false;
+
+	printf("# %s RX interrupt lag:", TEST_MODULE);
+	for (size_t i = 0; i < RX_INTERRUPTS_POLLING + RX_INTERRUPTS_IDLE; i++)
+		printf(" %lu", (uint32_t) receive_interrupt_lag(i));
+	printf("\n");
+	test_eq_u32("every programmed position enters the handler", RX_INTERRUPTS_POLLING + RX_INTERRUPTS_IDLE,
+		dsp_hw_shared_memory[0x0026]);
+	test_eq_u32("the handler sees the receive pointer at RXINTADDR while the core polls", 0,
+		receive_interrupt_max_lag(0, RX_INTERRUPTS_POLLING));
+	test_eq_u32("the handler sees the receive pointer at RXINTADDR after DSP_CTRL idle", 0,
+		receive_interrupt_max_lag(RX_INTERRUPTS_POLLING, RX_INTERRUPTS_IDLE));
+	return true;
+}
 #endif
 
 int main(void) {
@@ -282,6 +331,7 @@ int main(void) {
 #if I2S_INSTANCE != 3
 	(void) run_receive_test();
 	(void) run_receive_pcm_test();
+	(void) run_receive_interrupt_test();
 #endif
 
 	DSP_COM_CLEAR = UINT16_MAX;
