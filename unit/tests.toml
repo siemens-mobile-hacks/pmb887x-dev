@@ -101,6 +101,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-interrupt-block-repeat]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-lle-modulo-update]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dsp-lle-interrupt-repeat]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
