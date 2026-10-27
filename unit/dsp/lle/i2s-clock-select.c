@@ -98,6 +98,8 @@
 #define CTRL_RX (TEST_CTRL_I2SON | TEST_CTRL_I2SRXSTART)
 #define CTRL_BOTH (CTRL_TX | CTRL_RX)
 #define CSEL_BOTH_DIVIDER_0 (3 << TEST_CSEL_RXCLKSEL_SHIFT)
+#define TRANSMIT_START_WORDS 4
+#define FRAME_POSITIONS 2
 
 typedef struct {
 	uint16_t csel;
@@ -108,6 +110,7 @@ typedef struct {
 	uint16_t den1;
 	uint16_t txconf;
 	uint16_t rxconf;
+	uint16_t sample_delay;
 } configuration_t;
 
 typedef struct {
@@ -145,6 +148,7 @@ static bool measure(const configuration_t *configuration, measurement_t *result)
 	dsp_hw_shared_memory[0x0026] = configuration->den1;
 	dsp_hw_shared_memory[0x0027] = configuration->txconf;
 	dsp_hw_shared_memory[0x0028] = configuration->rxconf;
+	dsp_hw_shared_memory[0x002A] = configuration->sample_delay;
 	stopwatch_t start = stopwatch_get();
 	dsp_hw_shared_memory[0x0001] = COMMAND_RUN;
 	if (!dsp_hw_wait_shared(0x0001, COMMAND_DONE, 1000))
@@ -404,6 +408,18 @@ int main(void) {
 		check_rate(RATE_CASES[i].name, RATE_CASES[i].tx_milli, result.tx_positions, reference.tx_positions);
 		check_rate(RATE_CASES[i].name, RATE_CASES[i].rx_milli, result.rx_positions, reference.rx_positions);
 	}
+
+	test_category("Receive rate across ring wraps between distant polls");
+	static const configuration_t DISTANT_POLLS = {
+		.csel = CSEL_BOTH_DIVIDER_0, .ctrl = CTRL_BOTH, .num0 = FREF0_104MHZ | 32, .den0 = 104,
+		.txconf = TX_PERIOD_32, .rxconf = RX_PERIOD_32, .sample_delay = 3,
+	};
+	measurement_t distant;
+	if (!test_check("measurement completes", measure(&DISTANT_POLLS, &distant)))
+		return test_finish();
+	int lag = distant.tx_positions - TRANSMIT_START_WORDS - distant.rx_positions;
+	printf("# receiver lag behind the transmitter: %d positions\n", lag);
+	test_check("the receiver stays in step with the transmitter", lag >= -FRAME_POSITIONS && lag <= FRAME_POSITIONS);
 
 	test_category("Interrupt addresses while the interface is off");
 	static const uint16_t INTERRUPT_ADDRESSES[] = { TEST_TXINTADDR, TEST_RXINTADDR };

@@ -15,6 +15,7 @@
 //   0x0020 CTRL start value
 //   0x0021, 0x0023..0x0028 CSEL, NUM0, DEN0, NUM1, DEN1, TXCONF, RXCONF values
 //   0x0029 sample count, below 0x8000
+//   0x002A extra 256-cycle delays per sample
 //   0x0030 transmit positions moved
 //   0x0031 receive positions moved
 //   0x0032 RWADDR after I2SON
@@ -103,9 +104,13 @@ mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)] a0
 mov a0l [r0]
 br 0x0000$0300 always
 
-// Each sample adds the pointer movement modulo the 64-word ring.
+// Each sample waits without I/O, then adds the pointer movement modulo the 64-word ring.
 segment p 0300
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x002A)] a0
+mov a0l r7
+bkrep r7 0x0000$0307
 rep 0x00ffu8
+nop
 nop
 mov [r1] a0
 mov a0l r5
