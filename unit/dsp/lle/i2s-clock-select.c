@@ -359,6 +359,43 @@ int main(void) {
 		}
 	}
 
+	test_category("CLK0 and CLK1 line clocks without an external clock");
+	static const uint16_t LINE_CLKSELS[] = { 1, 2 };
+	static const uint16_t CLK_LINE_SOURCES[] = { 0, 1, 2 };
+	for (size_t line = 0; line < ARRAY_SIZE(LINE_CLKSELS); line++) {
+		for (size_t source = 0; source < ARRAY_SIZE(CLK_LINE_SOURCES); source++) {
+			uint16_t csel = csel_value(LINE_CLKSELS[line], CLK_LINE_SOURCES[source], LINE_CLKSELS[line],
+				CLK_LINE_SOURCES[source]);
+			configuration_t configuration = select_configuration(csel, CTRL_BOTH);
+			measurement_t result;
+			if (!test_check("measurement completes", measure(&configuration, &result)))
+				return test_finish();
+			test_eq_u32("the transmitter stops after its start load", 4, result.tx_positions);
+			test_eq_u32("the receiver does not move", 0, result.rx_positions);
+		}
+	}
+
+#if I2S_INSTANCE == 2
+	test_category("CLK0 line clock with the I2S2 pads routed");
+	static const uint32_t PAD_MODES[] = {
+		GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PS_ALT | GPIO_DIR_OUT,
+		GPIO_IS_ALT0 | GPIO_OS_ALT0 | GPIO_PS_ALT | GPIO_DIR_IN,
+	};
+	for (size_t mode = 0; mode < ARRAY_SIZE(PAD_MODES); mode++) {
+		GPIO_PIN(GPIO_I2S2_CLK0) = PAD_MODES[mode];
+		GPIO_PIN(GPIO_I2S2_WA0) = PAD_MODES[mode];
+		for (size_t source = 0; source < ARRAY_SIZE(CLK_LINE_SOURCES); source++) {
+			uint16_t csel = csel_value(2, CLK_LINE_SOURCES[source], 1, CLK_LINE_SOURCES[source]);
+			configuration_t configuration = select_configuration(csel, CTRL_BOTH);
+			measurement_t result;
+			if (!test_check("measurement completes", measure(&configuration, &result)))
+				return test_finish();
+			test_eq_u32("the transmitter stops after its start load", 4, result.tx_positions);
+			test_eq_u32("the receiver does not move", 0, result.rx_positions);
+		}
+	}
+#endif
+
 	test_category("Fractional divider, frame period, and word width rates");
 	for (size_t i = 0; i < ARRAY_SIZE(RATE_CASES); i++) {
 		measurement_t result;
