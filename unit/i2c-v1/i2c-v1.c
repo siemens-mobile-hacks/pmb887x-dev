@@ -29,6 +29,8 @@ enum transfer_flags {
 static volatile struct transfer_state {
 	const uint8_t *tx;
 	uint8_t *rx;
+	uint8_t address;
+	uint32_t read_size;
 	uint32_t remaining;
 	uint32_t transferred;
 	bool reading;
@@ -108,6 +110,14 @@ static void handle_data_irq(void) {
 			write_buffer(0, 0);
 			return;
 		}
+		if (transfer.rx != NULL) {
+			transfer.reading = true;
+			transfer.remaining = transfer.read_size;
+			set_buffer_size(1);
+			I2C_WHBSYSCON = I2C_WHBSYSCON_SETRSC;
+			I2C_RTB = (transfer.address << 1) | 1;
+			return;
+		}
 		if (transfer.repeated_start) {
 			I2C_WHBSYSCON = I2C_WHBSYSCON_SETRSC;
 			I2C_DATA_SRC = MOD_SRC_CLRR;
@@ -184,11 +194,15 @@ static enum transfer_result transfer_bytes(
 	enum transfer_flags flags
 ) {
 	cpu_enable_irq(false);
+	bool register_read = tx != NULL && rx != NULL;
+
 	transfer = (struct transfer_state) {
 		.tx = tx,
 		.rx = rx,
-		.remaining = size,
-		.reading = rx != NULL,
+		.address = address,
+		.read_size = size,
+		.remaining = register_read ? 1 : size,
+		.reading = rx != NULL && !register_read,
 		.repeated_start = (flags & TRANSFER_REPEATED_START) != 0,
 		.leave_final_data_irq_pending = (flags & TRANSFER_LEAVE_FINAL_DATA_IRQ_PENDING) != 0,
 		.result = TRANSFER_PENDING,
@@ -196,7 +210,7 @@ static enum transfer_result transfer_bytes(
 	if (tx != NULL) {
 		I2C_SYSCON = I2C_SYSCON_MOD_MASTER;
 		write_buffer(address << 1, 1);
-		transfer.address_sent = true;
+		transfer.address_sent = !register_read;
 	} else {
 		set_buffer_size(1);
 		I2C_RTB = (address << 1) | 1;
@@ -392,6 +406,14 @@ static void test_repeated_start(void) {
 		transfer_bytes(PMIC_I2C_ADDR, NULL, &actual, sizeof(actual), 0)
 	);
 	test_eq_u32("repeated START data", expected, actual);
+
+	actual = ~expected;
+	test_eq_u32(
+		"RSC and RTB start the read from the data IRQ handler without BUM",
+		TRANSFER_DONE,
+		transfer_bytes(PMIC_I2C_ADDR, &reg, &actual, sizeof(actual), 0)
+	);
+	test_eq_u32("RSC read data", expected, actual);
 }
 
 static void test_packet_sizes(void) {
