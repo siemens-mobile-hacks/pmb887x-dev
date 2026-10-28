@@ -4,9 +4,7 @@ model = "C72"
 extends = "include/siemens-sgl-r65.toml"
 
 [peripheral.LCD0]
-type = "l2f50250"
-width = 128
-height = 128
+type = "lh15kah2"
 
 [gpio.inputs]
 # HWID 5005
