@@ -28,8 +28,6 @@ in = { CS = "CIF_CS", SA0 = "CIF_RS", RESET = "CIF_RESET" }
 [peripheral.LCD0]
 type = "ssd1286"
 bus = "GIMMICK"
-width = 132
-height = 176
 in = { CS = "DISP_CS1", CD = "GIMMICK:FPLINE" }
 
 [peripheral.SACC]

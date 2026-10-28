@@ -28,8 +28,6 @@ in = { RS = "CIF_RS", NRESET = "CIF_RESET", NCS_APP = "CIF_CS", NCS_LCD = "CIF_C
 [peripheral.LCD0]
 type = "ssd1286"
 bus = "GIMMICK"
-width = 132
-height = 176
 in = { CS = "DISPLAY_CS1", CD = "GIMMICK:SRS", RESET = "DISPLAY_RESET" }
 
 [peripheral.PMIC]

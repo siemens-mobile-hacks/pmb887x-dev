@@ -4,12 +4,7 @@ model = "SL65"
 extends = "include/siemens-sgl-r65.toml"
 
 [peripheral.LCD0]
-# The visible area is 130x130, but the firmware programs the window as
-# x/y 1..131, and pmb887x_lcd_set_window_x2() clamps that to width - 1. With
-# width = 130 every scan line ends two pixels early and the picture shears.
 type = "l2f50250"
-width = 132
-height = 132
 
 [gpio.aliases]
 # DIF_CS (A6) is left open; the display CS comes from CLKOUT0 (DISP_CS_18).
