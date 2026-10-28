@@ -4,7 +4,7 @@ model = "S65"
 extends = "include/siemens-sgl-r65.toml"
 
 [peripheral.LCD0]
-type = "l2f50126t"
+type = "lr38826"
 width = 132
 height = 176
 
