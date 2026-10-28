@@ -405,6 +405,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [usart-irq-rx]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[usart-rx-level]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [usart-flow-control]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
