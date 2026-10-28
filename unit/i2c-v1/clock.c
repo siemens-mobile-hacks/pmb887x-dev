@@ -122,10 +122,6 @@ static void test_sources(void) {
 
 int main(void) {
 	test_start("I2Cv1 clock source test");
-	if (test_is_qemu()) {
-		test_skip("I2Cv1 clock source", "QEMU does not model transfer time");
-		return test_finish();
-	}
 
 	cpu_enable_irq(false);
 	initial_osc = CGU_OSC;
