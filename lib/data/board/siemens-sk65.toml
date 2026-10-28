@@ -85,8 +85,8 @@ TRACEPKT0 = "HW_DET_MOB_TYPE4"
 DISPLAY_CS = 1
 DISPLAY_RESET = 1
 
-# Cable detect
-AC_RTS = 1
+# DCA-510 USB data cable: idle TXD and asserted RTS
+AC_RTS = 0
 AC_RX = 1
 
 HW_DET_MOB_TYPE1 = 1

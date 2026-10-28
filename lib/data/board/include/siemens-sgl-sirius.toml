@@ -96,8 +96,8 @@ CIF_CS = 1
 CIF_RESET = 1
 AAC_RESET = 1
 
-# Cable detect
-AC_RTS = 1
+# DCA-510 USB data cable: idle TXD and asserted RTS
+AC_RTS = 0
 AC_RX = 1
 
 [keyboard]
