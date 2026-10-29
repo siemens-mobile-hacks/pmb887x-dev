@@ -77,7 +77,10 @@ struct workload {
 	X(arm_bne_taken, "ARM BNE taken", 1, 3000) \
 	X(arm_icache_line_invalidate, "ARM MCR I-cache line invalidate", 1, 12000) \
 	X(arm_dcache_line_invalidate, "ARM MCR D-cache line invalidate", 1, 11125) \
-	X(arm_drain_write_buffer, "ARM MCR drain write buffer", 1, 6000)
+	X(arm_drain_write_buffer, "ARM MCR drain write buffer", 1, 6000) \
+	X(arm_ldr_use_page_cross, "ARM LDR + dependent ADD across a 4 KiB boundary", 2, 3000) \
+	X(arm_ldrh_use_second_page_cross, "ARM LDRH + ADD + dependent ADD across a 4 KiB boundary", 3, 4000) \
+	X(thumb_ldr_use_page_cross, "Thumb LDR + dependent ADDS across a 4 KiB boundary", 2, 3000)
 
 #define DECLARE(fn, name, insns, mcycles) void timing_##fn(uint32_t iterations, uint32_t *data);
 WORKLOADS(DECLARE)

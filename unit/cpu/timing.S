@@ -442,3 +442,34 @@ arm_loop timing_arm_code_stream
 	nop
 	.endr
 arm_loop_end
+
+@ Places the next workload \bytes before a 4 KiB boundary, so that one measured sequence straddles it.
+.macro before_page_end bytes
+.balign 4096
+.skip 4096 - \bytes
+.endm
+
+before_page_end 64
+arm_loop timing_arm_ldr_use_page_cross
+	.rept 8
+	ldr r2, [r1, #4]
+	add r3, r3, r2
+	.endr
+arm_loop_end
+
+before_page_end 64
+arm_loop timing_arm_ldrh_use_second_page_cross
+	.rept 8
+	ldrh r2, [r1, #4]
+	add r3, r3, #1
+	add r3, r3, r2
+	.endr
+arm_loop_end
+
+before_page_end 32
+thumb_loop timing_thumb_ldr_use_page_cross
+	.rept 8
+	ldr r2, [r1, #4]
+	adds r3, r3, r2
+	.endr
+thumb_loop_end
