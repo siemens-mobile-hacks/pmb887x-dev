@@ -24,6 +24,7 @@ static const struct phase_case PHASE_CASES[] = {
 	{ "phase 3 K1=4 K2=3", 3, 4, 3, CGU_CON1_AHB_CLKSEL_PHASE3, 46222 },
 	{ "phase 4 K1=5 K2=0", 4, 5, 0, CGU_CON1_AHB_CLKSEL_PHASE4, 41600 },
 	{ "phase 1 K1=2 K2=0 bypasses the divider", 1, 2, 0, CGU_CON1_AHB_CLKSEL_PHASE1, 104000 },
+	{ "phase 2 K1=1 K2=0", 2, 1, 0, CGU_CON1_AHB_CLKSEL_PHASE2, 208000 },
 };
 
 static const struct {
