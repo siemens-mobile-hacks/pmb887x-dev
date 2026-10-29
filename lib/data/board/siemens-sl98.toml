@@ -74,6 +74,10 @@ NAV_CENTER	= [2, 3]
 NAV_LEFT	= [3, 3]
 NAV_DOWN	= [4, 3]
 
+SEND		= [0, 5]
+SOFT_LEFT	= [3, 5]
+SOFT_RIGHT	= [4, 5]
+
 NUM1		= [0, 0]
 NUM2		= [0, 1]
 NUM3		= [0, 2]
