@@ -1,12 +1,10 @@
 #include <pmb887x.h>
 
 #include "bus-timing.h"
+#include "cgu/clock.h"
 #include "test.h"
 
 #ifdef PMB8876
-
-#define EL71_WRITE_TIM1 0x00000400
-#define EL71_WRITE_TIM2 0x02000400
 
 static struct dif_bus_timing measure(const char *name, const struct dif_lane_config *lane,
 	enum dif_blit_source source, uint32_t rmc, uint32_t tim1, uint32_t tim2) {
@@ -112,12 +110,12 @@ static void test_module_clock_divider(void) {
 	for (uint32_t i = 0; i < ARRAY_SIZE(RMC); i++) {
 		snprintf(name, sizeof(name), "ACCESSCYCLE=16 with RMC=%u", (unsigned int) RMC[i]);
 		check_cycles(name, &DIF_LANE_2x8, RMC[i], dif_lcdtim1(0, 16, 0), 0, 17);
-		snprintf(name, sizeof(name), "EL71 write profile with RMC=%u", (unsigned int) RMC[i]);
+		snprintf(name, sizeof(name), "ACCESSCYCLE=4 CSDEACT=4 WRRDDEACT=2 with RMC=%u", (unsigned int) RMC[i]);
 		if (RMC[i] == 1) {
-			measure(name, &DIF_LANE_2x8, DIF_BLIT_SRAM, RMC[i], EL71_WRITE_TIM1, EL71_WRITE_TIM2);
+			measure(name, &DIF_LANE_2x8, DIF_BLIT_SRAM, RMC[i], dif_lcdtim1(0, 4, 0), dif_lcdtim2(0, 4, 0, 2));
 			continue;
 		}
-		check_cycles(name, &DIF_LANE_2x8, RMC[i], EL71_WRITE_TIM1, EL71_WRITE_TIM2, 5);
+		check_cycles(name, &DIF_LANE_2x8, RMC[i], dif_lcdtim1(0, 4, 0), dif_lcdtim2(0, 4, 0, 2), 5);
 	}
 }
 
@@ -127,20 +125,18 @@ static void test_lane_formats(void) {
 	test_category("BSCONF byte lanes share the byte period");
 	for (uint32_t i = 0; i < ARRAY_SIZE(LANES); i++) {
 		check_cycles("ACCESSCYCLE=8", LANES[i], 1, dif_lcdtim1(0, 8, 0), 0, 9);
-		check_cycles("EL71 write profile with RMC=2", LANES[i], 2, EL71_WRITE_TIM1, EL71_WRITE_TIM2, 5);
+		check_cycles("ACCESSCYCLE=4 CSDEACT=4 WRRDDEACT=2 with RMC=2", LANES[i], 2,
+			dif_lcdtim1(0, 4, 0), dif_lcdtim2(0, 4, 0, 2), 5);
 	}
 }
 
-static void test_firmware_profiles(void) {
-	test_category("EL71 firmware profiles");
-	/*
-	 * Runtime write profile, boot profile, and GRAM read profile written by the EL71 firmware. RMC=2
-	 * keeps the short profiles away from the DMA feed limit of the 26 MHz test clock tree.
-	 */
-	check_cycles("EL71 write profile with RMC=2", &DIF_LANE_2x8, 2, EL71_WRITE_TIM1, EL71_WRITE_TIM2, 5);
-	check_cycles("EL71 boot profile with RMC=2", &DIF_LANE_2x8, 2, 0x00030500, 0x04020501, 6);
-	check_cycles("EL71 read profile", &DIF_LANE_2x8, 1, 0x00030F00, 0x05020601, 16);
-	measure("EL71 write profile", &DIF_LANE_2x8, DIF_BLIT_EXTRAM, 1, EL71_WRITE_TIM1, EL71_WRITE_TIM2);
+static void test_firmware_timings(void) {
+	test_category("Firmware LCD timings");
+	/* RMC=2 keeps the short timings away from the DMA feed limit of the 26 MHz test clock tree. */
+	check_cycles("LCD write timing with RMC=2", &DIF_LANE_2x8, 2, dif_lcdtim1(0, 4, 0), dif_lcdtim2(0, 4, 0, 2), 5);
+	check_cycles("LCD boot timing with RMC=2", &DIF_LANE_2x8, 2, dif_lcdtim1(0, 5, 3), dif_lcdtim2(1, 5, 2, 4), 6);
+	check_cycles("LCD GRAM read timing", &DIF_LANE_2x8, 1, dif_lcdtim1(0, 15, 3), dif_lcdtim2(1, 6, 2, 5), 16);
+	measure("LCD write timing", &DIF_LANE_2x8, DIF_BLIT_EXTRAM, 1, dif_lcdtim1(0, 4, 0), dif_lcdtim2(0, 4, 0, 2));
 }
 
 static void test_dma_feed_limit(void) {
@@ -167,6 +163,32 @@ static void test_dma_feed_limit(void) {
 	}
 }
 
+/* Runs last: the firmware clock tree stays enabled. */
+static void test_dif_packets(void) {
+	test_category("Packets at the 104 MHz PLL clock tree");
+	cgu_firmware_pll_enable();
+	CGU_CON3 = (CGU_CON3 & ~(CGU_CON3_AHB_PER_CLKSEL | CGU_CON3_AHB_PER_CLKDIV)) |
+		CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2 |
+		CGU_CON3_AHB_PER_CLKDIV_DIV1;
+	stopwatch_update();
+
+	struct dif_bus_timing timing = dif_bus_timing_measure(&DIF_LANE_4x8_PACKET, DIF_BLIT_EXTRAM,
+		1 << MOD_CLC_RMC_SHIFT, dif_lcdtim1(0, 4, 0), dif_lcdtim2(0, 4, 0, 2));
+	uint32_t ahb_per_hz = cpu_get_ahb_per_freq();
+	uint32_t cycles100 = (uint32_t) ((uint64_t) timing.byte_ns100 * ahb_per_hz / 1000000000);
+	uint32_t expected100 = (uint32_t) (5 * 100000000000ULL / ahb_per_hz);
+
+	printf("# CPU %u Hz, AHB %u Hz, EBU %u Hz, AHB_PER %u Hz\n", (unsigned int) cpu_get_freq(),
+		(unsigned int) cpu_get_ahb_freq(), (unsigned int) cpu_get_ebu_freq(), (unsigned int) ahb_per_hz);
+	printf("# %s: %u.%02u ns = %u.%02u AHB_PER cycles per byte, long_ns=%u short_ns=%u\n", DIF_LANE_4x8_PACKET.name,
+		(unsigned int) (timing.byte_ns100 / 100), (unsigned int) (timing.byte_ns100 % 100),
+		(unsigned int) (cycles100 / 100), (unsigned int) (cycles100 % 100),
+		(unsigned int) timing.long_ns, (unsigned int) timing.short_ns);
+	dif_bus_timing_print_failure(&timing);
+	test_check("4x8 packets with the LCD write timing take 5 AHB_PER cycles per byte",
+		timing.ok && test_u32_in_interval(timing.byte_ns100, expected100 * 99 / 100, expected100 * 101 / 100));
+}
+
 int main(void) {
 	test_start("DIFv2 parallel bus timings");
 
@@ -178,8 +200,9 @@ int main(void) {
 	test_other_fields();
 	test_module_clock_divider();
 	test_lane_formats();
-	test_firmware_profiles();
+	test_firmware_timings();
 	test_dma_feed_limit();
+	test_dif_packets();
 
 	return test_finish();
 }

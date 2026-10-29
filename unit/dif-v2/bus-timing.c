@@ -29,6 +29,7 @@ const struct dif_lane_config DIF_LANE_1x8 = {
 	DIF_CON_BM_8,
 	DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_1,
 	DIF_CSREG_BSCONF_1x8BIT,
+	DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_AHB1,
 };
 
 const struct dif_lane_config DIF_LANE_2x8 = {
@@ -36,6 +37,7 @@ const struct dif_lane_config DIF_LANE_2x8 = {
 	DIF_CON_BM_16,
 	DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_2,
 	DIF_CSREG_BSCONF_2x8BIT,
+	DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_AHB1,
 };
 
 const struct dif_lane_config DIF_LANE_4x8 = {
@@ -43,6 +45,15 @@ const struct dif_lane_config DIF_LANE_4x8 = {
 	DIF_CON_BM_8,
 	DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_4,
 	DIF_CSREG_BSCONF_4x8BIT,
+	DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 | DMAC_CH_CONTROL_S_AHB1,
+};
+
+const struct dif_lane_config DIF_LANE_4x8_PACKET = {
+	"4x8 bytes per 32-bit lane, DIF-controlled packets",
+	DIF_CON_BM_1,
+	DIF_TXFIFO_CFG_TXBS_8_WORD | DIF_TXFIFO_CFG_TXFA_4 | DIF_TXFIFO_CFG_TXFC,
+	DIF_CSREG_BSCONF_4x8BIT,
+	DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_8 | DMAC_CH_CONTROL_S_AHB2 | DMAC_CH_CONTROL_DI,
 };
 
 bool dif_bus_timing_init(void) {
@@ -86,6 +97,10 @@ static bool wait_until_idle(void) {
 	return (DIF_STAT & DIF_STAT_BSY) == 0;
 }
 
+static bool is_dif_flow_controller(const struct dif_lane_config *lane) {
+	return (lane->txfifo_cfg & DIF_TXFIFO_CFG_TXFC) != 0;
+}
+
 static void configure_dif(const struct dif_lane_config *lane, uint32_t clc, uint32_t tim1, uint32_t tim2) {
 	DIF_RUNCTRL = 0;
 	DIF_CLC = clc;
@@ -99,15 +114,29 @@ static void configure_dif(const struct dif_lane_config *lane, uint32_t clc, uint
 	DIF_TXFIFO_CFG = lane->txfifo_cfg;
 	DIF_LCDTIM1 = tim1;
 	DIF_LCDTIM2 = tim2;
-	DIF_IMSC = DIF_IMSC_TXBREQ;
-	DIF_DMAE = DIF_DMAE_TXBREQ;
+	if (is_dif_flow_controller(lane)) {
+		DIF_IMSC = DIF_IMSC_TXLSREQ | DIF_IMSC_TXSREQ | DIF_IMSC_TXLBREQ | DIF_IMSC_TXBREQ;
+		DIF_DMAE = DIF_DMAE_TXLSREQ | DIF_DMAE_TXSREQ | DIF_DMAE_TXLBREQ | DIF_DMAE_TXBREQ;
+	} else {
+		DIF_IMSC = DIF_IMSC_TXBREQ;
+		DIF_DMAE = DIF_DMAE_TXBREQ;
+	}
 	DIF_ICR = DIF_ICR_TXLSREQ | DIF_ICR_TXSREQ | DIF_ICR_TXLBREQ | DIF_ICR_TXBREQ | DIF_ICR_ERR;
 	DIF_ERRIRQSC = DIF_ERRIRQSS;
 	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
 }
 
 /* Returns the time from the first DMA request until the parallel bus is idle, or 0 on failure. */
-static uint32_t blit(const uint32_t *source, uint32_t words, struct dif_bus_timing *timing) {
+static uint32_t blit(
+	const struct dif_lane_config *lane,
+	const uint32_t *source,
+	uint32_t words,
+	struct dif_bus_timing *timing
+) {
+	bool is_packet = is_dif_flow_controller(lane);
+	uint32_t transfer_size = is_packet ? 0 : words;
+	uint32_t flow_ctrl = is_packet ? DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER_PER : DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER;
+
 	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
 	DMAC_TC_CLEAR = BIT(DMA_TX_CHANNEL);
 	DMAC_ERR_CLEAR = BIT(DMA_TX_CHANNEL);
@@ -115,17 +144,28 @@ static uint32_t blit(const uint32_t *source, uint32_t words, struct dif_bus_timi
 	DMAC_CH_DST_ADDR(DMA_TX_CHANNEL) = (uint32_t) &DIF_TXD;
 	DMAC_CH_LLI(DMA_TX_CHANNEL) = 0;
 	DMAC_CH_CONTROL(DMA_TX_CHANNEL) = (
-		words | DMAC_CH_CONTROL_SB_SIZE_SZ_4 | DMAC_CH_CONTROL_DB_SIZE_SZ_4 |
-		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD | DMAC_CH_CONTROL_S_AHB1 |
-		DIF_DMA_TX_AHB | DMAC_CH_CONTROL_SI | DMAC_CH_CONTROL_I
+		transfer_size |
+		lane->dma_control |
+		DMAC_CH_CONTROL_S_WIDTH_DWORD |
+		DMAC_CH_CONTROL_D_WIDTH_DWORD |
+		DIF_DMA_TX_AHB |
+		DMAC_CH_CONTROL_SI |
+		DMAC_CH_CONTROL_I
 	);
-	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = (
-		(DIF_DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_MEM2PER |
-		DMAC_CH_CONFIG_ENABLE
-	);
+	uint32_t config = (DIF_DMA_TX_REQUEST << DMAC_CH_CONFIG_DST_PERIPH_SHIFT) | flow_ctrl;
 
-	stopwatch_t start = stopwatch_get();
-	DIF_ISR = DIF_ISR_TXBREQ;
+	stopwatch_t start;
+	if (is_packet) {
+		/* A DIF-controlled packet starts like the firmware's: TPS_CTRL first, then the channel. */
+		DMAC_CH_CONFIG(DMA_TX_CHANNEL) = config;
+		start = stopwatch_get();
+		DIF_TPS_CTRL = words;
+		DMAC_CH_CONFIG(DMA_TX_CHANNEL) = config | DMAC_CH_CONFIG_ENABLE;
+	} else {
+		DMAC_CH_CONFIG(DMA_TX_CHANNEL) = config | DMAC_CH_CONFIG_ENABLE;
+		start = stopwatch_get();
+		DIF_ISR = DIF_ISR_TXBREQ;
+	}
 	while ((DMAC_RAW_TC_STATUS & BIT(DMA_TX_CHANNEL)) == 0 &&
 		(DMAC_RAW_ERR_STATUS & BIT(DMA_TX_CHANNEL)) == 0 && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
 		test_watchdog_serve();
@@ -152,9 +192,9 @@ struct dif_bus_timing dif_bus_timing_measure(const struct dif_lane_config *lane,
 	const uint32_t *buffer = source == DIF_BLIT_SRAM ? sram_tx : extram_tx;
 
 	configure_dif(lane, clc, tim1, tim2);
-	timing.long_ns = blit(buffer, LONG_WORDS, &timing);
+	timing.long_ns = blit(lane, buffer, LONG_WORDS, &timing);
 	configure_dif(lane, clc, tim1, tim2);
-	timing.short_ns = blit(buffer, SHORT_WORDS, &timing);
+	timing.short_ns = blit(lane, buffer, SHORT_WORDS, &timing);
 	timing.ok = timing.long_ns > timing.short_ns && timing.short_ns != 0;
 	if (timing.ok) {
 		uint32_t bytes = (LONG_WORDS - SHORT_WORDS) * 4;

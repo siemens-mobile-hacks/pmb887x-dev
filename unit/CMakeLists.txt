@@ -235,7 +235,7 @@ add_peripheral_test(usart-rx-level usart/rx-level.c)
 add_peripheral_test(usart-flow-control usart/flow-control.c)
 add_peripheral_test(dif-v2 dif-v2/test.c dif-v2/dif-v2.c)
 add_peripheral_test(dif-v2-dma dif-v2/test-dma.c dif-v2/dif-v2.c)
-add_peripheral_test(dif-v2-timings dif-v2/test-timings.c dif-v2/bus-timing.c)
+add_peripheral_test(dif-v2-timings dif-v2/test-timings.c dif-v2/bus-timing.c cgu/clock.c)
 add_peripheral_test(dif-v2-clock dif-v2/clock.c dif-v2/bus-timing.c cgu/clock.c)
 add_peripheral_test(
 	dif-v2-lcd

@@ -8,6 +8,7 @@ struct dif_lane_config {
 	uint32_t con;
 	uint32_t txfifo_cfg;
 	uint32_t bsconf;
+	uint32_t dma_control;
 };
 
 enum dif_blit_source {
@@ -32,6 +33,7 @@ struct dif_bus_timing {
 extern const struct dif_lane_config DIF_LANE_1x8;
 extern const struct dif_lane_config DIF_LANE_2x8;
 extern const struct dif_lane_config DIF_LANE_4x8;
+extern const struct dif_lane_config DIF_LANE_4x8_PACKET;
 
 /* Returns false when the SRAM source buffer does not fit after the linked .sram section. */
 bool dif_bus_timing_init(void);
