@@ -383,3 +383,62 @@ thumb_loop timing_thumb_blit
 	subs r4, r4, #1
 	bne 2b
 thumb_loop_end
+
+@ Memory region workloads: r1 points to { base, bytes }; LDM/STM move 32 bytes, LDR/STR one word per instruction.
+arm_loop timing_arm_region_ldm
+	ldr r10, [r1]
+	ldr r12, [r1, #4]
+	mov r12, r12, lsr #5
+2:
+	ldmia r10!, {r2-r9}
+	subs r12, r12, #1
+	bne 2b
+arm_loop_end
+
+arm_loop timing_arm_region_stm
+	ldr r11, [r1]
+	ldr r12, [r1, #4]
+	mov r12, r12, lsr #5
+2:
+	stmia r11!, {r2-r9}
+	subs r12, r12, #1
+	bne 2b
+arm_loop_end
+
+arm_loop timing_arm_region_ldr
+	ldr r10, [r1]
+	ldr r12, [r1, #4]
+	mov r12, r12, lsr #2
+2:
+	ldr r2, [r10], #4
+	subs r12, r12, #1
+	bne 2b
+arm_loop_end
+
+arm_loop timing_arm_region_str
+	ldr r11, [r1]
+	ldr r12, [r1, #4]
+	mov r12, r12, lsr #2
+2:
+	str r2, [r11], #4
+	subs r12, r12, #1
+	bne 2b
+arm_loop_end
+
+@ Reads the register at base bytes / 4 times.
+arm_loop timing_arm_io_ldr
+	ldr r10, [r1]
+	ldr r12, [r1, #4]
+	mov r12, r12, lsr #2
+2:
+	ldr r2, [r10]
+	subs r12, r12, #1
+	bne 2b
+arm_loop_end
+
+@ 64 KiB of straight-line ARM code: larger than the I-cache, so every line is fetched from memory again.
+arm_loop timing_arm_code_stream
+	.rept 16384
+	nop
+	.endr
+arm_loop_end

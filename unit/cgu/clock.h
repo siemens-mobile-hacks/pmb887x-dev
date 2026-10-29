@@ -33,6 +33,7 @@ enum cgu_phase_mask {
 };
 
 void cgu_pll_set(uint32_t ndiv, uint32_t mdiv);
+void cgu_firmware_pll_enable(void);
 void cgu_phases_enable(uint32_t phases);
 void cgu_phase_set_divider(uint32_t phase, uint32_t k1, uint32_t k2);
 void cgu_fsys_select(enum cgu_fsys_source source);

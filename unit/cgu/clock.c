@@ -13,6 +13,17 @@ __SRAM void cgu_pll_set(uint32_t ndiv, uint32_t mdiv) {
 	CGU_OSC = osc | CGU_OSC_PLL_POWER_UP | CGU_OSC_PLL_BYPASS_N;
 }
 
+__SRAM void cgu_firmware_pll_enable(void) {
+	uint32_t timings = EBU_SDRMCON_CRP | EBU_SDRMCON_CRCD | EBU_SDRMCON_CRC | EBU_SDRMCON_CRCE;
+	EBU_SDRMCON(0) = (EBU_SDRMCON(0) & ~timings) | (0x00D7A870 & timings);
+	EBU_SDRMREF(0) = (EBU_SDRMREF(0) & ~EBU_SDRMREF_REFRESHC) | (0x00000A19 & EBU_SDRMREF_REFRESHC);
+	EBU_SDRMOD(0) = (EBU_SDRMOD(0) & ~EBU_SDRMOD_CASLAT) | (0x00000033 & EBU_SDRMOD_CASLAT);
+
+	cgu_pll_set(3, 0);
+	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_EBU_CLKSEL) | CGU_CON2_EBU_CLKSEL_PLL;
+	CGU_CON1 |= CGU_CON1_AHB_CLKSEL_PLL;
+}
+
 void cgu_phases_enable(uint32_t phases) {
 	CGU_OSC |= (phases << 1) | (phases << 9);
 }
