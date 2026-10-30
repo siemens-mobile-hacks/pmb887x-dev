@@ -251,6 +251,7 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 
 [cpu-timing]
 devices = ["generic-pmb8876"]
+emulator_args = ["--memory-timing"]
 
 [cgu-ahb]
 devices = ["generic-pmb8875", "generic-pmb8876"]

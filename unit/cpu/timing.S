@@ -473,3 +473,35 @@ thumb_loop timing_thumb_ldr_use_page_cross
 	adds r3, r3, r2
 	.endr
 thumb_loop_end
+
+@ Line workloads: r1 points to { base, bytes }; each iteration touches one 32-byte line.
+.macro line_loop name, body:vararg
+arm_loop \name
+	ldr r10, [r1]
+	ldr r12, [r1, #4]
+	mov r12, r12, lsr #5
+2:
+	\body
+	add r10, r10, #32
+	subs r12, r12, #1
+	bne 2b
+arm_loop_end
+.endm
+
+line_loop timing_arm_line_ldr, ldr r2, [r10]
+line_loop timing_arm_line_ldr_str_clean, ldr r2, [r10]; str r2, [r10]; mcr p15, 0, r10, c7, c10, 1
+
+@ Loops over \bytes of straight-line ARM code: below the I-cache size every pass after the first hits.
+.macro code_loop name, bytes
+arm_loop \name
+	.rept \bytes / 4
+	nop
+	.endr
+arm_loop_end
+.endm
+
+code_loop timing_arm_code_loop_256, 256
+code_loop timing_arm_code_loop_288, 288
+code_loop timing_arm_code_loop_1k, 1024
+code_loop timing_arm_code_loop_16k, 16384
+code_loop timing_arm_code_loop_32k, 32768
