@@ -130,6 +130,7 @@ sub genCpuModulesList {
 			uc($cpu_meta->{name}."_".$module->{name}."_BASE").",",
 			'"'.$module->{qemu}.'",',
 			'"'.($module->{clock} // "").'",',
+			'"'.($module->{bus} // "").'",',
 			@module_irqs ? "$irqs_var," : "NULL,",
 			@module_irqs ? "ARRAY_SIZE($irqs_var)," : "0,",
 			@module_gpios ? "$gpios_var," : "NULL,",
