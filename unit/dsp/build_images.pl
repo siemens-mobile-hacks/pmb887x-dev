@@ -120,6 +120,7 @@ my @images = (
 	[ 'lle/data-ram.asm', 'lle/data-ram-8876.inc', 'DSP_DATA_RAM_8876', 'pmb8876' ],
 );
 my @generators = qw(
+	lle/gen_delay_slot_functional.pl
 	lle/gen_interrupt_window.pl
 	lle/gen_pc_write.pl
 	lle/gen_block_repeat_control.pl
