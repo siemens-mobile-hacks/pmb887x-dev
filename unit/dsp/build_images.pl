@@ -37,6 +37,8 @@ my @images = (
 	[ 'lle/interrupt-functional.asm', 'lle/interrupt-functional-8876.inc', 'DSP_INTERRUPT_IMAGE_8876', 'pmb8876' ],
 	[ 'lle/interrupt-window.asm', 'lle/interrupt-window-8875.inc', 'DSP_INTERRUPT_WINDOW_8875', 'pmb8875' ],
 	[ 'lle/interrupt-window.asm', 'lle/interrupt-window-8876.inc', 'DSP_INTERRUPT_WINDOW_8876', 'pmb8876' ],
+	[ 'lle/pc-write.asm', 'lle/pc-write-8875.inc', 'DSP_PC_WRITE_8875', 'pmb8875' ],
+	[ 'lle/pc-write.asm', 'lle/pc-write-8876.inc', 'DSP_PC_WRITE_8876', 'pmb8876' ],
 	[ 'lle/interrupt-repeat.asm', 'lle/interrupt-repeat-8875.inc', 'DSP_INTERRUPT_REPEAT_8875', 'pmb8875' ],
 	[ 'lle/interrupt-repeat.asm', 'lle/interrupt-repeat-8876.inc', 'DSP_INTERRUPT_REPEAT_8876', 'pmb8876' ],
 	[ 'lle/interrupt-block-repeat.asm', 'lle/interrupt-block-repeat-8875.inc',
@@ -111,6 +113,7 @@ my @images = (
 );
 my @generators = qw(
 	lle/gen_interrupt_window.pl
+	lle/gen_pc_write.pl
 );
 my @embedded_images = (
 	[ '../../rom/dsp/cx75/0602/container.bin', 'hle/user-rom-siemens-0602.inc',

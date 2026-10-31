@@ -25,6 +25,7 @@ success.
 | `dsp-lle-modulo-update` | Modulo addressing after immediate ST2, CFGI, and CFGJ writes |
 | `dsp-lle-interrupt-repeat` | Single-instruction repeat preemption, nested repeats, and abandoned repeat resume |
 | `dsp-lle-interrupt-window` | Interrupt acceptance inside straight-line windows opened and closed by IE, IM0, and IM2 writes |
+| `dsp-lle-pc-write` | Words executed after every program-counter write form, the reached target, and the stack pointer |
 | `dsp-lle-clock-domains` | DSP core, Timer 2, Shared RAM, and command-interface behavior under CGU and CLC controls |
 | `dsp-lle-interrupt-sources` | All documented DSP interrupt-unit source bits, line routing, masking, coalescing, and acknowledgement |
 | `dsp-lle-irq-shared-benchmark` | DSP interrupt entry and round-trip latency plus DSP/ARM Shared RAM throughput |
