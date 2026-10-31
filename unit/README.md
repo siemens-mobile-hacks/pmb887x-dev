@@ -47,7 +47,9 @@ success.
 | `dsp-lle-instructions` | TeakLite I instruction results, including external-register writes, captured from PMB8876 Mask ROM 0801 hardware |
 | `dsp-lle-opcode-aliases` | Noncanonical variants of every documented TeakLite I don't-care opcode field |
 | `dsp-lle-opcode-probe` | Resumable diagnostic sweep of raw TeakLite first-word opcodes with reset and timeout isolation |
+| `dsp-lle-opcode-map` | Every TeakLite first-word opcode compared with the PMB8876 hardware outcome map |
 | `dsp-lle-expansion-probe` | Resumable sweep of expansion words for all documented two-word TeakLite I encoding rows |
+| `dsp-lle-expansion-map-0`…`dsp-lle-expansion-map-18` | Every expansion word of one two-word TeakLite family compared with PMB8876 hardware map hashes per 256 words |
 | `dsp-lle-control-functional` | DSP control, Program/Data ROM mapping and banking, reset, and power-state behavior |
 | `dsp-lle-program-banks` | Mask-specific Program ROM page selection, exact instruction reads, and same-PC execution |
 | `dsp-lle-tpu-events` | PMB8876 TPU Timer RAM decoder values 0–9 and 15–31 observed through Baseband, modulator, and DSP interrupt state |

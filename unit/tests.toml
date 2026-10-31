@@ -35,11 +35,85 @@ timeout = 300
 [dsp-lle-opcode-aliases]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
-[dsp-lle-opcode-probe]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+[dsp-lle-opcode-map]
+devices = ["generic-pmb8876"]
+timeout = 3600
 
-[dsp-lle-expansion-probe]
-devices = ["generic-pmb8875", "generic-pmb8876"]
+[dsp-lle-expansion-map-0]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-1]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-2]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-3]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-4]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-5]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-6]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-7]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-8]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-9]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-10]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-11]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-12]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-13]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-14]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-15]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-16]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-17]
+devices = ["generic-pmb8876"]
+timeout = 900
+
+[dsp-lle-expansion-map-18]
+devices = ["generic-pmb8876"]
+timeout = 900
 
 [dsp-lle-irqs]
 devices = ["generic-pmb8875", "generic-pmb8876"]

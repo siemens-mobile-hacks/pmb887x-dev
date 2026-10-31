@@ -264,6 +264,42 @@ static bool wait_for_completion(void) {
 }
 
 #ifndef DSP_EXPANSION_PROBE
+#include "opcode-probe/hardware-map-classes.inc"
+
+enum opcode_outcome {
+	OPCODE_COMPLETE,
+	OPCODE_COMPLETE_WITHOUT_POST,
+	OPCODE_TRAP_COMPLETE,
+	OPCODE_TIMEOUT,
+	OPCODE_UNEXPECTED,
+};
+
+static const char *const OPCODE_OUTCOME_NAMES[] = {
+	"complete",
+	"complete-without-post",
+	"trap-complete",
+	"timeout",
+	"unexpected",
+};
+
+static enum opcode_outcome classify_outcome(bool done, uint16_t entered, uint16_t trap, uint16_t post) {
+	if (!done)
+		return OPCODE_TIMEOUT;
+	if (entered != DSP_MARKER_ENTERED)
+		return OPCODE_UNEXPECTED;
+	if (trap == 0 && post == DSP_MARKER_POST)
+		return OPCODE_COMPLETE;
+	if (trap == 0 && post == 0)
+		return OPCODE_COMPLETE_WITHOUT_POST;
+	if (trap == DSP_MARKER_TRAP && post == DSP_MARKER_POST)
+		return OPCODE_TRAP_COMPLETE;
+	return OPCODE_UNEXPECTED;
+}
+
+static enum opcode_outcome hardware_outcome(uint16_t opcode) {
+	return (DSP_OPCODE_HARDWARE_CLASSES[opcode >> 2] >> ((opcode & 3) * 2)) & 3;
+}
+
 static int fail_transport(const char *operation, uint16_t opcode) {
 	printf("# DSPPROBE-ERROR %04lX %s\n", (uint32_t) opcode, operation);
 	test_check(operation, false);
@@ -277,6 +313,7 @@ int main(void) {
 	uint32_t completed = 0;
 	uint32_t trapped = 0;
 	uint32_t timed_out = 0;
+	uint32_t mismatches = 0;
 
 	for (uint32_t opcode = DSP_OPCODE_PROBE_FIRST; opcode <= DSP_OPCODE_PROBE_LAST; opcode++) {
 		test_watchdog_reset();
@@ -321,17 +358,71 @@ int main(void) {
 
 		printf("# DSPPROBE %04lX %s %04lX %04lX %04lX %04lX\n", opcode, outcome, (uint32_t) entered,
 			(uint32_t) trap, (uint32_t) post, (uint32_t) done_marker);
+		enum opcode_outcome actual = classify_outcome(done, entered, trap, post);
+		enum opcode_outcome expected = hardware_outcome((uint16_t) opcode);
+		if (actual != expected) {
+			printf("# DSPPROBE-MISMATCH %04lX expected=%s actual=%s\n", opcode, OPCODE_OUTCOME_NAMES[expected],
+				OPCODE_OUTCOME_NAMES[actual]);
+			mismatches++;
+		}
 		test_watchdog_serve();
 		if ((opcode & 0xFF) == 0xFF)
 			printf("# DSPPROBE-PROGRESS %04lX\n", opcode);
 	}
 
-	printf("# DSPPROBE-SUMMARY %04X %04X complete=%lu trap=%lu timeout=%lu\n", DSP_OPCODE_PROBE_FIRST,
-		DSP_OPCODE_PROBE_LAST, completed, trapped, timed_out);
-	test_check("opcode probe range completed", true);
+	printf("# DSPPROBE-SUMMARY %04X %04X complete=%lu trap=%lu timeout=%lu mismatched=%lu\n", DSP_OPCODE_PROBE_FIRST,
+		DSP_OPCODE_PROBE_LAST, completed, trapped, timed_out, mismatches);
+#ifdef PMB8876
+	test_eq_u32("opcode outcomes that differ from the PMB8876 hardware map", 0, mismatches);
+#else
+	test_skip("opcode outcomes match the hardware map", "the hardware map was captured on PMB8876 only");
+#endif
 	return test_finish();
 }
 #else
+#include "opcode-probe/expansion-map-hashes.inc"
+
+#define EXPANSION_HASH_BLOCK_WORDS 256
+#define EXPANSION_HASH_OFFSET_BASIS 0x811C9DC5
+#define EXPANSION_HASH_PRIME 0x01000193
+
+enum expansion_outcome {
+	EXPANSION_COMPLETE,
+	EXPANSION_TRAP_COMPLETE,
+	EXPANSION_TIMEOUT,
+	EXPANSION_TRAP_TIMEOUT,
+	EXPANSION_UNSAFE_SKIP,
+};
+
+static const char *const EXPANSION_OUTCOME_NAMES[] = {
+	"complete",
+	"trap-complete",
+	"timeout",
+	"trap-timeout",
+	"unsafe-skip",
+};
+
+static uint32_t expansion_hash_word(uint32_t hash, uint16_t word) {
+	hash = (hash ^ (word & 0xFF)) * EXPANSION_HASH_PRIME;
+	return (hash ^ (word >> 8)) * EXPANSION_HASH_PRIME;
+}
+
+static uint32_t expansion_hash_record(
+	uint32_t hash,
+	uint16_t expansion,
+	enum expansion_outcome outcome,
+	const uint16_t *markers,
+	const uint16_t *results
+) {
+	hash = expansion_hash_word(hash, expansion);
+	hash = expansion_hash_word(hash, outcome == EXPANSION_TRAP_TIMEOUT ? EXPANSION_TIMEOUT : outcome);
+	for (size_t i = 0; i < 4; i++)
+		hash = expansion_hash_word(hash, markers[i]);
+	for (size_t i = 0; i < DSP_EXPANSION_RESULT_WORDS; i++)
+		hash = expansion_hash_word(hash, results[i]);
+	return hash;
+}
+
 static uint16_t expansion_address(const struct expansion_family *family, uint16_t expansion) {
 	if (family->address_mode == EXPANSION_R7_READ || family->address_mode == EXPANSION_R7_WRITE)
 		return DSP_EXPANSION_R7_ADDRESS + expansion;
@@ -391,6 +482,46 @@ static void prepare_expansion_operand(const struct expansion_family *family, uin
 	DSP_SHARED_MEMORY[address - TEAK_SHARED_RAM_BASE] = value;
 }
 
+static enum expansion_outcome run_expansion(
+	const struct expansion_family *family,
+	uint32_t family_index,
+	uint16_t expansion,
+	uint16_t *markers,
+	uint16_t *results
+) {
+	bool done = wait_for_completion();
+	markers[0] = DSP_SHARED_MEMORY[DSP_MARKER_ENTERED_OFFSET];
+	markers[1] = DSP_SHARED_MEMORY[DSP_MARKER_TRAP_OFFSET];
+	markers[2] = DSP_SHARED_MEMORY[DSP_MARKER_POST_OFFSET];
+	markers[3] = DSP_SHARED_MEMORY[DSP_MARKER_DONE_OFFSET];
+	bool trapped = markers[1] == DSP_MARKER_TRAP;
+
+	enum expansion_outcome outcome;
+	if (done) {
+		outcome = trapped ? EXPANSION_TRAP_COMPLETE : EXPANSION_COMPLETE;
+	} else {
+		outcome = trapped ? EXPANSION_TRAP_TIMEOUT : EXPANSION_TIMEOUT;
+		printf("# DSPEXP-TRANSIENT %lu %04lX %04lX %04lX %04lX %04lX\n", family_index, (uint32_t) expansion,
+			(uint32_t) markers[0], (uint32_t) markers[1], (uint32_t) markers[2], (uint32_t) markers[3]);
+		for (size_t i = 0; i < 4; i++)
+			markers[i] = UINT16_MAX;
+	}
+
+	for (size_t i = 0; i < DSP_EXPANSION_DSP_RESULT_WORDS; i++)
+		results[i] = done ? DSP_SHARED_MEMORY[DSP_EXPANSION_RESULT_OFFSET + i] : UINT16_MAX;
+	uint16_t observation_address = expansion_observation_address(family, expansion);
+	results[DSP_EXPANSION_DSP_RESULT_WORDS] =
+		done ? DSP_SHARED_MEMORY[observation_address - TEAK_SHARED_RAM_BASE] : UINT16_MAX;
+
+	printf("# DSPEXP %lu %04lX %s %04lX %04lX %04lX %04lX", family_index, (uint32_t) expansion,
+		EXPANSION_OUTCOME_NAMES[outcome], (uint32_t) markers[0], (uint32_t) markers[1], (uint32_t) markers[2],
+		(uint32_t) markers[3]);
+	for (size_t i = 0; i < DSP_EXPANSION_RESULT_WORDS; i++)
+		printf(" %04lX", (uint32_t) results[i]);
+	printf("\n");
+	return outcome;
+}
+
 static int fail_expansion_transport(const char *operation, uint32_t family, uint16_t expansion) {
 	printf("# DSPEXP-ERROR %lu %04lX %s\n", family, (uint32_t) expansion, operation);
 	test_check(operation, false);
@@ -413,6 +544,9 @@ int main(void) {
 	uint32_t completed = 0;
 	uint32_t trapped = 0;
 	uint32_t timed_out = 0;
+	uint32_t compared_blocks = 0;
+	uint32_t mismatched_blocks = 0;
+	uint32_t hash = EXPANSION_HASH_OFFSET_BASIS;
 
 	for (uint32_t family_index = DSP_EXPANSION_PROBE_FAMILY_FIRST;
 		family_index <= DSP_EXPANSION_PROBE_FAMILY_LAST; family_index++) {
@@ -421,77 +555,58 @@ int main(void) {
 		printf("# DSPEXP-FAMILY %lu %04lX \"%s\"\n", family_index, (uint32_t) family->first_word, family->name);
 		for (uint32_t expansion = DSP_EXPANSION_PROBE_WORD_FIRST;
 			expansion <= DSP_EXPANSION_PROBE_WORD_LAST; expansion++) {
-			if (!expansion_is_safe(family, (uint16_t) expansion)) {
+			if ((expansion % EXPANSION_HASH_BLOCK_WORDS) == 0)
+				hash = EXPANSION_HASH_OFFSET_BASIS;
+			uint16_t markers[4];
+			uint16_t results[DSP_EXPANSION_RESULT_WORDS];
+			enum expansion_outcome outcome;
+			if (expansion_is_safe(family, (uint16_t) expansion)) {
+				test_watchdog_reset();
+				if (!reset_dsp())
+					return fail_expansion_transport("DSP reset failed during expansion probe", family_index,
+						(uint16_t) expansion);
+				clear_markers();
+				if (!load_probe_image(family->first_word, (uint16_t) expansion))
+					return fail_expansion_transport("DSP image load failed during expansion probe", family_index,
+						(uint16_t) expansion);
+				prepare_expansion_operand(family, (uint16_t) expansion);
+				if (!branch_to_probe())
+					return fail_expansion_transport("DSP branch failed during expansion probe", family_index,
+						(uint16_t) expansion);
+				outcome = run_expansion(family, family_index, (uint16_t) expansion, markers, results);
+				executed++;
+				completed += outcome == EXPANSION_COMPLETE || outcome == EXPANSION_TRAP_COMPLETE;
+				trapped += outcome == EXPANSION_TRAP_COMPLETE || outcome == EXPANSION_TRAP_TIMEOUT;
+				timed_out += outcome == EXPANSION_TIMEOUT || outcome == EXPANSION_TRAP_TIMEOUT;
+				test_watchdog_serve();
+			} else {
 				printf("# DSPEXP %lu %04lX unsafe-skip", family_index, expansion);
 				for (size_t i = 0; i < 4 + DSP_EXPANSION_RESULT_WORDS; i++)
 					printf(" FFFF");
 				printf("\n");
+				outcome = EXPANSION_UNSAFE_SKIP;
+				for (size_t i = 0; i < 4; i++)
+					markers[i] = UINT16_MAX;
+				for (size_t i = 0; i < DSP_EXPANSION_RESULT_WORDS; i++)
+					results[i] = UINT16_MAX;
 				skipped++;
 				test_watchdog_reset();
-				if ((expansion & 0xFF) == 0xFF)
-					printf("# DSPEXP-PROGRESS %lu %04lX\n", family_index, expansion);
-				continue;
 			}
+			hash = expansion_hash_record(hash, (uint16_t) expansion, outcome, markers, results);
 
-			test_watchdog_reset();
-			if (!reset_dsp())
-				return fail_expansion_transport("DSP reset failed during expansion probe", family_index,
-					(uint16_t) expansion);
-			clear_markers();
-			if (!load_probe_image(family->first_word, (uint16_t) expansion))
-				return fail_expansion_transport("DSP image load failed during expansion probe", family_index,
-					(uint16_t) expansion);
-			prepare_expansion_operand(family, (uint16_t) expansion);
-			if (!branch_to_probe())
-				return fail_expansion_transport("DSP branch failed during expansion probe", family_index,
-					(uint16_t) expansion);
-
-			bool done = wait_for_completion();
-			uint16_t entered = DSP_SHARED_MEMORY[DSP_MARKER_ENTERED_OFFSET];
-			uint16_t trap = DSP_SHARED_MEMORY[DSP_MARKER_TRAP_OFFSET];
-			uint16_t post = DSP_SHARED_MEMORY[DSP_MARKER_POST_OFFSET];
-			uint16_t done_marker = DSP_SHARED_MEMORY[DSP_MARKER_DONE_OFFSET];
-			uint16_t results[DSP_EXPANSION_RESULT_WORDS];
-			const char *outcome;
-			if (done && trap == DSP_MARKER_TRAP) {
-				outcome = "trap-complete";
-				trapped++;
-				completed++;
-			} else if (done) {
-				outcome = "complete";
-				completed++;
-			} else if (trap == DSP_MARKER_TRAP) {
-				outcome = "trap-timeout";
-				trapped++;
-				timed_out++;
-			} else {
-				outcome = "timeout";
-				timed_out++;
+			bool block_end = (expansion % EXPANSION_HASH_BLOCK_WORDS) == EXPANSION_HASH_BLOCK_WORDS - 1;
+			bool block_covered = expansion + 1 - DSP_EXPANSION_PROBE_WORD_FIRST >= EXPANSION_HASH_BLOCK_WORDS;
+			bool family_mapped = family_index + 1 <= DSP_EXPANSION_HARDWARE_HASH_FAMILIES;
+			if (block_end && block_covered && family_mapped) {
+				uint32_t block = expansion / EXPANSION_HASH_BLOCK_WORDS;
+				uint32_t expected = DSP_EXPANSION_HARDWARE_HASHES[family_index][block];
+				compared_blocks++;
+				if (hash != expected) {
+					printf("# DSPEXP-MISMATCH %lu %04lX-%04lX\n", family_index,
+						expansion + 1 - EXPANSION_HASH_BLOCK_WORDS, expansion);
+					mismatched_blocks++;
+				}
 			}
-
-			if (!done) {
-				printf("# DSPEXP-TRANSIENT %lu %04lX %04lX %04lX %04lX %04lX\n", family_index, expansion,
-					(uint32_t) entered, (uint32_t) trap, (uint32_t) post, (uint32_t) done_marker);
-				entered = UINT16_MAX;
-				trap = UINT16_MAX;
-				post = UINT16_MAX;
-				done_marker = UINT16_MAX;
-			}
-			for (size_t i = 0; i < DSP_EXPANSION_DSP_RESULT_WORDS; i++)
-				results[i] = done ? DSP_SHARED_MEMORY[DSP_EXPANSION_RESULT_OFFSET + i] : UINT16_MAX;
-			uint16_t observation_address = expansion_observation_address(family, (uint16_t) expansion);
-			uint16_t observed_memory = UINT16_MAX;
-			if (done)
-				observed_memory = DSP_SHARED_MEMORY[observation_address - TEAK_SHARED_RAM_BASE];
-			results[DSP_EXPANSION_DSP_RESULT_WORDS] = observed_memory;
-
-			printf("# DSPEXP %lu %04lX %s %04lX %04lX %04lX %04lX", family_index, expansion, outcome,
-				(uint32_t) entered, (uint32_t) trap, (uint32_t) post, (uint32_t) done_marker);
-			for (size_t i = 0; i < DSP_EXPANSION_RESULT_WORDS; i++)
-				printf(" %04lX", (uint32_t) results[i]);
-			printf("\n");
-			executed++;
-			test_watchdog_serve();
 			if ((expansion & 0xFF) == 0xFF)
 				printf("# DSPEXP-PROGRESS %lu %04lX\n", family_index, expansion);
 		}
@@ -500,7 +615,16 @@ int main(void) {
 	printf("# DSPEXP-SUMMARY families=%u-%u words=%04X-%04X executed=%lu skipped=%lu complete=%lu trap=%lu timeout=%lu\n",
 		DSP_EXPANSION_PROBE_FAMILY_FIRST, DSP_EXPANSION_PROBE_FAMILY_LAST, DSP_EXPANSION_PROBE_WORD_FIRST,
 		DSP_EXPANSION_PROBE_WORD_LAST, executed, skipped, completed, trapped, timed_out);
-	test_check("expansion probe range completed", true);
+	printf("# DSPEXP-COMPARED blocks=%lu mismatched=%lu\n", compared_blocks, mismatched_blocks);
+#ifdef PMB8876
+	if (DSP_EXPANSION_HARDWARE_HASH_FAMILIES == 0) {
+		test_skip("expansion results match the hardware map", "the hardware map has not been imported");
+	} else {
+		test_eq_u32("expansion blocks that differ from the PMB8876 hardware map", 0, mismatched_blocks);
+	}
+#else
+	test_skip("expansion results match the hardware map", "the hardware map was captured on PMB8876 only");
+#endif
 	return test_finish();
 }
 #endif

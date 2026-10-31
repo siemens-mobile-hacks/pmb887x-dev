@@ -51,6 +51,11 @@ target_compile_definitions(dsp-lle-opcode-probe PRIVATE
 	DSP_OPCODE_PROBE_FIRST=${DSP_OPCODE_PROBE_FIRST}
 	DSP_OPCODE_PROBE_LAST=${DSP_OPCODE_PROBE_LAST}
 )
+add_peripheral_test(dsp-lle-opcode-map dsp/lle/opcode-probe.c)
+target_compile_definitions(dsp-lle-opcode-map PRIVATE
+	DSP_OPCODE_PROBE_FIRST=0x0000
+	DSP_OPCODE_PROBE_LAST=0xFFFF
+)
 set(DSP_EXPANSION_PROBE_FAMILY_FIRST "0" CACHE STRING "First TeakLite two-word family included in the expansion probe")
 set(DSP_EXPANSION_PROBE_FAMILY_LAST "0" CACHE STRING "Last TeakLite two-word family included in the expansion probe")
 set(DSP_EXPANSION_PROBE_WORD_FIRST "0x0000" CACHE STRING "First expansion word included in the expansion probe")
@@ -63,6 +68,16 @@ target_compile_definitions(dsp-lle-expansion-probe PRIVATE
 	DSP_EXPANSION_PROBE_WORD_FIRST=${DSP_EXPANSION_PROBE_WORD_FIRST}
 	DSP_EXPANSION_PROBE_WORD_LAST=${DSP_EXPANSION_PROBE_WORD_LAST}
 )
+foreach(family RANGE 18)
+	add_peripheral_test(dsp-lle-expansion-map-${family} dsp/lle/opcode-probe.c)
+	target_compile_definitions(dsp-lle-expansion-map-${family} PRIVATE
+		DSP_EXPANSION_PROBE=1
+		DSP_EXPANSION_PROBE_FAMILY_FIRST=${family}
+		DSP_EXPANSION_PROBE_FAMILY_LAST=${family}
+		DSP_EXPANSION_PROBE_WORD_FIRST=0x0000
+		DSP_EXPANSION_PROBE_WORD_LAST=0xFFFF
+	)
+endforeach()
 add_peripheral_test(dsp-lle-irqs dsp/lle/irqs.c)
 add_peripheral_test(dsp-lle-mask-rom-commands dsp/lle/commands.c)
 add_peripheral_test(dsp-hle-runtime-firmware dsp/hle/runtime-firmware.c dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
