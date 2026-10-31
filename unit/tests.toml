@@ -110,6 +110,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-interrupt-repeat]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-lle-interrupt-window]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dsp-lle-clock-domains]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 

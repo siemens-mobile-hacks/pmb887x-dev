@@ -35,6 +35,8 @@ my @images = (
 	[ 'lle/delay-slot-functional.asm', 'lle/delay-slot-functional-8876.inc', 'DSP_DELAY_SLOT_IMAGE_8876', 'pmb8876' ],
 	[ 'lle/interrupt-functional.asm', 'lle/interrupt-functional-8875.inc', 'DSP_INTERRUPT_IMAGE_8875', 'pmb8875' ],
 	[ 'lle/interrupt-functional.asm', 'lle/interrupt-functional-8876.inc', 'DSP_INTERRUPT_IMAGE_8876', 'pmb8876' ],
+	[ 'lle/interrupt-window.asm', 'lle/interrupt-window-8875.inc', 'DSP_INTERRUPT_WINDOW_8875', 'pmb8875' ],
+	[ 'lle/interrupt-window.asm', 'lle/interrupt-window-8876.inc', 'DSP_INTERRUPT_WINDOW_8876', 'pmb8876' ],
 	[ 'lle/interrupt-repeat.asm', 'lle/interrupt-repeat-8875.inc', 'DSP_INTERRUPT_REPEAT_8875', 'pmb8875' ],
 	[ 'lle/interrupt-repeat.asm', 'lle/interrupt-repeat-8876.inc', 'DSP_INTERRUPT_REPEAT_8876', 'pmb8876' ],
 	[ 'lle/interrupt-block-repeat.asm', 'lle/interrupt-block-repeat-8875.inc',
@@ -106,6 +108,9 @@ my @images = (
 	[ 'lle/dsp-io-functional.asm', 'lle/dsp-io-functional-8876.inc', 'DSP_IO_FUNCTIONAL_8876', 'pmb8876' ],
 	[ 'lle/data-ram.asm', 'lle/data-ram-8875.inc', 'DSP_DATA_RAM_8875', 'pmb8875' ],
 	[ 'lle/data-ram.asm', 'lle/data-ram-8876.inc', 'DSP_DATA_RAM_8876', 'pmb8876' ],
+);
+my @generators = qw(
+	lle/gen_interrupt_window.pl
 );
 my @embedded_images = (
 	[ '../../rom/dsp/cx75/0602/container.bin', 'hle/user-rom-siemens-0602.inc',
@@ -198,6 +203,7 @@ sub build_image {
 }
 
 die "Usage: $0\n" if @ARGV;
+run_tool($^X, File::Spec->catfile($RealBin, $_)) for @generators;
 make_path($cache_dir);
 my $jobs = $ENV{DSP_JOBS} // cpu_count();
 $jobs = 1 if $jobs < 1;
