@@ -122,6 +122,12 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-block-repeat-limits]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-lle-self-modifying]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-lle-repeat-contents]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dsp-lle-clock-domains]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 

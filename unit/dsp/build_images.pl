@@ -43,6 +43,10 @@ my @images = (
 	[ 'lle/block-repeat-control.asm', 'lle/block-repeat-control-8876.inc', 'DSP_BLOCK_REPEAT_CONTROL_8876', 'pmb8876' ],
 	[ 'lle/block-repeat-limits.asm', 'lle/block-repeat-limits-8875.inc', 'DSP_BLOCK_REPEAT_LIMITS_8875', 'pmb8875' ],
 	[ 'lle/block-repeat-limits.asm', 'lle/block-repeat-limits-8876.inc', 'DSP_BLOCK_REPEAT_LIMITS_8876', 'pmb8876' ],
+	[ 'lle/self-modifying.asm', 'lle/self-modifying-8875.inc', 'DSP_SELF_MODIFYING_8875', 'pmb8875' ],
+	[ 'lle/self-modifying.asm', 'lle/self-modifying-8876.inc', 'DSP_SELF_MODIFYING_8876', 'pmb8876' ],
+	[ 'lle/repeat-contents.asm', 'lle/repeat-contents-8875.inc', 'DSP_REPEAT_CONTENTS_8875', 'pmb8875' ],
+	[ 'lle/repeat-contents.asm', 'lle/repeat-contents-8876.inc', 'DSP_REPEAT_CONTENTS_8876', 'pmb8876' ],
 	[ 'lle/interrupt-repeat.asm', 'lle/interrupt-repeat-8875.inc', 'DSP_INTERRUPT_REPEAT_8875', 'pmb8875' ],
 	[ 'lle/interrupt-repeat.asm', 'lle/interrupt-repeat-8876.inc', 'DSP_INTERRUPT_REPEAT_8876', 'pmb8876' ],
 	[ 'lle/interrupt-block-repeat.asm', 'lle/interrupt-block-repeat-8875.inc',
@@ -120,6 +124,8 @@ my @generators = qw(
 	lle/gen_pc_write.pl
 	lle/gen_block_repeat_control.pl
 	lle/gen_block_repeat_limits.pl
+	lle/gen_self_modifying.pl
+	lle/gen_repeat_contents.pl
 );
 my @embedded_images = (
 	[ '../../rom/dsp/cx75/0602/container.bin', 'hle/user-rom-siemens-0602.inc',

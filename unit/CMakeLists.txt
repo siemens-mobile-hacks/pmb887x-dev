@@ -109,6 +109,8 @@ add_peripheral_test(dsp-lle-interrupt-window dsp/lle/interrupt-window.c dsp/dsp-
 add_peripheral_test(dsp-lle-pc-write dsp/lle/pc-write.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-block-repeat-control dsp/lle/block-repeat-control.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-block-repeat-limits dsp/lle/block-repeat-limits.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-self-modifying dsp/lle/self-modifying.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-repeat-contents dsp/lle/repeat-contents.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-clock-domains dsp/lle/clock-domains.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-interrupt-sources dsp/lle/interrupt-sources.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-ssc-functional dsp/lle/ssc-functional.c dsp/dsp-hw.c)
