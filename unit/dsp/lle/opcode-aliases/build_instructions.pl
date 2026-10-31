@@ -60,7 +60,12 @@ sub build_shard {
 
 	run_tool($teak_assembler, '--entry', '0100', $asm_path, $image_path);
 	run_tool($teak_disassembler, $image_path, $dis_path);
-	die "Invalid instruction in DSP alias shard $shard\n" if read_file($dis_path) =~ /\[ERROR\]/;
+	my @reserved_words = read_file($asm_path) =~ /^data ([0-9A-Fa-f]{4}) \/\/ .*reserved encoding$/mg;
+	my %reserved_words = map { (uc($_) => 1) } @reserved_words;
+	for my $line (split /\n/, read_file($dis_path)) {
+		next unless $line =~ /^[0-9A-F]+\s+([0-9A-F]{4})\s+\[ERROR\]/;
+		die "Invalid instruction $1 in DSP alias shard $shard\n" unless $reserved_words{$1};
+	}
 	write_image($temporary_path, $shard, $cache_key, $image_path);
 	rename $temporary_path, $output_path or die "Cannot replace $output_path: $!\n";
 }

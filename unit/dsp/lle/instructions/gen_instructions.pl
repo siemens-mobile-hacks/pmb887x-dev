@@ -437,7 +437,7 @@ my @r7_offsets = (
 
 for my $offset (@r7_offsets) {
 	my ($name, $operand, $delta) = @$offset;
-	my $address = 0xDCFF + $delta;
+	my $address = 0x40FF + $delta;
 	my @setup = base_setup();
 	push @setup,
 		sprintf('mov 0x$%04X r0', $address & 0xFFFF),
@@ -1342,7 +1342,7 @@ for my $value (0x00, 0x01, 0x7F, 0x80, 0xFF) {
 
 for my $offset (@r7_offsets[0 .. 3]) {
 	my ($name, $operand, $delta) = @$offset;
-	my $address = 0xDCFF + $delta;
+	my $address = 0x40FF + $delta;
 	my @setup = base_setup();
 	push @setup,
 		sprintf('mov 0x$%04X r0', $address & 0xFFFF),
@@ -1796,7 +1796,7 @@ for my $source (qw(a0l a1l)) {
 			my @setup = four_accumulator_setup();
 			push @setup,
 				sprintf('mov 0x$%04X %s', $value, $source),
-				sprintf('mov 0x$%04X r7', (0xDC80 - $delta) & 0xFFFF);
+				sprintf('mov 0x$%04X r7', (0x4080 - $delta) & 0xFFFF);
 			my $body = defined($operand) ? "mov $source $operand" : [
 				sprintf('data %04X // mov %s,(rb+long offset); PDF Table 4-4',
 					$source eq 'a0l' ? 0xD49C : 0xDC9C, $source),
@@ -1812,7 +1812,7 @@ for my $operation (qw(add sub cmp and or xor)) {
 	for my $accumulator (qw(a0 a1)) {
 		for my $offset (@r7_offsets) {
 			my ($name, $operand, $delta) = @$offset;
-			my $address = 0xDCFF + $delta;
+			my $address = 0x40FF + $delta;
 			my @setup = four_accumulator_setup();
 			push @setup,
 				sprintf('mov 0x$%04X r0', $address & 0xFFFF),
@@ -2411,6 +2411,267 @@ add_case('trap enters vector and reti returns', [ accumulator_setup(0x1357, 0x24
 	'mov a0l [0x$D682]',
 ]);
 
+my @register_names = qw(
+	r0 r1 r2 r3 r4 r5 rb y0 st0 st1 st2 p pc sp cfgi cfgj
+	b0h b1h b0l b1l ext0 ext1 ext2 ext3 a0 a1 a0l a1l a0h a1h lc sv
+);
+my %register_codes = map { $register_names[$_] => $_ } 0 .. $#register_names;
+my %safe_register_values = (st0 => 0x05A0, st1 => 0x1357, st2 => 0x2468, sp => 0xD6F0);
+my @register_multiply_operations = qw(mpy mpysu mac macus maa macuu macsu maasu);
+my %accumulators = (a0 => 1, a1 => 1);
+
+sub register_matrix_setup {
+	return (
+		four_accumulator_setup(),
+		'mov 0x$1357 cfgi',
+		'mov 0x$2468 cfgj',
+		'mov 0x$0123 lc',
+		'mov 0x$5AA5 sv',
+		'mov 0x$0011 r0',
+	);
+}
+
+sub register_value {
+	my ($name) = @_;
+	return $safe_register_values{$name} // 0x8421;
+}
+
+for my $destination (grep { $_ ne 'pc' } @register_names) {
+	my @setup = register_matrix_setup();
+	push @setup,
+		'load 0x00d6u8 page',
+		sprintf('mov 0x$%04X r0', register_value($destination)),
+		'mov r0 [page:0x0000u8]',
+		'mov 0x$D600 r0';
+	add_case("mov indirect r0 to $destination", \@setup,
+		sprintf('data %04X // mov (r0),%s; PDF Table 4-4', 0x1C00 | ($register_codes{$destination} << 5), $destination));
+}
+
+for my $source (grep { $_ ne 'pc' } @register_names) {
+	my $pointer = $source eq 'r0' ? 1 : 0;
+	my @setup = register_matrix_setup();
+	push @setup, "mov 0x\$D682 r$pointer";
+	push @setup, 'mov 0x$8421 r0' if $source eq 'r0';
+	add_case("mov $source to indirect r$pointer", \@setup,
+		sprintf('data %04X // mov %s,(r%u); PDF Table 4-4', 0x1800 | ($register_codes{$source} << 5) | $pointer,
+			$source, $pointer));
+}
+
+for my $source (grep { $_ ne 'pc' } @register_names) {
+	add_case("push $source", [ register_matrix_setup() ], [
+		sprintf('data %04X // push %s; PDF Table 4-4', 0x5E40 | $register_codes{$source}, $source),
+		'mov [sp] y0',
+	]);
+}
+
+for my $destination (grep { $_ ne 'pc' } @register_names) {
+	my @setup = register_matrix_setup();
+	push @setup, sprintf('push 0x$%04X', register_value($destination));
+	add_case("pop $destination", \@setup,
+		sprintf('data %04X // pop %s; PDF Table 4-4', 0x5E60 | $register_codes{$destination}, $destination));
+}
+
+sub add_register_move {
+	my ($source, $destination, @extra_setup) = @_;
+	add_case("mov register matrix $source to $destination", [ register_matrix_setup(), @extra_setup ],
+		sprintf('data %04X // mov %s,%s; PDF Table 4-4',
+			0x5800 | ($register_codes{$destination} << 5) | $register_codes{$source}, $source, $destination));
+}
+
+my %unsafe_destinations = map { $_ => 1 } qw(pc sp st0 st2);
+for my $register (grep { $_ ne 'pc' } @register_names) {
+	add_register_move($register, 'r0') unless $register eq 'r0';
+	add_register_move($register, $register) unless $accumulators{$register};
+}
+for my $destination (grep { $_ ne 'pc' && $_ ne 'r1' } @register_names) {
+	add_register_move('r1', $destination, sprintf('mov 0x$%04X r1', register_value($destination)));
+}
+for my $source (qw(p a0)) {
+	for my $destination (grep { !$unsafe_destinations{$_} && $_ ne 'r0' && $_ ne $source } @register_names) {
+		next if $accumulators{$source} && $accumulators{$destination};
+		add_register_move($source, $destination);
+	}
+}
+
+for my $register (qw(p a0 a1)) {
+	for my $operation (0 .. $#alb_operations) {
+		add_case("$alb_operations[$operation] ALB register matrix $register", [ register_matrix_setup() ], [
+			sprintf('data %04X // %s ##long immediate,%s; PDF Table 4-4',
+				0x81E0 | ($operation << 9) | $register_codes{$register}, $alb_operations[$operation], $register),
+			'data 8421 // long immediate expansion',
+		]);
+	}
+	for my $operation (0 .. $#register_multiply_operations) {
+		my $name = $register_multiply_operations[$operation];
+		add_case("$name y0 register matrix $register a0", [ register_matrix_setup() ],
+			sprintf('data %04X // %s y0,%s,a0; PDF Table 4-4', 0x8040 | ($operation << 8) | $register_codes{$register},
+				$name, $register));
+	}
+	for my $operation ([ 'msu', 8 ], [ 'sqr', 13 ], [ 'sqra', 14 ]) {
+		my ($name, $code) = @$operation;
+		add_case("$name ALM register matrix $register a0", [ register_matrix_setup() ],
+			sprintf('data %04X // %s %s,a0; PDF Table 4-4', 0x80A0 | ($code << 9) | $register_codes{$register}, $name,
+				$register));
+	}
+	add_case("mov $register to mixp", [ register_matrix_setup() ],
+		sprintf('data %04X // mov %s,mixp; PDF Table 4-4', 0x5E80 | $register_codes{$register}, $register));
+}
+
+add_case('movs p to a0', [ register_matrix_setup() ], 'data 014B // movs p,a0; PDF Table 4-4');
+add_case('exp p to a0', [ register_matrix_setup() ], 'data 904B // exp p,a0; PDF Table 4-4');
+add_case('rep p inc count', [
+	register_matrix_setup(),
+	'mov 0x$0003 y0',
+	'mov 0x$0001 r0',
+	'mpy y0 r0 a0',
+	'nop',
+	'clr a0 always',
+], [
+	'data 0D0B // rep p; PDF Table 4-4',
+	'inc a0 always',
+]);
+
+for my $destination (qw(b0h b1h b0l b1l)) {
+	my @setup = register_matrix_setup();
+	push @setup, 'push 0x$A55A';
+	add_case("mov stack top to $destination", \@setup,
+		sprintf('data %04X // mov (sp),%s; PDF Table 4-4', 0x47E0 | $register_codes{$destination}, $destination));
+}
+
+
+my @flag_vectors = (
+	[ 'clear', 0x0000, 0x0000 ],
+	[ 'set', 0x0FF0, 0x0C00 ],
+	[ 'z', 0x0800, 0x0000 ],
+	[ 'm', 0x0400, 0x0000 ],
+	[ 'n', 0x0200, 0x0000 ],
+	[ 'v', 0x0100, 0x0000 ],
+	[ 'c', 0x0080, 0x0000 ],
+	[ 'e', 0x0040, 0x0000 ],
+	[ 'l', 0x0020, 0x0000 ],
+	[ 'r', 0x0010, 0x0000 ],
+	[ 'iu0', 0x0000, 0x0400 ],
+	[ 'iu1', 0x0000, 0x0800 ],
+);
+
+sub flag_vector_setup {
+	my ($st0, $st2, @setup) = @_;
+	return (@setup, sprintf('mov 0x$%04X st0', $st0), sprintf('mov 0x$%04X st2', $st2));
+}
+
+for my $condition (0 .. $#branch_conditions) {
+	my $name = $branch_conditions[$condition];
+	for my $vector (@flag_vectors) {
+		my ($flags, $st0, $st2) = @$vector;
+		my @setup = flag_vector_setup($st0, $st2, base_setup());
+		if ($flags ne 'clear' && $flags ne 'set') {
+			add_case("brr $name single flag $flags", \@setup, [
+				sprintf('data %04X // brr +4,%s; PDF Table 4-4', 0x5040 | $condition, $name),
+				'mov 0x0001u8 a0l',
+				'mov a0l [0x$D682]',
+				'data 5030 // brr +3,always; skip taken marker',
+				'mov 0x0002u8 a0l',
+				'mov a0l [0x$D682]',
+			]);
+		}
+		add_case("callr $name flags $flags", \@setup, [
+			sprintf('data %04X // callr +4,%s; PDF Table 4-4', 0x1040 | $condition, $name),
+			'mov 0x0003u8 a0l',
+			'mov a0l [0x$D682]',
+			'data 5040 // brr +4,always; skip subroutine',
+			'mov 0x0002u8 a0l',
+			'mov a0l [0x$D681]',
+			'ret always',
+		]);
+		for my $return ([ 'ret', 0x4580 ], [ 'reti', 0x45C0 ]) {
+			my ($mnemonic, $base) = @$return;
+			add_case("$mnemonic $name flags $flags", \@setup, [
+				'data 1040 // callr +4,always; enter the conditional return',
+				'mov 0x0003u8 a0l',
+				'mov a0l [0x$D682]',
+				'data 5050 // brr +5,always; skip subroutine',
+				sprintf('data %04X // %s %s; PDF Table 4-4', $base | $condition, $mnemonic, $name),
+				'mov 0x0002u8 a0l',
+				'mov a0l [0x$D681]',
+				'ret always',
+			]);
+		}
+		add_case("modb clr b0 $name flags $flags", [ flag_vector_setup($st0, $st2, four_accumulator_setup()) ],
+			sprintf('data %04X // clr b0,%s; PDF Table 4-4', 0x6F60 | $condition, $name));
+		add_case("shfc a0 a0 $name flags $flags",
+			[ flag_vector_setup($st0, $st2, four_accumulator_setup(), 'mov 0x$0003 sv') ],
+			sprintf('data %04X // shfc a0,a0,%s; PDF Table 4-4', 0xDAC0 | $condition, $name));
+	}
+}
+
+for my $destination (grep { $_ ne 'pc' } @register_names) {
+	add_case("mov long immediate to $destination", [ register_matrix_setup() ], [
+		sprintf('data %04X // mov ##long immediate,%s; PDF Table 4-4', 0x5E00 | $register_codes{$destination},
+			$destination),
+		sprintf('data %04X // long immediate expansion', register_value($destination)),
+	]);
+}
+
+my @rn_star_names = qw(r0 r1 r2 r3 r4 r5 rb y0);
+my @ablh_names = qw(b0l b0h b1l b1h a0l a0h a1l a1h);
+my @direct_moves;
+push @direct_moves, map { [ "mov $rn_star_names[$_] to page direct", 0x2000 | ($_ << 9) | 0x82 ] } 0 .. 7;
+push @direct_moves, map { [ "mov $ablh_names[$_] to page direct", 0x3000 | ($_ << 9) | 0x82 ] } 0 .. 7;
+push @direct_moves, map { [ "mov page direct to $rn_star_names[$_] word", 0x6000 | ($_ << 10) | 0x80 ] } 0 .. 7;
+push @direct_moves, map { [ "mov page direct to full $ab_names[$_]", 0x6100 | ($_ << 11) | 0x80 ] } 0 .. 3;
+push @direct_moves, map { [ "mov page direct to half $ablh_names[$_]", 0x6200 | ($_ << 10) | 0x80 ] } 0 .. 7;
+push @direct_moves, map { [ "mov page direct to a${_}h eu", 0x6500 | ($_ << 12) | 0x80 ] } 0 .. 1;
+push @direct_moves, map { [ "movs page direct to $ab_names[$_]", 0x6300 | ($_ << 11) | 0x80 ] } 0 .. 3;
+for my $move (@direct_moves) {
+	my ($name, $opcode) = @$move;
+	add_case($name, [ register_matrix_setup(), 'mov 0x$0003 sv', 'load 0x00d6u8 page' ],
+		sprintf('data %04X // %s; PDF Table 4-4', $opcode, $name));
+}
+
+for my $source (grep { $_ ne 'pc' } @register_names) {
+	add_case("movr register matrix $source to a0", [ register_matrix_setup() ],
+		sprintf('data %04X // movr %s,a0; PDF Table 4-4', 0x9CC0 | $register_codes{$source}, $source));
+	add_case("movs register matrix $source to a0", [ register_matrix_setup(), 'mov 0x$0003 sv' ],
+		sprintf('data %04X // movs %s,a0; PDF Table 4-4', 0x0140 | $register_codes{$source}, $source));
+}
+
+for my $destination (grep { $_ ne 'pc' && $_ ne 'sp' } @register_names) {
+	add_case("mov mixp to $destination", [ register_matrix_setup(), 'mov 0x$0004 r0', 'mov r0 mixp' ],
+		sprintf('data %04X // mov mixp,%s; PDF Table 4-4', 0x47C0 | $register_codes{$destination}, $destination));
+}
+
+for my $destination (0 .. 3) {
+	for my $register (0 .. 3) {
+		for my $step (0 .. 3) {
+			my @setup = register_matrix_setup();
+			push @setup,
+				'load 0x00d6u8 page',
+				'mov 0x$8765 r5',
+				'mov r5 [page:0x0000u8]',
+				(map { "mov 0x\$D600 r$_" } 0 .. 5),
+				'load +0x0003 stepi';
+			add_case(sprintf('movr indirect nn%u step%u to %sh', $register, $step, $ab_names[$destination]), \@setup,
+				sprintf('data %04X // movr (rN code %u),%sh; PDF Table 4-4',
+					0x8864 | ($destination << 8) | ($register << 3) | $step, $register, $ab_names[$destination]));
+		}
+	}
+}
+
+for my $count (0x0000, 0x00FF, 0xFFFF) {
+	add_case(sprintf('bkrep register count %04X', $count),
+		[ accumulator_setup(0, 0, 0), sprintf('mov 0x$%04X r0', $count) ],
+		[ '@bkrep r0 3', 'inc a0 always', 'nop' ]);
+}
+add_case('bkrep immediate count 00FF', [ accumulator_setup(0, 0, 0) ], [ '@bkrep 0x00ffu8 3', 'inc a0 always', 'nop' ]);
+
+for my $shift (0 .. 3) {
+	add_case("load ps $shift then mpy", [ base_setup(), 'mov 0x$4000 y0', 'mov 0x$0003 r0' ], [
+		sprintf('data %04X // load ps %u; PDF Table 4-4', 0x4D80 | $shift, $shift),
+		'mpy y0 r0 a0',
+		'nop',
+		'mpy y0 r0 a0',
+	]);
+}
 sub alias_memory_setup {
 	my @setup = four_accumulator_setup();
 	push @setup,
@@ -2535,6 +2796,80 @@ sub select_alias_cases {
 		'mov a0l [0x$D682]',
 	]);
 	add_alias_family('load ps 0', '010011011.....00', \@base, [], []);
+	add_alias_family('retd', '1101011110......', \@base,
+		[ '@callabs always 4', '@brabs always 4' ], [ 'mov 0x0002u8 a0l' ]);
+	add_alias_family('cntx restore', '1101001110.1....', \@base, [], []);
+	my @modb_operations = qw(shr shr4 shl shl4 ror rol);
+	for my $operation (0 .. $#modb_operations) {
+		add_alias_family("modb $modb_operations[$operation] b0 always", sprintf('01101111.%03b0000', $operation),
+			\@base, [], []);
+	}
+	add_alias_family('mov a0l mixp', '0101111010.11010', \@base, [], []);
+	for my $register (0 .. 15) {
+		add_alias_family("mov $register_names[$register] mixp", sprintf('0101111010.%05b', $register), \@base, [], []);
+	}
+	my @reserved_memory = (@memory, 'mov 0x$D600 r7');
+	my @reserved = (
+		[ 'ALU short immediate xxx 100 a0', [ 'data C855' ] ],
+		[ 'ALU short immediate xxx 100 a1', [ 'data C955' ] ],
+		[ 'ALU short immediate xxx 101 a0', [ 'data CA55' ] ],
+		[ 'ALU short immediate xxx 101 a1', [ 'data CB55' ] ],
+		[ 'ALU rb offset7 xxx 100 a0', [ 'data 4801' ] ],
+		[ 'ALU rb offset7 xxx 100 a1', [ 'data 4901' ] ],
+		[ 'ALU rb offset7 xxx 101 a0', [ 'data 4A01' ] ],
+		[ 'ALU rb offset7 xxx 101 a1', [ 'data 4B01' ] ],
+		[ 'ALU long immediate xxx 100 a0', [ 'data 88C0', 'data 00F0 // long immediate expansion' ] ],
+		[ 'ALU long immediate xxx 100 a1', [ 'data 89C0', 'data 00F0 // long immediate expansion' ] ],
+		[ 'ALU long immediate xxx 101 a0', [ 'data 8AC0', 'data 00F0 // long immediate expansion' ] ],
+		[ 'ALU long immediate xxx 101 a1', [ 'data 8BC0', 'data 00F0 // long immediate expansion' ] ],
+		[ 'ALU rb long offset xxx 100 a0', [ 'data D4DC', 'data 0000 // rb long offset expansion' ] ],
+		[ 'ALU rb long offset xxx 101 a0', [ 'data D4DD', 'data 0000 // rb long offset expansion' ] ],
+		[ 'ALU rb long offset xxx 100 a1', [ 'data D5DC', 'data 0000 // rb long offset expansion' ] ],
+		[ 'ALU rb long offset xxx 101 a1', [ 'data D5DD', 'data 0000 // rb long offset expansion' ] ],
+		[ 'ALU long direct xxx 100 a0', [ 'data D4FC', 'data D600 // long direct address expansion' ] ],
+		[ 'ALU long direct xxx 101 a0', [ 'data D4FD', 'data D600 // long direct address expansion' ] ],
+		[ 'ALU long direct xxx 100 a1', [ 'data D5FC', 'data D600 // long direct address expansion' ] ],
+		[ 'ALU long direct xxx 101 a1', [ 'data D5FD', 'data D600 // long direct address expansion' ] ],
+		[ 'moda reserved 0111 a0 always', [ 'data 6770' ] ],
+		[ 'moda reserved 0111 a1 always', [ 'data 7770' ] ],
+		[ 'modb reserved 111 b0 always', [ 'data 6F70' ] ],
+		[ 'modb reserved 111 b1 always', [ 'data 7F70' ] ],
+		[ 'swap reserved option 1110', [ 'data 498E' ] ],
+		[ 'swap reserved option 1111', [ 'data 498F' ] ],
+		[ 'reserved 4780', [ 'data 4780' ] ],
+		[ 'reserved 4781', [ 'data 4781' ] ],
+		[ 'reserved 4790', [ 'data 4790' ] ],
+		[ 'reserved 47B0', [ 'data 47B0' ] ],
+	);
+	push @reserved,
+		[ 'modr reserved nnn 6', [ 'data 0086' ] ],
+		[ 'modr reserved nnn 7', [ 'data 0087' ] ],
+		[ 'mov r1 to reserved indirect nnn 7', [ 'data 1827' ] ],
+		[ 'add reserved indirect nnn 7 a0', [ 'data 8687' ] ],
+		[ 'mpy y0 reserved indirect nnn 7 a0', [ 'data 8027' ] ],
+		[ 'set reserved indirect nnn 7', [ 'data 80E7', 'data 0101 // long immediate expansion' ] ],
+		[ 'tstb 0 reserved indirect nnn 7', [ 'data 9027' ] ],
+		[ 'movs reserved indirect nnn 7 a0', [ 'data 01C7' ] ],
+		[ 'movr reserved indirect nnn 7 a0', [ 'data 9DE7' ] ],
+		[ 'norm reserved indirect nnn 7 a0', [ 'data 94C7' ] ],
+		[ 'exp reserved indirect nnn 7 a0', [ 'data 9847' ] ];
+	for my $case (@reserved) {
+		my ($name, $body) = @$case;
+		my @lines = map { /^data [0-9A-F]{4}$/ ? "$_ // $name; reserved encoding" : $_ } @$body;
+		add_case($name, \@reserved_memory, \@lines);
+	}
+	for my $register (qw(p a0 a1)) {
+		add_case("mov $register to icr", \@base, [
+			sprintf('data %04X // mov %s,icr; PDF Table 4-4', 0x4FC0 | $register_codes{$register}, $register),
+			'mov icr a0',
+		]);
+	}
+	for my $step ([ 'plus one', '01' ], [ 'minus one', '10' ], [ 'plus step', '11' ]) {
+		my ($step_name, $step_bits) = @$step;
+		add_alias_family("maxd ge a0 indirect r0 $step_name", "10000000011$step_bits...", \@memory, [], []);
+		add_alias_family("max ge a0 indirect r0 $step_name", "10000100011$step_bits...", \@memory, [], []);
+		add_alias_family("min le a0 indirect r0 $step_name", "10001.00011${step_bits}0..", \@memory, [], []);
+	}
 }
 
 sub set_output_directory {
@@ -2649,11 +2984,11 @@ sub relocate_fixture_line {
 	my ($line) = @_;
 	$line =~ s{0x\$([Dd][0-9A-Fa-f]{3})}{
 		my $address = hex($1);
-		$address >= 0xD600 && $address <= 0xD6FF ? sprintf('0x$%04X', $address + 0x0600) :
-			$address == 0xD700 ? '0x$DCFF' : $&;
+		$address >= 0xD600 && $address <= 0xD6FF ? sprintf('0x$%04X', $address - 0xD600 + 0x4000) :
+			$address == 0xD700 ? '0x$40FF' : $&;
 	}eg;
-	$line =~ s/load 0x00d6u8 page/load 0x00dcu8 page/;
-	$line =~ s/^data D600 (\/\/ long direct address expansion)$/data DC00 $1/;
+	$line =~ s/load 0x00d6u8 page/load 0x0040u8 page/;
+	$line =~ s/^data D600 (\/\/ long direct address expansion)$/data 4000 $1/;
 	return $line;
 }
 
