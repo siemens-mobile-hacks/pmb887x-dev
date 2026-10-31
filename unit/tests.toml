@@ -4,6 +4,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [stm-clock]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[stm-poll]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dmac]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
