@@ -31,6 +31,9 @@
 #define SIM_MAX_ATR_SIZE 64
 #define SIM_MAX_APDU_DATA 256
 #define SIM_DMA_CHANNEL 0
+#define SIM_MISSING_FILE_ID 0x6FFF
+/* ISO 7816-3 needs 16 ETU between card and terminal characters; 5 ms covers RMC=4 at FPI1 OSC. */
+#define SIM_TURNAROUND_MS 5
 // CX75 and EL71 firmware use privileged DMA accesses with a four-byte memory burst for SIM.
 #define SIM_DMA_PROTECTION_PRIVILEGED (1 << DMAC_CH_CONTROL_PROTECTION_SHIFT)
 #ifdef PMB8875
@@ -399,6 +402,7 @@ static bool sim_exchange(
 	struct apdu_response *response
 ) {
 	response->size = 0;
+	delay_ms(SIM_TURNAROUND_MS);
 #ifdef SIM_DUMP_CARD_INFO
 	printf("# APDU TX:");
 	for (size_t i = 0; i < 5; i++)
@@ -701,8 +705,6 @@ static void dump_card_identity(const uint8_t *iccid_data, size_t iccid_size) {
 #define SIM_DEFAULT_BRF 0x5D
 #define SIM_FPI1_OSC_HZ 26000000
 #define SIM_READ_BINARY_SIZE 10
-/* ISO 7816-3 needs 16 ETU between card and terminal characters; 5 ms covers RMC=4 at FPI1 OSC. */
-#define SIM_TURNAROUND_MS 5
 
 static const uint32_t TIMING_RMC_VALUES[] = { 2, 4 };
 
@@ -719,6 +721,7 @@ static bool sim_read_binary_timed(uint32_t ticks[SIM_READ_BINARY_SIZE]) {
 	const uint8_t header[5] = {0xA0, 0xB0, 0x00, 0x00, SIM_READ_BINARY_SIZE};
 	uint8_t value;
 
+	delay_ms(SIM_TURNAROUND_MS);
 	for (size_t i = 0; i < ARRAY_SIZE(header); i++) {
 		if (!sim_send_byte(header[i]))
 			return false;
@@ -740,16 +743,12 @@ static bool sim_select_iccid(void) {
 
 	if (!sim_select(0x3F00, &response))
 		return false;
-	delay_ms(SIM_TURNAROUND_MS);
 	if (response_has_data(response.sw1) && !sim_get_response(response.sw2, &response))
 		return false;
-	delay_ms(SIM_TURNAROUND_MS);
 	if (!sim_select(0x2FE2, &response))
 		return false;
-	delay_ms(SIM_TURNAROUND_MS);
 	if (response_has_data(response.sw1) && !sim_get_response(response.sw2, &response))
 		return false;
-	delay_ms(SIM_TURNAROUND_MS);
 	return response.sw1 == 0x90 && response.sw2 == 0x00;
 }
 
@@ -936,6 +935,14 @@ int main(void) {
 	test_category("Decoded card identity");
 	dump_card_identity(response.data, response.size);
 #endif
+
+	test_category("Missing file");
+	exchanged = sim_select(SIM_MISSING_FILE_ID, &response);
+	test_check("SELECT of a missing EF completes", exchanged);
+	if (!exchanged)
+		goto done;
+	printf("# SELECT missing EF %04X status: %02X%02X\n", SIM_MISSING_FILE_ID, response.sw1, response.sw2);
+	test_eq_u32("SELECT of a missing EF reports GSM file ID not found", 0x9404, (response.sw1 << 8) | response.sw2);
 
 done:
 	sim_power_off();
