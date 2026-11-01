@@ -705,11 +705,24 @@ static void dump_card_identity(const uint8_t *iccid_data, size_t iccid_size) {
 #define SIM_DEFAULT_BRF 0x5D
 #define SIM_FPI1_OSC_HZ 26000000
 #define SIM_READ_BINARY_SIZE 10
+#define SIM_CLOCKS_PER_BRF_ETU 4
+#define SIM_ATR_T0_TA1_PRESENT 0x10
+#define SIM_ATR_TA1_OFFSET 2
+#define SIM_FIDI_FI_SHIFT 4
+#define SIM_FIDI_DI_MASK 0x0F
+#define SIM_PPS_SIZE 4
+#define SIM_PPSS 0xFF
+#define SIM_PPS0_PPS1_PRESENT 0x10
+#define SIM_PPS_RMC 4
 
 static const uint32_t TIMING_RMC_VALUES[] = { 2, 4 };
+static const uint16_t FI_CLOCKS_PER_ETU[16] = {
+	372, 372, 558, 744, 1116, 1488, 1860, 0, 0, 512, 768, 1024, 1536, 2048
+};
+static const uint8_t DI_DIVISORS[16] = { 0, 1, 2, 4, 8, 16, 32, 64, 12, 20 };
 
-static uint32_t sim_character_ticks(uint32_t rmc) {
-	uint32_t fpi1_clocks = SIM_CHARACTER_ETU * SIM_FPI1_CLOCKS_PER_BRF_RMC_ETU * SIM_DEFAULT_BRF * rmc;
+static uint32_t sim_character_ticks(uint32_t rmc, uint32_t brf) {
+	uint32_t fpi1_clocks = SIM_CHARACTER_ETU * SIM_FPI1_CLOCKS_PER_BRF_RMC_ETU * brf * rmc;
 	return (uint64_t) fpi1_clocks * stopwatch_ticks_per_ms() * 1000 / SIM_FPI1_OSC_HZ;
 }
 
@@ -757,7 +770,7 @@ static void sim_test_character_timing(uint32_t rmc) {
 	static uint32_t atr_ticks[SIM_MAX_ATR_SIZE];
 	static uint32_t read_ticks[SIM_READ_BINARY_SIZE];
 	size_t atr_size = 0;
-	uint32_t expected = sim_character_ticks(rmc);
+	uint32_t expected = sim_character_ticks(rmc, SIM_DEFAULT_BRF);
 	char name[64];
 
 	bool powered = sim_power_on(rmc, atr, atr_ticks, &atr_size);
@@ -786,6 +799,60 @@ static void sim_test_character_timing(uint32_t rmc) {
 	delay_ms(100);
 }
 
+static uint32_t sim_ta1_to_brf(uint8_t ta1) {
+	uint32_t divisor = DI_DIVISORS[ta1 & SIM_FIDI_DI_MASK];
+	if (divisor == 0)
+		return 0;
+	return FI_CLOCKS_PER_ETU[ta1 >> SIM_FIDI_FI_SHIFT] / divisor / SIM_CLOCKS_PER_BRF_ETU;
+}
+
+static bool sim_exchange_pps(uint8_t ta1) {
+	uint8_t request[SIM_PPS_SIZE] = { SIM_PPSS, SIM_PPS0_PPS1_PRESENT, ta1 };
+	request[SIM_PPS_SIZE - 1] = request[0] ^ request[1] ^ request[2];
+
+	delay_ms(SIM_TURNAROUND_MS);
+	for (size_t i = 0; i < SIM_PPS_SIZE; i++) {
+		if (!sim_send_byte(request[i]))
+			return false;
+	}
+	for (size_t i = 0; i < SIM_PPS_SIZE; i++) {
+		uint8_t value;
+		if (!sim_receive_byte(&value, 1000) || value != request[i])
+			return false;
+	}
+	return true;
+}
+
+static void sim_test_pps(void) {
+	static uint8_t atr[SIM_MAX_ATR_SIZE];
+	static uint32_t read_ticks[SIM_READ_BINARY_SIZE];
+	size_t atr_size = 0;
+
+	bool powered = sim_power_on(SIM_PPS_RMC, atr, NULL, &atr_size);
+	bool has_ta1 = powered && atr_size > SIM_ATR_TA1_OFFSET && (atr[1] & SIM_ATR_T0_TA1_PRESENT) != 0;
+	uint8_t ta1 = has_ta1 ? atr[SIM_ATR_TA1_OFFSET] : 0;
+	uint32_t brf = has_ta1 ? sim_ta1_to_brf(ta1) : 0;
+	test_check("ATR offers a supported TA1 rate", brf != 0);
+	if (brf == 0) {
+		sim_power_off();
+		return;
+	}
+	printf("# TA1=%02X: BRF %lu after PPS\n", ta1, brf);
+
+	test_check("Card echoes PPS that selects TA1", sim_exchange_pps(ta1));
+	SIM_BRF = brf;
+	bool read = sim_select_iccid() && sim_read_binary_timed(read_ticks);
+	test_check("READ BINARY completes at the PPS rate", read);
+	if (read) {
+		uint32_t expected = sim_character_ticks(SIM_PPS_RMC, brf);
+		uint32_t read_spacing = mean_interval(read_ticks, SIM_READ_BINARY_SIZE);
+		printf("# PPS: READ BINARY mean spacing %lu STM ticks, expected %lu\n", read_spacing, expected);
+		test_check("READ BINARY data characters are 12 PPS ETU apart",
+			test_u32_in_interval(read_spacing, expected * 98 / 100, expected * 102 / 100));
+	}
+	sim_power_off();
+}
+
 #endif
 
 int main(void) {
@@ -808,6 +875,8 @@ int main(void) {
 	test_category("Character timing");
 	for (size_t i = 0; i < ARRAY_SIZE(TIMING_RMC_VALUES); i++)
 		sim_test_character_timing(TIMING_RMC_VALUES[i]);
+	test_category("PPS");
+	sim_test_pps();
 	goto done;
 #endif
 
