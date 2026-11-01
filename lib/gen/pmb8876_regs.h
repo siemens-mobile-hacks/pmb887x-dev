@@ -3885,7 +3885,7 @@
 #define	DIF_PERREG_DIFPERMODE			BIT(0)
 #define	DIF_PERREG_DIFPERMODE_SERIAL	0x0
 #define	DIF_PERREG_DIFPERMODE_PARALLEL	0x1
-#define	DIF_PERREG_INBAND				BIT(1)
+#define	DIF_PERREG_INBAND				BIT(1)						 // Take CS, CD, BSCONF, and GRACMD from TXD byte 3 instead of CSREG
 #define	DIF_PERREG_CS1POL				BIT(2)
 #define	DIF_PERREG_CS2POL				BIT(3)
 #define	DIF_PERREG_RDPOL				BIT(4)
@@ -4423,6 +4423,21 @@
 #define	DIF_TXD_BYTE2_SHIFT				16
 #define	DIF_TXD_BYTE3					GENMASK(31, 24)
 #define	DIF_TXD_BYTE3_SHIFT				24
+#define	DIF_TXD_INBAND_GRACMD			BIT(24)						 // PERREG.INBAND: apply the color matrix to this word
+#define	DIF_TXD_INBAND_FORMAT			GENMASK(27, 25)				 // PERREG.INBAND: bus words taken from this TXD word
+#define	DIF_TXD_INBAND_FORMAT_SHIFT		25
+#define	DIF_TXD_INBAND_FORMAT_OFF		0x0
+#define	DIF_TXD_INBAND_FORMAT_1x9BIT	0x2000000
+#define	DIF_TXD_INBAND_FORMAT_2x9BIT	0x4000000
+#define	DIF_TXD_INBAND_FORMAT_3x9BIT	0x6000000
+#define	DIF_TXD_INBAND_FORMAT_1x8BIT	0x8000000
+#define	DIF_TXD_INBAND_FORMAT_2x8BIT	0xA000000
+#define	DIF_TXD_INBAND_FORMAT_3x8BIT	0xC000000
+#define	DIF_TXD_INBAND_FORMAT_4x8BIT	0xE000000
+#define	DIF_TXD_INBAND_CS3				BIT(28)						 // PERREG.INBAND: assert CS3 for this word
+#define	DIF_TXD_INBAND_CD				BIT(29)						 // PERREG.INBAND: send this word as a command
+#define	DIF_TXD_INBAND_CS2				BIT(30)						 // PERREG.INBAND: assert CS2 for this word
+#define	DIF_TXD_INBAND_CS1				BIT(31)						 // PERREG.INBAND: assert CS1 for this word
 
 /* Receive Data Register */
 #define	DIF_RXD							MMIO32(DIF_BASE + 0xC000)
