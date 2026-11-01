@@ -2997,6 +2997,7 @@ sub relocate_fixture_line {
 	}eg;
 	$line =~ s/load 0x00d6u8 page/load 0x0040u8 page/;
 	$line =~ s/^data D600 (\/\/ long direct address expansion)$/data 4000 $1/;
+	$line =~ s/^data D6([0-9A-F]{2}) (\/\/ long immediate expansion)$/data 40$1 $2/;
 	return $line;
 }
 
