@@ -531,6 +531,9 @@ devices = ["siemens-e71", "siemens-el71"]
 [sim]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[sim-clock]
+devices = ["generic-pmb8876"]
+
 [sim-dma]
 devices = ["generic-pmb8876"]
 
@@ -541,6 +544,9 @@ devices = ["panasonic-vs7", "generic-pmb8876"]
 devices = ["panasonic-vs7", "generic-pmb8876"]
 
 [sim-card-timers]
+devices = ["generic-pmb8876"]
+
+[sim-card-timing]
 devices = ["generic-pmb8876"]
 
 [sim-card-info]

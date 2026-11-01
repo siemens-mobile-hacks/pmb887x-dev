@@ -5,6 +5,9 @@
 #include <pmic/PASIC.h>
 #endif
 
+#ifdef SIM_TIMING_TEST
+#include "cgu/clock.h"
+#endif
 #include "dmac.h"
 #include "i2c.h"
 #include "pmb681x.h"
@@ -12,6 +15,8 @@
 
 #ifdef SIM_TIMER_TEST
 #define SIM_TEST_NAME "SIM card timers"
+#elif defined(SIM_TIMING_TEST)
+#define SIM_TEST_NAME "SIM card timing"
 #elif defined(SIM_HARDWARE_T0)
 #define SIM_TEST_NAME "SIM card hardware T=0"
 #elif defined(SIM_NO_CARD)
@@ -28,6 +33,11 @@
 #define SIM_DMA_CHANNEL 0
 // CX75 and EL71 firmware use privileged DMA accesses with a four-byte memory burst for SIM.
 #define SIM_DMA_PROTECTION_PRIVILEGED (1 << DMAC_CH_CONTROL_PROTECTION_SHIFT)
+#ifdef PMB8875
+#define SIM_CARD_RMC 1
+#else
+#define SIM_CARD_RMC 4
+#endif
 
 struct apdu_response {
 	uint8_t data[SIM_MAX_APDU_DATA];
@@ -57,6 +67,8 @@ static struct dma_lli t0_data_lli __attribute__((aligned(16)));
 #endif
 
 #endif
+
+static uint32_t sim_last_rx_tick;
 
 static void delay_ms(uint32_t milliseconds) {
 	stopwatch_t start = stopwatch_get();
@@ -99,6 +111,7 @@ static bool sim_send_byte(uint8_t value) {
 static bool sim_receive_byte(uint8_t *value, uint32_t timeout_ms) {
 	if (!sim_wait_ok(timeout_ms))
 		return false;
+	sim_last_rx_tick = STM_TIM0;
 	*value = SIM_RXB;
 	sim_clear_ok();
 
@@ -140,14 +153,10 @@ static bool sim_supply_set(bool _enabled __attribute__((unused))) {
 #endif
 }
 
-static bool sim_power_on(uint8_t atr[SIM_MAX_ATR_SIZE], size_t *atr_size) {
+static bool sim_power_on(uint32_t rmc, uint8_t atr[SIM_MAX_ATR_SIZE], uint32_t *atr_ticks, size_t *atr_size) {
 	i2c_init();
 
-#ifdef PMB8875
-	SIM_CLC = 1 << MOD_CLC_RMC_SHIFT;
-#else
-	SIM_CLC = 4 << MOD_CLC_RMC_SHIFT;
-#endif
+	SIM_CLC = rmc << MOD_CLC_RMC_SHIFT;
 	SIM_CON = 0;
 	SIM_BRF = 0x5D;
 	SIM_RXSPC = 0x28;
@@ -172,6 +181,8 @@ static bool sim_power_on(uint8_t atr[SIM_MAX_ATR_SIZE], size_t *atr_size) {
 	*atr_size = 0;
 	while (*atr_size < SIM_MAX_ATR_SIZE &&
 		sim_receive_byte(&atr[*atr_size], *atr_size == 0 ? 1000 : 100)) {
+		if (atr_ticks)
+			atr_ticks[*atr_size] = sim_last_rx_tick;
 		(*atr_size)++;
 	}
 
@@ -682,6 +693,102 @@ static void dump_card_identity(const uint8_t *iccid_data, size_t iccid_size) {
 
 #endif
 
+#ifdef SIM_TIMING_TEST
+
+#define SIM_CHARACTER_ETU 12
+/* One ETU is 4 * BRF SIM clocks, and the SIM clock is FPI1 / 4 / RMC. */
+#define SIM_FPI1_CLOCKS_PER_BRF_RMC_ETU 16
+#define SIM_DEFAULT_BRF 0x5D
+#define SIM_FPI1_OSC_HZ 26000000
+#define SIM_READ_BINARY_SIZE 10
+/* ISO 7816-3 needs 16 ETU between card and terminal characters; 5 ms covers RMC=4 at FPI1 OSC. */
+#define SIM_TURNAROUND_MS 5
+
+static const uint32_t TIMING_RMC_VALUES[] = { 2, 4 };
+
+static uint32_t sim_character_ticks(uint32_t rmc) {
+	uint32_t fpi1_clocks = SIM_CHARACTER_ETU * SIM_FPI1_CLOCKS_PER_BRF_RMC_ETU * SIM_DEFAULT_BRF * rmc;
+	return (uint64_t) fpi1_clocks * stopwatch_ticks_per_ms() * 1000 / SIM_FPI1_OSC_HZ;
+}
+
+static uint32_t mean_interval(const uint32_t *ticks, size_t count) {
+	return (ticks[count - 1] - ticks[0]) / (count - 1);
+}
+
+static bool sim_read_binary_timed(uint32_t ticks[SIM_READ_BINARY_SIZE]) {
+	const uint8_t header[5] = {0xA0, 0xB0, 0x00, 0x00, SIM_READ_BINARY_SIZE};
+	uint8_t value;
+
+	for (size_t i = 0; i < ARRAY_SIZE(header); i++) {
+		if (!sim_send_byte(header[i]))
+			return false;
+	}
+	if (!sim_receive_procedure(&value) || value != header[1])
+		return false;
+	for (size_t i = 0; i < SIM_READ_BINARY_SIZE; i++) {
+		if (!sim_receive_byte(&value, 1000))
+			return false;
+		ticks[i] = sim_last_rx_tick;
+	}
+	uint8_t sw1;
+	uint8_t sw2;
+	return sim_receive_procedure(&sw1) && sim_receive_byte(&sw2, 1000) && sw1 == 0x90 && sw2 == 0x00;
+}
+
+static bool sim_select_iccid(void) {
+	static struct apdu_response response;
+
+	if (!sim_select(0x3F00, &response))
+		return false;
+	delay_ms(SIM_TURNAROUND_MS);
+	if (response_has_data(response.sw1) && !sim_get_response(response.sw2, &response))
+		return false;
+	delay_ms(SIM_TURNAROUND_MS);
+	if (!sim_select(0x2FE2, &response))
+		return false;
+	delay_ms(SIM_TURNAROUND_MS);
+	if (response_has_data(response.sw1) && !sim_get_response(response.sw2, &response))
+		return false;
+	delay_ms(SIM_TURNAROUND_MS);
+	return response.sw1 == 0x90 && response.sw2 == 0x00;
+}
+
+static void sim_test_character_timing(uint32_t rmc) {
+	static uint8_t atr[SIM_MAX_ATR_SIZE];
+	static uint32_t atr_ticks[SIM_MAX_ATR_SIZE];
+	static uint32_t read_ticks[SIM_READ_BINARY_SIZE];
+	size_t atr_size = 0;
+	uint32_t expected = sim_character_ticks(rmc);
+	char name[64];
+
+	bool powered = sim_power_on(rmc, atr, atr_ticks, &atr_size);
+	snprintf(name, sizeof(name), "ATR arrives with RMC=%lu", rmc);
+	test_check(name, powered && atr_size >= 2);
+	if (!powered || atr_size < 2) {
+		sim_power_off();
+		return;
+	}
+	uint32_t atr_spacing = mean_interval(atr_ticks, atr_size);
+	printf("# RMC=%lu: ATR %u bytes, mean spacing %lu STM ticks, expected %lu\n", rmc,
+		(unsigned int) atr_size, atr_spacing, expected);
+	snprintf(name, sizeof(name), "ATR characters are 12 ETU apart with RMC=%lu", rmc);
+	test_check(name, test_u32_in_interval(atr_spacing, expected * 98 / 100, expected * 102 / 100));
+
+	bool read = sim_select_iccid() && sim_read_binary_timed(read_ticks);
+	snprintf(name, sizeof(name), "READ BINARY completes with RMC=%lu", rmc);
+	test_check(name, read);
+	if (read) {
+		uint32_t read_spacing = mean_interval(read_ticks, SIM_READ_BINARY_SIZE);
+		printf("# RMC=%lu: READ BINARY mean spacing %lu STM ticks, expected %lu\n", rmc, read_spacing, expected);
+		snprintf(name, sizeof(name), "READ BINARY data characters are 12 ETU apart with RMC=%lu", rmc);
+		test_check(name, test_u32_in_interval(read_spacing, expected * 98 / 100, expected * 102 / 100));
+	}
+	sim_power_off();
+	delay_ms(100);
+}
+
+#endif
+
 int main(void) {
 	uint8_t atr[SIM_MAX_ATR_SIZE];
 	size_t atr_size = 0;
@@ -697,8 +804,16 @@ int main(void) {
 	test_eq_u32("CLC reset value", MOD_CLC_DISR | MOD_CLC_DISS, SIM_CLC);
 	test_module_id("ID", 0xF000C032, SIM_ID);
 
+#ifdef SIM_TIMING_TEST
+	cgu_fpi1_select(CGU_FPI1_OSC, 0);
+	test_category("Character timing");
+	for (size_t i = 0; i < ARRAY_SIZE(TIMING_RMC_VALUES); i++)
+		sim_test_character_timing(TIMING_RMC_VALUES[i]);
+	goto done;
+#endif
+
 	test_category("Presence and activation");
-	bool powered = sim_power_on(atr, &atr_size);
+	bool powered = sim_power_on(SIM_CARD_RMC, atr, NULL, &atr_size);
 #ifdef SIM_NO_CARD
 	test_eq_u32("STAT.SIMDET remains clear with no card", 0, SIM_STAT & SIM_STAT_SIMDET);
 	test_check("No ATR arrives without a card", !powered);
