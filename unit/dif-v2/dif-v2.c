@@ -824,6 +824,274 @@ static void test_color_conversion(void) {
 	}
 }
 
+#define INBAND_RX_WORDS_MAX 8
+#define INBAND_CS1_3X8 (DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_3x8BIT)
+#define INBAND_CS1_4X8 (DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_4x8BIT)
+#define INBAND_CSREG_3X8_CONTROL (DIF_TXD_INBAND_FORMAT_3x8BIT >> 24)
+
+struct inband_vector {
+	const char *name;
+	uint32_t control;
+	uint32_t received_count;
+	uint32_t received[INBAND_RX_WORDS_MAX];
+};
+
+struct inband_lane_vector {
+	uint32_t txfa;
+	struct inband_vector vector;
+};
+
+static uint32_t transmit_words(const uint32_t *words, uint32_t count, uint32_t *received, uint32_t expected_count) {
+	uint32_t tx_alignment = 1 << ((DIF_TXFIFO_CFG & DIF_TXFIFO_CFG_TXFA) >> DIF_TXFIFO_CFG_TXFA_SHIFT);
+
+	DIF_TPS_CTRL = count * (4 / tx_alignment);
+	for (uint32_t i = 0; i < count; i++) {
+		if (!wait_for_tx_request())
+			return 0;
+		DIF_TXD = words[i];
+		DIF_ICR = DIF_CLEAR_IRQS;
+	}
+	if (!wait_until_idle())
+		return 0;
+
+	stopwatch_t start = stopwatch_get();
+	while (DIF_RXFFS_STAT < expected_count && stopwatch_elapsed_ms(start) < DIF_TIMEOUT_MS)
+		test_watchdog_serve();
+
+	uint32_t received_count = 0;
+	while (DIF_RXFFS_STAT != 0 && received_count < INBAND_RX_WORDS_MAX)
+		received[received_count++] = DIF_RXD;
+
+	return received_count;
+}
+
+static void configure_inband_loopback(uint32_t con, uint32_t csreg) {
+	configure_color_conversion(
+		pack_color_coefficients(0, 0, 128),
+		pack_color_coefficients(0, 128, 0),
+		pack_color_coefficients(128, 0, 0),
+		0
+	);
+	DIF_RUNCTRL = 0;
+	DIF_CON = con | DIF_CON_LB;
+	DIF_CSREG = csreg;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_SERIAL | DIF_PERREG_INBAND;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+}
+
+static void configure_packed_fifo_lanes(uint32_t txfa) {
+	DIF_RUNCTRL = 0;
+	DIF_TXFIFO_CFG = DIF_TXFIFO_CFG_TXBS_4_WORD | txfa | DIF_TXFIFO_CFG_TXFC;
+	DIF_RXFIFO_CFG = DIF_RXFIFO_CFG_RXBS_4_WORD | DIF_RXFIFO_CFG_RXFA_1 | DIF_RXFIFO_CFG_RXFC;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+}
+
+static void check_inband_vector(const struct inband_vector *vector, uint32_t first_word, uint32_t second_word) {
+	const uint32_t words[] = { vector->control | first_word, vector->control | second_word };
+	uint32_t received[INBAND_RX_WORDS_MAX] = { 0 };
+
+	printf("# %s: control byte %02lX\n", vector->name, vector->control >> 24);
+	uint32_t received_count = transmit_words(words, ARRAY_SIZE(words), received, vector->received_count);
+	test_eq_u32("in-band bus word count", vector->received_count, received_count);
+	test_eq_memory("in-band bus words", vector->received, received, sizeof(vector->received));
+}
+
+static void test_inband_control(void) {
+	static const struct inband_vector BUS_FORMATS_8BIT[] = {
+		{ "OFF", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_OFF, 2, { 0x11, 0x44 } },
+		{ "OFF converted", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_OFF | DIF_TXD_INBAND_GRACMD, 2, { 0x33, 0x66 } },
+		{ "1x9", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_1x9BIT, 2, { 0x11, 0x44 } },
+		{ "1x9 converted", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_1x9BIT | DIF_TXD_INBAND_GRACMD, 2, {
+			0x33, 0x66,
+		} },
+		{ "2x9", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_2x9BIT, 2, { 0x11, 0x44 } },
+		{ "3x9", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_3x9BIT, 2, { 0x11, 0x44 } },
+		{ "1x8", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_1x8BIT, 2, { 0x11, 0x44 } },
+		{ "1x8 converted", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_1x8BIT | DIF_TXD_INBAND_GRACMD, 2, {
+			0x33, 0x66,
+		} },
+		{ "2x8", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_2x8BIT, 4, { 0x11, 0x22, 0x44, 0x55 } },
+		{ "2x8 converted", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_2x8BIT | DIF_TXD_INBAND_GRACMD, 4, {
+			0x33, 0x22, 0x66, 0x55,
+		} },
+		{ "3x8", INBAND_CS1_3X8, 6, { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 } },
+		{ "3x8 converted", INBAND_CS1_3X8 | DIF_TXD_INBAND_GRACMD, 6, { 0x33, 0x22, 0x11, 0x66, 0x55, 0x44 } },
+		{ "4x8", INBAND_CS1_4X8, 8, {
+			0x11, 0x22, 0x33, INBAND_CSREG_3X8_CONTROL, 0x44, 0x55, 0x66, INBAND_CSREG_3X8_CONTROL,
+		} },
+		{ "4x8 converted", INBAND_CS1_4X8 | DIF_TXD_INBAND_GRACMD, 8, {
+			0x33, 0x22, 0x11, INBAND_CSREG_3X8_CONTROL, 0x66, 0x55, 0x44, INBAND_CSREG_3X8_CONTROL,
+		} },
+		{ "3x8 converted without chip selects", DIF_TXD_INBAND_FORMAT_3x8BIT | DIF_TXD_INBAND_GRACMD, 6, {
+			0x33, 0x22, 0x11, 0x66, 0x55, 0x44,
+		} },
+		{ "3x8 converted with all selects and CD", (
+			DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_CS2 | DIF_TXD_INBAND_CS3 | DIF_TXD_INBAND_CD |
+			DIF_TXD_INBAND_FORMAT_3x8BIT | DIF_TXD_INBAND_GRACMD
+		), 6, { 0x33, 0x22, 0x11, 0x66, 0x55, 0x44 } },
+	};
+	static const struct inband_vector BUS_FORMATS_9BIT[] = {
+		{ "OFF", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_OFF, 2, { 0x011, 0x144 } },
+		{ "OFF converted", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_OFF | DIF_TXD_INBAND_GRACMD, 2, {
+			0x033, 0x166,
+		} },
+		{ "1x9", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_1x9BIT, 2, { 0x011, 0x144 } },
+		{ "2x9", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_2x9BIT, 2, { 0x011, 0x144 } },
+		{ "3x9", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_3x9BIT, 2, { 0x011, 0x144 } },
+		{ "3x9 converted", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_3x9BIT | DIF_TXD_INBAND_GRACMD, 2, {
+			0x033, 0x166,
+		} },
+		{ "1x8", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_1x8BIT, 2, { 0x11, 0x44 } },
+		{ "3x8", INBAND_CS1_3X8, 6, { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 } },
+	};
+	static const struct inband_lane_vector PACKED_FIFO_LANES[] = {
+		{ DIF_TXFIFO_CFG_TXFA_1, { "1-byte lanes, OFF", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_OFF, 2, {
+			0x0C332211, 0x0C665544,
+		} } },
+		{ DIF_TXFIFO_CFG_TXFA_1, { "1-byte lanes, OFF converted", (
+			DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_OFF | DIF_TXD_INBAND_GRACMD
+		), 2, { 0x00000000, 0x00000000 } } },
+		{ DIF_TXFIFO_CFG_TXFA_1, { "1-byte lanes, 2x8", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_2x8BIT, 4, {
+			0x00220011, 0x000C0033, 0x00550044, 0x000C0066,
+		} } },
+		{ DIF_TXFIFO_CFG_TXFA_1, { "1-byte lanes, 3x8", INBAND_CS1_3X8, 6, {
+			0x22000011, 0x00330000, 0x00000C00, 0x55000044, 0x00660000, 0x00000C00,
+		} } },
+		{ DIF_TXFIFO_CFG_TXFA_1, { "1-byte lanes, 3x8 converted", INBAND_CS1_3X8 | DIF_TXD_INBAND_GRACMD, 6, {
+			0x00110000, 0x00002200, 0x0C000033, 0x00440000, 0x00005500, 0x0C000066,
+		} } },
+		{ DIF_TXFIFO_CFG_TXFA_1, { "1-byte lanes, 4x8", INBAND_CS1_4X8, 8, {
+			0x00000011, 0x00000022, 0x00000033, 0x0000000C, 0x00000044, 0x00000055, 0x00000066, 0x0000000C,
+		} } },
+		{ DIF_TXFIFO_CFG_TXFA_2, { "2-byte lanes, OFF", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_OFF, 1, {
+			0x66443311,
+		} } },
+		{ DIF_TXFIFO_CFG_TXFA_2, { "2-byte lanes, OFF converted", (
+			DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_OFF | DIF_TXD_INBAND_GRACMD
+		), 1, { 0x00000000 } } },
+		{ DIF_TXFIFO_CFG_TXFA_2, { "2-byte lanes, 2x8", DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_2x8BIT, 2, {
+			0x0C332211, 0x0C665544,
+		} } },
+		{ DIF_TXFIFO_CFG_TXFA_2, { "2-byte lanes, 3x8", INBAND_CS1_3X8, 3, {
+			0x33002211, 0x5544000C, 0x000C6600,
+		} } },
+		{ DIF_TXFIFO_CFG_TXFA_2, { "2-byte lanes, 3x8 converted", INBAND_CS1_3X8 | DIF_TXD_INBAND_GRACMD, 3, {
+			0x00112200, 0x5500330C, 0x660C0044,
+		} } },
+		{ DIF_TXFIFO_CFG_TXFA_2, { "2-byte lanes, 4x8", INBAND_CS1_4X8, 4, {
+			0x00002211, 0x00000C33, 0x00005544, 0x00000C66,
+		} } },
+	};
+	static const struct {
+		const char *name;
+		uint32_t csreg;
+		uint32_t control;
+	} CSREG_CONTROLS[] = {
+		{ "CS1", DIF_CSREG_CS1, DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_OFF },
+		{ "CS1 1x8", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_1x8BIT, DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_1x8BIT },
+		{ "CS1 2x8", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_2x8BIT, DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_2x8BIT },
+		{ "CS1 3x8", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, INBAND_CS1_3X8 },
+		{ "CS1 4x8", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_4x8BIT, INBAND_CS1_4X8 },
+		{ "CS1 1x9", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_1x9BIT, DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_1x9BIT },
+		{ "CS1 2x9", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_2x9BIT, DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_2x9BIT },
+		{ "CS1 3x9", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x9BIT, DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_3x9BIT },
+		{ "CS1 3x8 GRACMD", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT | DIF_CSREG_GRACMD,
+			INBAND_CS1_3X8 | DIF_TXD_INBAND_GRACMD },
+		{ "CS1 3x8 CD", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT | DIF_CSREG_CD, INBAND_CS1_3X8 | DIF_TXD_INBAND_CD },
+		{ "CS2 3x8", DIF_CSREG_CS2 | DIF_CSREG_BSCONF_3x8BIT, DIF_TXD_INBAND_CS2 | DIF_TXD_INBAND_FORMAT_3x8BIT },
+		{ "CS3 3x8", DIF_CSREG_CS3 | DIF_CSREG_BSCONF_3x8BIT, DIF_TXD_INBAND_CS3 | DIF_TXD_INBAND_FORMAT_3x8BIT },
+		{ "all fields", (
+			DIF_CSREG_CD | DIF_CSREG_CS1 | DIF_CSREG_CS2 | DIF_CSREG_CS3 |
+			DIF_CSREG_BSCONF_4x8BIT | DIF_CSREG_GRACMD
+		), (
+			DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_CS2 | DIF_TXD_INBAND_CS3 | DIF_TXD_INBAND_CD |
+			DIF_TXD_INBAND_FORMAT_4x8BIT | DIF_TXD_INBAND_GRACMD
+		) },
+	};
+
+	test_category("In-band control bus formats");
+	for (uint32_t i = 0; i < ARRAY_SIZE(BUS_FORMATS_8BIT); i++) {
+		configure_inband_loopback(DIF_CON_BM_8, DIF_CSREG_BSCONF_3x8BIT);
+		check_inband_vector(&BUS_FORMATS_8BIT[i], 0x332211, 0x665544);
+	}
+
+	test_category("In-band control bus formats with 9-bit words");
+	for (uint32_t i = 0; i < ARRAY_SIZE(BUS_FORMATS_9BIT); i++) {
+		configure_inband_loopback(DIF_CON_BM_9, DIF_CSREG_BSCONF_3x8BIT);
+		check_inband_vector(&BUS_FORMATS_9BIT[i], 0x332211, 0x665544);
+	}
+
+	test_category("In-band control with packed TX FIFO lanes");
+	for (uint32_t i = 0; i < ARRAY_SIZE(PACKED_FIFO_LANES); i++) {
+		configure_inband_loopback(DIF_CON_BM_8, DIF_CSREG_BSCONF_3x8BIT);
+		configure_packed_fifo_lanes(PACKED_FIFO_LANES[i].txfa);
+		check_inband_vector(&PACKED_FIFO_LANES[i].vector, 0x332211, 0x665544);
+	}
+
+	test_category("In-band control replaces byte 3 with CSREG");
+	for (uint32_t i = 0; i < ARRAY_SIZE(CSREG_CONTROLS); i++) {
+		const uint32_t words[] = { INBAND_CS1_4X8 | 0x332211, INBAND_CS1_4X8 | 0x665544 };
+		uint32_t control_byte = CSREG_CONTROLS[i].control >> 24;
+		uint32_t received[INBAND_RX_WORDS_MAX] = { 0 };
+
+		printf("# CSREG %s (%02lX) encodes control byte %02lX\n", CSREG_CONTROLS[i].name,
+			CSREG_CONTROLS[i].csreg, control_byte);
+		configure_inband_loopback(DIF_CON_BM_8, CSREG_CONTROLS[i].csreg);
+		uint32_t received_count = transmit_words(words, ARRAY_SIZE(words), received, 8);
+		test_eq_u32("4x8 in-band transfer sends eight bytes", 8, received_count);
+		test_eq_u32("CSREG data bytes are not converted", 0x11, received[0]);
+		test_eq_u32("first word byte 3 is the CSREG control byte", control_byte, received[3]);
+		test_eq_u32("second word byte 3 is the CSREG control byte", control_byte, received[7]);
+	}
+
+	test_category("In-band control is taken before BMREG");
+	configure_inband_loopback(DIF_CON_BM_8, DIF_CSREG_BSCONF_3x8BIT);
+	DIF_RUNCTRL = 0;
+	set_bmreg_mapping(26, 1);
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	const struct inband_vector BMREG_CONTROL = { "3x8 with BMREG clearing format bit 1", INBAND_CS1_3X8, 6,
+		{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 } };
+	check_inband_vector(&BMREG_CONTROL, 0x332211, 0x665544);
+
+	test_category("Color matrix before BMREG");
+	const struct inband_vector MATRIX_THEN_BMREG = { "3x8 converted with BMREG swapping bits 4 and 8",
+		INBAND_CS1_3X8 | DIF_TXD_INBAND_GRACMD, 6, { 0x60, 0x41, 0x10, 0x61, 0x41, 0x11 } };
+	configure_inband_loopback(DIF_CON_BM_8, DIF_CSREG_BSCONF_3x8BIT);
+	DIF_RUNCTRL = 0;
+	set_bmreg_mapping(4, 8);
+	set_bmreg_mapping(8, 4);
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	check_inband_vector(&MATRIX_THEN_BMREG, 0x704010, 0x714011);
+
+	uint32_t output = 0;
+	configure_inband_loopback(DIF_CON_BM_8, DIF_CSREG_GRACMD | DIF_CSREG_BSCONF_3x8BIT);
+	DIF_RUNCTRL = 0;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_SERIAL;
+	set_bmreg_mapping(4, 8);
+	set_bmreg_mapping(8, 4);
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	test_check("GRACMD with BMREG transfer completes", convert_color(0x704010, &output));
+	test_eq_u32("GRACMD converts before BMREG", 0x104160, output);
+
+	test_category("Color matrix in word mode");
+	const struct inband_vector WORD_MODE = { "CSREG GRACMD with BSCONF OFF", 0, 2, { 0x33, 0x66 } };
+	configure_inband_loopback(DIF_CON_BM_8, DIF_CSREG_GRACMD | DIF_CSREG_BSCONF_OFF);
+	DIF_RUNCTRL = 0;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_SERIAL;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	check_inband_vector(&WORD_MODE, 0x332211, 0x665544);
+
+	test_category("Color matrix per packed TX FIFO lane");
+	const struct inband_vector CSREG_LANES = { "CSREG GRACMD 3x8 with 2-byte lanes", 0x77000000, 3,
+		{ 0x00112200, 0x55003377, 0x66770044 } };
+	configure_inband_loopback(DIF_CON_BM_8, DIF_CSREG_GRACMD | DIF_CSREG_BSCONF_3x8BIT);
+	DIF_RUNCTRL = 0;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_SERIAL;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+	configure_packed_fifo_lanes(DIF_TXFIFO_CFG_TXFA_2);
+	check_inband_vector(&CSREG_LANES, 0x332211, 0x665544);
+}
+
 static void test_16bit_pair_conversion(void) {
 	test_category("BMREG 32-to-16 mapping");
 	configure_pair_conversion(DIF_CON_BM_16, 16, 0, 1, 0, 0, 0);
@@ -2275,6 +2543,7 @@ int dif_v2_test(void) {
 	test_bit_conversion();
 	test_full_bmreg_matrix();
 	test_color_conversion();
+	test_inband_control();
 	test_16bit_pair_conversion();
 	test_pair_bit_widths();
 	test_incomplete_pbccon_pair();

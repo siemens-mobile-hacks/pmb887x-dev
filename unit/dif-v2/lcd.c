@@ -862,6 +862,235 @@ static void test_continuous_dma_blit(void) {
 	test_eq_u32("DMA blit has no TX FIFO overflow", 0, error_sources & DIF_ERRIRQSS_TXFOFL);
 }
 
+#define INBAND_GRAM_BYTES 20
+#define INBAND_CS1_3X8 (DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_3x8BIT)
+#define INBAND_CS1_3X8_BYTE (INBAND_CS1_3X8 >> 24)
+#define INBAND_3X8_BYTE (DIF_TXD_INBAND_FORMAT_3x8BIT >> 24)
+
+static const uint32_t INBAND_STRIPE[] = { 0x704010, 0x714111, 0x724212, 0x734313 };
+static const uint32_t INBAND_YUV_RED[] = { 0x515AF0, 0x515AF0 };
+
+struct inband_frame {
+	const char *name;
+	uint32_t csreg;
+	uint32_t control;
+	void (*configure)(void);
+	bool use_dma;
+	const uint32_t *data;
+	uint32_t word_count;
+	uint8_t gram[INBAND_GRAM_BYTES];
+};
+
+static uint32_t pack_color_coefficients(int32_t first, int32_t second, int32_t third) {
+	return ((uint32_t) first & 0x3FF) |
+		(((uint32_t) second & 0x3FF) << 10) |
+		(((uint32_t) third & 0x3FF) << 20);
+}
+
+static void configure_byte_swap_matrix(void) {
+	DIF_COEFF_REG1 = pack_color_coefficients(0, 0, 128);
+	DIF_COEFF_REG2 = pack_color_coefficients(0, 128, 0);
+	DIF_COEFF_REG3 = pack_color_coefficients(128, 0, 0);
+	DIF_OFFSET = 0;
+}
+
+static void configure_control_bit_bmreg(void) {
+	set_bmreg_mapping(31, 0);
+}
+
+static void configure_firmware_yuv(void) {
+	DIF_COEFF_REG1 = pack_color_coefficients(0, 258, 149);
+	DIF_COEFF_REG2 = pack_color_coefficients(-104, -50, 149);
+	DIF_COEFF_REG3 = pack_color_coefficients(204, 0, 149);
+	DIF_OFFSET = pack_color_coefficients(128, 128, 16);
+	DIF_BMREG0 = 0x56934A30;
+	DIF_BMREG1 = 0x2D4922F6;
+	DIF_BMREG2 = 0x040F39AC;
+	DIF_BMREG3 = 0x1CC51062;
+	DIF_BMREG4 = 0x779B6B38;
+	DIF_BMREG5 = 0x000003FE;
+}
+
+static bool dif_write_inband_txd(const uint32_t *words, uint32_t count) {
+	bool success = true;
+
+	for (uint32_t i = 0; i < count; i++) {
+		DIF_TXD = words[i];
+		success &= dif_wait_idle();
+	}
+
+	return success;
+}
+
+static bool dif_write_inband_dma(const uint32_t *words, uint32_t count) {
+	for (uint32_t i = 0; i < count; i++)
+		lcd_blit_scanline[i] = words[i];
+
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	dmac_request_select(DIF_DMA_TX_REQUEST, DIF_DMA_TX_SELECT);
+	DIF_IMSC = DIF_IMSC_TXBREQ;
+	DIF_DMAE = DIF_DMAE_TXBREQ;
+	DIF_TPS_CTRL = count;
+	bool success = lcd_blit_scanline_dma(count) && dif_wait_idle();
+
+	DIF_DMAE = 0;
+	DIF_IMSC = 0;
+	DMAC_CH_CONFIG(DMA_TX_CHANNEL) = 0;
+
+	return success;
+}
+
+static bool dif_write_inband(
+	uint32_t csreg,
+	void (*configure)(void),
+	bool use_dma,
+	const uint32_t *words,
+	uint32_t count
+) {
+	DIF_RUNCTRL = 0;
+	if (configure != NULL)
+		configure();
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL | DIF_PERREG_INBAND;
+	DIF_CSREG = csreg;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+
+	bool success = use_dma ? dif_write_inband_dma(words, count) : dif_write_inband_txd(words, count);
+
+	DIF_RUNCTRL = 0;
+	reset_data_conversion();
+	DIF_COEFF_REG1 = 0;
+	DIF_COEFF_REG2 = 0;
+	DIF_COEFF_REG3 = 0;
+	DIF_OFFSET = 0;
+	DIF_PERREG = DIF_PERREG_DIFPERMODE_PARALLEL;
+	DIF_CSREG = DIF_CSREG_CS1 | DIF_CSREG_BSCONF_1x8BIT;
+	DIF_RUNCTRL = DIF_RUNCTRL_RUN;
+
+	return success;
+}
+
+static bool lcd_read_gram_row(uint8_t *gram, uint32_t size) {
+	uint8_t row[3 + INBAND_GRAM_BYTES] = { 0 };
+	uint32_t dummy_size = lcd->rgb565_read_dummy_bytes;
+
+	lcd_command_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	lcd_data_bsconf = DIF_CSREG_BSCONF_1x8BIT;
+	if (!lcd_set_gram_window(0, 1) || !lcd_write_gram_read_command() || !dif_read_bytes(true, row, dummy_size + size))
+		return false;
+	for (uint32_t i = 0; i < size; i++)
+		gram[i] = row[dummy_size + i];
+
+	return true;
+}
+
+static bool lcd_prepare_inband_row(void) {
+	return lcd_reset_and_init_controller() &&
+		lcd_draw_solid(DIF_CSREG_BSCONF_1x8BIT, 0, 1, 0x5A5A) &&
+		lcd_set_gram_window(0, 1);
+}
+
+static void check_inband_frame(const struct inband_frame *frame) {
+	uint32_t words[ARRAY_SIZE(INBAND_STRIPE)] = { 0 };
+	uint8_t gram[INBAND_GRAM_BYTES] = { 0 };
+
+	printf("# %s: control byte %02lX, CSREG %02lX, %s\n", frame->name, frame->control >> 24, frame->csreg,
+		frame->use_dma ? "DMA" : "TXD");
+	for (uint32_t i = 0; i < frame->word_count; i++)
+		words[i] = frame->control | frame->data[i];
+	test_check("in-band GRAM row is prepared", lcd_prepare_inband_row() && lcd_write_gram_command());
+	test_check("in-band frame transfer completes",
+		dif_write_inband(frame->csreg, frame->configure, frame->use_dma, words, frame->word_count));
+	test_check("GRAM row read completes", lcd_read_gram_row(gram, sizeof(gram)));
+	test_eq_memory("in-band frame GRAM bytes", frame->gram, gram, sizeof(gram));
+}
+
+static void test_inband_control(void) {
+	static const struct inband_frame FRAMES[] = {
+		{ "CS1 data", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, INBAND_CS1_3X8, NULL, false, INBAND_STRIPE, 4, {
+			0x10, 0x40, 0x70, 0x11, 0x41, 0x71, 0x12, 0x42, 0x72, 0x13,
+			0x43, 0x73, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "no chip select", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, DIF_TXD_INBAND_FORMAT_3x8BIT,
+			NULL, false, INBAND_STRIPE, 4, {
+			0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+			0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "CS1 command", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, INBAND_CS1_3X8 | DIF_TXD_INBAND_CD,
+			NULL, false, INBAND_STRIPE, 4, {
+			0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+			0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "CS2 data", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, DIF_TXD_INBAND_CS2 | DIF_TXD_INBAND_FORMAT_3x8BIT,
+			NULL, false, INBAND_STRIPE, 4, {
+			0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+			0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "CS3 data", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, DIF_TXD_INBAND_CS3 | DIF_TXD_INBAND_FORMAT_3x8BIT,
+			NULL, false, INBAND_STRIPE, 4, {
+			0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+			0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "all chip selects", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, (
+			DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_CS2 | DIF_TXD_INBAND_CS3 | DIF_TXD_INBAND_FORMAT_3x8BIT
+		), NULL, false, INBAND_STRIPE, 4, {
+			0x10, 0x40, 0x70, 0x11, 0x41, 0x71, 0x12, 0x42, 0x72, 0x13,
+			0x43, 0x73, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "CSREG without CS1 and with CD", DIF_CSREG_CD | DIF_CSREG_CS2 | DIF_CSREG_BSCONF_1x8BIT, INBAND_CS1_3X8,
+			NULL, false, INBAND_STRIPE, 4, {
+			0x10, 0x40, 0x70, 0x11, 0x41, 0x71, 0x12, 0x42, 0x72, 0x13,
+			0x43, 0x73, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "converted", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, INBAND_CS1_3X8 | DIF_TXD_INBAND_GRACMD,
+			configure_byte_swap_matrix, false, INBAND_STRIPE, 4, {
+			0x70, 0x40, 0x10, 0x71, 0x41, 0x11, 0x72, 0x42, 0x12, 0x73,
+			0x43, 0x13, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "converted", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, INBAND_CS1_3X8 | DIF_TXD_INBAND_GRACMD,
+			configure_byte_swap_matrix, true, INBAND_STRIPE, 4, {
+			0x70, 0x40, 0x10, 0x71, 0x41, 0x11, 0x72, 0x42, 0x12, 0x73,
+			0x43, 0x13, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "BMREG clears CS1 only on the bus", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT,
+			DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_4x8BIT, configure_control_bit_bmreg, false,
+			INBAND_STRIPE, 4, {
+			0x10, 0x40, 0x70, INBAND_3X8_BYTE, 0x11, 0x41, 0x71, INBAND_CS1_3X8_BYTE, 0x12, 0x42,
+			0x72, INBAND_3X8_BYTE, 0x13, 0x43, 0x73, INBAND_CS1_3X8_BYTE, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+		{ "firmware BT.601 VUY red", DIF_CSREG_CS1 | DIF_CSREG_BSCONF_3x8BIT, INBAND_CS1_3X8 | DIF_TXD_INBAND_GRACMD,
+			configure_firmware_yuv, true, INBAND_YUV_RED, 2, {
+			0xFE, 0x00, 0x00, 0xFE, 0x00, 0x00, 0x5A, 0x5A, 0x5A, 0x5A,
+			0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		} },
+	};
+	static const uint8_t COMMAND_GRAM[INBAND_GRAM_BYTES] = {
+		0x12, 0x34, 0x56, 0x78, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+		0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A,
+	};
+
+	test_category("In-band chip select, CD, and data format");
+	lcd_board_enable_backlight();
+	for (uint32_t i = 0; i < ARRAY_SIZE(FRAMES); i++)
+		check_inband_frame(&FRAMES[i]);
+
+	test_category("In-band GRAM command");
+	const uint32_t command_control = DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_CD | DIF_TXD_INBAND_FORMAT_1x8BIT;
+	const uint32_t data_control = DIF_TXD_INBAND_CS1 | DIF_TXD_INBAND_FORMAT_2x8BIT;
+	const uint32_t words[] = {
+		command_control | lcd->gram_write_command[0],
+		command_control | lcd->gram_write_command[1],
+		data_control | 0x3412,
+		data_control | 0x7856,
+	};
+	uint8_t gram[INBAND_GRAM_BYTES] = { 0 };
+	test_check("in-band command row is prepared", lcd_prepare_inband_row());
+	test_check("in-band command transfer completes",
+		dif_write_inband(DIF_CSREG_BSCONF_1x8BIT, NULL, false, words, ARRAY_SIZE(words)));
+	test_check("GRAM row read completes", lcd_read_gram_row(gram, sizeof(gram)));
+	test_eq_memory("in-band CD selects the GRAM write command", COMMAND_GRAM, gram, sizeof(gram));
+}
+
 int main(void) {
 	test_start("DIFv2 LCD interface test");
 	test_reset_values();
@@ -882,6 +1111,7 @@ int main(void) {
 	test_check("controller initializes", lcd_reset_and_init_controller());
 
 	test_continuous_dma_blit();
+	test_inband_control();
 
 	uint16_t probe_pixel = 0;
 	test_category("TXD ordering across CD changes");
