@@ -89,12 +89,12 @@ sub pack_images {
 }
 
 sub pack_golden {
-	my ($directory, $record_words, $shard_cases) = @_;
-	my $source_path = File::Spec->catfile($directory, 'instructions-golden.inc');
+	my ($directory, $golden_name, $record_words, $shard_cases) = @_;
+	my $source_path = File::Spec->catfile($directory, "$golden_name.inc");
 	my $source = read_file($source_path);
 	my ($count) = $source =~ /^#define DSP_INSTRUCTION_GOLDEN_COUNT (\d+)$/m;
 	die "Cannot read golden count from $source_path\n" unless defined $count;
-	my $path = File::Spec->catfile($directory, 'instructions-golden-packed.inc');
+	my $path = File::Spec->catfile($directory, "$golden_name-packed.inc");
 	if ($count == 0) {
 		my $temporary_path = "$path.$$";
 		open my $output, '>', $temporary_path or die "Cannot write $temporary_path: $!\n";
@@ -130,4 +130,7 @@ die "usage: $0 [--golden] [DIRECTORY]\n" if @ARGV > 1;
 my $directory = @ARGV ? $ARGV[0] : $RealBin;
 my ($shard_count, $record_words, $shard_cases) = read_cases($directory);
 pack_images($directory, $shard_count) unless $golden_only;
-pack_golden($directory, $record_words, $shard_cases);
+for my $golden_name ('instructions-golden', 'instructions-golden-pmb8875') {
+	next unless -f File::Spec->catfile($directory, "$golden_name.inc");
+	pack_golden($directory, $golden_name, $record_words, $shard_cases);
+}

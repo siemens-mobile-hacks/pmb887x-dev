@@ -41,6 +41,7 @@ add_peripheral_test(dsp-lle-opcode-aliases dsp/lle/instructions.c)
 target_compile_definitions(dsp-lle-opcode-aliases PRIVATE
 	DSP_INSTRUCTION_CASES_INCLUDE="opcode-aliases/instructions-cases.inc"
 	DSP_INSTRUCTION_GOLDEN_INCLUDE="opcode-aliases/instructions-golden-packed.inc"
+	DSP_INSTRUCTION_GOLDEN_PMB8875_INCLUDE="opcode-aliases/instructions-golden-pmb8875-packed.inc"
 	DSP_INSTRUCTION_IMAGES_INCLUDE="opcode-aliases/instructions-images-packed.inc"
 	DSP_INSTRUCTION_TEST_TITLE="DSP TeakLite I opcode alias test"
 )

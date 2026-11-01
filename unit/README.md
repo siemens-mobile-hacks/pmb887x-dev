@@ -45,7 +45,7 @@ success.
 | `dsp-lle-peripheral-map` | Reset-isolated, read-only PMB8876 DSP data-space capture for the candidate `DE00`-`DEFF` peripheral window |
 | `dsp-lle-peripherals-registers` | Direct TeakLite reads of documented status, counter, pointer, semaphore, and ID registers without peripheral control writes |
 | `dsp-lle-instructions` | TeakLite I instruction results, including external-register writes, captured from PMB8876 Mask ROM 0801 hardware |
-| `dsp-lle-opcode-aliases` | Noncanonical variants of every documented TeakLite I don't-care opcode field |
+| `dsp-lle-opcode-aliases` | Noncanonical variants of every documented TeakLite I don't-care opcode field and reserved encodings, with PMB8875 and PMB8876 hardware goldens |
 | `dsp-lle-opcode-probe` | Resumable diagnostic sweep of raw TeakLite first-word opcodes with reset and timeout isolation |
 | `dsp-lle-opcode-map` | Every TeakLite first-word opcode compared with the PMB8876 hardware outcome map |
 | `dsp-lle-expansion-probe` | Resumable sweep of expansion words for all documented two-word TeakLite I encoding rows |
