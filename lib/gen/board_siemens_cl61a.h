@@ -5,7 +5,7 @@
 #define BOARD_NAME "siemens-cl61a"
 
 // Software platform
-#define BOARD_PLATFORM_SIEMENS 1
+#define BOARD_PLATFORM_APOXI 1
 
 // Peripherals
 #define	BOARD_HAS_FLASH0_CFI_FLASH	1
