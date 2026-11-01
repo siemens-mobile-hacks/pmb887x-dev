@@ -76,7 +76,7 @@ PIN110 = "RPWRON" # remote poweron
 PIN111 = "SPK_RCV_SEL"
 T_OUT8 = "JACK_DETECT"
 CLKOUT0 = "SLIDE_OPEN"
-PIN109 = "SCROLL_EN"
+USIF_SCLK = "SCROLL_EN"
 
 [gpio.inputs]
 RPWRON = 1 # remote power on (skips power button hold requirement)

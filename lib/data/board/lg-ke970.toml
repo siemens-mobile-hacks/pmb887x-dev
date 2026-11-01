@@ -102,7 +102,7 @@ USART1_CTS = "AUDIO_AMP_EN"
 T_OUT12 = "AF_PWR_EN"
 T_OUT8 = "JACK_DETECT"
 CLKOUT0 = "SLIDE_OPEN"
-PIN109 = "USB_EOC"
+USIF_SCLK = "USB_EOC"
 
 [gpio.inputs]
 RPWRON = 1 # remote power on (skips power button hold requirement)
