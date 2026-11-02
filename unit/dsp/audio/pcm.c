@@ -4,42 +4,55 @@
 #include "dsp/audio/pcm.h"
 #include "test.h"
 
-size_t pcm_triangle_period_frame_count(uint32_t sample_rate_hz, uint32_t tone_hz) {
+static uint32_t pcm_common_divisor(uint32_t first, uint32_t second) {
+	while (second != 0) {
+		uint32_t remainder = first % second;
+		first = second;
+		second = remainder;
+	}
+	return first;
+}
+
+size_t pcm_period_frame_count(uint32_t sample_rate_hz, uint32_t tone_hz) {
 	if (sample_rate_hz == 0)
 		return 0;
 	if (tone_hz == 0)
 		return 0;
-
-	uint32_t dividend = sample_rate_hz;
-	uint32_t divisor = tone_hz;
-	while (divisor != 0) {
-		uint32_t remainder = dividend % divisor;
-		dividend = divisor;
-		divisor = remainder;
-	}
-	return sample_rate_hz / dividend;
+	return sample_rate_hz / pcm_common_divisor(sample_rate_hz, tone_hz);
 }
 
-void pcm_triangle_generate(
+static int32_t pcm_triangle_sample(uint32_t phase, uint32_t sample_rate_hz, int32_t amplitude) {
+	if (phase < sample_rate_hz)
+		return (int64_t) amplitude * phase / sample_rate_hz;
+	if (phase < sample_rate_hz * 3)
+		return amplitude - (int64_t) amplitude * (phase - sample_rate_hz) / sample_rate_hz;
+	return -amplitude + (int64_t) amplitude * (phase - sample_rate_hz * 3) / sample_rate_hz;
+}
+
+void pcm_waveform_generate(
 	int16_t *samples,
 	size_t sample_count,
 	uint32_t sample_rate_hz,
 	uint32_t tone_hz,
-	int32_t amplitude
+	int32_t amplitude,
+	enum pcm_waveform waveform
 ) {
 	uint32_t phase_period = sample_rate_hz * 4;
 
 	for (size_t i = 0; i < sample_count; i++) {
 		uint32_t phase = (uint64_t) i * tone_hz * 4 % phase_period;
-		int32_t sample;
+		int32_t sample = 0;
 
-		if (phase < sample_rate_hz) {
-			sample = (int64_t) amplitude * phase / sample_rate_hz;
-		} else if (phase < sample_rate_hz * 3) {
-			sample = amplitude - (int64_t) amplitude * (phase - sample_rate_hz) / sample_rate_hz;
-		} else {
-			sample = -amplitude +
-				(int64_t) amplitude * (phase - sample_rate_hz * 3) / sample_rate_hz;
+		switch (waveform) {
+			case PCM_WAVEFORM_TRIANGLE:
+				sample = pcm_triangle_sample(phase, sample_rate_hz, amplitude);
+				break;
+			case PCM_WAVEFORM_SAWTOOTH:
+				sample = -amplitude + (int64_t) 2 * amplitude * phase / phase_period;
+				break;
+			case PCM_WAVEFORM_SQUARE:
+				sample = phase < sample_rate_hz * 2 ? amplitude : -amplitude;
+				break;
 		}
 		samples[i] = (int16_t) sample;
 	}
@@ -68,6 +81,20 @@ void pcm_buffer_fill(
 		buffer[word_index] = 0;
 }
 
+static bool pcm_shared_ring_wait_consumed(const struct pcm_shared_ring *ring, size_t frames_submitted) {
+	stopwatch_t start = stopwatch_get();
+
+	while ((DSP_COM_STATUS & ring->response_flag) != 0) {
+		if (stopwatch_elapsed_ms(start) >= ring->request_timeout_ms) {
+			printf("# PCM buffer %lu was not consumed: communication=%04lX\n",
+				(uint32_t) frames_submitted, (uint32_t) DSP_COM_STATUS);
+			return false;
+		}
+		test_watchdog_serve();
+	}
+	return true;
+}
+
 bool pcm_shared_ring_play(
 	const struct pcm_shared_ring *ring,
 	const struct dsp_audio_pcm *pcm,
@@ -90,15 +117,8 @@ bool pcm_shared_ring_play(
 	test_watchdog_reset();
 
 	while (frames_submitted < total_frames) {
-		stopwatch_t start = stopwatch_get();
-		while ((DSP_COM_STATUS & ring->response_flag) != 0) {
-			if (stopwatch_elapsed_ms(start) >= ring->request_timeout_ms) {
-				printf("# PCM buffer %lu was not consumed: communication=%04lX\n",
-					(uint32_t) frames_submitted, (uint32_t) DSP_COM_STATUS);
-				return false;
-			}
-			test_watchdog_serve();
-		}
+		if (!pcm_shared_ring_wait_consumed(ring, frames_submitted))
+			return false;
 
 		size_t remaining = total_frames - frames_submitted;
 		frame_count = remaining < block_frames ? remaining : block_frames;
@@ -112,5 +132,16 @@ bool pcm_shared_ring_play(
 		}
 		test_watchdog_reset();
 	}
-	return true;
+
+	/* The DSP replays the last buffer until a new one arrives, so silence flushes its output pipeline. */
+	size_t silence_frames = (size_t) pcm->sample_rate_hz * PCM_SILENCE_MS / 1000;
+	size_t silence_blocks = (silence_frames + block_frames - 1) / block_frames;
+	for (size_t i = 0; i < silence_blocks; i++) {
+		if (!pcm_shared_ring_wait_consumed(ring, total_frames))
+			return false;
+		pcm_buffer_fill(ring->buffer, ring->buffer_word_count, pcm, 0, 0, ring->source_frame_step, ring->channel_count);
+		DSP_COM_SET = ring->response_flag;
+		test_watchdog_reset();
+	}
+	return pcm_shared_ring_wait_consumed(ring, total_frames);
 }

@@ -117,6 +117,7 @@ set(DSP_AUDIO_SOURCES
 	dsp/audio/board/siemens/pasic.c
 	dsp/audio/board/siemens/siemens.c
 	dsp/audio/pcm.c
+	dsp/audio/tone.c
 	${DSP_AUDIO_BOARD_SOURCE}
 	dsp/runtime.c dsp/hle/user-rom.c dsp/dsp-hw.c)
 if(DSP_AUDIO_BOARD_SOURCE)

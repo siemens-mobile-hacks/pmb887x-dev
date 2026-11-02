@@ -330,6 +330,10 @@ void test_expect_reset(const char *name) {
 	}
 }
 
+void test_audio_expect_tone(uint32_t frequency_hz, uint32_t sample_rate_hz, uint32_t duration_ms) {
+	printf("# AUDIO-EXPECT: TONE hz=%lu rate=%lu ms=%lu\n", frequency_hz, sample_rate_hz, duration_ms);
+}
+
 void test_skip(const char *name, const char *reason) {
 	state.assertions++;
 	printf("ok %u - %s%s # SKIP %s%s\n", state.assertions, COLOR_YELLOW, name, reason, COLOR_RESET);
