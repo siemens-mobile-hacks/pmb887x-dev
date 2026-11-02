@@ -8,6 +8,10 @@
 #define I2C_MAX_IRQS 128
 #define PMIC_I2C_ADDR 0x31
 #define PMIC_LED_CONTROL_REG 0x14
+/* Amplifier path 2 gain: holds any value and is harmless while the audio outputs are off. */
+#define PMIC_SCRATCH_REG 0x44
+#define PMIC_SCRATCH_VALUE 0x5A
+#define PMIC_SCRATCH_MARKER 0xA5
 static const uint32_t I2C_BUS_CONFIG = I2C_BUSCON_SDAEN0 | I2C_BUSCON_SCLEN0 |
 	(0x7E << I2C_BUSCON_BRP_SHIFT) | I2C_BUSCON_PREDIV_8 | I2C_BUSCON_BRPMOD_MODE1;
 static const uint32_t I2C_CLEAR_STATE = I2C_WHBSYSCON_CLRAL | I2C_WHBSYSCON_CLRIRQD |
@@ -124,10 +128,8 @@ static void handle_data_irq(void) {
 			I2C_PROTO_SRC = MOD_SRC_CLRR;
 			I2C_END_SRC = MOD_SRC_CLRR;
 			transfer.result = TRANSFER_DONE;
-		} else if (transfer.leave_final_data_irq_pending) {
-			I2C_WHBSYSCON = I2C_WHBSYSCON_CLRBUM;
 		} else {
-			I2C_WHBSYSCON = I2C_WHBSYSCON_CLRBUM | I2C_WHBSYSCON_CLRIRQD;
+			I2C_WHBSYSCON = I2C_WHBSYSCON_CLRBUM;
 		}
 		return;
 	}
@@ -348,6 +350,55 @@ static void test_receive_stop_with_pending_data_irq(void) {
 	cpu_enable_irq(true);
 }
 
+static bool wait_status(uint32_t flag) {
+	for (uint32_t i = 0; i < I2C_WAIT_ITERATIONS; i++) {
+		if ((I2C_SYSCON & flag) != 0)
+			return true;
+		test_spin(1);
+	}
+	return false;
+}
+
+static bool pointer_write_with_marker(uint8_t reg, uint8_t marker, uint32_t stop_command) {
+	cpu_enable_irq(false);
+	I2C_SYSCON = I2C_SYSCON_MOD_MASTER;
+	set_buffer_size(2);
+	I2C_RTB = (PMIC_I2C_ADDR << 1) | (reg << 8) | (marker << 16) | (marker << 24);
+	I2C_WHBSYSCON = I2C_WHBSYSCON_SETBUM;
+	bool sent = wait_status(I2C_SYSCON_IRQD);
+	if (sent)
+		I2C_WHBSYSCON = stop_command;
+	bool stopped = sent && wait_status(I2C_SYSCON_IRQE);
+	stop_transfer();
+	cpu_enable_irq(true);
+	return stopped;
+}
+
+static void test_stop_after_final_data_irq(void) {
+	uint8_t original;
+	uint8_t value;
+
+	test_category("STOP after the final data IRQ");
+	if (!test_eq_u32("PMIC register read completes", TRANSFER_DONE,
+		smbus_read(PMIC_SCRATCH_REG, &original, sizeof(original), true))) {
+		return;
+	}
+
+	smbus_write(PMIC_SCRATCH_REG, PMIC_SCRATCH_VALUE);
+	test_check("register pointer write ends with BUM and IRQD cleared together",
+		pointer_write_with_marker(PMIC_SCRATCH_REG, PMIC_SCRATCH_MARKER, I2C_WHBSYSCON_CLRBUM | I2C_WHBSYSCON_CLRIRQD));
+	smbus_read(PMIC_SCRATCH_REG, &value, sizeof(value), true);
+	test_eq_u32("clearing IRQD first transmits the next buffer byte", PMIC_SCRATCH_MARKER, value);
+
+	smbus_write(PMIC_SCRATCH_REG, PMIC_SCRATCH_VALUE);
+	test_check("register pointer write ends with BUM cleared alone",
+		pointer_write_with_marker(PMIC_SCRATCH_REG, PMIC_SCRATCH_MARKER, I2C_WHBSYSCON_CLRBUM));
+	smbus_read(PMIC_SCRATCH_REG, &value, sizeof(value), true);
+	test_eq_u32("clearing BUM with IRQD pending stops before the next byte", PMIC_SCRATCH_VALUE, value);
+
+	smbus_write(PMIC_SCRATCH_REG, original);
+}
+
 static void test_software_irqs(void) {
 	test_category("Interrupts");
 	transfer = (struct transfer_state) {.synthetic_irq = true};
@@ -513,6 +564,7 @@ int i2c_v1_test(void) {
 	test_software_irqs();
 	configure_i2c();
 	test_pmic();
+	test_stop_after_final_data_irq();
 	test_repeated_start();
 	test_packet_sizes();
 	test_register_dump();
