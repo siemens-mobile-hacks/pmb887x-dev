@@ -9,14 +9,13 @@
 #define LATE_VBTX_COUNT_OFFSET 0x0011
 #define REQUESTED_BCON_OFFSET 0x0020
 #define APPLIED_BCON_OFFSET 0x0021
-#define MIRROR_RWADDR_OFFSET 0x0030
-#define LARGEST_STEP_OFFSET 0x0031
-#define MIRROR_REQUEST 0x8000
-#define STEP_REQUEST 0x4000
+#define READ_STEPS_OFFSET 0x0030
+#define LARGEST_READ_STEP_OFFSET 0x0031
+#define WRITE_STEPS_OFFSET 0x0033
+#define COUNT_REQUEST 0x8000
 #define SETTLE_MS 20
-#define MIRROR_MS 200
+#define COUNT_MS 200
 #define PACING_MS 500
-#define AFE_RING_POSITIONS 64
 #define PLL_LOCK_TIMEOUT_MS 100
 #define PLL_CLOCK_HZ 104000000
 
@@ -89,8 +88,15 @@ static void delay_ms(uint32_t milliseconds) {
 		test_watchdog_serve();
 }
 
-static uint32_t ring_steps(uint16_t from, uint16_t to) {
-	return (to - from) & (AFE_RING_POSITIONS - 1);
+static uint16_t shared_counter_get(uint32_t offset) {
+	uint16_t value = dsp_hw_shared_memory[offset];
+	uint16_t previous;
+
+	do {
+		previous = value;
+		value = dsp_hw_shared_memory[offset];
+	} while (value != previous);
+	return value;
 }
 
 static bool afe_apply_bcon(uint16_t request) {
@@ -104,36 +110,31 @@ static bool afe_apply_bcon(uint16_t request) {
 static void test_position_rates(const struct afe_rate_config *config) {
 	char name[96];
 
-	snprintf(name, sizeof(name), "%s: DSP mirrors RWADDR", config->name);
-	if (!test_check(name, afe_apply_bcon(config->bcon | MIRROR_REQUEST)))
+	snprintf(name, sizeof(name), "%s: DSP counts RWADDR steps", config->name);
+	if (!test_check(name, afe_apply_bcon(config->bcon | COUNT_REQUEST)))
 		return;
 
-	uint16_t previous = dsp_hw_shared_memory[MIRROR_RWADDR_OFFSET];
-	uint32_t read_steps = 0;
-	uint32_t write_steps = 0;
-	uint32_t max_step = 0;
+	uint16_t start_read_steps = shared_counter_get(READ_STEPS_OFFSET);
+	uint16_t start_write_steps = shared_counter_get(WRITE_STEPS_OFFSET);
 	stopwatch_t start = stopwatch_get();
-	while (stopwatch_elapsed_ms(start) < MIRROR_MS) {
-		uint16_t current = dsp_hw_shared_memory[MIRROR_RWADDR_OFFSET];
-		uint32_t read = ring_steps(previous & TEAK_AFE_RWADDR_RDADDR, current & TEAK_AFE_RWADDR_RDADDR);
-		uint32_t write = ring_steps(previous >> TEAK_AFE_RWADDR_WRADDR_SHIFT, current >> TEAK_AFE_RWADDR_WRADDR_SHIFT);
-		read_steps += read;
-		write_steps += write;
-		max_step = MAX(max_step, MAX(read, write));
-		previous = current;
-	}
+	delay_ms(COUNT_MS);
+	uint16_t read_steps = shared_counter_get(READ_STEPS_OFFSET) - start_read_steps;
+	uint16_t write_steps = shared_counter_get(WRITE_STEPS_OFFSET) - start_write_steps;
 	uint32_t elapsed_ticks = stopwatch_get() - start;
+	uint16_t largest_read_step = shared_counter_get(LARGEST_READ_STEP_OFFSET);
 
 	uint32_t read_hz = count_to_rate_hz(read_steps, elapsed_ticks);
 	uint32_t write_hz = count_to_rate_hz(write_steps, elapsed_ticks);
-	printf("# %s: RD %lu positions/s, WR %lu positions/s, largest step %lu\n", config->name, read_hz, write_hz,
-		max_step);
+	printf("# %s: RD %lu positions/s, WR %lu positions/s, largest RD step %u\n", config->name, read_hz, write_hz,
+		largest_read_step);
 	snprintf(name, sizeof(name), "%s: read pointer advances at %lu positions/s", config->name,
 		config->read_position_hz);
 	test_check(name, rate_matches(read_hz, config->read_position_hz));
 	snprintf(name, sizeof(name), "%s: write pointer advances at %lu positions/s", config->name,
 		config->write_position_hz);
 	test_check(name, rate_matches(write_hz, config->write_position_hz));
+	snprintf(name, sizeof(name), "%s: DSP sees RDADDR advance one position at a time", config->name);
+	test_eq_u32(name, 1, largest_read_step);
 }
 
 static bool clocks_select_pll(void) {
@@ -181,19 +182,10 @@ static void test_firmware_pacing(uint32_t expected_vbtx_hz) {
 	test_eq_u32("no VBTX handler finds the write pointer past the armed position", 0, late);
 }
 
-static void test_read_pointer_steps(void) {
-	if (!test_check("DSP polls RDADDR at firmware audio rates", afe_apply_bcon(BCON_FIRMWARE_AUDIO | STEP_REQUEST)))
-		return;
-
-	delay_ms(MIRROR_MS);
-	test_eq_u32("DSP sees RDADDR advance one position at a time", 1, dsp_hw_shared_memory[LARGEST_STEP_OFFSET]);
-}
-
 static void test_clock_case(const struct afe_clock_case *clock_case) {
 	test_category(clock_case->name);
 	for (size_t i = 0; i < ARRAY_SIZE(clock_case->rates); i++)
 		test_position_rates(&clock_case->rates[i]);
-	test_read_pointer_steps();
 	test_firmware_pacing(clock_case->firmware_vbtx_hz);
 }
 
