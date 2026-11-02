@@ -7,5 +7,7 @@ if (($# != 0)); then
 	exit 2
 fi
 
-perl "$script_dir/lle/opcode-aliases/build_instructions.pl"
-exec perl "$script_dir/lle/instructions/pack_instructions.pl" "$script_dir/lle/opcode-aliases"
+for corpus in opcode-aliases opcode-reserved-modify delay-slot-overflow; do
+	perl "$script_dir/lle/opcode-aliases/build_instructions.pl" "$corpus"
+	perl "$script_dir/lle/instructions/pack_instructions.pl" "$script_dir/lle/$corpus"
+done

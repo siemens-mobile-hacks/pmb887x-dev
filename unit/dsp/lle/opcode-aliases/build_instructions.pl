@@ -9,8 +9,11 @@ use FindBin qw($RealBin);
 use lib "$RealBin/../..";
 use TeakTools qw(find_teak_tools);
 
+die "usage: $0 [CORPUS]\n" if @ARGV > 1;
+my $corpus = $ARGV[0] // 'opcode-aliases';
+my $corpus_dir = File::Spec->catdir($RealBin, '..', $corpus);
 my ($teak_assembler, $teak_disassembler) = find_teak_tools();
-my $generated_dir = File::Spec->catdir($RealBin, 'generated');
+my $generated_dir = File::Spec->catdir($corpus_dir, 'generated');
 
 sub cpu_count {
 	open my $nproc, '-|', 'nproc' or return 1;
@@ -70,8 +73,8 @@ sub build_shard {
 	rename $temporary_path, $output_path or die "Cannot replace $output_path: $!\n";
 }
 
-run_tool($^X, File::Spec->catfile($RealBin, '..', 'instructions', 'gen_instructions.pl'), '--generate-aliases');
-my $cases_path = File::Spec->catfile($RealBin, 'instructions-cases.inc');
+run_tool($^X, File::Spec->catfile($RealBin, '..', 'instructions', 'gen_instructions.pl'), '--generate', $corpus);
+my $cases_path = File::Spec->catfile($corpus_dir, 'instructions-cases.inc');
 my $cases = read_file($cases_path);
 my ($shard_count) = $cases =~ /^#define DSP_INSTRUCTION_SHARD_COUNT (\d+)$/m;
 die "Cannot read shard count from $cases_path\n" unless defined $shard_count;

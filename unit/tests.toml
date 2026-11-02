@@ -35,6 +35,12 @@ timeout = 300
 [dsp-lle-opcode-aliases]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-lle-opcode-reserved-modify]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[dsp-lle-delay-slot-overflow]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [dsp-lle-opcode-map]
 devices = ["generic-pmb8876"]
 timeout = 3600

@@ -46,6 +46,22 @@ target_compile_definitions(dsp-lle-opcode-aliases PRIVATE
 	DSP_INSTRUCTION_IMAGES_INCLUDE="opcode-aliases/instructions-images-packed.inc"
 	DSP_INSTRUCTION_TEST_TITLE="DSP TeakLite I opcode alias test"
 )
+add_peripheral_test(dsp-lle-opcode-reserved-modify dsp/lle/instructions.c)
+target_compile_definitions(dsp-lle-opcode-reserved-modify PRIVATE
+	DSP_INSTRUCTION_CASES_INCLUDE="opcode-reserved-modify/instructions-cases.inc"
+	DSP_INSTRUCTION_GOLDEN_INCLUDE="opcode-reserved-modify/instructions-golden-packed.inc"
+	DSP_INSTRUCTION_GOLDEN_PMB8875_INCLUDE="opcode-reserved-modify/instructions-golden-pmb8875-packed.inc"
+	DSP_INSTRUCTION_IMAGES_INCLUDE="opcode-reserved-modify/instructions-images-packed.inc"
+	DSP_INSTRUCTION_TEST_TITLE="DSP TeakLite I reserved modify function test"
+)
+add_peripheral_test(dsp-lle-delay-slot-overflow dsp/lle/instructions.c)
+target_compile_definitions(dsp-lle-delay-slot-overflow PRIVATE
+	DSP_INSTRUCTION_CASES_INCLUDE="delay-slot-overflow/instructions-cases.inc"
+	DSP_INSTRUCTION_GOLDEN_INCLUDE="delay-slot-overflow/instructions-golden-packed.inc"
+	DSP_INSTRUCTION_GOLDEN_PMB8875_INCLUDE="delay-slot-overflow/instructions-golden-pmb8875-packed.inc"
+	DSP_INSTRUCTION_IMAGES_INCLUDE="delay-slot-overflow/instructions-images-packed.inc"
+	DSP_INSTRUCTION_TEST_TITLE="DSP TeakLite I delay slot overflow test"
+)
 set(DSP_OPCODE_PROBE_FIRST "0x0000" CACHE STRING "First TeakLite opcode included in the raw hardware probe")
 set(DSP_OPCODE_PROBE_LAST "0x00FF" CACHE STRING "Last TeakLite opcode included in the raw hardware probe")
 add_peripheral_test(dsp-lle-opcode-probe dsp/lle/opcode-probe.c)

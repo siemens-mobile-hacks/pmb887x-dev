@@ -2467,8 +2467,9 @@ for my $source (grep { $_ ne 'pc' } @register_names) {
 for my $destination (grep { $_ ne 'pc' } @register_names) {
 	my @setup = register_matrix_setup();
 	push @setup, sprintf('push 0x$%04X', register_value($destination));
-	add_case("pop $destination", \@setup,
-		sprintf('data %04X // pop %s; PDF Table 4-4', 0x5E60 | $register_codes{$destination}, $destination));
+	my @body = (sprintf('data %04X // pop %s; PDF Table 4-4', 0x5E60 | $register_codes{$destination}, $destination));
+	push @body, 'nop', 'nop', 'nop' if $destination eq 'sp';
+	add_case("pop $destination", \@setup, \@body);
 }
 
 sub add_register_move {
@@ -2517,7 +2518,7 @@ for my $register (qw(p a0 a1)) {
 		sprintf('data %04X // mov %s,mixp; PDF Table 4-4', 0x5E80 | $register_codes{$register}, $register));
 }
 
-add_case('movs p to a0', [ register_matrix_setup() ], 'data 014B // movs p,a0; PDF Table 4-4');
+add_case('movs p to a0', [ register_matrix_setup(), 'mov 0x$0003 sv' ], 'data 014B // movs p,a0; PDF Table 4-4');
 add_case('exp p to a0', [ register_matrix_setup() ], 'data 904B // exp p,a0; PDF Table 4-4');
 add_case('rep p inc count', [
 	register_matrix_setup(),
@@ -2808,32 +2809,17 @@ sub select_alias_cases {
 	for my $register (0 .. 15) {
 		add_alias_family("mov $register_names[$register] mixp", sprintf('0101111010.%05b', $register), \@base, [], []);
 	}
-	my @reserved_memory = (@memory, 'mov 0x$D600 r7');
+	my @reserved_memory = (
+		@memory,
+		'mov 0x$1357 r7',
+		'mov r7 [page:0x0001u8]',
+		'mov 0x$2468 r7',
+		'mov r7 [page:0x0002u8]',
+		'mov 0x$D601 r4',
+		'mov 0x$D602 r5',
+		'mov 0x$D600 r7',
+	);
 	my @reserved = (
-		[ 'ALU short immediate xxx 100 a0', [ 'data C855' ] ],
-		[ 'ALU short immediate xxx 100 a1', [ 'data C955' ] ],
-		[ 'ALU short immediate xxx 101 a0', [ 'data CA55' ] ],
-		[ 'ALU short immediate xxx 101 a1', [ 'data CB55' ] ],
-		[ 'ALU rb offset7 xxx 100 a0', [ 'data 4801' ] ],
-		[ 'ALU rb offset7 xxx 100 a1', [ 'data 4901' ] ],
-		[ 'ALU rb offset7 xxx 101 a0', [ 'data 4A01' ] ],
-		[ 'ALU rb offset7 xxx 101 a1', [ 'data 4B01' ] ],
-		[ 'ALU long immediate xxx 100 a0', [ 'data 88C0', 'data 00F0 // long immediate expansion' ] ],
-		[ 'ALU long immediate xxx 100 a1', [ 'data 89C0', 'data 00F0 // long immediate expansion' ] ],
-		[ 'ALU long immediate xxx 101 a0', [ 'data 8AC0', 'data 00F0 // long immediate expansion' ] ],
-		[ 'ALU long immediate xxx 101 a1', [ 'data 8BC0', 'data 00F0 // long immediate expansion' ] ],
-		[ 'ALU rb long offset xxx 100 a0', [ 'data D4DC', 'data 0000 // rb long offset expansion' ] ],
-		[ 'ALU rb long offset xxx 101 a0', [ 'data D4DD', 'data 0000 // rb long offset expansion' ] ],
-		[ 'ALU rb long offset xxx 100 a1', [ 'data D5DC', 'data 0000 // rb long offset expansion' ] ],
-		[ 'ALU rb long offset xxx 101 a1', [ 'data D5DD', 'data 0000 // rb long offset expansion' ] ],
-		[ 'ALU long direct xxx 100 a0', [ 'data D4FC', 'data D600 // long direct address expansion' ] ],
-		[ 'ALU long direct xxx 101 a0', [ 'data D4FD', 'data D600 // long direct address expansion' ] ],
-		[ 'ALU long direct xxx 100 a1', [ 'data D5FC', 'data D600 // long direct address expansion' ] ],
-		[ 'ALU long direct xxx 101 a1', [ 'data D5FD', 'data D600 // long direct address expansion' ] ],
-		[ 'moda reserved 0111 a0 always', [ 'data 6770' ] ],
-		[ 'moda reserved 0111 a1 always', [ 'data 7770' ] ],
-		[ 'modb reserved 111 b0 always', [ 'data 6F70' ] ],
-		[ 'modb reserved 111 b1 always', [ 'data 7F70' ] ],
 		[ 'swap reserved option 1110', [ 'data 498E' ] ],
 		[ 'swap reserved option 1111', [ 'data 498F' ] ],
 		[ 'reserved 4780', [ 'data 4780' ] ],
@@ -2864,11 +2850,227 @@ sub select_alias_cases {
 			'mov icr a0',
 		]);
 	}
+	my @product_setups = (
+		[ 'ps 0', [] ],
+		[ 'ps 1', [ 'load 0x0001 ps' ] ],
+		[ 'ps 0 a1l 9C35', [ 'mov 0x$9C35 a1l' ] ],
+	);
+	for my $product_setup (@product_setups) {
+		my ($setup_name, $extra_setup) = @$product_setup;
+		my @setup = (
+			register_matrix_setup(),
+			'mov 0x$1234 y0',
+			'mov 0x$5678 r0',
+			'mpy y0 r0 a0',
+			'nop',
+			@$extra_setup,
+		);
+		for my $bit (0 .. 15) {
+			add_case("tstb p bit $bit $setup_name", \@setup,
+				sprintf('data %04X // tstb p,#%u; REG p is forbidden', 0x900B | ($bit << 8), $bit));
+			add_case("tst0 a0l p mask bit $bit $setup_name", [ @setup, sprintf('mov 0x$%04X a0l', 1 << $bit) ],
+				'data 88AB // tst0 a0l,p; reserved ALU encoding');
+		}
+		for my $opcode ([ 'tst0 a1l', 0x89AB ], [ 'tst1 a0l', 0x8AAB ], [ 'tst1 a1l', 0x8BAB ]) {
+			my ($name, $word) = @$opcode;
+			my $mask_register = substr($name, 5);
+			add_case("$name p mask FFFF $setup_name", [ @setup, "mov 0x\$FFFF $mask_register" ],
+				sprintf('data %04X // %s,p; reserved ALU encoding', $word, $name));
+		}
+	}
+	my @product_values = (
+		[ 'p 00000003', '0x$0003', '0x$0001' ],
+		[ 'p 00010000', '0x$0100', '0x$0100' ],
+		[ 'p FFFFFFFF', '0x$FFFF', '0x$0001' ],
+	);
+	for my $product_value (@product_values) {
+		my ($value_name, $y0, $r0) = @$product_value;
+		my @setup = (register_matrix_setup(), "mov $y0 y0", "mov $r0 r0", 'mpy y0 r0 a0', 'nop');
+		add_case("tstb p bit 15 $value_name", \@setup, 'data 9F0B // tstb p,#15; REG p is forbidden');
+		for my $mask (0x0001, 0x8000, 0xFFFF) {
+			for my $opcode ([ 'tst0 a0l', 0x88AB ], [ 'tst1 a0l', 0x8AAB ], [ 'tst1 a1l', 0x8BAB ]) {
+				my ($name, $word) = @$opcode;
+				my $mask_register = substr($name, 5);
+				add_case(sprintf('%s p mask %04X %s', $name, $mask, $value_name),
+					[ @setup, sprintf('mov 0x$%04X %s', $mask, $mask_register) ],
+					sprintf('data %04X // %s,p; reserved ALU encoding', $word, $name));
+			}
+		}
+	}
+	my @product_source_setups = (
+		[ 'a1 220202021', [] ],
+		[ 'a1 00000C35A', [ 'mov 0x$C35A a1l' ] ],
+		[ 'a1 220202021 ps 1', [ 'load 0x0001 ps' ] ],
+	);
+	my @product_source_cases = (
+		[ 'mov p r1', [ 'data 582B // mov p,r1; REG p is forbidden' ] ],
+		[ 'mov p mixp', [ 'data 5E8B // mov p,mixp; REG p is forbidden' ] ],
+		[ 'push p', [ 'data 5E4B // push p; REG p is forbidden', 'pop r1' ] ],
+		[ 'rep p', [ 'clr a0 always', 'data 0D0B // rep p; REG p is forbidden', 'inc a0 always' ] ],
+		[ 'tst0 0040 p', [ 'data 89EB // tst0 ##0x0040,p; REG p is forbidden', 'data 0040 // long immediate expansion' ] ],
+		[ 'tst0 0400 p', [ 'data 89EB // tst0 ##0x0400,p; REG p is forbidden', 'data 0400 // long immediate expansion' ] ],
+		[ 'tst0 2000 p', [ 'data 89EB // tst0 ##0x2000,p; REG p is forbidden', 'data 2000 // long immediate expansion' ] ],
+		[ 'set 0001 p', [ 'data 81EB // set ##0x0001,p; REG p is forbidden', 'data 0001 // long immediate expansion' ] ],
+		[ 'mov r1 p', [ 'mov 0x$8421 r1', 'data 5961 // mov r1,p' ] ],
+		[ 'movs p a0', [ 'mov 0x$0003 sv', 'data 014B // movs p,a0; REG p is forbidden' ] ],
+		[ 'exp p a0', [ 'data 904B // exp p,a0; REG p is forbidden' ] ],
+		[ 'mpy y0 p', [ 'data 804B // mpy y0,p; REG p is forbidden' ] ],
+		[ 'sqr p', [ 'data 9AAB // sqr p; REG p is forbidden' ] ],
+		[ 'add p a0', [ 'data 86AB // add p,a0' ] ],
+		[ 'mov p a0', [ 'data 5B0B // mov p,a0; PDF Table 4-4' ] ],
+		[ 'mov p a0l', [ 'data 5B4B // mov p,a0l; PDF Table 4-4' ] ],
+		[ 'mov p a0h', [ 'data 5B8B // mov p,a0h; PDF Table 4-4' ] ],
+		[ 'mov p a1l', [ 'data 5B6B // mov p,a1l; PDF Table 4-4' ] ],
+		[ 'mov p b0h', [ 'data 5A0B // mov p,b0h; PDF Table 4-4' ] ],
+		[ 'mov p b0l', [ 'data 5A4B // mov p,b0l; PDF Table 4-4' ] ],
+	);
+	for my $source_setup (@product_source_setups) {
+		my ($setup_name, $extra_setup) = @$source_setup;
+		my @setup = (
+			register_matrix_setup(),
+			'mov 0x$1234 y0',
+			'mov 0x$5678 r0',
+			'mpy y0 r0 a0',
+			'nop',
+			@$extra_setup,
+		);
+		for my $source_case (@product_source_cases) {
+			my ($name, $body) = @$source_case;
+			add_case("p source $name p 06260060 $setup_name", \@setup, $body);
+		}
+	}
+	my @reserved_alu_forms = (
+		[ 'short immediate', sub { my ($xxx, $a, $operand) = @_;
+			sprintf('data %04X', 0xC800 | ($xxx << 9) | ($a << 8) | $operand) } ],
+		[ 'rb offset7', sub { my ($xxx, $a) = @_;
+			sprintf('data %04X', 0x4801 | ($xxx << 9) | ($a << 8)) } ],
+		[ 'long immediate', sub { my ($xxx, $a, $operand) = @_;
+			(sprintf('data %04X', 0x88C0 | ($xxx << 9) | ($a << 8)), sprintf('data %04X // long immediate expansion', $operand)) } ],
+		[ 'rb long offset', sub { my ($xxx, $a) = @_;
+			(sprintf('data %04X', 0xD4DC | $xxx | ($a << 8)), 'data 0000 // rb long offset expansion') } ],
+		[ 'long direct', sub { my ($xxx, $a) = @_;
+			(sprintf('data %04X', 0xD4FC | $xxx | ($a << 8)), 'data D600 // long direct address expansion') } ],
+	);
+	for my $form (@reserved_alu_forms) {
+		my ($form_name, $encode) = @$form;
+		for my $xxx (0, 1) {
+			for my $a (0, 1) {
+				for my $operand (0x000F, 0x0055, 0x00F0) {
+					for my $st0 (0x0000, 0x0800) {
+						my @setup = (
+							base_setup(),
+							'mov 0x$00F0 a0l',
+							'mov 0x$00F0 a1l',
+							'load 0x00d6u8 page',
+							sprintf('mov 0x$%04X r0', $operand),
+							'mov r0 [page:0x0000u8]',
+							'mov r0 [page:0x0001u8]',
+							'mov 0x$D600 r7',
+							sprintf('mov 0x$%04X st0', $st0),
+						);
+						my @lines = $encode->($xxx, $a, $operand);
+						$lines[0] .= " // ALU $form_name xxx 10$xxx a$a; reserved encoding";
+						add_case(sprintf('ALU %s xxx 10%u a%u mask 00F0 operand %04X st0 %04X', $form_name, $xxx, $a,
+							$operand, $st0), \@setup, \@lines);
+					}
+				}
+			}
+		}
+	}
+	my @distinct_pointers = (base_setup(), 'load 0x00d6u8 page');
+	for my $register (0 .. 5, 7) {
+		push @distinct_pointers,
+			sprintf('mov 0x$%04X r0', 0xA000 + $register),
+			sprintf('mov r0 [page:0x%04xu8]', 0x10 + $register);
+	}
+	for my $register (0 .. 5, 7) {
+		push @distinct_pointers, sprintf('mov 0x$%04X r%u', 0xD610 + $register, $register);
+	}
+	for my $nnn (6, 7) {
+		add_case("mpy y0 reserved indirect nnn $nnn distinct pointers", \@distinct_pointers,
+			sprintf('data %04X // mpy y0,(nnn %u),a0; reserved encoding', 0x8020 | $nnn, $nnn));
+		add_case("modr reserved nnn $nnn plus one distinct pointers", \@distinct_pointers,
+			sprintf('data %04X // modr (nnn %u)+; reserved encoding', 0x0088 | $nnn, $nnn));
+	}
+	my @distinct_accumulators = (
+		base_setup(),
+		'mov 0x$3333 a0l',
+		'mov a0 b0',
+		'mov 0x$4444 a0l',
+		'mov a0 b1',
+		'mov 0x$1111 a0l',
+		'mov 0x$2222 a1l',
+		'load 0x00d6u8 page',
+		'mov 0x$8001 r0',
+		'mov r0 [page:0x0000u8]',
+		'mov r0 [page:0x0001u8]',
+		'mov 0x$D600 r0',
+		'mov 0x$0000 st0',
+	);
+	for my $word (0x498E, 0x498F, 0x4780, 0x4781, 0x4787, 0x4788, 0x478F, 0x4790, 0x4797, 0x4798, 0x479F,
+		0x47B0, 0x47B7, 0x47B8, 0x47BF) {
+		add_case(sprintf('reserved %04X distinct accumulators', $word), \@distinct_accumulators,
+			sprintf('data %04X // reserved %04X; reserved encoding', $word, $word));
+	}
+	for my $word (0x47B0, 0x47B1, 0x47B7, 0x47B8, 0x47BF) {
+		add_case(sprintf('reserved %04X pushed word', $word), \@distinct_accumulators,
+			[ sprintf('data %04X // reserved %04X; reserved encoding', $word, $word), 'pop r1' ]);
+	}
 	for my $step ([ 'plus one', '01' ], [ 'minus one', '10' ], [ 'plus step', '11' ]) {
 		my ($step_name, $step_bits) = @$step;
 		add_alias_family("maxd ge a0 indirect r0 $step_name", "10000000011$step_bits...", \@memory, [], []);
 		add_alias_family("max ge a0 indirect r0 $step_name", "10000100011$step_bits...", \@memory, [], []);
 		add_alias_family("min le a0 indirect r0 $step_name", "10001.00011${step_bits}0..", \@memory, [], []);
+	}
+}
+
+sub select_reserved_modify_cases {
+	@cases = ();
+	my @reserved_memory = (alias_memory_setup(), 'mov 0x$D600 r7');
+	for my $case ([ 'moda reserved 0111 a0 always', 0x6770 ], [ 'moda reserved 0111 a1 always', 0x7770 ],
+		[ 'modb reserved 111 b0 always', 0x6F70 ], [ 'modb reserved 111 b1 always', 0x7F70 ]) {
+		my ($name, $word) = @$case;
+		add_case($name, \@reserved_memory, sprintf('data %04X // %s; reserved encoding', $word, $name));
+	}
+}
+
+sub select_delay_slot_overflow_cases {
+	@cases = ();
+	my @setup = ('mov 0x$0ACE a0l', 'mov a0l [0x$008A]', 'mov 0x$0BCE a0l', 'mov a0l [0x$408A]', base_setup(),
+		(map({ "mov 0x\$0000 r$_" } 1 .. 5)), 'mov 0x$D600 r0', 'mov 0x$4000 r7', 'clr a1 always');
+	my @second_slots = (
+		[ 'mov long immediate r1', 'data 5E01 // mov ##,r1', 'data 1234 // immediate' ],
+		[ 'mov long immediate b0', 'data 5E20 // mov ##,b0', 'data 1234 // immediate' ],
+		[ 'add long immediate a0', 'data 86C0 // add ##,a0', 'data 1234 // immediate' ],
+		[ 'set long immediate r1', 'data 81E1 // set ##,r1', 'data 1234 // mask' ],
+		[ 'mov long absolute a0', 'data D4B8 // mov [##],a0', 'data 4081 // address' ],
+		[ 'add long absolute a0', 'data D4FB // add [##],a0', 'data 4081 // address' ],
+		[ 'mov a0l long absolute', 'data D4BC // mov a0l,[##]', 'data 4081 // address' ],
+		[ 'mov r7 long offset a0', 'data D498 // mov [r7+##],a0', 'data 0081 // offset' ],
+	);
+	my @controls = (
+		[ 'two one-word slots', [ 'inc a1 always', 'inc a1 always' ] ],
+		[ 'one two-word slot', [ 'data 5E01 // mov ##,r1', 'data 1234 // immediate' ] ],
+		[ 'one-word then two-cycle norm', [ 'inc a1 always', 'data 94C0 // norm a0,(r0)+' ] ],
+	);
+	my @variants = map({ [ $_->[0], [ 'inc a1 always', @{$_}[1 .. 2] ] ] } @second_slots);
+	for my $return ('retd', 'retid') {
+		for my $variant (@controls, @variants) {
+			my ($name, $slots) = @$variant;
+			my $subroutine = 7;
+			my $end = $subroutine + 1 + @$slots + 2;
+			add_case("$return overflow $name", \@setup, [
+				"\@callabs always $subroutine",
+				'modr [r2++] // return address',
+				'modr [r3++] // return address + 1',
+				'dint',
+				sprintf('@brabs always %u', $end - 5),
+				$return,
+				@$slots,
+				'modr [r4++] // after the delay slots',
+				'nop',
+			]);
+		}
 	}
 }
 
@@ -2951,35 +3153,42 @@ sub clear_hardware_golden {
 	print "Cleared hardware golden for capture\n";
 }
 
-my $alias_dir = File::Spec->catdir(dirname($script_dir), 'opcode-aliases');
-if (@ARGV == 1 && $ARGV[0] eq '--generate-aliases') {
-	select_alias_cases();
-	set_output_directory($alias_dir);
+my %corpus_cases = (
+	'opcode-aliases' => \&select_alias_cases,
+	'opcode-reserved-modify' => \&select_reserved_modify_cases,
+	'delay-slot-overflow' => \&select_delay_slot_overflow_cases,
+);
+
+sub select_corpus {
+	my ($corpus) = @_;
+	my $select_cases = $corpus_cases{$corpus} or die "unknown DSP instruction corpus '$corpus'\n";
+	$select_cases->();
+	my $directory = File::Spec->catdir(dirname($script_dir), $corpus);
+	make_path($directory);
+	return $directory;
+}
+
+if (@ARGV == 2 && $ARGV[0] eq '--generate') {
+	set_output_directory(select_corpus($ARGV[1]));
 } elsif (@ARGV == 1 && $ARGV[0] eq '--clear-golden') {
 	clear_hardware_golden($script_dir, 'instructions-golden.inc');
 	exit 0;
-} elsif (@ARGV == 1 && $ARGV[0] eq '--clear-alias-golden') {
-	select_alias_cases();
-	make_path($alias_dir);
-	clear_hardware_golden($alias_dir, 'instructions-golden.inc', 'instructions-golden-pmb8875.inc');
+} elsif (@ARGV == 2 && $ARGV[0] eq '--clear-corpus-golden') {
+	clear_hardware_golden(select_corpus($ARGV[1]), 'instructions-golden.inc', 'instructions-golden-pmb8875.inc');
 	exit 0;
 } elsif (@ARGV == 3 && $ARGV[0] eq '--import-hardware') {
 	import_hardware_golden($script_dir, 'instructions-golden.inc', $ARGV[1], $ARGV[2]);
 	exit 0;
-} elsif (@ARGV == 3 && $ARGV[0] eq '--import-alias-hardware') {
-	select_alias_cases();
-	make_path($alias_dir);
-	import_hardware_golden($alias_dir, 'instructions-golden.inc', $ARGV[1], $ARGV[2]);
+} elsif (@ARGV == 4 && $ARGV[0] eq '--import-corpus-hardware') {
+	import_hardware_golden(select_corpus($ARGV[1]), 'instructions-golden.inc', $ARGV[2], $ARGV[3]);
 	exit 0;
-} elsif (@ARGV == 3 && $ARGV[0] eq '--import-alias-hardware-pmb8875') {
-	select_alias_cases();
-	make_path($alias_dir);
-	import_hardware_golden($alias_dir, 'instructions-golden-pmb8875.inc', $ARGV[1], $ARGV[2]);
+} elsif (@ARGV == 4 && $ARGV[0] eq '--import-corpus-hardware-pmb8875') {
+	import_hardware_golden(select_corpus($ARGV[1]), 'instructions-golden-pmb8875.inc', $ARGV[2], $ARGV[3]);
 	exit 0;
 } elsif (@ARGV) {
-	die "usage: $0 [--generate-aliases | --clear-golden | --clear-alias-golden | " .
-		"--import-hardware CAPTURE1 CAPTURE2 | --import-alias-hardware CAPTURE1 CAPTURE2 | " .
-		"--import-alias-hardware-pmb8875 CAPTURE1 CAPTURE2]\n";
+	die "usage: $0 [--generate CORPUS | --clear-golden | --clear-corpus-golden CORPUS | " .
+		"--import-hardware CAPTURE1 CAPTURE2 | --import-corpus-hardware CORPUS CAPTURE1 CAPTURE2 | " .
+		"--import-corpus-hardware-pmb8875 CORPUS CAPTURE1 CAPTURE2]\n";
 }
 make_path($generated_dir);
 
