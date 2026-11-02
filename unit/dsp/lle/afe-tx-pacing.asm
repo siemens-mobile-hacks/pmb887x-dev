@@ -66,10 +66,13 @@ mov 0x$0060 a1l
 mov a1l [0x$TEAK_INT_RINTB0]
 mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)]
 mov a0 a1
-and 0x$7FFF a0
+and 0x$3FFF a0
 mov a0l [0x$TEAK_AFE_BCON]
-and 0x$8000 a1
+mov a1 a0
+and 0x$8000 a0
 br 0x0000$0280 neq
+and 0x$4000 a1
+br 0x0000$02A0 neq
 eint
 br 0x0000$0200 always
 
@@ -81,6 +84,38 @@ mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)] a0
 mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)] a1
 cmp a1 a0
 br 0x0000$0280 eq
+br 0x0000$0240 always
+
+// Bit 14 of the request records the largest RDADDR step between consecutive polls in shared 0x31.
+segment p 02A0
+clr a0 always
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0031)]
+mov [0x$TEAK_AFE_RWADDR] a0
+and 0x$003F a0
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0032)]
+br 0x0000$02C0 always
+
+segment p 02C0
+mov [0x$TEAK_AFE_RWADDR] a0
+and 0x$003F a0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0032)] a1
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0032)]
+sub a1 a0
+clr a1 always
+mov 0x$0040 a1l
+add a1 a0
+and 0x$003F a0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0031)] a1
+cmp a1 a0
+br 0x0000$02E0 le
+mov a0l [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0031)]
+br 0x0000$02E0 always
+
+segment p 02E0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0020)] a0
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0021)] a1
+cmp a1 a0
+br 0x0000$02C0 eq
 br 0x0000$0240 always
 
 segment p 0800

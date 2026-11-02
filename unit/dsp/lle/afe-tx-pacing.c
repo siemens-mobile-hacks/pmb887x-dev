@@ -10,7 +10,9 @@
 #define REQUESTED_BCON_OFFSET 0x0020
 #define APPLIED_BCON_OFFSET 0x0021
 #define MIRROR_RWADDR_OFFSET 0x0030
+#define LARGEST_STEP_OFFSET 0x0031
 #define MIRROR_REQUEST 0x8000
+#define STEP_REQUEST 0x4000
 #define SETTLE_MS 20
 #define MIRROR_MS 200
 #define PACING_MS 500
@@ -179,10 +181,19 @@ static void test_firmware_pacing(uint32_t expected_vbtx_hz) {
 	test_eq_u32("no VBTX handler finds the write pointer past the armed position", 0, late);
 }
 
+static void test_read_pointer_steps(void) {
+	if (!test_check("DSP polls RDADDR at firmware audio rates", afe_apply_bcon(BCON_FIRMWARE_AUDIO | STEP_REQUEST)))
+		return;
+
+	delay_ms(MIRROR_MS);
+	test_eq_u32("DSP sees RDADDR advance one position at a time", 1, dsp_hw_shared_memory[LARGEST_STEP_OFFSET]);
+}
+
 static void test_clock_case(const struct afe_clock_case *clock_case) {
 	test_category(clock_case->name);
 	for (size_t i = 0; i < ARRAY_SIZE(clock_case->rates); i++)
 		test_position_rates(&clock_case->rates[i]);
+	test_read_pointer_steps();
 	test_firmware_pacing(clock_case->firmware_vbtx_hz);
 }
 
