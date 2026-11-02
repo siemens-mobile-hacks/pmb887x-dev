@@ -89,7 +89,7 @@ static bool transfer_wait(struct i2c_transfer *transfer, bool reading) {
 					write_buffer(transfer, 0, 0);
 				} else {
 					transfer->stop_requested = true;
-					I2C_WHBSYSCON = I2C_WHBSYSCON_CLRBUM | I2C_WHBSYSCON_CLRIRQD;
+					I2C_WHBSYSCON = I2C_WHBSYSCON_CLRBUM;
 				}
 			} else {
 				if (transfer->address_sent) {
