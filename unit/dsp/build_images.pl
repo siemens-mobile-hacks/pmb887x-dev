@@ -102,6 +102,8 @@ my @images = (
 	[ 'lle/i2s-clock-select.asm', 'lle/i2s-clock-select-8876.inc', 'DSP_I2S_CLOCK_SELECT_8876', 'pmb8876' ],
 	[ 'lle/afe-functional.asm', 'lle/afe-functional-8875.inc', 'DSP_AFE_FUNCTIONAL_8875', 'pmb8875' ],
 	[ 'lle/afe-functional.asm', 'lle/afe-functional-8876.inc', 'DSP_AFE_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/afe-tx-pacing.asm', 'lle/afe-tx-pacing-8875.inc', 'DSP_AFE_TX_PACING_8875', 'pmb8875' ],
+	[ 'lle/afe-tx-pacing.asm', 'lle/afe-tx-pacing-8876.inc', 'DSP_AFE_TX_PACING_8876', 'pmb8876' ],
 	[ 'lle/modulator-functional.asm', 'lle/modulator-functional-8875.inc', 'DSP_MODULATOR_FUNCTIONAL_8875', 'pmb8875' ],
 	[ 'lle/modulator-functional.asm', 'lle/modulator-functional-8876.inc', 'DSP_MODULATOR_FUNCTIONAL_8876', 'pmb8876' ],
 	[ 'lle/baseband-functional.asm', 'lle/baseband-functional-8875.inc', 'DSP_BASEBAND_FUNCTIONAL_8875', 'pmb8875' ],
