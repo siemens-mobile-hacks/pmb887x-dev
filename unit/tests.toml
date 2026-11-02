@@ -443,6 +443,12 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [mmci-clock]
 devices = ["generic-pmb8876"]
 
+[usif]
+devices = ["generic-pmb8876"]
+
+[usif-dma]
+devices = ["generic-pmb8876"]
+
 [usif-clock]
 devices = ["generic-pmb8876"]
 
