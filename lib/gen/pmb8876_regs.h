@@ -225,6 +225,12 @@
 #define	VIC_TPU_INT1_IRQ		120
 #define	VIC_GPRSCU_INT0_IRQ		121
 #define	VIC_GPRSCU_INT1_IRQ		122
+#define	VIC_USIF_RX_SINGLE_IRQ	128
+#define	VIC_USIF_RX_BURST_IRQ	129
+#define	VIC_USIF_TX_IRQ			130
+#define	VIC_USIF_AB_IRQ			131
+#define	VIC_USIF_ERR_IRQ		132
+#define	VIC_USIF_PIRQ_IRQ		133
 #define	VIC_DIF_RX_SINGLE_IRQ	134
 #define	VIC_DIF_RX_BURST_IRQ	135
 #define	VIC_DIF_TX_IRQ			136
@@ -4715,61 +4721,260 @@
 
 
 // USIF [MOD_NUM=F051, MOD_REV=12, MOD_32BIT=C0]
-// Universal Serial Interface (Infineon USIF, used for the Bluetooth HCI transport)
-#define	USIF_BASE					0xF7500000
+// Universal Serial Interface
+#define	USIF_BASE						0xF7500000
 /* Clock Control Register */
-#define	USIF_CLC					MMIO32(USIF_BASE + 0x00)
+#define	USIF_CLC						MMIO32(USIF_BASE + 0x00)
+
+/* Identification Register */
+#define	USIF_ID							MMIO32(USIF_BASE + 0x08)
 
 /* Run Control Register */
-#define	USIF_RUN					MMIO32(USIF_BASE + 0x10)
-#define	USIF_RUN_RUN				BIT(0)						 // Enable USIF
-#define	USIF_RUN_BUSY				BIT(17)						 // Module Busy
+#define	USIF_RUNCTRL					MMIO32(USIF_BASE + 0x10)
+#define	USIF_RUNCTRL_RUN				BIT(0)						 // Run the interface; clearing flushes both FIFOs
 
-/* Modem Control Register (DTR/RTS) */
-#define	USIF_MODEM_CTRL				MMIO32(USIF_BASE + 0x14)
-#define	USIF_MODEM_CTRL_DTR			BIT(3)
-#define	USIF_MODEM_CTRL_RTS			BIT(4)
+/* Modem Status Set Register */
+#define	USIF_MSS_SET					MMIO32(USIF_BASE + 0x14)
+#define	USIF_MSS_SET_FCO				BIT(0)						 // Assert the flow-control (RTS) output
+#define	USIF_MSS_SET_DSR				BIT(3)						 // Assert the DSR output
+#define	USIF_MSS_SET_DCD				BIT(4)						 // Assert the DCD output
+#define	USIF_MSS_SET_RI					BIT(5)						 // Assert the RI output
 
-/* Protocol / Framing Register */
-#define	USIF_PROTO					MMIO32(USIF_BASE + 0x1C)
+/* Modem Status Clear Register */
+#define	USIF_MSS_CLR					MMIO32(USIF_BASE + 0x18)
+#define	USIF_MSS_CLR_FCO				BIT(0)						 // Deassert the flow-control (RTS) output
+#define	USIF_MSS_CLR_DSR				BIT(3)						 // Deassert the DSR output
+#define	USIF_MSS_CLR_DCD				BIT(4)						 // Deassert the DCD output
+#define	USIF_MSS_CLR_RI					BIT(5)						 // Deassert the RI output
 
-/* Mode / Oversampling Register */
-#define	USIF_MODE					MMIO32(USIF_BASE + 0x20)
+/* Mode Configuration Register (writable only while stopped) */
+#define	USIF_MODE_CFG					MMIO32(USIF_BASE + 0x1C)
+#define	USIF_MODE_CFG_SYNC				BIT(0)						 // Synchronous (SPI) mode
+#define	USIF_MODE_CFG_MA				BIT(1)						 // Master mode
+#define	USIF_MODE_CFG_RXEN				BIT(2)						 // Enable the receiver
+#define	USIF_MODE_CFG_LB				BIT(4)						 // Loop the transmitter back to the receiver
+#define	USIF_MODE_CFG_ECH				BIT(5)						 // Echo received data to the transmitter
+#define	USIF_MODE_CFG_TXINV				BIT(6)						 // Invert the TX line
+#define	USIF_MODE_CFG_RXINV				BIT(7)						 // Invert the RX line
+#define	USIF_MODE_CFG_SCFRC				BIT(8)						 // Force the shift clock
+#define	USIF_MODE_CFG_SCPOL				BIT(9)						 // Shift clock polarity
+#define	USIF_MODE_CFG_SCPH				BIT(10)						 // Shift clock phase
+#define	USIF_MODE_CFG_TXIDLE			BIT(11)						 // TX line level while idle
+#define	USIF_MODE_CFG_ABEN				BIT(12)						 // Enable autobaud detection
+#define	USIF_MODE_CFG_EQU				BIT(14)						 // Equalize received bits
 
-/* Baudrate Reload Register */
-#define	USIF_BAUD					MMIO32(USIF_BASE + 0x28)
+/* Protocol Configuration Register (writable only while stopped) */
+#define	USIF_PRTC_CFG					MMIO32(USIF_BASE + 0x20)
+#define	USIF_PRTC_CFG_CLEN				GENMASK(4, 0)				 // Character length in bits
+#define	USIF_PRTC_CFG_CLEN_SHIFT		0
+#define	USIF_PRTC_CFG_HD				BIT(7)						 // Half-duplex mode
+#define	USIF_PRTC_CFG_PAR				BIT(8)						 // Enable parity
+#define	USIF_PRTC_CFG_ODD				BIT(9)						 // Odd parity
+#define	USIF_PRTC_CFG_ERRFE				BIT(10)						 // Report framing errors
+#define	USIF_PRTC_CFG_STP2				BIT(12)						 // Two stop bits
+#define	USIF_PRTC_CFG_RESWKUP			BIT(13)						 // Restart reception on wake-up
+#define	USIF_PRTC_CFG_FCIEN				BIT(16)						 // Hold transmission while the CTS input is inactive
+#define	USIF_PRTC_CFG_FCOEN				BIT(17)						 // Drive RTS from the RX FIFO level
+#define	USIF_PRTC_CFG_FCIINV			BIT(18)						 // Invert the CTS input
+#define	USIF_PRTC_CFG_FCOTL				GENMASK(25, 20)				 // RX FIFO level that deasserts RTS
+#define	USIF_PRTC_CFG_FCOTL_SHIFT		20
+#define	USIF_PRTC_CFG_SLIPEN			BIT(28)						 // Enable SLIP framing
 
-/* Fractional Baudrate Register */
-#define	USIF_FBAUD					MMIO32(USIF_BASE + 0x2C)
+/* Baud Rate Counter Register (writable only while stopped) */
+#define	USIF_BC_CFG						MMIO32(USIF_BASE + 0x28)
+#define	USIF_BC_CFG_BCRV				GENMASK(12, 0)				 // Bit time = 16 * (BCRV + 1) fractional-divider clocks
+#define	USIF_BC_CFG_BCRV_SHIFT			0
 
-/* RX Sampling Point Register */
-#define	USIF_RXSMP					MMIO32(USIF_BASE + 0x30)
+/* Fractional Divider Register (writable only while stopped) */
+#define	USIF_FDIV_CFG					MMIO32(USIF_BASE + 0x2C)
+#define	USIF_FDIV_CFG_INC				GENMASK(8, 0)				 // Increment of the fractional divider
+#define	USIF_FDIV_CFG_INC_SHIFT			0
+#define	USIF_FDIV_CFG_DEC				GENMASK(31, 16)				 // Decrement of the fractional divider
+#define	USIF_FDIV_CFG_DEC_SHIFT			16
 
-/* Modem Status Register (CTS/DSR) [read-only] */
-#define	USIF_MODEM_STAT				MMIO32(USIF_BASE + 0x34)
-#define	USIF_MODEM_STAT_CTS			BIT(0)
-#define	USIF_MODEM_STAT_DSR			BIT(1)
+/* RX Inter-Character Timeout Register (writable only while stopped) */
+#define	USIF_ICTMO_CFG					MMIO32(USIF_BASE + 0x30)
+#define	USIF_ICTMO_CFG_TMO				GENMASK(15, 0)				 // Idle time that ends a received packet
+#define	USIF_ICTMO_CFG_TMO_SHIFT		0
 
-/* TX Transfer Count / Pending Size */
-#define	USIF_TPS					MMIO32(USIF_BASE + 0x3C)
+/* Modem Status Register */
+#define	USIF_MSS_STAT					MMIO32(USIF_BASE + 0x34)
+#define	USIF_MSS_STAT_FCO				BIT(0)						 // Flow-control (RTS) output state
+#define	USIF_MSS_STAT_FCI				BIT(1)						 // Flow-control (CTS) input state after FCIINV
 
-/* TX FIFO Status Register [read-only] */
-#define	USIF_FIFO_STAT				MMIO32(USIF_BASE + 0x40)
-#define	USIF_FIFO_STAT_FILL			GENMASK(4, 0)				 // TX FIFO fill level
-#define	USIF_FIFO_STAT_FILL_SHIFT	0
-#define	USIF_FIFO_STAT_BUSY			BIT(8)						 // TX in progress
+/* TX FIFO Configuration Register (writable only while stopped) */
+#define	USIF_TXFIFO_CFG					MMIO32(USIF_BASE + 0x38)
+#define	USIF_TXFIFO_CFG_TXBS			GENMASK(1, 0)				 // TX burst size
+#define	USIF_TXFIFO_CFG_TXBS_SHIFT		0
+#define	USIF_TXFIFO_CFG_TXBS_1_WORD		0x0
+#define	USIF_TXFIFO_CFG_TXBS_2_WORD		0x1
+#define	USIF_TXFIFO_CFG_TXBS_4_WORD		0x2
+#define	USIF_TXFIFO_CFG_TXFA			GENMASK(9, 8)				 // Characters per TX FIFO word
+#define	USIF_TXFIFO_CFG_TXFA_SHIFT		8
+#define	USIF_TXFIFO_CFG_TXFA_1			0x0
+#define	USIF_TXFIFO_CFG_TXFA_2			0x100
+#define	USIF_TXFIFO_CFG_TXFA_4			0x200
+#define	USIF_TXFIFO_CFG_TXFC			BIT(16)						 // TX FIFO controls the transfer flow
 
-/* TX Interrupt Mask Register */
-#define	USIF_TX_IMSC				MMIO32(USIF_BASE + 0x84)
+/* Transmit Packet Size Register */
+#define	USIF_TPS_CTRL					MMIO32(USIF_BASE + 0x3C)
+#define	USIF_TPS_CTRL_TPS				GENMASK(13, 0)				 // Characters in the next TX packet
+#define	USIF_TPS_CTRL_TPS_SHIFT			0
 
-/* RX Interrupt Mask Register */
-#define	USIF_RX_IMSC				MMIO32(USIF_BASE + 0x94)
+/* TX FIFO Status Register */
+#define	USIF_TXFIFO_STAT				MMIO32(USIF_BASE + 0x40)
+#define	USIF_TXFIFO_STAT_TXFFS			GENMASK(4, 0)				 // Filled TX FIFO stages
+#define	USIF_TXFIFO_STAT_TXFFS_SHIFT	0
+#define	USIF_TXFIFO_STAT_TXBUSY			BIT(8)						 // Transmitter is shifting a character
 
-/* TX FIFO Data Window (also DMA TX endpoint) [write-only] */
-#define	USIF_TXD					MMIO32(USIF_BASE + 0x4000)
+/* RX FIFO Configuration Register (writable only while stopped) */
+#define	USIF_RXFIFO_CFG					MMIO32(USIF_BASE + 0x44)
+#define	USIF_RXFIFO_CFG_RXBS			GENMASK(1, 0)				 // RX burst size
+#define	USIF_RXFIFO_CFG_RXBS_SHIFT		0
+#define	USIF_RXFIFO_CFG_RXBS_1_WORD		0x0
+#define	USIF_RXFIFO_CFG_RXBS_2_WORD		0x1
+#define	USIF_RXFIFO_CFG_RXBS_4_WORD		0x2
+#define	USIF_RXFIFO_CFG_RXFA			GENMASK(9, 8)				 // Characters per RX FIFO word
+#define	USIF_RXFIFO_CFG_RXFA_SHIFT		8
+#define	USIF_RXFIFO_CFG_RXFA_1			0x0
+#define	USIF_RXFIFO_CFG_RXFA_2			0x100
+#define	USIF_RXFIFO_CFG_RXFA_4			0x200
+#define	USIF_RXFIFO_CFG_RXFC			BIT(16)						 // RX FIFO controls the transfer flow
 
-/* RX FIFO Data Window (also DMA RX endpoint) [read-only] */
-#define	USIF_RXD					MMIO32(USIF_BASE + 0x8000)
+/* Maximum Receive Packet Size Register */
+#define	USIF_MRPS_CTRL					MMIO32(USIF_BASE + 0x48)
+#define	USIF_MRPS_CTRL_MRPS				GENMASK(13, 0)				 // Characters that end the RX packet
+#define	USIF_MRPS_CTRL_MRPS_SHIFT		0
+
+/* Received Packet Size Register */
+#define	USIF_RPS_STAT					MMIO32(USIF_BASE + 0x4C)
+#define	USIF_RPS_STAT_RPS				GENMASK(13, 0)				 // Characters in the last RX packet
+#define	USIF_RPS_STAT_RPS_SHIFT			0
+
+/* RX FIFO Status Register */
+#define	USIF_RXFIFO_STAT				MMIO32(USIF_BASE + 0x50)
+#define	USIF_RXFIFO_STAT_RXFFS			GENMASK(4, 0)				 // Filled RX FIFO stages
+#define	USIF_RXFIFO_STAT_RXFFS_SHIFT	0
+
+/* Error Interrupt Mask Register */
+#define	USIF_ERRIRQSM					MMIO32(USIF_BASE + 0x60)
+#define	USIF_ERRIRQSM_RXFUFL			BIT(0)						 // RX FIFO underflow
+#define	USIF_ERRIRQSM_RXFOFL			BIT(1)						 // RX FIFO overflow
+
+/* Error Interrupt Raw Status Register */
+#define	USIF_ERRIRQSS					MMIO32(USIF_BASE + 0x64)
+#define	USIF_ERRIRQSS_RXFUFL			BIT(0)						 // RX FIFO underflow
+#define	USIF_ERRIRQSS_RXFOFL			BIT(1)						 // RX FIFO overflow
+
+/* Error Interrupt Clear Register */
+#define	USIF_ERRIRQSC					MMIO32(USIF_BASE + 0x68)
+#define	USIF_ERRIRQSC_RXFUFL			BIT(0)						 // RX FIFO underflow
+#define	USIF_ERRIRQSC_RXFOFL			BIT(1)						 // RX FIFO overflow
+
+/* Protocol Interrupt Mask Register */
+#define	USIF_PIRQSM						MMIO32(USIF_BASE + 0x70)
+#define	USIF_PIRQSM_FCI					BIT(1)						 // Flow-control (CTS) input changed
+#define	USIF_PIRQSM_TXEND				BIT(6)						 // Transmit packet completed
+#define	USIF_PIRQSM_RXEND				BIT(7)						 // Receive packet completed
+
+/* Protocol Interrupt Raw Status Register */
+#define	USIF_PIRQSS						MMIO32(USIF_BASE + 0x74)
+#define	USIF_PIRQSS_FCI					BIT(1)						 // Flow-control (CTS) input changed
+#define	USIF_PIRQSS_TXEND				BIT(6)						 // Transmit packet completed
+#define	USIF_PIRQSS_RXEND				BIT(7)						 // Receive packet completed
+
+/* Protocol Interrupt Clear Register */
+#define	USIF_PIRQSC						MMIO32(USIF_BASE + 0x78)
+#define	USIF_PIRQSC_FCI					BIT(1)						 // Flow-control (CTS) input changed
+#define	USIF_PIRQSC_TXEND				BIT(6)						 // Transmit packet completed
+#define	USIF_PIRQSC_RXEND				BIT(7)						 // Receive packet completed
+
+/* Raw Interrupt Status Register */
+#define	USIF_RIS						MMIO32(USIF_BASE + 0x80)
+#define	USIF_RIS_RXLSREQ				BIT(0)						 // RX last single request
+#define	USIF_RIS_RXSREQ					BIT(1)						 // RX single request
+#define	USIF_RIS_RXLBREQ				BIT(2)						 // RX last burst request
+#define	USIF_RIS_RXBREQ					BIT(3)						 // RX burst request
+#define	USIF_RIS_TXLSREQ				BIT(4)						 // TX last single request
+#define	USIF_RIS_TXSREQ					BIT(5)						 // TX single request
+#define	USIF_RIS_TXLBREQ				BIT(6)						 // TX last burst request
+#define	USIF_RIS_TXBREQ					BIT(7)						 // TX burst request
+#define	USIF_RIS_AB						BIT(8)						 // Autobaud detection
+#define	USIF_RIS_ERR					BIT(9)						 // Error group (ERRIRQSS & ERRIRQSM)
+#define	USIF_RIS_PIRQ					BIT(10)						 // Protocol group (PIRQSS & PIRQSM)
+
+/* Interrupt Mask Control Register */
+#define	USIF_IMSC						MMIO32(USIF_BASE + 0x84)
+#define	USIF_IMSC_RXLSREQ				BIT(0)						 // RX last single request
+#define	USIF_IMSC_RXSREQ				BIT(1)						 // RX single request
+#define	USIF_IMSC_RXLBREQ				BIT(2)						 // RX last burst request
+#define	USIF_IMSC_RXBREQ				BIT(3)						 // RX burst request
+#define	USIF_IMSC_TXLSREQ				BIT(4)						 // TX last single request
+#define	USIF_IMSC_TXSREQ				BIT(5)						 // TX single request
+#define	USIF_IMSC_TXLBREQ				BIT(6)						 // TX last burst request
+#define	USIF_IMSC_TXBREQ				BIT(7)						 // TX burst request
+#define	USIF_IMSC_AB					BIT(8)						 // Autobaud detection
+#define	USIF_IMSC_ERR					BIT(9)						 // Error group (ERRIRQSS & ERRIRQSM)
+#define	USIF_IMSC_PIRQ					BIT(10)						 // Protocol group (PIRQSS & PIRQSM)
+
+/* Masked Interrupt Status Register */
+#define	USIF_MIS						MMIO32(USIF_BASE + 0x88)
+#define	USIF_MIS_RXLSREQ				BIT(0)						 // RX last single request
+#define	USIF_MIS_RXSREQ					BIT(1)						 // RX single request
+#define	USIF_MIS_RXLBREQ				BIT(2)						 // RX last burst request
+#define	USIF_MIS_RXBREQ					BIT(3)						 // RX burst request
+#define	USIF_MIS_TXLSREQ				BIT(4)						 // TX last single request
+#define	USIF_MIS_TXSREQ					BIT(5)						 // TX single request
+#define	USIF_MIS_TXLBREQ				BIT(6)						 // TX last burst request
+#define	USIF_MIS_TXBREQ					BIT(7)						 // TX burst request
+#define	USIF_MIS_AB						BIT(8)						 // Autobaud detection
+#define	USIF_MIS_ERR					BIT(9)						 // Error group (ERRIRQSS & ERRIRQSM)
+#define	USIF_MIS_PIRQ					BIT(10)						 // Protocol group (PIRQSS & PIRQSM)
+
+/* Interrupt Clear Register (ERR and PIRQ clear through their groups) */
+#define	USIF_ICR						MMIO32(USIF_BASE + 0x8C)
+#define	USIF_ICR_RXLSREQ				BIT(0)						 // RX last single request
+#define	USIF_ICR_RXSREQ					BIT(1)						 // RX single request
+#define	USIF_ICR_RXLBREQ				BIT(2)						 // RX last burst request
+#define	USIF_ICR_RXBREQ					BIT(3)						 // RX burst request
+#define	USIF_ICR_TXLSREQ				BIT(4)						 // TX last single request
+#define	USIF_ICR_TXSREQ					BIT(5)						 // TX single request
+#define	USIF_ICR_TXLBREQ				BIT(6)						 // TX last burst request
+#define	USIF_ICR_TXBREQ					BIT(7)						 // TX burst request
+#define	USIF_ICR_AB						BIT(8)						 // Autobaud detection
+#define	USIF_ICR_ERR					BIT(9)						 // Error group (ERRIRQSS & ERRIRQSM)
+#define	USIF_ICR_PIRQ					BIT(10)						 // Protocol group (PIRQSS & PIRQSM)
+
+/* Interrupt Set Register */
+#define	USIF_ISR						MMIO32(USIF_BASE + 0x90)
+#define	USIF_ISR_RXLSREQ				BIT(0)						 // RX last single request
+#define	USIF_ISR_RXSREQ					BIT(1)						 // RX single request
+#define	USIF_ISR_RXLBREQ				BIT(2)						 // RX last burst request
+#define	USIF_ISR_RXBREQ					BIT(3)						 // RX burst request
+#define	USIF_ISR_TXLSREQ				BIT(4)						 // TX last single request
+#define	USIF_ISR_TXSREQ					BIT(5)						 // TX single request
+#define	USIF_ISR_TXLBREQ				BIT(6)						 // TX last burst request
+#define	USIF_ISR_TXBREQ					BIT(7)						 // TX burst request
+#define	USIF_ISR_AB						BIT(8)						 // Autobaud detection
+#define	USIF_ISR_ERR					BIT(9)						 // Error group (ERRIRQSS & ERRIRQSM)
+#define	USIF_ISR_PIRQ					BIT(10)						 // Protocol group (PIRQSS & PIRQSM)
+
+/* DMA Request Enable Register */
+#define	USIF_DMAE						MMIO32(USIF_BASE + 0x94)
+#define	USIF_DMAE_RXLSREQ				BIT(0)						 // RX last single request
+#define	USIF_DMAE_RXSREQ				BIT(1)						 // RX single request
+#define	USIF_DMAE_RXLBREQ				BIT(2)						 // RX last burst request
+#define	USIF_DMAE_RXBREQ				BIT(3)						 // RX burst request
+#define	USIF_DMAE_TXLSREQ				BIT(4)						 // TX last single request
+#define	USIF_DMAE_TXSREQ				BIT(5)						 // TX single request
+#define	USIF_DMAE_TXLBREQ				BIT(6)						 // TX last burst request
+#define	USIF_DMAE_TXBREQ				BIT(7)						 // TX burst request
+
+/* Transmission Data Register */
+#define	USIF_TXD						MMIO32(USIF_BASE + 0x4000)
+
+/* Reception Data Register */
+#define	USIF_RXD						MMIO32(USIF_BASE + 0x8000)
 
 
 // I2C [MOD_NUM=F057, MOD_REV=12, MOD_32BIT=C0]

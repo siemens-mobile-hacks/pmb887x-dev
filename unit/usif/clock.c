@@ -16,17 +16,17 @@ static const uint32_t DIVIDERS[] = {
 };
 
 static bool measure_usif_tx(uint32_t *elapsed_us) {
-	USIF_RUN = USIF_RUN_RUN;
+	USIF_RUNCTRL = USIF_RUNCTRL_RUN;
 	stopwatch_t start = stopwatch_get();
-	USIF_TPS = USIF_DIVIDER_TX_BYTES;
+	USIF_TPS_CTRL = USIF_DIVIDER_TX_BYTES;
 	for (uint32_t index = 0; index < USIF_DIVIDER_TX_BYTES / 4; index++)
 		USIF_TXD = 0x55AA55AA;
-	while ((USIF_FIFO_STAT & (USIF_FIFO_STAT_FILL | USIF_FIFO_STAT_BUSY)) != 0 &&
+	while ((USIF_TXFIFO_STAT & (USIF_TXFIFO_STAT_TXFFS | USIF_TXFIFO_STAT_TXBUSY)) != 0 &&
 		stopwatch_elapsed_ms(start) < USIF_TX_TIMEOUT_MS)
 		test_watchdog_serve();
 	*elapsed_us = stopwatch_elapsed_us(start);
-	bool completed = (USIF_FIFO_STAT & (USIF_FIFO_STAT_FILL | USIF_FIFO_STAT_BUSY)) == 0;
-	USIF_RUN = 0;
+	bool completed = (USIF_TXFIFO_STAT & (USIF_TXFIFO_STAT_TXFFS | USIF_TXFIFO_STAT_TXBUSY)) == 0;
+	USIF_RUNCTRL = 0;
 	return completed;
 }
 
@@ -40,12 +40,11 @@ int main(void) {
 	USIF_CLC = (1U << MOD_CLC_RMC_SHIFT);
 	uint32_t elapsed_us[ARRAY_SIZE(DIVIDERS)] = { 0 };
 	bool completed[ARRAY_SIZE(DIVIDERS)] = { false };
-	/* The 705p firmware's 115200-baud/96-MHz tuple matches the E71 USIF boot profile. */
-	USIF_PROTO = 0x806;
-	USIF_MODE = 8;
-	USIF_BAUD = 5;
-	USIF_FBAUD = 0x02290048;
-	USIF_RXSMP = 0x3A;
+	USIF_MODE_CFG = USIF_MODE_CFG_RXEN;
+	USIF_PRTC_CFG = 8 << USIF_PRTC_CFG_CLEN_SHIFT;
+	USIF_BC_CFG = 5 << USIF_BC_CFG_BCRV_SHIFT;
+	USIF_FDIV_CFG = (72 << USIF_FDIV_CFG_INC_SHIFT) | (553 << USIF_FDIV_CFG_DEC_SHIFT);
+	USIF_ICTMO_CFG = 58 << USIF_ICTMO_CFG_TMO_SHIFT;
 	for (uint32_t index = 0; index < ARRAY_SIZE(DIVIDERS); index++) {
 		CGU_CON3 = (CGU_CON3 & ~(CGU_CON3_MMCI_CLKSEL | CGU_CON3_MMCI_CLKDIV)) |
 			CGU_CON3_MMCI_CLKSEL_OSC | DIVIDERS[index];
