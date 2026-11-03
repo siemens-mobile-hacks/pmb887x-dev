@@ -371,6 +371,12 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [cgu-fsys]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[cgu-fpi1]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
+[cgu-fpi2]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [cgu-cpu]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
