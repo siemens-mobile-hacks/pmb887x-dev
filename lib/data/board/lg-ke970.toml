@@ -61,7 +61,6 @@ addr = 0x7D
 [peripheral.SCROLL]
 type = "ke970-scroll"
 out = { A = "SCROLL_KEY_A", B = "SCROLL_KEY_B" }
-key = { CW = "NAV_UP", CCW = "NAV_DOWN" }
 
 [analog]
 # M0  BATT_TEMP Battery temperature measure
@@ -142,6 +141,8 @@ VOLUME_DOWN	= [3, 3]	# KB_DOWN
 
 [keyboard.gpio]
 END_CALL = [{ target = "PMIC:ON" }]
+NAV_UP = [{ target = "SCROLL:CW" }]
+NAV_DOWN = [{ target = "SCROLL:CCW" }]
 
 [startup.ONLINE]
 duration = 5
