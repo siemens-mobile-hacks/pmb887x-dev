@@ -6,6 +6,7 @@
 #define LINE_BYTES 32
 #define REMAP_VIRTUAL_PAGE 0xAFF00000
 #define LINK_CALLS 4
+#define REWRITTEN_RETURN_VALUE 0x55
 
 #define ARM_MOV_R0 0xE3A00000		/* mov r0, #<imm8> */
 #define ARM_BX_LR 0xE12FFF1E		/* bx lr */
@@ -15,6 +16,7 @@
 
 struct tlb_invalidation {
 	const char *name;
+	const char *indirect_name;
 	void (*invalidate)(void);
 };
 
@@ -24,10 +26,14 @@ static void itlb_invalidate_all(void);
 static void itlb_invalidate_entry(void);
 
 static const struct tlb_invalidation TLB_INVALIDATIONS[] = {
-	{ "Remap after invalidating the whole TLB", tlb_invalidate_all },
-	{ "Remap after invalidating the TLB entry", tlb_invalidate_entry },
-	{ "Remap after invalidating the whole I-TLB", itlb_invalidate_all },
-	{ "Remap after invalidating the I-TLB entry", itlb_invalidate_entry },
+	{ "Remap after invalidating the whole TLB", "Indirect call after invalidating the whole TLB",
+		tlb_invalidate_all },
+	{ "Remap after invalidating the TLB entry", "Indirect call after invalidating the TLB entry",
+		tlb_invalidate_entry },
+	{ "Remap after invalidating the whole I-TLB", "Indirect call after invalidating the whole I-TLB",
+		itlb_invalidate_all },
+	{ "Remap after invalidating the I-TLB entry", "Indirect call after invalidating the I-TLB entry",
+		itlb_invalidate_entry },
 };
 
 static uint32_t translation_table[4096] __attribute__((aligned(16384)));
@@ -118,12 +124,28 @@ static uint32_t remapped_page_call(void) {
 	return first;
 }
 
+static uint32_t remapped_page_indirect_call(void) {
+	uint32_t (*function)(void) = (uint32_t (*)(void)) REMAP_VIRTUAL_PAGE;
+	uint32_t first = function();
+
+	for (int i = 1; i < LINK_CALLS; i++)
+		function();
+	return first;
+}
+
+static void remapped_code_rewrite(uint32_t *physical_page, uint32_t value) {
+	physical_page[0] = ARM_MOV_R0 | value;
+	dcache_clean_range(physical_page, sizeof(physical_page[0]));
+	icache_invalidate();
+}
+
 int main(void) {
 	test_start("ARM926 code page remap");
 
 	mmu_enable();
 	code_pages_write();
 	test_eq_u32("Call through the initial mapping", 1, remapped_page_call());
+	test_eq_u32("Indirect call through the initial mapping", 1, remapped_page_indirect_call());
 
 	for (size_t i = 0; i < ARRAY_SIZE(TLB_INVALIDATIONS); i++) {
 		size_t page = i + 1;
@@ -132,7 +154,11 @@ int main(void) {
 		TLB_INVALIDATIONS[i].invalidate();
 		icache_invalidate();
 		test_eq_u32(TLB_INVALIDATIONS[i].name, page + 1, remapped_page_call());
+		test_eq_u32(TLB_INVALIDATIONS[i].indirect_name, page + 1, remapped_page_indirect_call());
 	}
+
+	remapped_code_rewrite(return_pages[ARRAY_SIZE(TLB_INVALIDATIONS)], REWRITTEN_RETURN_VALUE);
+	test_eq_u32("Indirect call after rewriting the mapped code", REWRITTEN_RETURN_VALUE, remapped_page_indirect_call());
 
 	return test_finish();
 }
