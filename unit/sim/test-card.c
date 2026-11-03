@@ -5,7 +5,7 @@
 #include <pmic/PASIC.h>
 #endif
 
-#ifdef SIM_TIMING_TEST
+#if defined(SIM_TIMING_TEST) || defined(SIM_LATENCY_TEST)
 #include "cgu/clock.h"
 #endif
 #include "dmac.h"
@@ -17,6 +17,8 @@
 #define SIM_TEST_NAME "SIM card timers"
 #elif defined(SIM_TIMING_TEST)
 #define SIM_TEST_NAME "SIM card timing"
+#elif defined(SIM_LATENCY_TEST)
+#define SIM_TEST_NAME "SIM card latency"
 #elif defined(SIM_HARDWARE_T0)
 #define SIM_TEST_NAME "SIM card hardware T=0"
 #elif defined(SIM_NO_CARD)
@@ -32,6 +34,7 @@
 #define SIM_MAX_APDU_DATA 256
 #define SIM_DMA_CHANNEL 0
 #define SIM_MISSING_FILE_ID 0x6FFF
+#define SIM_T0_NULL_BYTE 0x60
 /* ISO 7816-3 needs 16 ETU between card and terminal characters; 5 ms covers RMC=4 at FPI1 OSC. */
 #define SIM_TURNAROUND_MS 5
 // CX75 and EL71 firmware use privileged DMA accesses with a four-byte memory burst for SIM.
@@ -42,11 +45,20 @@
 #define SIM_CARD_RMC 4
 #endif
 
+struct apdu_timing {
+	uint32_t header_sent_tick;
+	uint32_t procedure_tick;
+	uint32_t data_done_tick;
+	uint32_t sw1_tick;
+	uint32_t null_bytes;
+};
+
 struct apdu_response {
 	uint8_t data[SIM_MAX_APDU_DATA];
 	size_t size;
 	uint8_t sw1;
 	uint8_t sw2;
+	struct apdu_timing timing;
 };
 
 #if defined(SIM_HARDWARE_T0) || defined(SIM_TIMER_TEST)
@@ -71,7 +83,10 @@ static struct dma_lli t0_data_lli __attribute__((aligned(16)));
 
 #endif
 
+static uint32_t sim_last_tx_tick;
 static uint32_t sim_last_rx_tick;
+static uint32_t sim_null_bytes;
+static uint32_t sim_reset_tick;
 
 static void delay_ms(uint32_t milliseconds) {
 	stopwatch_t start = stopwatch_get();
@@ -106,6 +121,7 @@ static bool sim_send_byte(uint8_t value) {
 	SIM_TXB = value;
 	if (!sim_wait_ok(500))
 		return false;
+	sim_last_tx_tick = STM_TIM0;
 	sim_clear_ok();
 
 	return true;
@@ -122,12 +138,13 @@ static bool sim_receive_byte(uint8_t *value, uint32_t timeout_ms) {
 }
 
 static bool sim_receive_procedure(uint8_t *value) {
-	do {
-		if (!sim_receive_byte(value, 1000))
-			return false;
-	} while (*value == 0x60);
+	while (sim_receive_byte(value, 1000)) {
+		if (*value != SIM_T0_NULL_BYTE)
+			return true;
+		sim_null_bytes++;
+	}
 
-	return true;
+	return false;
 }
 
 static bool sim_supply_set(bool _enabled __attribute__((unused))) {
@@ -179,6 +196,7 @@ static bool sim_power_on(uint32_t rmc, uint8_t atr[SIM_MAX_ATR_SIZE], uint32_t *
 	delay_ms(100);
 	SIM_CON |= SIM_CON_UARTON;
 	delay_ms(5);
+	sim_reset_tick = STM_TIM0;
 	SIM_CON |= SIM_CON_SIMRST;
 
 	*atr_size = 0;
@@ -394,6 +412,10 @@ static uint32_t sim_probe_character_timer(uint32_t ticks, uint32_t *elapsed_us) 
 
 #endif
 
+static bool sim_is_status_byte(uint8_t value) {
+	return (value & 0xF0) == 0x60 || (value & 0xF0) == 0x90;
+}
+
 static bool sim_exchange(
 	const uint8_t header[5],
 	const uint8_t *tx_data,
@@ -411,37 +433,49 @@ static bool sim_exchange(
 		printf(" %02X", tx_data[i]);
 	printf("\n");
 #endif
+	sim_null_bytes = 0;
 	for (size_t i = 0; i < 5; i++) {
 		if (!sim_send_byte(header[i]))
 			return false;
 	}
+	struct apdu_timing *timing = &response->timing;
+	timing->header_sent_tick = sim_last_tx_tick;
+	timing->data_done_tick = sim_last_tx_tick;
+
+	uint8_t procedure;
+	if (!sim_receive_procedure(&procedure))
+		return false;
+	timing->procedure_tick = sim_last_rx_tick;
 
 	size_t transferred = 0;
-	while (transferred < tx_size || transferred < rx_size) {
-		uint8_t procedure;
-		if (!sim_receive_procedure(&procedure))
+	size_t data_size = tx_size != 0 ? tx_size : rx_size;
+	while (procedure == header[1] || procedure == (uint8_t) ~header[1]) {
+		if (transferred == data_size)
 			return false;
-		size_t chunk;
-		if (procedure == header[1]) {
-			chunk = tx_size != 0 ? tx_size - transferred : rx_size - transferred;
-		} else if (procedure == (uint8_t) ~header[1]) {
-			chunk = 1;
-		} else {
-			return false;
-		}
+		size_t chunk = procedure == header[1] ? data_size - transferred : 1;
 		for (size_t i = 0; i < chunk; i++) {
 			if (tx_size != 0) {
 				if (!sim_send_byte(tx_data[transferred]))
 					return false;
+				timing->data_done_tick = sim_last_tx_tick;
 			} else {
 				if (!sim_receive_byte(&response->data[transferred], 1000))
 					return false;
+				timing->data_done_tick = sim_last_rx_tick;
 			}
 			transferred++;
 		}
+		if (!sim_receive_procedure(&procedure))
+			return false;
 	}
-	response->size = rx_size;
-	if (!sim_receive_procedure(&response->sw1) || !sim_receive_byte(&response->sw2, 1000))
+	if (!sim_is_status_byte(procedure))
+		return false;
+
+	response->size = tx_size == 0 ? transferred : 0;
+	response->sw1 = procedure;
+	timing->sw1_tick = sim_last_rx_tick;
+	timing->null_bytes = sim_null_bytes;
+	if (!sim_receive_byte(&response->sw2, 1000))
 		return false;
 
 #ifdef SIM_DUMP_CARD_INFO
@@ -697,14 +731,13 @@ static void dump_card_identity(const uint8_t *iccid_data, size_t iccid_size) {
 
 #endif
 
-#ifdef SIM_TIMING_TEST
+#if defined(SIM_TIMING_TEST) || defined(SIM_LATENCY_TEST)
 
 #define SIM_CHARACTER_ETU 12
 /* One ETU is 4 * BRF SIM clocks, and the SIM clock is FPI1 / 4 / RMC. */
 #define SIM_FPI1_CLOCKS_PER_BRF_RMC_ETU 16
 #define SIM_DEFAULT_BRF 0x5D
 #define SIM_FPI1_OSC_HZ 26000000
-#define SIM_READ_BINARY_SIZE 10
 #define SIM_CLOCKS_PER_BRF_ETU 4
 #define SIM_ATR_T0_TA1_PRESENT 0x10
 #define SIM_ATR_TA1_OFFSET 2
@@ -715,7 +748,6 @@ static void dump_card_identity(const uint8_t *iccid_data, size_t iccid_size) {
 #define SIM_PPS0_PPS1_PRESENT 0x10
 #define SIM_PPS_RMC 4
 
-static const uint32_t TIMING_RMC_VALUES[] = { 2, 4 };
 static const uint16_t FI_CLOCKS_PER_ETU[16] = {
 	372, 372, 558, 744, 1116, 1488, 1860, 0, 0, 512, 768, 1024, 1536, 2048
 };
@@ -725,6 +757,12 @@ static uint32_t sim_character_ticks(uint32_t rmc, uint32_t brf) {
 	uint32_t fpi1_clocks = SIM_CHARACTER_ETU * SIM_FPI1_CLOCKS_PER_BRF_RMC_ETU * brf * rmc;
 	return (uint64_t) fpi1_clocks * stopwatch_ticks_per_ms() * 1000 / SIM_FPI1_OSC_HZ;
 }
+
+#ifdef SIM_TIMING_TEST
+
+#define SIM_READ_BINARY_SIZE 10
+
+static const uint32_t TIMING_RMC_VALUES[] = { 2, 4 };
 
 static uint32_t mean_interval(const uint32_t *ticks, size_t count) {
 	return (ticks[count - 1] - ticks[0]) / (count - 1);
@@ -799,6 +837,8 @@ static void sim_test_character_timing(uint32_t rmc) {
 	delay_ms(100);
 }
 
+#endif
+
 static uint32_t sim_ta1_to_brf(uint8_t ta1) {
 	uint32_t divisor = DI_DIVISORS[ta1 & SIM_FIDI_DI_MASK];
 	if (divisor == 0)
@@ -822,6 +862,8 @@ static bool sim_exchange_pps(uint8_t ta1) {
 	}
 	return true;
 }
+
+#ifdef SIM_TIMING_TEST
 
 static void sim_test_pps(void) {
 	static uint8_t atr[SIM_MAX_ATR_SIZE];
@@ -855,6 +897,291 @@ static void sim_test_pps(void) {
 
 #endif
 
+#endif
+
+#ifdef SIM_LATENCY_TEST
+
+/* FPI1 OSC with RMC=2 gives the 3.25 MHz SIM clock that firmware gets from PLL/2 with RMC=4. */
+#define SIM_LATENCY_RMC 2
+#define SIM_CLOCK_FPI1_DIVIDER 4
+#define SIM_ATR_MIN_CLOCKS 400
+#define SIM_ATR_MAX_CLOCKS 40000
+#define GSM_CLA 0xA0
+#define GSM_INS_SELECT 0xA4
+#define GSM_INS_STATUS 0xF2
+#define GSM_INS_READ_BINARY 0xB0
+#define GSM_INS_READ_RECORD 0xB2
+#define GSM_INS_GET_RESPONSE 0xC0
+
+struct firmware_apdu {
+	uint8_t ins;
+	uint8_t p1;
+	uint8_t p2;
+	uint8_t p3;
+	uint16_t file_id;
+};
+
+struct apdu_latency_stats {
+	uint8_t ins;
+	const char *name;
+	uint32_t reference_us;
+	uint32_t count;
+	uint32_t processing_us_sum;
+	uint32_t processing_us_max;
+	uint32_t null_bytes;
+};
+
+static const struct firmware_apdu FIRMWARE_BOOT_APDUS[] = {
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F20 },
+	{ GSM_INS_STATUS, 0x00, 0x00, 0x17, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6FAE },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x01, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6FB7 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x3F00 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x2F05 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F20 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F05 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x07, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x3F00 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x2FE2 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x0A, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F20 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6FAE },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x01, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F38 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x0A, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x2FF2 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x3F00 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x2FE6 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F20 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F07 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F7E },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F10 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F3A },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F3B },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F4B },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F20 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F78 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x02, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F16 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F14 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F07 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x09, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6FAD },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x03, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F7E },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x0B, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F20 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x09, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F74 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x10, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F7B },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x0C, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F31 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x01, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F39 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_READ_RECORD, 0x01, 0x04, 0x03, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F37 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F37 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x03, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F41 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x05, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F45 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x14, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F10 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F44 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F43 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x02, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F4A },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F3D },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F42 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F20 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F52 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x09, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F53 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F13 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F11 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0xEA03 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0xEA00 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F43 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F10 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x2FF1 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F20 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F30 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0E, 0 },
+	{ GSM_INS_READ_BINARY, 0x00, 0x00, 0x30, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x7F10 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F3C },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_SELECT, 0x00, 0x00, 0x02, 0x6F40 },
+	{ GSM_INS_GET_RESPONSE, 0x00, 0x00, 0x0F, 0 },
+	{ GSM_INS_READ_RECORD, 0x01, 0x04, 0x1C, 0 },
+	{ GSM_INS_READ_RECORD, 0x02, 0x04, 0x1C, 0 },
+	{ GSM_INS_STATUS, 0x00, 0x00, 0x17, 0 },
+};
+
+/* Mean processing times of the reference SIM (ATR 3B 1E 95 80 67 21 54 4D 4D ...) in the EL71. */
+static struct apdu_latency_stats apdu_latency_stats[] = {
+	{ .ins = GSM_INS_SELECT, .name = "SELECT", .reference_us = 3138 },
+	{ .ins = GSM_INS_STATUS, .name = "STATUS", .reference_us = 3770 },
+	{ .ins = GSM_INS_READ_BINARY, .name = "READ BINARY", .reference_us = 295 },
+	{ .ins = GSM_INS_READ_RECORD, .name = "READ RECORD", .reference_us = 313 },
+	{ .ins = GSM_INS_GET_RESPONSE, .name = "GET RESPONSE", .reference_us = 91 },
+};
+
+static uint32_t ticks_to_us(uint32_t ticks) {
+	return (uint64_t) ticks * 1000 / stopwatch_ticks_per_ms();
+}
+
+static uint32_t card_delay_us(uint32_t start_tick, uint32_t end_tick, uint32_t transfer_ticks) {
+	uint32_t elapsed_ticks = end_tick - start_tick;
+	return elapsed_ticks > transfer_ticks ? ticks_to_us(elapsed_ticks - transfer_ticks) : 0;
+}
+
+static struct apdu_latency_stats *apdu_latency_stats_find(uint8_t ins) {
+	for (size_t i = 0; i < ARRAY_SIZE(apdu_latency_stats); i++) {
+		if (apdu_latency_stats[i].ins == ins)
+			return &apdu_latency_stats[i];
+	}
+	return NULL;
+}
+
+static bool sim_firmware_apdu_exchange(const struct firmware_apdu *apdu, struct apdu_response *response) {
+	const uint8_t header[5] = { GSM_CLA, apdu->ins, apdu->p1, apdu->p2, apdu->p3 };
+
+	if (apdu->ins == GSM_INS_SELECT) {
+		const uint8_t data[2] = { (uint8_t) (apdu->file_id >> 8), (uint8_t) apdu->file_id };
+		return sim_exchange(header, data, ARRAY_SIZE(data), 0, response);
+	}
+	return sim_exchange(header, NULL, 0, apdu->p3, response);
+}
+
+static void sim_test_firmware_apdus(uint32_t character_ticks) {
+	static struct apdu_response response;
+
+	size_t completed = 0;
+	while (completed < ARRAY_SIZE(FIRMWARE_BOOT_APDUS)) {
+		const struct firmware_apdu *apdu = &FIRMWARE_BOOT_APDUS[completed];
+		if (!sim_firmware_apdu_exchange(apdu, &response))
+			break;
+
+		const struct apdu_timing *timing = &response.timing;
+		bool acknowledged = timing->procedure_tick != timing->sw1_tick;
+		uint32_t ack_us = acknowledged ?
+			card_delay_us(timing->header_sent_tick, timing->procedure_tick, character_ticks) : 0;
+		uint32_t status_us = card_delay_us(timing->data_done_tick, timing->sw1_tick, character_ticks);
+		bool card_receives_data = apdu->ins == GSM_INS_SELECT;
+		uint32_t processing_us = card_receives_data || !acknowledged ? status_us : ack_us;
+
+		struct apdu_latency_stats *stats = apdu_latency_stats_find(apdu->ins);
+		stats->count++;
+		stats->null_bytes += timing->null_bytes;
+		stats->processing_us_sum += processing_us;
+		stats->processing_us_max = MAX(stats->processing_us_max, processing_us);
+
+		printf("# %3u %s", (unsigned int) completed, stats->name);
+		if (apdu->ins == GSM_INS_SELECT) {
+			printf(" %04X", apdu->file_id);
+		} else {
+			printf(" P3=%u", apdu->p3);
+		}
+		if (acknowledged) {
+			printf(": ACK after %lu us", ack_us);
+		} else {
+			printf(": no ACK");
+		}
+		printf(", status %02X%02X %lu us after data, %lu NULL bytes\n",
+			response.sw1, response.sw2, status_us, timing->null_bytes);
+		completed++;
+	}
+	if (completed < ARRAY_SIZE(FIRMWARE_BOOT_APDUS))
+		printf("# APDU %u got no complete answer\n", (unsigned int) completed);
+	test_check("Card answers every firmware boot APDU", completed == ARRAY_SIZE(FIRMWARE_BOOT_APDUS));
+}
+
+static void apdu_latency_stats_check(void) {
+	for (size_t i = 0; i < ARRAY_SIZE(apdu_latency_stats); i++) {
+		const struct apdu_latency_stats *stats = &apdu_latency_stats[i];
+		if (stats->count == 0)
+			continue;
+		uint32_t mean_us = stats->processing_us_sum / stats->count;
+		printf("# %s: %lu APDUs, processing mean %lu us max %lu us, reference %lu us, %lu NULL bytes\n",
+			stats->name, stats->count, mean_us, stats->processing_us_max, stats->reference_us,
+			stats->null_bytes);
+		char name[64];
+		snprintf(name, sizeof(name), "%s processing is within 25%% of the reference card", stats->name);
+		test_check(name, test_u32_in_interval(mean_us, stats->reference_us * 75 / 100,
+			stats->reference_us * 125 / 100));
+	}
+}
+
+static void sim_test_firmware_latency(void) {
+	static uint8_t atr[SIM_MAX_ATR_SIZE];
+	static uint32_t atr_ticks[SIM_MAX_ATR_SIZE];
+	size_t atr_size = 0;
+
+	test_category("Firmware boot APDU latency");
+	cgu_fpi1_select(CGU_FPI1_OSC, 0);
+	uint32_t sim_clock_hz = cpu_get_fpi1_freq() / SIM_CLOCK_FPI1_DIVIDER / SIM_LATENCY_RMC;
+	printf("# SIM clock %lu Hz\n", sim_clock_hz);
+
+	bool powered = sim_power_on(SIM_LATENCY_RMC, atr, atr_ticks, &atr_size);
+	test_check("ATR arrives", powered);
+	if (!powered)
+		return;
+	print_bytes("ATR", atr, atr_size);
+	uint32_t character_ticks = sim_character_ticks(SIM_LATENCY_RMC, SIM_DEFAULT_BRF);
+	uint32_t atr_delay_us = card_delay_us(sim_reset_tick, atr_ticks[0], character_ticks);
+	uint32_t atr_delay_clocks = (uint64_t) atr_delay_us * sim_clock_hz / 1000000;
+	printf("# ATR starts %lu us (%lu SIM clocks) after RST\n", atr_delay_us, atr_delay_clocks);
+	test_check("ATR starts within the ISO 7816-3 window of 400 to 40000 SIM clocks after RST",
+		test_u32_in_interval(atr_delay_clocks, SIM_ATR_MIN_CLOCKS, SIM_ATR_MAX_CLOCKS));
+
+	bool has_ta1 = atr_size > SIM_ATR_TA1_OFFSET && (atr[1] & SIM_ATR_T0_TA1_PRESENT) != 0;
+	uint8_t ta1 = has_ta1 ? atr[SIM_ATR_TA1_OFFSET] : 0;
+	uint32_t brf = has_ta1 ? sim_ta1_to_brf(ta1) : 0;
+	if (brf != 0) {
+		bool negotiated = sim_exchange_pps(ta1);
+		test_check("Card echoes PPS that selects TA1", negotiated);
+		if (!negotiated)
+			return;
+		uint32_t pps_us = card_delay_us(sim_last_tx_tick, sim_last_rx_tick, SIM_PPS_SIZE * character_ticks);
+		printf("# PPS TA1=%02X: card answers %lu us after the request, BRF %lu\n", ta1, pps_us, brf);
+		SIM_BRF = brf;
+		character_ticks = sim_character_ticks(SIM_LATENCY_RMC, brf);
+	} else {
+		printf("# ATR offers no supported TA1, APDUs use the default rate\n");
+	}
+
+	sim_test_firmware_apdus(character_ticks);
+	apdu_latency_stats_check();
+}
+
+#endif
+
 int main(void) {
 	uint8_t atr[SIM_MAX_ATR_SIZE];
 	size_t atr_size = 0;
@@ -863,6 +1190,11 @@ int main(void) {
 	test_start(SIM_TEST_NAME);
 	dmac_request_select(SIM_DMA_TX_REQUEST, SIM_DMA_TX_SELECT);
 	dmac_request_select(SIM_DMA_RX_REQUEST, SIM_DMA_RX_SELECT);
+#ifdef SIM_LATENCY_TEST
+	sim_test_firmware_latency();
+	sim_power_off();
+	return test_finish();
+#endif
 	test_category("Reset values");
 	SCU_RST_REQ |= SCU_RST_REQ_SIM;
 	SCU_RST_REQ &= ~SCU_RST_REQ_SIM;

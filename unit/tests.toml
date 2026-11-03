@@ -572,6 +572,9 @@ devices = ["generic-pmb8876"]
 [sim-card-timing]
 devices = ["generic-pmb8876"]
 
+[sim-card-latency]
+devices = ["siemens-el71"]
+
 [sim-card-info]
 devices = ["generic-pmb8876"]
 
