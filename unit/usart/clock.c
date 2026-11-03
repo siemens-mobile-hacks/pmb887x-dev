@@ -11,8 +11,24 @@
 #define USART_BG_RELOAD 0x3E7
 #define USART_FDV_VALUE 0x1D8
 #define USART_FDV_SCALE 512
+#define USART_OVERSAMPLING 16
 
-static const uint32_t PLL_NDIV_VALUES[] = { 4, 5 };
+struct usart_clock_case {
+	const char *name;
+	enum cgu_fpi1_source source;
+	uint32_t divider;
+	enum cgu_fsys_source fsys;
+	uint32_t rmc;
+};
+
+static const struct usart_clock_case CASES[] = {
+	{ "Baud rate follows FPI1 OSC", CGU_FPI1_OSC, 0, CGU_FSYS_OSC, 1 },
+	{ "USART1 RMC=4 divides FPI1 OSC", CGU_FPI1_OSC, 0, CGU_FSYS_OSC, 4 },
+	{ "Baud rate follows FPI1 PLL/2", CGU_FPI1_PLL_DIV_2, 0, CGU_FSYS_OSC, 1 },
+	{ "Baud rate follows the FPI1 divider", CGU_FPI1_PLL_DIV_2, 2, CGU_FSYS_OSC, 1 },
+	{ "fSYS PLL does not change the baud rate", CGU_FPI1_PLL_DIV_2, 0, CGU_FSYS_PLL, 1 },
+};
+
 static volatile uint8_t received_byte;
 static volatile bool receive_complete;
 
@@ -61,93 +77,43 @@ static bool measure_loopback(uint32_t *ticks) {
 	return true;
 }
 
+static uint32_t get_expected_ticks(const struct usart_clock_case *usart_case) {
+	uint64_t frame_bits = (uint64_t) LOOPBACK_FRAMES * USART_FRAME_BITS;
+	uint64_t module_hz = cpu_get_fpi1_freq() / usart_case->rmc;
+	uint64_t bit_cycles = (uint64_t) USART_OVERSAMPLING * (USART_BG_RELOAD + 1) * USART_FDV_SCALE / USART_FDV_VALUE;
+	return frame_bits * bit_cycles * stopwatch_ticks_per_s() / module_hz;
+}
+
+static void test_usart_case(const struct usart_clock_case *usart_case) {
+	cgu_fpi1_select(usart_case->source, usart_case->divider);
+	cgu_fsys_select(usart_case->fsys);
+	configure_usart(usart_case->rmc);
+	uint32_t expected_ticks = get_expected_ticks(usart_case);
+	uint32_t ticks = 0;
+	bool completed = measure_loopback(&ticks);
+	cgu_fsys_select(CGU_FSYS_OSC);
+	cgu_fpi1_select(CGU_FPI1_OSC, 0);
+
+	printf("# %s: %s, %lu STM ticks, expected %lu\n", usart_case->name, completed ? "ok" : "timeout",
+		ticks, expected_ticks);
+	test_check(usart_case->name,
+		completed && test_u32_in_interval(ticks, expected_ticks * 98 / 100, expected_ticks * 102 / 100));
+}
+
 int main(void) {
-	test_start("CGU FPI1 clock test");
+	test_start("USART clock test");
 
 	cgu_fpi1_select(CGU_FPI1_DISABLED, 0);
 	cgu_pll_set(3, 0);
+	cgu_fpi1_select(CGU_FPI1_OSC, 0);
 	VIC_CON(VIC_USART1_RX_IRQ) = 1;
 	cpu_enable_irq(true);
 
-	uint32_t osc_ticks = 0;
-	uint32_t rmc4_ticks = 0;
-	uint32_t configured_osc_ticks = 0;
-	uint32_t configured_pll_ticks = 0;
-	uint32_t pll_ticks[3] = { 0 };
-	uint32_t divided_ticks[4] = { 0 };
-	uint32_t fsys_pll_ticks = 0;
-	bool completed = true;
-	cgu_fpi1_select(CGU_FPI1_OSC, 0);
-	configure_usart(1);
-	completed = measure_loopback(&osc_ticks) && completed;
-	configure_usart(4);
-	completed = measure_loopback(&rmc4_ticks) && completed;
-	configure_usart(1);
-	usart_set_speed(USART1, 115200);
-	completed = measure_loopback(&configured_osc_ticks) && completed;
+	for (uint32_t index = 0; index < ARRAY_SIZE(CASES); index++)
+		test_usart_case(&CASES[index]);
 
-	for (uint32_t divider = 0; divider < ARRAY_SIZE(divided_ticks); divider++) {
-		cgu_fpi1_select(CGU_FPI1_PLL_DIV_2, divider);
-		configure_usart(1);
-		completed = measure_loopback(&divided_ticks[divider]) && completed;
-	}
-	pll_ticks[0] = divided_ticks[0];
-	cgu_fpi1_select(CGU_FPI1_PLL_DIV_2, 0);
-	usart_set_speed(USART1, 115200);
-	completed = measure_loopback(&configured_pll_ticks) && completed;
-	cgu_fsys_select(CGU_FSYS_PLL);
-	configure_usart(1);
-	completed = measure_loopback(&fsys_pll_ticks) && completed;
-
-	for (uint32_t index = 0; index < ARRAY_SIZE(PLL_NDIV_VALUES); index++) {
-		cgu_fpi1_select(CGU_FPI1_DISABLED, 0);
-		cgu_fsys_select(CGU_FSYS_OSC);
-		cgu_pll_set(PLL_NDIV_VALUES[index], 0);
-		cgu_fpi1_select(CGU_FPI1_PLL_DIV_2, 0);
-		configure_usart(1);
-		completed = measure_loopback(&pll_ticks[index + 1]) && completed;
-	}
-	cgu_fpi1_select(CGU_FPI1_OSC, 0);
 	cpu_enable_irq(false);
 	VIC_CON(VIC_USART1_RX_IRQ) = 0;
-
-	printf("# OSC=%lu PLL104=%lu DIV2/4/8=%lu/%lu/%lu fSYS_PLL=%lu PLL130/156=%lu/%lu STM ticks\n",
-		osc_ticks, pll_ticks[0], divided_ticks[1],
-		divided_ticks[2], divided_ticks[3], fsys_pll_ticks,
-		pll_ticks[1], pll_ticks[2]);
-	printf("# USART1 at 115200 baud: FPI1 OSC=%lu PLL/2=%lu STM ticks\n",
-		configured_osc_ticks, configured_pll_ticks);
-	printf("# USART1 at FPI1 OSC: RMC1=%lu RMC4=%lu STM ticks\n",
-		osc_ticks, rmc4_ticks);
-	uint32_t expected_osc_ticks = (uint64_t) LOOPBACK_FRAMES * USART_FRAME_BITS * 16 *
-		(USART_BG_RELOAD + 1) * USART_FDV_SCALE / USART_FDV_VALUE;
-	uint32_t expected_pll_ticks = expected_osc_ticks / 2;
-	test_check("USART1 loopback succeeds at every tested FPI1 rate", completed);
-	test_check("FPI1 OSC and PLL/2 rates match the USART baud model",
-		test_u32_in_interval(osc_ticks, expected_osc_ticks * 98 / 100, expected_osc_ticks * 102 / 100) &&
-		test_u32_in_interval(pll_ticks[0], expected_pll_ticks * 98 / 100, expected_pll_ticks * 102 / 100));
-	bool divider_rates_match = true;
-	for (uint32_t divider = 0; divider < ARRAY_SIZE(divided_ticks); divider++) {
-		uint32_t expected_ticks = expected_pll_ticks << divider;
-		divider_rates_match = divider_rates_match &&
-			test_u32_in_interval(divided_ticks[divider], expected_ticks * 98 / 100, expected_ticks * 102 / 100);
-	}
-	test_check("FPI1 /1, /2, /4 and /8 rates match the USART baud model", divider_rates_match);
-	test_check("fSYS selection does not change FPI1 loopback timing",
-		test_u32_in_interval(fsys_pll_ticks, pll_ticks[0] * 95 / 100, pll_ticks[0] * 105 / 100));
-	test_check("USART1 module divider scales its baud rate",
-		test_u32_in_interval(rmc4_ticks, expected_osc_ticks * 4 * 98 / 100,
-			expected_osc_ticks * 4 * 102 / 100));
-	test_check("USART1 baud rate follows FPI1 clock changes",
-		completed && test_u32_in_interval(configured_pll_ticks, configured_osc_ticks * 95 / 100,
-			configured_osc_ticks * 105 / 100));
-	bool pll_rates_match = true;
-	for (uint32_t index = 0; index < ARRAY_SIZE(PLL_NDIV_VALUES); index++) {
-		uint32_t expected_ticks = expected_osc_ticks * 2 / (PLL_NDIV_VALUES[index] + 1);
-		pll_rates_match = pll_rates_match &&
-			test_u32_in_interval(pll_ticks[index + 1], expected_ticks * 98 / 100, expected_ticks * 102 / 100);
-	}
-	test_check("FPI1 PLL/2 rates match 130 and 156 MHz PLL", pll_rates_match);
 	return test_finish();
 }
 

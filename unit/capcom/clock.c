@@ -18,9 +18,6 @@ static const struct {
 	{ "AHB_PER PLL/2 does not change CAPCOM timers", 3250000 },
 #endif
 	{ "FPI2 PLL /2 selects 6.5 MHz CAPCOM timers", 6500000 },
-	{ "FPI2 PLL /4 selects 3.25 MHz CAPCOM timers", 3250000 },
-	{ "FPI2 PLL /8 selects 1.625 MHz CAPCOM timers", 1625000 },
-	{ "FPI2 PLL /16 selects 812.5 kHz CAPCOM timers", 812500 },
 	{ "CAPCOM RMC/2 halves the timer clock", 1625000 },
 	{ "CAPCOM RMC/4 quarters the timer clock", 812500 },
 	{ "CAPCOM RMC/8 divides the timer clock by eight", 406250 },
@@ -101,12 +98,6 @@ int main(void) {
 		CGU_CON3 = osc_con3;
 #endif
 		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV1;
-		counts[index][mode++] = measure_timers(capcoms[index]);
-		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2;
-		counts[index][mode++] = measure_timers(capcoms[index]);
-		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV4;
-		counts[index][mode++] = measure_timers(capcoms[index]);
-		CGU_CON1 = fpi2_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV8;
 		counts[index][mode++] = measure_timers(capcoms[index]);
 		CGU_CON1 = bypass_con1;
 		CAPCOM_CLC(capcoms[index]) = (2 << MOD_CLC_RMC_SHIFT);

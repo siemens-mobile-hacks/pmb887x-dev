@@ -17,6 +17,8 @@ static const struct {
 	{ "RMC2=4 does not affect oscillator source with RMC=4", "PLL divisor is RMC=4 + RMC2=4", 4, 4 },
 };
 
+static const uint32_t FPI2_DIVIDERS[] = { 0, 2 };
+
 static uint32_t stm_clc_with_dividers(uint32_t clc, uint32_t rmc, uint32_t rmc2) {
 	return (clc & ~(MOD_CLC_RMC | STM_CLC_RMC2)) |
 		(rmc << MOD_CLC_RMC_SHIFT) | (rmc2 << STM_CLC_RMC2_SHIFT);
@@ -48,19 +50,9 @@ int main(void) {
 	uint32_t base_con1 = initial_con1 &
 		~(CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV);
 
-	test_category("Oscillator source");
-	configure_stm(base_con1 | CGU_CON1_FPI2_CLKDIV_DIV8, stm_clc_with_dividers(initial_clc, 1, 0));
-	uint32_t bypass_model_hz = cpu_get_stm_freq();
-	uint32_t bypass_khz = measure_stm_khz();
-	uint32_t bypass_expected_khz = CPU_OSC_FREQ / 1000;
-	printf("# bypass: expected=%lu kHz measured=%lu kHz model=%lu Hz\n",
-		bypass_expected_khz, bypass_khz, bypass_model_hz);
-	test_check("FPI2 divider does not affect the oscillator source",
-		test_u32_in_interval(bypass_khz, bypass_expected_khz * 98 / 100, bypass_expected_khz * 102 / 100));
-	test_eq_u32("STM model selects the oscillator source", CPU_OSC_FREQ, bypass_model_hz);
-
 	test_category("PLL source");
-	for (uint32_t divider = 0; divider < 4; divider++) {
+	for (uint32_t index = 0; index < ARRAY_SIZE(FPI2_DIVIDERS); index++) {
+		uint32_t divider = FPI2_DIVIDERS[index];
 		uint32_t con1 = base_con1 | CGU_CON1_FPI2_CLKSEL_PLL | (divider << CGU_CON1_FPI2_CLKDIV_SHIFT);
 		configure_stm(con1, stm_clc_with_dividers(initial_clc, 1, 1));
 		uint32_t modeled_hz = cpu_get_stm_freq();

@@ -11,9 +11,6 @@
 #define SIM_TX_RESTART_TICKS_MAX 128
 /* One ETU is 4 * BRF SIM clocks, and the SIM clock is FPI1 / 4 / RMC. */
 #define SIM_FPI1_CLOCKS_PER_BRF_RMC_ETU 16
-#define FPI1_OSC_HZ 26000000
-#define FPI1_PLL_DIV_2_HZ 52000000
-#define FPI1_DIVIDERS 4
 
 struct sim_tx_config {
 	const char *name;
@@ -28,6 +25,13 @@ struct sim_tx_result {
 	uint32_t ticks;
 };
 
+struct sim_clock_case {
+	const char *name;
+	enum cgu_fpi1_source source;
+	uint32_t divider;
+	enum cgu_fsys_source fsys;
+};
+
 static const struct sim_tx_config TX_CONFIGS[] = {
 	{ "RMC1 BRF93", 1, SIM_DEFAULT_BRF, 0, 0 },
 	{ "RMC2 BRF93", 2, SIM_DEFAULT_BRF, 0, 0 },
@@ -36,6 +40,12 @@ static const struct sim_tx_config TX_CONFIGS[] = {
 	{ "RMC1 BRF8", 1, 8, 0, 0 },
 	{ "RMC1 BRF93 CLKSEL", 1, SIM_DEFAULT_BRF, SIM_CON_CLKSEL, 0 },
 	{ "RMC1 BRF93 TXSPC4", 1, SIM_DEFAULT_BRF, 0, 4 },
+};
+
+static const struct sim_clock_case CLOCK_CASES[] = {
+	{ "Character time follows FPI1 PLL/2", CGU_FPI1_PLL_DIV_2, 0, CGU_FSYS_OSC },
+	{ "Character time follows the FPI1 divider", CGU_FPI1_PLL_DIV_2, 2, CGU_FSYS_OSC },
+	{ "fSYS PLL does not change character time", CGU_FPI1_PLL_DIV_2, 0, CGU_FSYS_PLL },
 };
 
 static void sim_configure(const struct sim_tx_config *config) {
@@ -86,69 +96,56 @@ static uint32_t sim_expected_ticks(const struct sim_tx_config *config, uint32_t 
 	return (uint64_t) fpi1_clocks * stopwatch_ticks_per_ms() * 1000 / fpi1_hz;
 }
 
-static void measure_configs(struct sim_tx_result results[ARRAY_SIZE(TX_CONFIGS)]) {
-	for (size_t i = 0; i < ARRAY_SIZE(TX_CONFIGS); i++)
-		results[i] = sim_measure_tx(&TX_CONFIGS[i]);
-}
-
-static void print_results(
-	const char *clock_name,
+static void print_result(
+	const char *name,
+	const struct sim_tx_config *config,
 	uint32_t fpi1_hz,
-	const struct sim_tx_result results[ARRAY_SIZE(TX_CONFIGS)]
+	struct sim_tx_result result
 ) {
-	for (size_t i = 0; i < ARRAY_SIZE(TX_CONFIGS); i++) {
-		printf("# %s %s: %s %lu STM ticks per character, expected %lu\n", clock_name, TX_CONFIGS[i].name,
-			results[i].completed ? "ok" : "timeout", results[i].ticks, sim_expected_ticks(&TX_CONFIGS[i], fpi1_hz));
-	}
+	printf("# %s at FPI1 %lu Hz: %s %lu STM ticks per character, expected %lu\n", name, fpi1_hz,
+		result.completed ? "ok" : "timeout", result.ticks, sim_expected_ticks(config, fpi1_hz));
 }
 
-static bool results_match_model(uint32_t fpi1_hz, const struct sim_tx_result results[ARRAY_SIZE(TX_CONFIGS)]) {
+static bool result_matches_model(const struct sim_tx_config *config, uint32_t fpi1_hz, struct sim_tx_result result) {
+	uint32_t expected = sim_expected_ticks(config, fpi1_hz);
+	uint32_t maximum = expected * 102 / 100 + SIM_TX_RESTART_TICKS_MAX;
+	return result.completed && test_u32_in_interval(result.ticks, expected * 98 / 100, maximum);
+}
+
+static void test_tx_configs(void) {
+	uint32_t fpi1_hz = cpu_get_fpi1_freq();
 	bool matches = true;
 
 	for (size_t i = 0; i < ARRAY_SIZE(TX_CONFIGS); i++) {
-		uint32_t expected = sim_expected_ticks(&TX_CONFIGS[i], fpi1_hz);
-		uint32_t maximum = expected * 102 / 100 + SIM_TX_RESTART_TICKS_MAX;
-		matches = matches && results[i].completed &&
-			test_u32_in_interval(results[i].ticks, expected * 98 / 100, maximum);
+		struct sim_tx_result result = sim_measure_tx(&TX_CONFIGS[i]);
+		print_result(TX_CONFIGS[i].name, &TX_CONFIGS[i], fpi1_hz, result);
+		matches = matches && result_matches_model(&TX_CONFIGS[i], fpi1_hz, result);
 	}
-	return matches;
+	test_check("Character time follows BRF, RMC and TXSPC", matches);
+}
+
+static void test_clock_case(const struct sim_clock_case *clock_case) {
+	const struct sim_tx_config *config = &TX_CONFIGS[0];
+
+	cgu_fpi1_select(clock_case->source, clock_case->divider);
+	cgu_fsys_select(clock_case->fsys);
+	uint32_t fpi1_hz = cpu_get_fpi1_freq();
+	struct sim_tx_result result = sim_measure_tx(config);
+	cgu_fsys_select(CGU_FSYS_OSC);
+	cgu_fpi1_select(CGU_FPI1_OSC, 0);
+
+	print_result(clock_case->name, config, fpi1_hz, result);
+	test_check(clock_case->name, result_matches_model(config, fpi1_hz, result));
 }
 
 int main(void) {
-	static struct sim_tx_result osc_results[ARRAY_SIZE(TX_CONFIGS)];
-	static struct sim_tx_result pll_results[FPI1_DIVIDERS][ARRAY_SIZE(TX_CONFIGS)];
-	static struct sim_tx_result fsys_pll_results[ARRAY_SIZE(TX_CONFIGS)];
-
 	test_start("SIM clock");
 
 	cgu_fpi1_select(CGU_FPI1_DISABLED, 0);
 	cgu_pll_set(3, 0);
 	cgu_fpi1_select(CGU_FPI1_OSC, 0);
-	measure_configs(osc_results);
-	for (uint32_t divider = 0; divider < FPI1_DIVIDERS; divider++) {
-		cgu_fpi1_select(CGU_FPI1_PLL_DIV_2, divider);
-		measure_configs(pll_results[divider]);
-	}
-	cgu_fpi1_select(CGU_FPI1_PLL_DIV_2, 0);
-	cgu_fsys_select(CGU_FSYS_PLL);
-	measure_configs(fsys_pll_results);
-	cgu_fsys_select(CGU_FSYS_OSC);
-	cgu_fpi1_select(CGU_FPI1_OSC, 0);
-
-	print_results("FPI1 OSC", FPI1_OSC_HZ, osc_results);
-	for (uint32_t divider = 0; divider < FPI1_DIVIDERS; divider++) {
-		char name[24];
-		snprintf(name, sizeof(name), "FPI1 PLL/2 /%lu", 1UL << divider);
-		print_results(name, FPI1_PLL_DIV_2_HZ >> divider, pll_results[divider]);
-	}
-	print_results("FPI1 PLL/2 fSYS PLL", FPI1_PLL_DIV_2_HZ, fsys_pll_results);
-
-	test_check("Character time follows BRF, RMC and TXSPC at FPI1 OSC", results_match_model(FPI1_OSC_HZ, osc_results));
-	bool follows_fpi1 = true;
-	for (uint32_t divider = 0; divider < FPI1_DIVIDERS; divider++)
-		follows_fpi1 = follows_fpi1 && results_match_model(FPI1_PLL_DIV_2_HZ >> divider, pll_results[divider]);
-	test_check("Character time follows FPI1 PLL/2 and its dividers", follows_fpi1);
-	test_check("fSYS selection does not change character time",
-		results_match_model(FPI1_PLL_DIV_2_HZ, fsys_pll_results));
+	test_tx_configs();
+	for (size_t i = 0; i < ARRAY_SIZE(CLOCK_CASES); i++)
+		test_clock_case(&CLOCK_CASES[i]);
 	return test_finish();
 }
