@@ -155,23 +155,18 @@ uint32_t cpu_get_dsp_freq(void) {
 }
 
 uint32_t cpu_get_fpi1_freq(void) {
-	uint32_t frequency;
-
 	switch (CGU_CON1 & CGU_CON1_FPI1_CLKSEL) {
 		case CGU_CON1_FPI1_CLKSEL_OSC:
-			frequency = CPU_OSC_FREQ;
-			break;
+			return CPU_OSC_FREQ;
 		case CGU_CON1_FPI1_CLKSEL_CLK32K:
 			return CPU_CLK32K_FREQ;
-		case CGU_CON1_FPI1_CLKSEL_PLL_DIV_2:
-			frequency = cpu_get_pll_freq() / 2;
-			break;
+		case CGU_CON1_FPI1_CLKSEL_PLL_DIV_2: {
+			uint32_t divider = (CGU_CON1 & CGU_CON1_FPI1_CLKDIV) >> CGU_CON1_FPI1_CLKDIV_SHIFT;
+			return (cpu_get_pll_freq() / 2) >> divider;
+		}
 		default:
 			return 0;
 	}
-
-	uint32_t divider = (CGU_CON1 & CGU_CON1_FPI1_CLKDIV) >> CGU_CON1_FPI1_CLKDIV_SHIFT;
-	return frequency >> divider;
 }
 
 uint32_t cpu_get_fpi2_freq(void) {
