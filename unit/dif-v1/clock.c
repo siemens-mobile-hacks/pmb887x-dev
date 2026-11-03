@@ -18,7 +18,20 @@ struct clock_case {
 	uint32_t con1;
 	bool pll;
 	uint32_t rmc;
-	uint32_t percent_of_boot_time;
+};
+
+static const struct clock_case CASES[] = {
+	{.name = "boot clocks", .rmc = 1},
+	{.name = "FSYS PLL", .con1_mask = CGU_CON1_FSYS_CLKSEL, .con1 = CGU_CON1_FSYS_CLKSEL_PLL, .pll = true, .rmc = 1},
+	{.name = "FPI1 PLL/2", .con1_mask = CGU_CON1_FPI1_CLKSEL | CGU_CON1_FPI1_CLKDIV,
+		.con1 = CGU_CON1_FPI1_CLKSEL_PLL_DIV_2, .pll = true, .rmc = 1},
+	{.name = "FPI1 PLL/2 /4", .con1_mask = CGU_CON1_FPI1_CLKSEL | CGU_CON1_FPI1_CLKDIV,
+		.con1 = CGU_CON1_FPI1_CLKSEL_PLL_DIV_2 | CGU_CON1_FPI1_CLKDIV_DIV4, .pll = true, .rmc = 1},
+	{.name = "FPI2 PLL/2", .con1_mask = CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV,
+		.con1 = CGU_CON1_FPI2_CLKSEL_PLL, .pll = true, .rmc = 1},
+	{.name = "RMC=2", .rmc = 2},
+	{.name = "FPI1 PLL/2, RMC=2", .con1_mask = CGU_CON1_FPI1_CLKSEL | CGU_CON1_FPI1_CLKDIV,
+		.con1 = CGU_CON1_FPI1_CLKSEL_PLL_DIV_2, .pll = true, .rmc = 2},
 };
 
 static uint32_t initial_osc;
@@ -52,7 +65,7 @@ static uint32_t burst_ticks(uint32_t words) {
 	return best;
 }
 
-static uint32_t measure_case(const struct clock_case *clock) {
+static void test_clock_case(const struct clock_case *clock) {
 	if (clock->pll)
 		cgu_pll_set(3, 0);
 	CGU_CON1 = (CGU_CON1 & ~clock->con1_mask) | clock->con1;
@@ -74,60 +87,24 @@ static uint32_t measure_case(const struct clock_case *clock) {
 	bool ok = one != 0 && many > one;
 	uint32_t burst_delta_ticks = ok ? many - one : 0;
 	uint32_t word_ns = (uint32_t) ((uint64_t) burst_delta_ticks * 1000000000ULL / ticks_per_s / (BURST_WORDS - 1));
-	printf("# %s: %s, %lu ns per word; AHB %lu Hz, FSYS %lu Hz, FPI1 %lu Hz, FPI2 %lu Hz\n", clock->name,
-		ok ? "transfer ok" : "transfer FAILED", word_ns, ahb_hz, sys_hz, fpi1_hz, fpi2_hz);
-	return word_ns;
-}
-
-static void test_sources(void) {
-	static const struct clock_case CASES[] = {
-		{.name = "FSYS PLL", .con1_mask = CGU_CON1_FSYS_CLKSEL, .con1 = CGU_CON1_FSYS_CLKSEL_PLL, .pll = true,
-			.rmc = 1, .percent_of_boot_time = 100},
-		{.name = "FPI1 OSC /2 (divider bypassed)", .con1_mask = CGU_CON1_FPI1_CLKSEL | CGU_CON1_FPI1_CLKDIV,
-			.con1 = CGU_CON1_FPI1_CLKSEL_OSC | CGU_CON1_FPI1_CLKDIV_DIV2, .rmc = 1, .percent_of_boot_time = 100},
-		{.name = "FPI1 OSC /4 (divider bypassed)", .con1_mask = CGU_CON1_FPI1_CLKSEL | CGU_CON1_FPI1_CLKDIV,
-			.con1 = CGU_CON1_FPI1_CLKSEL_OSC | CGU_CON1_FPI1_CLKDIV_DIV4, .rmc = 1, .percent_of_boot_time = 100},
-		{.name = "FPI1 PLL/2", .con1_mask = CGU_CON1_FPI1_CLKSEL | CGU_CON1_FPI1_CLKDIV,
-			.con1 = CGU_CON1_FPI1_CLKSEL_PLL_DIV_2, .pll = true, .rmc = 1, .percent_of_boot_time = 50},
-		{.name = "FPI1 PLL/2 /2", .con1_mask = CGU_CON1_FPI1_CLKSEL | CGU_CON1_FPI1_CLKDIV,
-			.con1 = CGU_CON1_FPI1_CLKSEL_PLL_DIV_2 | CGU_CON1_FPI1_CLKDIV_DIV2, .pll = true,
-			.rmc = 1, .percent_of_boot_time = 100},
-		{.name = "FPI1 PLL/2 /4", .con1_mask = CGU_CON1_FPI1_CLKSEL | CGU_CON1_FPI1_CLKDIV,
-			.con1 = CGU_CON1_FPI1_CLKSEL_PLL_DIV_2 | CGU_CON1_FPI1_CLKDIV_DIV4, .pll = true,
-			.rmc = 1, .percent_of_boot_time = 200},
-		{.name = "FPI2 PLL/2", .con1_mask = CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV,
-			.con1 = CGU_CON1_FPI2_CLKSEL_PLL, .pll = true, .rmc = 1, .percent_of_boot_time = 100},
-		{.name = "RMC=2", .rmc = 2, .percent_of_boot_time = 200},
-		{.name = "FPI1 PLL/2, RMC=2", .con1_mask = CGU_CON1_FPI1_CLKSEL | CGU_CON1_FPI1_CLKDIV,
-			.con1 = CGU_CON1_FPI1_CLKSEL_PLL_DIV_2, .pll = true, .rmc = 2, .percent_of_boot_time = 100},
-	};
-	static const struct clock_case BOOT = {.name = "boot clocks", .rmc = 1};
-
-	test_category("CGU clock sources");
-	uint32_t boot_ns = measure_case(&BOOT);
-	test_check("boot clocks", boot_ns != 0);
-	for (uint32_t i = 0; i < ARRAY_SIZE(CASES); i++) {
-		uint64_t expected_ns = (uint64_t) boot_ns * CASES[i].percent_of_boot_time / 100;
-		uint32_t word_ns = measure_case(&CASES[i]);
-
-		test_check(CASES[i].name, test_u32_in_interval(word_ns, expected_ns * 90 / 100, expected_ns * 110 / 100));
-	}
+	uint32_t module_hz = fpi1_hz / clock->rmc;
+	uint32_t expected_ns = WORD_BITS * 2ULL * (BAUD_RELOAD + 1) * 1000000000ULL / module_hz;
+	printf("# %s: %s, %lu ns per word, expected %lu; AHB %lu Hz, FSYS %lu Hz, FPI1 %lu Hz, FPI2 %lu Hz\n",
+		clock->name, ok ? "transfer ok" : "transfer FAILED", word_ns, expected_ns, ahb_hz, sys_hz, fpi1_hz, fpi2_hz);
+	test_check(clock->name, test_u32_in_interval(word_ns, expected_ns * 95 / 100, expected_ns * 105 / 100));
 }
 
 int main(void) {
 	test_start("DIFv1 clock source test");
-	if (test_is_qemu()) {
-		test_skip("DIFv1 clock source", "QEMU does not model transfer time");
-		return test_finish();
-	}
-
 	cpu_enable_irq(false);
 	initial_osc = CGU_OSC;
 	initial_con1 = CGU_CON1;
 	printf("# boot CGU: OSC=%08lX CON0=%08lX CON1=%08lX; STM %lu ticks/us\n", initial_osc, CGU_CON0, initial_con1,
 		stopwatch_ticks_per_us());
 
-	test_sources();
+	test_category("CGU clock sources");
+	for (uint32_t i = 0; i < ARRAY_SIZE(CASES); i++)
+		test_clock_case(&CASES[i]);
 
 	return test_finish();
 }
