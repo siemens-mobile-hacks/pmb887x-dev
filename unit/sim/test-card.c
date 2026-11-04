@@ -523,7 +523,7 @@ static bool sim_status(uint8_t length, struct apdu_response *response) {
 
 #endif
 
-#if defined(SIM_DUMP_CARD_INFO) || defined(SIM_RW_TEST)
+#if defined(SIM_DUMP_CARD_INFO) || defined(SIM_RW_TEST) || defined(SIM_LATENCY_TEST)
 
 static bool sim_read_record(uint8_t record, uint8_t mode, uint8_t length, struct apdu_response *response) {
 	const uint8_t header[5] = {0xA0, 0xB2, record, mode, length};
@@ -543,6 +543,127 @@ static void print_bytes(const char *name, const uint8_t *data, size_t size) {
 static bool response_has_data(uint8_t sw1) {
 	return sw1 == 0x9F || sw1 == 0x61;
 }
+
+#if defined(SIM_RW_TEST) || defined(SIM_LATENCY_TEST)
+
+#define GSM_MF 0x3F00
+#define GSM_DF_TELECOM 0x7F10
+#define GSM_DF_GSM 0x7F20
+#define GSM_EF_ICCID 0x2FE2
+#define GSM_EF_SST 0x6F38
+#define GSM_EF_ACM 0x6F39
+#define GSM_EF_ADN 0x6F3A
+#define GSM_EF_SMSS 0x6F43
+#define GSM_EF_LND 0x6F44
+#define GSM_EF_IMSI 0x6F07
+#define GSM_EF_SIZE_MSB_OFFSET 2
+#define GSM_EF_SIZE_LSB_OFFSET 3
+#define GSM_EF_INCREASE_OFFSET 7
+#define GSM_EF_ACCESS_OFFSET 8
+#define GSM_EF_FILE_STATUS_OFFSET 11
+#define GSM_EF_STRUCTURE_OFFSET 13
+#define GSM_EF_RECORD_SIZE_OFFSET 14
+#define GSM_EF_TRANSPARENT 0x00
+#define GSM_EF_LINEAR_FIXED 0x01
+#define GSM_EF_CYCLIC 0x03
+#define GSM_SEEK_TYPE_2_FROM_BEGINNING 0x10
+#define GSM_SEEK_TYPE_2_NEXT_FORWARD 0x12
+#define GSM_ADN_EMPTY_ALPHA 0xFF
+#define GSM_SEEK_RECORD_NUMBER_SIZE 1
+#define GSM_ACM_SIZE 3
+#define GSM_INCREASE_RESPONSE_SIZE (2 * GSM_ACM_SIZE)
+#define GSM_STATUS_SUCCESS 0x9000
+#define GSM_STATUS_OUT_OF_RANGE 0x9402
+#define GSM_STATUS_ACCESS_DENIED 0x9804
+#define GSM_STATUS_WRONG_PARAMETERS 0x6B00
+#define GSM_SW1_WRONG_LENGTH 0x67
+#define GSM_SW1_PROACTIVE_COMMAND 0x91
+#define GSM_RAND_SIZE 16
+#define GSM_RUN_GSM_ALGORITHM_RESPONSE_SIZE 12
+#define GSM_ACCESS_SIZE 3
+#define SIM_RECORD_CURRENT 0
+
+struct sim_ef_info {
+	uint16_t size;
+	uint8_t structure;
+	uint8_t record_size;
+	uint16_t records;
+	uint8_t increase;
+	uint8_t access[GSM_ACCESS_SIZE];
+	uint8_t file_status;
+};
+
+static uint16_t sim_status_word(const struct apdu_response *response) {
+	return (response->sw1 << 8) | response->sw2;
+}
+
+static bool sim_select_ef(uint16_t df, uint16_t ef, struct sim_ef_info *info) {
+	static struct apdu_response response;
+
+	if (!sim_select(GSM_MF, &response) || !sim_select(df, &response))
+		return false;
+	if (!sim_select(ef, &response) || !response_has_data(response.sw1))
+		return false;
+	if (!sim_get_response(response.sw2, &response) || sim_status_word(&response) != GSM_STATUS_SUCCESS)
+		return false;
+
+	info->size = (response.data[GSM_EF_SIZE_MSB_OFFSET] << 8) | response.data[GSM_EF_SIZE_LSB_OFFSET];
+	info->structure = response.data[GSM_EF_STRUCTURE_OFFSET];
+	info->record_size = response.data[GSM_EF_RECORD_SIZE_OFFSET];
+	info->records = info->record_size ? info->size / info->record_size : 0;
+	info->increase = response.data[GSM_EF_INCREASE_OFFSET];
+	memcpy(info->access, response.data + GSM_EF_ACCESS_OFFSET, GSM_ACCESS_SIZE);
+	info->file_status = response.data[GSM_EF_FILE_STATUS_OFFSET];
+	return true;
+}
+
+static bool sim_read_binary_at(uint16_t offset, uint8_t length, struct apdu_response *response) {
+	const uint8_t header[5] = {0xA0, 0xB0, (uint8_t) (offset >> 8), (uint8_t) offset, length};
+
+	return sim_exchange(header, NULL, 0, length, response);
+}
+
+static bool sim_update_binary(uint16_t offset, const uint8_t *data, uint8_t length, struct apdu_response *response) {
+	const uint8_t header[5] = {0xA0, 0xD6, (uint8_t) (offset >> 8), (uint8_t) offset, length};
+
+	return sim_exchange(header, data, length, 0, response);
+}
+
+static bool sim_update_record(
+	uint8_t record,
+	uint8_t mode,
+	const uint8_t *data,
+	uint8_t length,
+	struct apdu_response *response
+) {
+	const uint8_t header[5] = {0xA0, 0xDC, record, mode, length};
+
+	return sim_exchange(header, data, length, 0, response);
+}
+
+static bool sim_seek(uint8_t type_mode, const uint8_t *pattern, uint8_t length, struct apdu_response *response) {
+	const uint8_t header[5] = {0xA0, 0xA2, 0x00, type_mode, length};
+
+	return sim_exchange(header, pattern, length, 0, response);
+}
+
+static bool sim_increase(const uint8_t value[GSM_ACM_SIZE], struct apdu_response *response) {
+	const uint8_t header[5] = {0xA0, 0x32, 0x00, 0x00, GSM_ACM_SIZE};
+
+	return sim_exchange(header, value, GSM_ACM_SIZE, 0, response);
+}
+
+static bool sim_run_gsm_algorithm(const uint8_t rand[GSM_RAND_SIZE], uint8_t length, struct apdu_response *response) {
+	const uint8_t header[5] = {0xA0, 0x88, 0x00, 0x00, length};
+
+	return sim_exchange(header, rand, length, 0, response);
+}
+
+static void print_status(const char *operation, const struct apdu_response *response) {
+	printf("# %s: status %02X%02X\n", operation, response->sw1, response->sw2);
+}
+
+#endif
 
 #ifdef SIM_DUMP_CARD_INFO
 
@@ -918,6 +1039,30 @@ static void sim_test_pps(void) {
 #define GSM_INS_READ_BINARY 0xB0
 #define GSM_INS_READ_RECORD 0xB2
 #define GSM_INS_GET_RESPONSE 0xC0
+#define GSM_INS_TERMINAL_PROFILE 0x10
+#define GSM_INS_FETCH 0x12
+#define GSM_INS_TERMINAL_RESPONSE 0x14
+#define GSM_INS_INCREASE 0x32
+#define GSM_INS_RUN_GSM_ALGORITHM 0x88
+#define GSM_INS_SEEK 0xA2
+#define GSM_INS_ENVELOPE 0xC2
+#define GSM_INS_UPDATE_BINARY 0xD6
+#define GSM_INS_UPDATE_RECORD 0xDC
+#define SIM_LATENCY_REPEATS 4
+#define SIM_LATENCY_MARKER 0x7F
+#define SIM_SEEK_TYPE_1_FROM_BEGINNING 0x00
+#define SAT_PROACTIVE_COMMAND_TAG 0xD0
+#define SAT_MENU_SELECTION_TAG 0xD3
+#define SAT_COMMAND_DETAILS_TAG 0x01
+#define SAT_ITEM_TAG 0x0F
+#define SAT_COMPREHENSION_REQUIRED 0x80
+#define SAT_COMMAND_DETAILS_SIZE 3
+#define SAT_COMMAND_SET_UP_MENU 0x25
+#define SAT_RESULT_OK 0x00
+#define SAT_RESULT_BEYOND_TERMINAL_CAPABILITIES 0x30
+#define SAT_MAX_FOLLOW_UP_COMMANDS 4
+#define SAT_FETCH_BASE_US 152
+#define SAT_FETCH_NS_PER_BYTE 5640
 
 struct firmware_apdu {
 	uint8_t ins;
@@ -1049,13 +1194,25 @@ static const struct firmware_apdu FIRMWARE_BOOT_APDUS[] = {
 	{ GSM_INS_STATUS, 0x00, 0x00, 0x17, 0 },
 };
 
-/* Mean processing times of the reference SIM (ATR 3B 1E 95 80 67 21 54 4D 4D ...) in the EL71. */
+/* Mean processing times of the reference SIM (ATR 3B 1E 95 80 67 21 54 4D 4D ...). */
 static struct apdu_latency_stats apdu_latency_stats[] = {
 	{ .ins = GSM_INS_SELECT, .name = "SELECT", .reference_us = 3138 },
 	{ .ins = GSM_INS_STATUS, .name = "STATUS", .reference_us = 3770 },
 	{ .ins = GSM_INS_READ_BINARY, .name = "READ BINARY", .reference_us = 295 },
 	{ .ins = GSM_INS_READ_RECORD, .name = "READ RECORD", .reference_us = 313 },
 	{ .ins = GSM_INS_GET_RESPONSE, .name = "GET RESPONSE", .reference_us = 91 },
+	{ .ins = GSM_INS_UPDATE_BINARY, .name = "UPDATE BINARY", .reference_us = 929 },
+	{ .ins = GSM_INS_UPDATE_RECORD, .name = "UPDATE RECORD", .reference_us = 3219 },
+	{ .ins = GSM_INS_SEEK, .name = "SEEK", .reference_us = 925 },
+	{ .ins = GSM_INS_INCREASE, .name = "INCREASE", .reference_us = 1851 },
+	{ .ins = GSM_INS_RUN_GSM_ALGORITHM, .name = "RUN GSM ALGORITHM", .reference_us = 52815 },
+	{ .ins = GSM_INS_TERMINAL_PROFILE, .name = "TERMINAL PROFILE", .reference_us = 2541 },
+	{ .ins = GSM_INS_TERMINAL_RESPONSE, .name = "TERMINAL RESPONSE", .reference_us = 83 },
+	{ .ins = GSM_INS_ENVELOPE, .name = "ENVELOPE", .reference_us = 488 },
+};
+
+static const uint8_t SAT_TERMINAL_PROFILE[] = {
+	0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0x0F, 0x00, 0xDF, 0x7F, 0x00, 0x00, 0x1F, 0x23, 0x00, 0x00, 0x00, 0x03
 };
 
 static uint32_t ticks_to_us(uint32_t ticks) {
@@ -1073,6 +1230,26 @@ static struct apdu_latency_stats *apdu_latency_stats_find(uint8_t ins) {
 			return &apdu_latency_stats[i];
 	}
 	return NULL;
+}
+
+static uint32_t apdu_latency_record(
+	uint8_t ins,
+	const struct apdu_response *response,
+	bool card_receives_data,
+	uint32_t character_ticks
+) {
+	const struct apdu_timing *timing = &response->timing;
+	bool acknowledged = timing->procedure_tick != timing->sw1_tick;
+	uint32_t ack_us = card_delay_us(timing->header_sent_tick, timing->procedure_tick, character_ticks);
+	uint32_t status_us = card_delay_us(timing->data_done_tick, timing->sw1_tick, character_ticks);
+	uint32_t processing_us = card_receives_data || !acknowledged ? status_us : ack_us;
+
+	struct apdu_latency_stats *stats = apdu_latency_stats_find(ins);
+	stats->count++;
+	stats->null_bytes += timing->null_bytes;
+	stats->processing_us_sum += processing_us;
+	stats->processing_us_max = MAX(stats->processing_us_max, processing_us);
+	return processing_us;
 }
 
 static bool sim_firmware_apdu_exchange(const struct firmware_apdu *apdu, struct apdu_response *response) {
@@ -1099,14 +1276,8 @@ static void sim_test_firmware_apdus(uint32_t character_ticks) {
 		uint32_t ack_us = acknowledged ?
 			card_delay_us(timing->header_sent_tick, timing->procedure_tick, character_ticks) : 0;
 		uint32_t status_us = card_delay_us(timing->data_done_tick, timing->sw1_tick, character_ticks);
-		bool card_receives_data = apdu->ins == GSM_INS_SELECT;
-		uint32_t processing_us = card_receives_data || !acknowledged ? status_us : ack_us;
-
-		struct apdu_latency_stats *stats = apdu_latency_stats_find(apdu->ins);
-		stats->count++;
-		stats->null_bytes += timing->null_bytes;
-		stats->processing_us_sum += processing_us;
-		stats->processing_us_max = MAX(stats->processing_us_max, processing_us);
+		apdu_latency_record(apdu->ins, &response, apdu->ins == GSM_INS_SELECT, character_ticks);
+		const struct apdu_latency_stats *stats = apdu_latency_stats_find(apdu->ins);
 
 		printf("# %3u %s", (unsigned int) completed, stats->name);
 		if (apdu->ins == GSM_INS_SELECT) {
@@ -1137,11 +1308,218 @@ static void apdu_latency_stats_check(void) {
 		printf("# %s: %lu APDUs, processing mean %lu us max %lu us, reference %lu us, %lu NULL bytes\n",
 			stats->name, stats->count, mean_us, stats->processing_us_max, stats->reference_us,
 			stats->null_bytes);
-		char name[64];
+		char name[96];
 		snprintf(name, sizeof(name), "%s processing is within 25%% of the reference card", stats->name);
 		test_check(name, test_u32_in_interval(mean_us, stats->reference_us * 75 / 100,
 			stats->reference_us * 125 / 100));
 	}
+}
+
+static void sim_measure_update_binary(uint32_t character_ticks) {
+	static struct apdu_response response;
+	uint8_t original[SIM_MAX_APDU_DATA];
+	uint8_t marked[SIM_MAX_APDU_DATA];
+	struct sim_ef_info info;
+
+	bool smss = sim_select_ef(GSM_DF_TELECOM, GSM_EF_SMSS, &info) && sim_read_binary_at(0, info.size, &response) &&
+		sim_status_word(&response) == GSM_STATUS_SUCCESS;
+	test_check("Read EF_SMSS", smss);
+	if (!smss)
+		return;
+	memcpy(original, response.data, info.size);
+	memcpy(marked, original, info.size);
+	marked[1] ^= SIM_LATENCY_MARKER;
+
+	bool updated = true;
+	for (size_t i = 0; i < SIM_LATENCY_REPEATS; i++) {
+		const uint8_t *content = i % 2 == 0 ? marked : original;
+		updated = sim_update_binary(0, content, info.size, &response) &&
+			sim_status_word(&response) == GSM_STATUS_SUCCESS && updated;
+		apdu_latency_record(GSM_INS_UPDATE_BINARY, &response, true, character_ticks);
+	}
+	bool restored = sim_read_binary_at(0, info.size, &response) && memcmp(response.data, original, info.size) == 0;
+	test_check("UPDATE BINARY EF_SMSS changes and restores the file", updated && restored);
+}
+
+static void sim_measure_update_record(uint32_t character_ticks) {
+	static struct apdu_response response;
+	static const uint8_t empty_alpha = GSM_ADN_EMPTY_ALPHA;
+	uint8_t empty[SIM_MAX_APDU_DATA];
+	uint8_t marked[SIM_MAX_APDU_DATA];
+	struct sim_ef_info info;
+
+	bool selected = sim_select_ef(GSM_DF_TELECOM, GSM_EF_ADN, &info);
+	test_check("SELECT EF_ADN", selected);
+	if (!selected)
+		return;
+	for (size_t i = 0; i < SIM_LATENCY_REPEATS; i++) {
+		sim_seek(SIM_SEEK_TYPE_1_FROM_BEGINNING, &empty_alpha, 1, &response);
+		apdu_latency_record(GSM_INS_SEEK, &response, true, character_ticks);
+	}
+	print_status("SEEK type 1 for an empty name", &response);
+	memset(empty, 0xFF, info.record_size);
+	bool found = sim_status_word(&response) == GSM_STATUS_SUCCESS &&
+		sim_read_record(SIM_RECORD_CURRENT, SIM_RECORD_ABSOLUTE, info.record_size, &response) &&
+		memcmp(response.data, empty, info.record_size) == 0;
+	test_check("SEEK type 1 finds an empty EF_ADN record", found);
+	if (!found)
+		return;
+	memcpy(marked, empty, info.record_size);
+	marked[0] = SIM_LATENCY_MARKER;
+
+	bool updated = true;
+	for (size_t i = 0; i < SIM_LATENCY_REPEATS; i++) {
+		const uint8_t *content = i % 2 == 0 ? marked : empty;
+		updated = sim_update_record(SIM_RECORD_CURRENT, SIM_RECORD_ABSOLUTE, content, info.record_size, &response) &&
+			sim_status_word(&response) == GSM_STATUS_SUCCESS && updated;
+		apdu_latency_record(GSM_INS_UPDATE_RECORD, &response, true, character_ticks);
+	}
+	bool restored = sim_read_record(SIM_RECORD_CURRENT, SIM_RECORD_ABSOLUTE, info.record_size, &response) &&
+		memcmp(response.data, empty, info.record_size) == 0;
+	test_check("UPDATE RECORD changes and restores an empty EF_ADN record", updated && restored);
+}
+
+static void sim_measure_writes(uint32_t character_ticks) {
+	static struct apdu_response response;
+	static const uint8_t zero[GSM_ACM_SIZE] = { 0 };
+	static const uint8_t rand[GSM_RAND_SIZE] = { 0 };
+	struct sim_ef_info info;
+
+	sim_measure_update_binary(character_ticks);
+	sim_measure_update_record(character_ticks);
+
+	bool acm = sim_select_ef(GSM_DF_GSM, GSM_EF_ACM, &info);
+	test_check("SELECT EF_ACM", acm);
+	if (acm) {
+		sim_increase(zero, &response);
+		apdu_latency_record(GSM_INS_INCREASE, &response, true, character_ticks);
+		print_status("INCREASE by zero", &response);
+	}
+
+	for (size_t i = 0; i < SIM_LATENCY_REPEATS; i++) {
+		sim_run_gsm_algorithm(rand, GSM_RAND_SIZE, &response);
+		apdu_latency_record(GSM_INS_RUN_GSM_ALGORITHM, &response, true, character_ticks);
+		if (response_has_data(response.sw1)) {
+			sim_get_response(response.sw2, &response);
+			apdu_latency_record(GSM_INS_GET_RESPONSE, &response, false, character_ticks);
+		}
+	}
+	test_check("RUN GSM ALGORITHM completes", sim_status_word(&response) == GSM_STATUS_SUCCESS);
+}
+
+static bool sat_exchange(
+	uint8_t ins,
+	const uint8_t *data,
+	uint8_t length,
+	struct apdu_response *response,
+	uint32_t character_ticks
+) {
+	const uint8_t header[5] = { GSM_CLA, ins, 0x00, 0x00, length };
+
+	if (!sim_exchange(header, data, length, 0, response))
+		return false;
+	apdu_latency_record(ins, response, true, character_ticks);
+	return true;
+}
+
+static bool sat_fetch(uint8_t length, struct apdu_response *response, uint32_t character_ticks) {
+	const uint8_t header[5] = { GSM_CLA, GSM_INS_FETCH, 0x00, 0x00, length };
+
+	if (!sim_exchange(header, NULL, 0, length, response))
+		return false;
+	uint32_t processing_us = card_delay_us(response->timing.header_sent_tick, response->timing.procedure_tick,
+		character_ticks);
+	uint32_t reference_us = SAT_FETCH_BASE_US + length * SAT_FETCH_NS_PER_BYTE / 1000;
+	printf("# FETCH %u bytes: processing %lu us, reference %lu us\n", length, processing_us, reference_us);
+	print_bytes("Proactive command", response->data, response->size);
+	test_check("FETCH processing is within 25% of the reference card",
+		test_u32_in_interval(processing_us, reference_us * 75 / 100, reference_us * 125 / 100));
+	return response->size >= 2 && response->data[0] == SAT_PROACTIVE_COMMAND_TAG;
+}
+
+static const uint8_t *sat_find_tag(const struct apdu_response *command, uint8_t tag) {
+	size_t offset = 2;
+	while (offset + 2 <= command->size) {
+		uint8_t current = command->data[offset] & ~SAT_COMPREHENSION_REQUIRED;
+		uint8_t length = command->data[offset + 1];
+		if (current == tag)
+			return &command->data[offset];
+		offset += 2 + length;
+	}
+	return NULL;
+}
+
+static bool sat_respond(
+	const struct apdu_response *command,
+	uint8_t result,
+	struct apdu_response *response,
+	uint32_t character_ticks
+) {
+	const uint8_t *details = sat_find_tag(command, SAT_COMMAND_DETAILS_TAG);
+	if (!details || details[1] != SAT_COMMAND_DETAILS_SIZE)
+		return false;
+
+	const uint8_t terminal_response[] = {
+		0x81, SAT_COMMAND_DETAILS_SIZE, details[2], details[3], details[4],
+		0x82, 0x02, 0x82, 0x81,
+		0x83, 0x01, result,
+	};
+	return sat_exchange(GSM_INS_TERMINAL_RESPONSE, terminal_response, sizeof(terminal_response), response,
+		character_ticks);
+}
+
+static bool sat_complete_session(struct apdu_response *response, uint8_t result, uint32_t character_ticks) {
+	static struct apdu_response command;
+
+	for (size_t i = 0; i < SAT_MAX_FOLLOW_UP_COMMANDS && response->sw1 == GSM_SW1_PROACTIVE_COMMAND; i++) {
+		if (!sat_fetch(response->sw2, &command, character_ticks))
+			return false;
+		if (!sat_respond(&command, result, response, character_ticks))
+			return false;
+		print_status("TERMINAL RESPONSE", response);
+	}
+	return sim_status_word(response) == GSM_STATUS_SUCCESS;
+}
+
+static void sim_measure_toolkit(uint32_t character_ticks) {
+	static struct apdu_response response;
+	static struct apdu_response command;
+
+	test_category("SIM Application Toolkit latency");
+	bool profile = sat_exchange(GSM_INS_TERMINAL_PROFILE, SAT_TERMINAL_PROFILE, sizeof(SAT_TERMINAL_PROFILE),
+		&response, character_ticks);
+	print_status("TERMINAL PROFILE", &response);
+	test_check("TERMINAL PROFILE reports a pending proactive command",
+		profile && response.sw1 == GSM_SW1_PROACTIVE_COMMAND);
+	if (!profile || response.sw1 != GSM_SW1_PROACTIVE_COMMAND)
+		return;
+
+	bool fetched = sat_fetch(response.sw2, &command, character_ticks);
+	const uint8_t *details = fetched ? sat_find_tag(&command, SAT_COMMAND_DETAILS_TAG) : NULL;
+	test_check("FETCH returns SET UP MENU", details && details[3] == SAT_COMMAND_SET_UP_MENU);
+	if (!details || details[3] != SAT_COMMAND_SET_UP_MENU)
+		return;
+	const uint8_t *item = sat_find_tag(&command, SAT_ITEM_TAG);
+	test_check("SET UP MENU has an item", item != NULL);
+	if (!item)
+		return;
+	uint8_t item_id = item[2];
+
+	bool responded = sat_respond(&command, SAT_RESULT_OK, &response, character_ticks);
+	print_status("TERMINAL RESPONSE", &response);
+	test_check("TERMINAL RESPONSE to SET UP MENU is accepted", responded &&
+		(sim_status_word(&response) == GSM_STATUS_SUCCESS || response.sw1 == GSM_SW1_PROACTIVE_COMMAND));
+	test_check("Proactive commands after SET UP MENU complete",
+		sat_complete_session(&response, SAT_RESULT_OK, character_ticks));
+
+	const uint8_t menu_selection[] = { SAT_MENU_SELECTION_TAG, 0x07, 0x82, 0x02, 0x01, 0x81, 0x90, 0x01, item_id };
+	bool selected = sat_exchange(GSM_INS_ENVELOPE, menu_selection, sizeof(menu_selection), &response,
+		character_ticks);
+	print_status("ENVELOPE MENU SELECTION", &response);
+	test_check("ENVELOPE MENU SELECTION is accepted", selected &&
+		(sim_status_word(&response) == GSM_STATUS_SUCCESS || response.sw1 == GSM_SW1_PROACTIVE_COMMAND));
+	test_check("Proactive commands after MENU SELECTION complete",
+		sat_complete_session(&response, SAT_RESULT_BEYOND_TERMINAL_CAPABILITIES, character_ticks));
 }
 
 static void sim_test_firmware_latency(void) {
@@ -1183,6 +1561,9 @@ static void sim_test_firmware_latency(void) {
 	}
 
 	sim_test_firmware_apdus(character_ticks);
+	test_category("Command latency");
+	sim_measure_writes(character_ticks);
+	sim_measure_toolkit(character_ticks);
 	apdu_latency_stats_check();
 }
 
@@ -1190,101 +1571,39 @@ static void sim_test_firmware_latency(void) {
 
 #ifdef SIM_RW_TEST
 
-#define GSM_MF 0x3F00
-#define GSM_DF_TELECOM 0x7F10
-#define GSM_DF_GSM 0x7F20
-#define GSM_EF_ICCID 0x2FE2
-#define GSM_EF_SST 0x6F38
-#define GSM_EF_ACM 0x6F39
-#define GSM_EF_ADN 0x6F3A
-#define GSM_EF_SMSS 0x6F43
-#define GSM_EF_LND 0x6F44
-#define GSM_EF_SIZE_MSB_OFFSET 2
-#define GSM_EF_SIZE_LSB_OFFSET 3
-#define GSM_EF_STRUCTURE_OFFSET 13
-#define GSM_EF_RECORD_SIZE_OFFSET 14
-#define GSM_EF_TRANSPARENT 0x00
-#define GSM_EF_LINEAR_FIXED 0x01
-#define GSM_EF_CYCLIC 0x03
-#define GSM_SEEK_TYPE_2_FROM_BEGINNING 0x10
-#define GSM_SEEK_TYPE_2_NEXT_FORWARD 0x12
-#define GSM_ADN_EMPTY_ALPHA 0xFF
-#define GSM_SEEK_RECORD_NUMBER_SIZE 1
-#define GSM_ACM_SIZE 3
-#define GSM_INCREASE_RESPONSE_SIZE (2 * GSM_ACM_SIZE)
-#define GSM_STATUS_SUCCESS 0x9000
-#define GSM_STATUS_OUT_OF_RANGE 0x9402
-#define GSM_STATUS_ACCESS_DENIED 0x9804
-#define GSM_STATUS_WRONG_PARAMETERS 0x6B00
-#define GSM_SW1_WRONG_LENGTH 0x67
 #define SIM_RW_MAX_RECORDS 16
 #define SIM_RW_MARKER 0x7F
-#define SIM_RECORD_CURRENT 0
-
-struct sim_ef_info {
-	uint16_t size;
-	uint8_t structure;
-	uint8_t record_size;
-	uint16_t records;
-};
+#define GSM_EF_INCREASE_ALLOWED 0x40
+#define GSM_EF_INVALIDATE_MASK 0x0F
+#define GSM_ACCESS_ALWAYS 0x0
+#define GSM_ACCESS_CHV1 0x1
+#define GSM_STATUS_RESPONSE_AVAILABLE_SW1 0x9F
+#define GSM_INVALIDATE_ACCESS_BYTE 2
+#define GSM_STATUS_FILE_INCONSISTENT 0x9408
+#define GSM_DF_CHARACTERISTICS_OFFSET 13
+#define GSM_DF_CHV1_STATUS_OFFSET 18
+#define GSM_DF_CHV_STATUS_COUNT 4
+#define GSM_DF_CHV1_DISABLED 0x80
+#define GSM_SECRET_CODE_INITIALIZED 0x80
 
 static uint8_t lnd_records[SIM_RW_MAX_RECORDS][SIM_MAX_APDU_DATA];
 
-static uint16_t sim_status_word(const struct apdu_response *response) {
-	return (response->sw1 << 8) | response->sw2;
-}
-
-static bool sim_select_ef(uint16_t df, uint16_t ef, struct sim_ef_info *info) {
+static bool sim_select_df(uint16_t df) {
 	static struct apdu_response response;
 
-	if (!sim_select(GSM_MF, &response) || !sim_select(df, &response))
-		return false;
-	if (!sim_select(ef, &response) || !response_has_data(response.sw1))
-		return false;
-	if (!sim_get_response(response.sw2, &response) || sim_status_word(&response) != GSM_STATUS_SUCCESS)
-		return false;
-
-	info->size = (response.data[GSM_EF_SIZE_MSB_OFFSET] << 8) | response.data[GSM_EF_SIZE_LSB_OFFSET];
-	info->structure = response.data[GSM_EF_STRUCTURE_OFFSET];
-	info->record_size = response.data[GSM_EF_RECORD_SIZE_OFFSET];
-	info->records = info->record_size ? info->size / info->record_size : 0;
-	return true;
+	return sim_select(GSM_MF, &response) && sim_select(df, &response);
 }
 
-static bool sim_read_binary_at(uint16_t offset, uint8_t length, struct apdu_response *response) {
-	const uint8_t header[5] = {0xA0, 0xB0, (uint8_t) (offset >> 8), (uint8_t) offset, length};
+static bool sim_invalidate(struct apdu_response *response) {
+	const uint8_t header[5] = {0xA0, 0x04, 0x00, 0x00, 0x00};
 
-	return sim_exchange(header, NULL, 0, length, response);
+	return sim_exchange(header, NULL, 0, 0, response);
 }
 
-static bool sim_update_binary(uint16_t offset, const uint8_t *data, uint8_t length, struct apdu_response *response) {
-	const uint8_t header[5] = {0xA0, 0xD6, (uint8_t) (offset >> 8), (uint8_t) offset, length};
+static bool sim_rehabilitate(struct apdu_response *response) {
+	const uint8_t header[5] = {0xA0, 0x44, 0x00, 0x00, 0x00};
 
-	return sim_exchange(header, data, length, 0, response);
-}
-
-static bool sim_update_record(
-	uint8_t record,
-	uint8_t mode,
-	const uint8_t *data,
-	uint8_t length,
-	struct apdu_response *response
-) {
-	const uint8_t header[5] = {0xA0, 0xDC, record, mode, length};
-
-	return sim_exchange(header, data, length, 0, response);
-}
-
-static bool sim_seek(uint8_t type_mode, const uint8_t *pattern, uint8_t length, struct apdu_response *response) {
-	const uint8_t header[5] = {0xA0, 0xA2, 0x00, type_mode, length};
-
-	return sim_exchange(header, pattern, length, 0, response);
-}
-
-static bool sim_increase(const uint8_t value[GSM_ACM_SIZE], struct apdu_response *response) {
-	const uint8_t header[5] = {0xA0, 0x32, 0x00, 0x00, GSM_ACM_SIZE};
-
-	return sim_exchange(header, value, GSM_ACM_SIZE, 0, response);
+	return sim_exchange(header, NULL, 0, 0, response);
 }
 
 static bool sim_read_record_matches(uint8_t record, uint8_t mode, const uint8_t *expected, uint8_t length) {
@@ -1293,10 +1612,6 @@ static bool sim_read_record_matches(uint8_t record, uint8_t mode, const uint8_t 
 	if (!sim_read_record(record, mode, length, &response))
 		return false;
 	return sim_status_word(&response) == GSM_STATUS_SUCCESS && memcmp(response.data, expected, length) == 0;
-}
-
-static void print_status(const char *operation, const struct apdu_response *response) {
-	printf("# %s: status %02X%02X\n", operation, response->sw1, response->sw2);
 }
 
 static void sim_test_transparent(void) {
@@ -1563,6 +1878,115 @@ static void sim_test_increase(void) {
 		sim_read_record_matches(2, SIM_RECORD_ABSOLUTE, newest, GSM_ACM_SIZE));
 }
 
+static void sim_test_increase_allowed(void) {
+	struct sim_ef_info info;
+
+	test_category("INCREASE indicator");
+	bool acm = sim_select_ef(GSM_DF_GSM, GSM_EF_ACM, &info);
+	printf("# EF_ACM: byte 8 %02X, access %02X %02X %02X\n", info.increase, info.access[0], info.access[1],
+		info.access[2]);
+	test_check("Cyclic EF_ACM reports that INCREASE is allowed", acm && (info.increase & GSM_EF_INCREASE_ALLOWED));
+	bool lnd = sim_select_ef(GSM_DF_TELECOM, GSM_EF_LND, &info);
+	printf("# EF_LND: byte 8 %02X, access %02X %02X %02X\n", info.increase, info.access[0], info.access[1],
+		info.access[2]);
+	test_check("Cyclic EF_LND reports that INCREASE is not allowed",
+		lnd && (info.increase & GSM_EF_INCREASE_ALLOWED) == 0);
+}
+
+static void sim_test_invalidate_denied(void) {
+	static struct apdu_response response;
+	struct sim_ef_info info;
+
+	test_category("INVALIDATE and REHABILITATE");
+	bool selected = sim_select_ef(GSM_DF_TELECOM, GSM_EF_ADN, &info);
+	uint8_t invalidate_access = info.access[GSM_INVALIDATE_ACCESS_BYTE] & GSM_EF_INVALIDATE_MASK;
+	printf("# EF_ADN: access %02X %02X %02X, file status %02X\n", info.access[0], info.access[1], info.access[2],
+		info.file_status);
+	bool needs_more_than_chv1 = invalidate_access != GSM_ACCESS_ALWAYS && invalidate_access != GSM_ACCESS_CHV1;
+	test_check("EF_ADN INVALIDATE needs more than CHV1", selected && needs_more_than_chv1);
+	if (!selected || !needs_more_than_chv1)
+		return;
+
+	sim_invalidate(&response);
+	print_status("INVALIDATE EF_ADN", &response);
+	test_check("INVALIDATE EF_ADN without its access condition is denied",
+		sim_status_word(&response) == GSM_STATUS_ACCESS_DENIED);
+	sim_rehabilitate(&response);
+	print_status("REHABILITATE EF_ADN", &response);
+	test_check("REHABILITATE EF_ADN without its access condition is denied",
+		sim_status_word(&response) == GSM_STATUS_ACCESS_DENIED);
+}
+
+static bool sim_authenticate(const uint8_t rand[GSM_RAND_SIZE], uint8_t result[GSM_RUN_GSM_ALGORITHM_RESPONSE_SIZE]) {
+	static struct apdu_response response;
+
+	if (!sim_run_gsm_algorithm(rand, GSM_RAND_SIZE, &response))
+		return false;
+	if (response.sw1 != GSM_STATUS_RESPONSE_AVAILABLE_SW1 || response.sw2 != GSM_RUN_GSM_ALGORITHM_RESPONSE_SIZE)
+		return false;
+	if (!sim_get_response(GSM_RUN_GSM_ALGORITHM_RESPONSE_SIZE, &response))
+		return false;
+	if (sim_status_word(&response) != GSM_STATUS_SUCCESS)
+		return false;
+	memcpy(result, response.data, GSM_RUN_GSM_ALGORITHM_RESPONSE_SIZE);
+	return true;
+}
+
+static void sim_test_run_gsm_algorithm(void) {
+	static struct apdu_response response;
+	static const uint8_t rand[GSM_RAND_SIZE] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
+	};
+	uint8_t first[GSM_RUN_GSM_ALGORITHM_RESPONSE_SIZE];
+	uint8_t second[GSM_RUN_GSM_ALGORITHM_RESPONSE_SIZE];
+
+	test_category("RUN GSM ALGORITHM");
+	test_check("SELECT DF_GSM", sim_select_df(GSM_DF_GSM));
+	bool computed = sim_authenticate(rand, first);
+	test_check("RUN GSM ALGORITHM provides SRES and Kc", computed);
+	bool repeated = computed && sim_authenticate(rand, second);
+	test_check("RUN GSM ALGORITHM is deterministic for one RAND",
+		repeated && memcmp(first, second, GSM_RUN_GSM_ALGORITHM_RESPONSE_SIZE) == 0);
+
+	sim_run_gsm_algorithm(rand, GSM_RAND_SIZE - 1, &response);
+	print_status("RUN GSM ALGORITHM with a short RAND", &response);
+	test_check("RUN GSM ALGORITHM with a short RAND reports the RAND length",
+		response.sw1 == GSM_SW1_WRONG_LENGTH && response.sw2 == GSM_RAND_SIZE);
+
+	test_check("SELECT DF_TELECOM", sim_select_df(GSM_DF_TELECOM));
+	sim_run_gsm_algorithm(rand, GSM_RAND_SIZE, &response);
+	print_status("RUN GSM ALGORITHM in DF_TELECOM", &response);
+	test_check("RUN GSM ALGORITHM outside DF_GSM reports an inconsistent file",
+		sim_status_word(&response) == GSM_STATUS_FILE_INCONSISTENT);
+}
+
+static void sim_test_chv_status(void) {
+	static struct apdu_response response;
+	struct sim_ef_info info;
+
+	test_category("CHV status");
+	bool selected = sim_select(GSM_MF, &response) && sim_select(GSM_DF_GSM, &response) &&
+		response_has_data(response.sw1) && sim_get_response(response.sw2, &response) &&
+		sim_status_word(&response) == GSM_STATUS_SUCCESS;
+	test_check("SELECT DF_GSM returns its status", selected);
+	if (!selected)
+		return;
+	print_bytes("DF_GSM", response.data, response.size);
+
+	bool initialized = true;
+	for (size_t i = 0; i < GSM_DF_CHV_STATUS_COUNT; i++)
+		initialized = initialized && (response.data[GSM_DF_CHV1_STATUS_OFFSET + i] & GSM_SECRET_CODE_INITIALIZED);
+	test_check("CHV1, UNBLOCK CHV1, CHV2 and UNBLOCK CHV2 are initialized", initialized);
+
+	bool chv1_disabled = (response.data[GSM_DF_CHARACTERISTICS_OFFSET] & GSM_DF_CHV1_DISABLED) != 0;
+	printf("# CHV1 is %s\n", chv1_disabled ? "disabled" : "enabled");
+	bool imsi = sim_select_ef(GSM_DF_GSM, GSM_EF_IMSI, &info) && sim_read_binary_at(0, info.size, &response);
+	print_status("READ BINARY EF_IMSI before CHV1 verification", &response);
+	uint16_t expected = chv1_disabled ? GSM_STATUS_SUCCESS : GSM_STATUS_ACCESS_DENIED;
+	test_check("CHV1 protected EF_IMSI follows the CHV1 enabled indicator",
+		imsi && sim_status_word(&response) == expected);
+}
+
 static void sim_test_read_write(void) {
 	static uint8_t atr[SIM_MAX_ATR_SIZE];
 	size_t atr_size = 0;
@@ -1579,6 +2003,10 @@ static void sim_test_read_write(void) {
 	sim_test_linear_fixed();
 	sim_test_cyclic();
 	sim_test_increase();
+	sim_test_increase_allowed();
+	sim_test_invalidate_denied();
+	sim_test_run_gsm_algorithm();
+	sim_test_chv_status();
 }
 
 #endif
