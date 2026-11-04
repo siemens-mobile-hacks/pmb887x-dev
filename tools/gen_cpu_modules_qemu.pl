@@ -236,6 +236,7 @@ sub genDspConfig {
 			base => $module->{base},
 			size => $module->{size},
 			memory => $memory,
+			regs => "pmb887x_dsp_".lc($module->{definition})."_regs",
 		};
 	}
 	my $str = "static const pmb887x_dsp_peripheral_config_t ${cpu}_dsp_peripherals[] = {\n";
@@ -249,6 +250,7 @@ sub genDspConfig {
 		$str .= sprintf("\t\t.size = 0x%04X,\n", $peripheral->{size});
 		$str .= $memory ? "\t\t.ram_base = ${prefix}$memory->{name}_BASE,\n" : "\t\t.ram_base = 0,\n";
 		$str .= $memory ? "\t\t.ram_size = ${prefix}$memory->{name}_SIZE,\n" : "\t\t.ram_size = 0,\n";
+		$str .= "\t\t.regs = &$peripheral->{regs},\n";
 		$str .= "\t},\n";
 	}
 	$str .= "};\n\n";
