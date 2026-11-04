@@ -362,7 +362,22 @@ sub genModuleHeader {
 	$str .= "static const DebugReg ".lc($module->{name})."_regs[] = {\n";
 	$str .= printTable(\@regs, "\t{", "},");
 	$str .= "};\n\n";
-	$str .= genExportedRegs(lc($module->{name}), 4, 8);
+	my $regions_var = lc($module->{name})."_regions";
+	my @regions;
+	for my $region_name (getSortedKeys($module->{regions}, 'start')) {
+		my $region = $module->{regions}->{$region_name};
+		push @regions, [
+			cString($region_name).",",
+			$module->{name}."_".$region_name."_BASE,",
+			sprintf("0x%X", $region->{end} - $region->{start})
+		];
+	}
+	if (@regions) {
+		$str .= "static const DebugRegion ".$regions_var."[] = {\n";
+		$str .= printTable(\@regions, "\t{", "},");
+		$str .= "};\n\n";
+	}
+	$str .= genExportedRegs(lc($module->{name}), 4, 8, @regions ? $regions_var : undef);
 	
 	return $str."\n";
 }
@@ -443,10 +458,13 @@ sub peripheralAddrDigits {
 }
 
 sub genExportedRegs {
-	my ($var, $reg_size, $addr_digits) = @_;
+	my ($var, $reg_size, $addr_digits, $regions_var) = @_;
+	my $regions = defined($regions_var) ?
+		"\t.regions = $regions_var,\n\t.regions_count = ARRAY_SIZE($regions_var),\n" : "";
 	return "const DebugRegs ".exportedRegsVar($var)." = {\n".
 		"\t.regs = ${var}_regs,\n".
 		"\t.count = ARRAY_SIZE(${var}_regs),\n".
+		$regions.
 		"\t.reg_size = $reg_size,\n".
 		"\t.addr_digits = $addr_digits,\n".
 		"};\n";
