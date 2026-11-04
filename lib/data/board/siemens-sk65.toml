@@ -5,8 +5,8 @@ platform = "siemens"
 cpu.type = "pmb8875"
 cpu.rev = 0x05
 
-[peripheral.SIM_CARD]
-type = "sim-card"
+[peripheral.SIM_SLOT]
+type = "iso7816-slot"
 bus = "SIM"
 in = { RST = "SIM:CC_RST" }
 

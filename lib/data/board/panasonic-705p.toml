@@ -8,8 +8,8 @@ cpu.uid0 = 0x030488E3
 cpu.uid1 = 0x1B040288
 cpu.uid2 = 0x000E0A0B
 
-[peripheral.SIM_CARD]
-type = "sim-card"
+[peripheral.SIM_SLOT]
+type = "iso7816-slot"
 bus = "SIM"
 in = { RST = "SIM:CC_RST" }
 

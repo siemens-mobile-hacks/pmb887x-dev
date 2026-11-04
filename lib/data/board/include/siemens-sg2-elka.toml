@@ -4,8 +4,8 @@ hw_platform = "siemens-x85"
 cpu.type = "pmb8876"
 cpu.rev = 0x10
 
-[peripheral.SIM_CARD]
-type = "sim-card"
+[peripheral.SIM_SLOT]
+type = "iso7816-slot"
 bus = "SIM"
 in = { RST = "SIM:CC_RST" }
 

@@ -13,8 +13,8 @@ height = 320
 rotation = 180
 in = { CS = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF_RESET1" }
 
-[peripheral.SIM_CARD]
-type = "sim-card"
+[peripheral.SIM_SLOT]
+type = "iso7816-slot"
 bus = "SIM"
 in = { RST = "SIM:CC_RST" }
 
