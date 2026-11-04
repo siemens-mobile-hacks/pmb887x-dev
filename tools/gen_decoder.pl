@@ -4,7 +4,7 @@ use strict;
 use File::Basename;
 use lib dirname(__FILE__).'/lib';
 use Data::Dumper;
-use List::Util qw(min max);
+use List::Util qw(max);
 use Sie::CpuMetadata;
 use Sie::BoardMetadata;
 use Sie::Utils;
@@ -26,7 +26,7 @@ if (@ARGV) {
 	exit;
 }
 
-my $str = "#include \"hw/arm/pmb887x/gen/cpu_meta.h\"\n#include \"hw/arm/pmb887x/regs_dump.h\"\n#include \"hw/arm/pmb887x/gen/cpu_regs.h\"\n\n";
+my $str = "#include \"hw/arm/pmb887x/gen/cpu_meta.h\"\n#include \"hw/arm/pmb887x/gen/cpu_regs.h\"\n\n";
 
 for my $module (@{$cpu_meta->getAllModules()}) {
 	$str .= genModuleHeader($cpu_meta, $module);
@@ -41,7 +41,6 @@ for my $definition (sort keys %dsp_definitions) {
 }
 
 my @cpus;
-my @modules;
 
 my $cpu_to_idx = {};
 my $cpu_idx = 0;
@@ -80,56 +79,6 @@ for my $cpu_meta (@cpu_metadata) {
 	$str .= printTable(\@gpios, "\t{", "},");
 	$str .= "};\n\n";
 	
-	my @modules_ref;
-	for my $id (@{$cpu_meta->getModuleNames()}) {
-		my $module = $cpu_meta->{modules}->{$id};
-		for my $region_name (getSortedKeys($module->{regions}, 'start')) {
-			my $region = $module->{regions}->{$region_name};
-			my $start = $module->{base} + $region->{start};
-			my $end = $module->{base} + $region->{end};
-			while ($start < $end) {
-				my $chunk_end = min($end, ($start & 0xFFF00000) + 0x00100000);
-				push @modules_ref, [
-					'"'.$module->{name}.'_'.$region_name.'",',
-					sprintf("0x%08X,", $start),
-					sprintf("0x%X,", $chunk_end - $start),
-					"NULL"
-				];
-				$start = $chunk_end;
-			}
-		}
-		my $module_size_name = exists($module->{regions}->{IO})
-			? $module->{base_name}."_REG_SIZE"
-			: $module->{base_name}."_IO_SIZE";
-		push @modules_ref, [
-			'"'.$module->{name}.'",',
-			uc($cpu_meta->{name})."_".$module->{name}."_BASE,",
-			$module_size_name.",",
-			"&".exportedRegsVar(lc($module->{base_name})),
-		];
-	}
-	
-	$str .= "static const pmb887x_cpu_io_t ".lc($cpu_meta->{name})."_modules[] = {\n";
-	$str .= printTable(\@modules_ref, "\t{", "},");
-	$str .= "};\n\n";
-
-	my @dsp_modules_ref;
-	for my $module (sort { $a->{base} <=> $b->{base} } values %{$cpu_meta->dspModules()}) {
-		push @dsp_modules_ref, [
-			cString($module->{name}).",",
-			sprintf("0x%04X,", $module->{base}),
-			sprintf("0x%X,", $module->{size}),
-			"&".exportedRegsVar(dspModuleVar($module)),
-		];
-	}
-
-	my $dsp_modules_var = lc($cpu_meta->{name})."_dsp_modules";
-	$str .= "static const pmb887x_cpu_io_t ${dsp_modules_var}[] = {\n";
-	$str .= printTable(\@dsp_modules_ref, "\t{", "},");
-	$str .= "};\n\n";
-	
-	my $modules_var = lc($cpu_meta->{name})."_modules";
-	
 	$cpu_to_idx->{$cpu_meta->{name}} = $cpu_idx++;
 	
 	push @cpus, [
@@ -137,11 +86,7 @@ for my $cpu_meta (@cpu_metadata) {
 		"$irqs_var,",
 		"ARRAY_SIZE($irqs_var),",
 		"$gpios_var,",
-		"ARRAY_SIZE($gpios_var),",
-		"$modules_var,",
-		"ARRAY_SIZE($modules_var),",
-		"$dsp_modules_var,",
-		"ARRAY_SIZE($dsp_modules_var)"
+		"ARRAY_SIZE($gpios_var)"
 	];
 }
 
@@ -149,28 +94,9 @@ $str .= "static const pmb887x_cpu_meta_t cpus_metadata[] = {\n";
 $str .= printTable(\@cpus, "\t{", "},");
 $str .= "};\n\n";
 
-my @io_meta;
-for my $peripheral (@$peripherals) {
-	my $var = peripheralVar($peripheral);
-	push @io_meta, [
-		"[".peripheralConst($peripheral)."] = { ".cString($peripheral->{name}).",",
-		"&".exportedRegsVar($var)
-	];
-}
-
-$str .= "static const pmb887x_io_meta_t io_metadata[PMB887X_TRACE_IO_COUNT] = {\n";
-$str .= printTable(\@io_meta, "\t", " },");
-$str .= "};\n";
-
 $str .= '
 const pmb887x_cpu_meta_t *pmb887x_get_cpu_meta(int cpu) {
 	return &cpus_metadata[cpu];
-}
-
-const pmb887x_io_meta_t *pmb887x_get_io_meta(pmb887x_trace_io_t id) {
-	if (id <= PMB887X_TRACE_IO_DSP || id >= PMB887X_TRACE_IO_COUNT)
-		return NULL;
-	return &io_metadata[id];
 }
 ';
 
@@ -188,28 +114,6 @@ sub genDecoderHeader {
 typedef struct pmb887x_cpu_meta_gpio_t pmb887x_cpu_meta_gpio_t;
 typedef struct pmb887x_cpu_meta_irq_t pmb887x_cpu_meta_irq_t;
 typedef struct pmb887x_cpu_meta_t pmb887x_cpu_meta_t;
-typedef struct pmb887x_cpu_io_t pmb887x_cpu_io_t;
-typedef struct pmb887x_io_meta_t pmb887x_io_meta_t;
-
-typedef enum pmb887x_trace_io_t {
-	PMB887X_TRACE_IO_CPU,
-	PMB887X_TRACE_IO_DSP,
-HEADER
-
-	for my $peripheral (@$peripherals) {
-		$str .= "\t".peripheralConst($peripheral).",\n";
-	}
-
-	$str .= <<'HEADER';
-	PMB887X_TRACE_IO_COUNT,
-} pmb887x_trace_io_t;
-
-struct pmb887x_cpu_io_t {
-	const char *name;
-	uint32_t base;
-	uint32_t size;
-	const DebugRegs *regs;
-};
 
 struct pmb887x_cpu_meta_irq_t {
 	const char *name;
@@ -232,21 +136,9 @@ struct pmb887x_cpu_meta_t {
 
 	const pmb887x_cpu_meta_gpio_t *gpios;
 	int gpios_count;
-
-	const pmb887x_cpu_io_t *modules;
-	int modules_count;
-
-	const pmb887x_cpu_io_t *dsp_modules;
-	int dsp_modules_count;
-};
-
-struct pmb887x_io_meta_t {
-	const char *name;
-	const DebugRegs *regs;
 };
 
 const pmb887x_cpu_meta_t *pmb887x_get_cpu_meta(int cpu);
-const pmb887x_io_meta_t *pmb887x_get_io_meta(pmb887x_trace_io_t id);
 
 HEADER
 
@@ -261,15 +153,6 @@ HEADER
 	}
 
 	return $str;
-}
-
-sub genModuleRefHeader {
-	my ($cpu_meta, $module) = @_;
-	
-	my @header;
-	push @header, "";
-	
-	return printTable(\@header)."\n";
 }
 
 sub genModuleHeader {
@@ -484,11 +367,6 @@ sub dspModuleVar {
 sub peripheralVar {
 	my ($peripheral) = @_;
 	return lc($peripheral->{id});
-}
-
-sub peripheralConst {
-	my ($peripheral) = @_;
-	return "PMB887X_TRACE_IO_".$peripheral->{id};
 }
 
 sub cString {
