@@ -454,7 +454,8 @@ sub genDspModuleHeader {
 sub peripheralAddrDigits {
 	my ($peripheral) = @_;
 	my $max_addr = max(map { $_->{start} } values %{$peripheral->{regs}});
-	return max(2, length(sprintf("%X", $max_addr)));
+	my $digits = length(sprintf("%X", $max_addr));
+	return max(2, $digits + ($digits % 2));
 }
 
 sub genExportedRegs {
