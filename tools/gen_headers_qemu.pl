@@ -242,10 +242,11 @@ sub genModuleHeader {
 				$descr = " // ".$field->{descr};
 			}
 				
+			my $suffix = $field->{start} + $field->{size} == 32 ? "U" : "";
 			if ($field->{size} > 1) {
-				push @header, ["#define ".$prefix.$field_name_prepared, "(".sprintf("0x%0X", (1 << $field->{size}) - 1)." << ".$field->{start}.")", $descr];
+				push @header, ["#define ".$prefix.$field_name_prepared, "(".sprintf("0x%0X", (1 << $field->{size}) - 1).$suffix." << ".$field->{start}.")", $descr];
 			} else {
-				push @header, ["#define ".$prefix.$field_name_prepared, "(1 << ".$field->{start}.")", $descr];
+				push @header, ["#define ".$prefix.$field_name_prepared, "(1".$suffix." << ".$field->{start}.")", $descr];
 			}
 				
 			push @header, ["#define ".$prefix.$field_name_prepared."_SHIFT", $field->{start}];
