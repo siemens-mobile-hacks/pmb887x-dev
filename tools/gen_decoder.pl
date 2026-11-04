@@ -22,7 +22,7 @@ for my $meta (@cpu_metadata) {
 
 if (@ARGV) {
 	die "Usage: $0 [--header]\n" if @ARGV != 1 || $ARGV[0] ne "--header";
-	print genDecoderHeader($peripherals);
+	print genDecoderHeader($cpu_meta, $peripherals, \%dsp_definitions);
 	exit;
 }
 
@@ -93,8 +93,7 @@ for my $cpu_meta (@cpu_metadata) {
 					'"'.$module->{name}.'_'.$region_name.'",',
 					sprintf("0x%08X,", $start),
 					sprintf("0x%X,", $chunk_end - $start),
-					"NULL,",
-					"0"
+					"NULL"
 				];
 				$start = $chunk_end;
 			}
@@ -106,8 +105,7 @@ for my $cpu_meta (@cpu_metadata) {
 			'"'.$module->{name}.'",',
 			uc($cpu_meta->{name})."_".$module->{name}."_BASE,",
 			$module_size_name.",",
-			lc($module->{base_name})."_regs,",
-			"ARRAY_SIZE(".lc($module->{base_name})."_regs)",
+			"&".exportedRegsVar(lc($module->{base_name})),
 		];
 	}
 	
@@ -117,13 +115,11 @@ for my $cpu_meta (@cpu_metadata) {
 
 	my @dsp_modules_ref;
 	for my $module (sort { $a->{base} <=> $b->{base} } values %{$cpu_meta->dspModules()}) {
-		my $regs_var = dspModuleVar($module)."_regs";
 		push @dsp_modules_ref, [
 			cString($module->{name}).",",
 			sprintf("0x%04X,", $module->{base}),
 			sprintf("0x%X,", $module->{size}),
-			$regs_var.",",
-			"ARRAY_SIZE($regs_var)",
+			"&".exportedRegsVar(dspModuleVar($module)),
 		];
 	}
 
@@ -158,8 +154,7 @@ for my $peripheral (@$peripherals) {
 	my $var = peripheralVar($peripheral);
 	push @io_meta, [
 		"[".peripheralConst($peripheral)."] = { ".cString($peripheral->{name}).",",
-		$var."_regs,",
-		"ARRAY_SIZE(".$var."_regs)"
+		"&".exportedRegsVar($var)
 	];
 }
 
@@ -182,26 +177,19 @@ const pmb887x_io_meta_t *pmb887x_get_io_meta(pmb887x_trace_io_t id) {
 print $str;
 
 sub genDecoderHeader {
-	my ($peripherals) = @_;
+	my ($cpu_meta, $peripherals, $dsp_definitions) = @_;
 
 	my $str = <<'HEADER';
 #pragma once
 
 #include "qemu/osdep.h"
-
-#define PMB887X_REG_IS_IRQ_NUM		1
-#define PMB887X_REG_IS_GPIO_PIN		2
-#define PMB887X_REG_IS_IRQ_CON		3
-#define PMB887X_REG_IS_I2C_TXD		4
+#include "qemu/debug-regs.h"
 
 typedef struct pmb887x_cpu_meta_gpio_t pmb887x_cpu_meta_gpio_t;
 typedef struct pmb887x_cpu_meta_irq_t pmb887x_cpu_meta_irq_t;
 typedef struct pmb887x_cpu_meta_t pmb887x_cpu_meta_t;
 typedef struct pmb887x_cpu_io_t pmb887x_cpu_io_t;
 typedef struct pmb887x_io_meta_t pmb887x_io_meta_t;
-typedef struct pmb887x_io_reg_t pmb887x_io_reg_t;
-typedef struct pmb887x_io_field_t pmb887x_io_field_t;
-typedef struct pmb887x_io_value_t pmb887x_io_value_t;
 
 typedef enum pmb887x_trace_io_t {
 	PMB887X_TRACE_IO_CPU,
@@ -216,33 +204,11 @@ HEADER
 	PMB887X_TRACE_IO_COUNT,
 } pmb887x_trace_io_t;
 
-struct pmb887x_io_value_t {
-	const char *name;
-	uint32_t value;
-};
-
-struct pmb887x_io_field_t {
-	const char *name;
-	uint32_t mask;
-	uint32_t shift;
-	const pmb887x_io_value_t *values;
-	int values_count;
-};
-
-struct pmb887x_io_reg_t {
-	const char *name;
-	uint32_t addr;
-	const pmb887x_io_field_t *fields;
-	int fields_count;
-	int special;
-};
-
 struct pmb887x_cpu_io_t {
 	const char *name;
 	uint32_t base;
 	uint32_t size;
-	const pmb887x_io_reg_t *regs;
-	int regs_count;
+	const DebugRegs *regs;
 };
 
 struct pmb887x_cpu_meta_irq_t {
@@ -276,13 +242,23 @@ struct pmb887x_cpu_meta_t {
 
 struct pmb887x_io_meta_t {
 	const char *name;
-	const pmb887x_io_reg_t *regs;
-	int regs_count;
+	const DebugRegs *regs;
 };
 
 const pmb887x_cpu_meta_t *pmb887x_get_cpu_meta(int cpu);
 const pmb887x_io_meta_t *pmb887x_get_io_meta(pmb887x_trace_io_t id);
+
 HEADER
+
+	for my $module (@{$cpu_meta->getAllModules()}) {
+		$str .= "extern const DebugRegs ".exportedRegsVar(lc($module->{name})).";\n";
+	}
+	for my $peripheral (@$peripherals) {
+		$str .= "extern const DebugRegs ".exportedRegsVar(peripheralVar($peripheral)).";\n";
+	}
+	for my $definition (sort keys %$dsp_definitions) {
+		$str .= "extern const DebugRegs ".exportedRegsVar(dspModuleVar($dsp_definitions->{$definition})).";\n";
+	}
 
 	return $str;
 }
@@ -349,29 +325,17 @@ sub genModuleHeader {
 				];
 				
 				if (@values) {
-					$str .= "static const pmb887x_io_value_t ".$values_var."[] = {\n";
+					$str .= "static const DebugRegValue ".$values_var."[] = {\n";
 					$str .= printTable(\@values, "\t{", "},");
 					$str .= "};\n\n";
 				}
 			}
 			
 			if (%{$reg->{fields}}) {
-				$str .= "static const pmb887x_io_field_t ".$fields_var."[] = {\n";
+				$str .= "static const DebugRegField ".$fields_var."[] = {\n";
 				$str .= printTable(\@fields, "\t{", "},");
 				$str .= "};\n\n";
 			}
-		}
-		
-		my $special = "0";
-		
-		if ($module->{name} eq "VIC") {
-			if ($reg->{name} eq "CURRENT_IRQ" || $reg->{name} eq "CURRENT_FIQ") {
-				$special = "PMB887X_REG_IS_IRQ_NUM";
-			} elsif ($reg->{name} eq "CON") {
-				$special = "PMB887X_REG_IS_IRQ_CON";
-			}
-		} elsif ($module->{name} eq "GPIO" && $reg->{name} eq "PIN") {
-			$special = "PMB887X_REG_IS_GPIO_PIN";
 		}
 		
 		if ($reg->{start} != $reg->{end}) {
@@ -381,8 +345,7 @@ sub genModuleHeader {
 					'"'.$reg->{name}.$index.'",',
 					$module->{name}."_".$reg->{name}.$index.",",
 					%{$reg->{fields}} ? "$fields_var," : "NULL,",
-					%{$reg->{fields}} ? "ARRAY_SIZE($fields_var)," : "0,",
-					$special
+					%{$reg->{fields}} ? "ARRAY_SIZE($fields_var)" : "0"
 				];
 				$index++;
 			}
@@ -391,21 +354,21 @@ sub genModuleHeader {
 				'"'.$reg->{name}.'",',
 				$module->{name}."_".$reg->{name}.",",
 				%{$reg->{fields}} ? "$fields_var," : "NULL,",
-				%{$reg->{fields}} ? "ARRAY_SIZE($fields_var)," : "0,",
-				$special
+				%{$reg->{fields}} ? "ARRAY_SIZE($fields_var)" : "0"
 			];
 		}
 	}
 	
-	$str .= "static const pmb887x_io_reg_t ".lc($module->{name})."_regs[] = {\n";
+	$str .= "static const DebugReg ".lc($module->{name})."_regs[] = {\n";
 	$str .= printTable(\@regs, "\t{", "},");
-	$str .= "};\n";
+	$str .= "};\n\n";
+	$str .= genExportedRegs(lc($module->{name}), 4, 8);
 	
 	return $str."\n";
 }
 
 sub genPeripheralHeader {
-	my ($peripheral, $var) = @_;
+	my ($peripheral, $var, $addr_digits) = @_;
 
 	my $str = "";
 	$var = peripheralVar($peripheral) if !defined($var);
@@ -432,7 +395,7 @@ sub genPeripheralHeader {
 			}
 
 			if (@values) {
-				$str .= "static const pmb887x_io_value_t ".$values_var."[] = {\n";
+				$str .= "static const DebugRegValue ".$values_var."[] = {\n";
 				$str .= printTable(\@values, "\t{ ", " },");
 				$str .= "};\n\n";
 			}
@@ -447,7 +410,7 @@ sub genPeripheralHeader {
 		}
 
 		if (@fields) {
-			$str .= "static const pmb887x_io_field_t ".$fields_var."[] = {\n";
+			$str .= "static const DebugRegField ".$fields_var."[] = {\n";
 			$str .= printTable(\@fields, "\t{ ", " },");
 			$str .= "};\n\n";
 		}
@@ -456,21 +419,42 @@ sub genPeripheralHeader {
 			cString($reg->{name}).",",
 			sprintf("0x%X,", $reg->{start}),
 			@fields ? $fields_var."," : "NULL,",
-			@fields ? "ARRAY_SIZE(".$fields_var.")," : "0,",
-			"0"
+			@fields ? "ARRAY_SIZE(".$fields_var.")" : "0"
 		];
 	}
 
-	$str .= "static const pmb887x_io_reg_t ".$var."_regs[] = {\n";
+	$str .= "static const DebugReg ".$var."_regs[] = {\n";
 	$str .= printTable(\@regs, "\t{ ", " },");
-	$str .= "};\n";
+	$str .= "};\n\n";
+	$str .= genExportedRegs($var, 1, $addr_digits // peripheralAddrDigits($peripheral));
 
 	return $str."\n";
 }
 
 sub genDspModuleHeader {
 	my ($module) = @_;
-	return genPeripheralHeader($module, dspModuleVar($module));
+	return genPeripheralHeader($module, dspModuleVar($module), 4);
+}
+
+sub peripheralAddrDigits {
+	my ($peripheral) = @_;
+	my $max_addr = max(map { $_->{start} } values %{$peripheral->{regs}});
+	return max(2, length(sprintf("%X", $max_addr)));
+}
+
+sub genExportedRegs {
+	my ($var, $reg_size, $addr_digits) = @_;
+	return "const DebugRegs ".exportedRegsVar($var)." = {\n".
+		"\t.regs = ${var}_regs,\n".
+		"\t.count = ARRAY_SIZE(${var}_regs),\n".
+		"\t.reg_size = $reg_size,\n".
+		"\t.addr_digits = $addr_digits,\n".
+		"};\n";
+}
+
+sub exportedRegsVar {
+	my ($var) = @_;
+	return "pmb887x_${var}_regs";
 }
 
 sub dspModuleVar {
