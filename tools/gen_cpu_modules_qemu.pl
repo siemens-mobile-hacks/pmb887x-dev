@@ -9,6 +9,12 @@ use Sie::CpuMetadata;
 use Sie::BoardMetadata;
 use Sie::Utils;
 
+my %GPIO_DIRECTIONS = (
+	I	=> "PMB887X_GPIO_DIR_IN",
+	O	=> "PMB887X_GPIO_DIR_OUT",
+	IO	=> "PMB887X_GPIO_DIR_IN | PMB887X_GPIO_DIR_OUT",
+);
+
 print qq|#include "hw/arm/pmb887x/gen/cpu_modules.h"
 
 #include "hw/arm/pmb887x/gen/cpu_meta.h"
@@ -82,21 +88,12 @@ sub genCpuModulesList {
 
 				next if $alt_module->{name} ne $module->{name};
 
-				if ($alt->{flags} eq "I" || $alt->{flags} eq "IO") {
-					push @module_gpios, [
-						'"'.$alt_pin.'_IN",',
-						uc($cpu_meta->{name})."_GPIO_".$gpio->{name}.",",
-						$alt->{id} - 1,
-					];
-				}
-
-				if ($alt->{flags} eq "O" || $alt->{flags} eq "IO") {
-					push @module_gpios, [
-						'"'.$alt_pin.'_OUT",',
-						uc($cpu_meta->{name})."_GPIO_".$gpio->{name}.",",
-						$alt->{id} - 1,
-					];
-				}
+				push @module_gpios, [
+					'"'.$alt_pin.'",',
+					uc($cpu_meta->{name})."_GPIO_".$gpio->{name}.",",
+					($alt->{id} - 1).",",
+					$GPIO_DIRECTIONS{$alt->{flags}},
+				];
 			}
 		}
 

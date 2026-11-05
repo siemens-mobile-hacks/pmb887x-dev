@@ -36,7 +36,7 @@ addr = 0x08
 [peripheral.GIMMICK]
 type = "s1d13732"
 bus = "DIF"
-in.CS = "DIF_CS"
+in.ssi-gpio-cs = "DIF_CS"
 in.SA0 = "DIF_RS"
 in.RESET = "AP_RST"
 

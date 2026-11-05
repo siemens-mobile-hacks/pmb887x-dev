@@ -28,7 +28,7 @@ in = { RS = "CIF_RS", NRESET = "CIF_RESET", NCS_APP = "CIF_CS", NCS_LCD = "CIF_C
 [peripheral.LCD0]
 type = "ssd1286"
 bus = "GIMMICK"
-in = { CS = "DISPLAY_CS1", CD = "GIMMICK:SRS", RESET = "DISPLAY_RESET" }
+in = { ssi-gpio-cs = "DISPLAY_CS1", CD = "GIMMICK:SRS", RESET = "DISPLAY_RESET" }
 
 [peripheral.PMIC]
 type = "d1094xx"

@@ -9,7 +9,7 @@ bus = "DIF"
 width = 240
 height = 320
 rotation = 180
-in = { CS = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF_RESET1" }
+in = { ssi-gpio-cs = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF_RESET1" }
 
 [peripheral.PMIC]
 type = "d1094xx"

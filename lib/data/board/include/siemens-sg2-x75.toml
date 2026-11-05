@@ -30,7 +30,7 @@ ram.size = 0x1000000 # 16 Mb
 [peripheral.LCD0]
 type = "ssd1286"
 bus = "DIF"
-in = { CS = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF_RESET1" }
+in = { ssi-gpio-cs = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF_RESET1" }
 
 [peripheral.PMIC]
 type = "d1094xx"

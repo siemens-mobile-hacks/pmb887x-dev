@@ -34,7 +34,7 @@ type = "lr38826"
 bus = "DIF"
 width = 132
 height = 176
-in = { CS = "DISPLAY_CS", CD = "DISPLAY_RS", RESET = "DISPLAY_RESET" }
+in = { ssi-gpio-cs = "DISPLAY_CS", CD = "DISPLAY_RS", RESET = "DISPLAY_RESET" }
 
 [peripheral.PMIC]
 type = "d1094xx"

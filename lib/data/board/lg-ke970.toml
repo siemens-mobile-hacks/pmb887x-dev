@@ -19,7 +19,7 @@ width = 240
 height = 320
 rotation = 0
 bgr_filter = true
-in = { CS = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RESET = "DIF_RESET1" }
+in = { ssi-gpio-cs = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RESET = "DIF_RESET1" }
 
 [peripheral.SIM_SLOT]
 type = "iso7816-slot"
