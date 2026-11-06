@@ -33,6 +33,15 @@ type = "pmb6812"
 bus = "I2C"
 addr = 0x08
 
+# Unverified: no schematic yet, so the AFE outputs drive speakers directly.
+[peripheral.AFE_EP_SPEAKER]
+type = "speaker"
+port = { IN = "DSP:AFE_EP" }
+
+[peripheral.AFE_EPPA_SPEAKER]
+type = "speaker"
+port = { IN = "DSP:AFE_EPPA" }
+
 [peripheral.GIMMICK]
 type = "s1d13732"
 bus = "DIF"

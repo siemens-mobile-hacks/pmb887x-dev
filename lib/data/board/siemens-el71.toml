@@ -13,9 +13,21 @@ in = { ssi-gpio-cs = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RES
 
 [peripheral.PMIC]
 type = "d1094xx"
-port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX" }
+port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX", LINE = "DSP:AFE_EPPA" }
 addr = 0x31
 revision = 0xED
+
+[peripheral.RECEIVER]
+type = "speaker"
+port = { IN = "DSP:AFE_EP" }
+
+[peripheral.LOUDSPEAKER]
+type = "speaker"
+port = { IN = "PMIC:MONO" }
+
+[peripheral.HEADSET]
+type = "speaker"
+port = { IN = "PMIC:STEREO" }
 
 [gpio.aliases]
 MMCI_DAT1 = "OPEN_CLOSE_SW1"

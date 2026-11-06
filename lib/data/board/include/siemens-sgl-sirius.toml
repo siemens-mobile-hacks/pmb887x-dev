@@ -43,6 +43,14 @@ out.ON_OFF_OUT = "KP_IN1"
 addr = 0x31
 revision = 0xEC
 
+[peripheral.LOUDSPEAKER]
+type = "speaker"
+port = { IN = "PMIC:MONO" }
+
+[peripheral.HEADSET]
+type = "speaker"
+port = { IN = "PMIC:STEREO" }
+
 [analog]
 M_0 = { type = "resistor", value = 9300 }
 M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
