@@ -1214,11 +1214,11 @@
 #define	TEAK_AFE_VRXCTRL1_VCMEPB				0x0070
 #define	TEAK_AFE_VRXCTRL1_VCMEPB_SHIFT			4
 /* Line-out buffer gain */
-#define	TEAK_AFE_VRXCTRL1_RXGAINSP				0x0380
+#define	TEAK_AFE_VRXCTRL1_RXGAINSP				0x0180
 #define	TEAK_AFE_VRXCTRL1_RXGAINSP_SHIFT		7
 /* Power audio buffer gain */
-#define	TEAK_AFE_VRXCTRL1_RXGAINPA				0x1C00
-#define	TEAK_AFE_VRXCTRL1_RXGAINPA_SHIFT		10
+#define	TEAK_AFE_VRXCTRL1_RXGAINPA				0x0600
+#define	TEAK_AFE_VRXCTRL1_RXGAINPA_SHIFT		9
 /* Receive DAC dither control */
 #define	TEAK_AFE_VRXCTRL1_RXDITH				0xC000
 #define	TEAK_AFE_VRXCTRL1_RXDITH_SHIFT			14
@@ -1227,14 +1227,17 @@
 /* Receive channel DAC enable */
 #define	TEAK_AFE_VRXCTRL2_RXDAC					0x0001
 #define	TEAK_AFE_VRXCTRL2_RXDAC_SHIFT			0
+/* Second receive channel DAC enable */
+#define	TEAK_AFE_VRXCTRL2_RXDAC2				0x0002
+#define	TEAK_AFE_VRXCTRL2_RXDAC2_SHIFT			1
 /* Line-out buffer ringer mode */
 #define	TEAK_AFE_VRXCTRL2_RINGSELSP				0x0004
 #define	TEAK_AFE_VRXCTRL2_RINGSELSP_SHIFT		2
 /* Power audio buffer ringer mode */
 #define	TEAK_AFE_VRXCTRL2_RINGSELPA				0x0008
 #define	TEAK_AFE_VRXCTRL2_RINGSELPA_SHIFT		3
-/* Power audio buffer enable */
-#define	TEAK_AFE_VRXCTRL2_VEPPA					0x0010
+/* Power audio buffer mode, 0 is power down */
+#define	TEAK_AFE_VRXCTRL2_VEPPA					0x0030
 #define	TEAK_AFE_VRXCTRL2_VEPPA_SHIFT			4
 /* Line-out buffer enable */
 #define	TEAK_AFE_VRXCTRL2_VEPSP					0x0040
