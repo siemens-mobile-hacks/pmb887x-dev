@@ -196,12 +196,12 @@
 
 /* Mono audio-path control */
 #define	PASIC_MONO_CONTROL								0x42
+#define	PASIC_MONO_CONTROL_RINGIN						BIT(2)			 // Route the RINGIN ringer input
 #define	PASIC_MONO_CONTROL_KEY_CLICK_EN					BIT(3)			 // Enable key-click generator
 
 /* Stereo audio-path control */
 #define	PASIC_STEREO_CONTROL							0x43
-#define	PASIC_STEREO_CONTROL_VALUE						GENMASK(7, 0)	 // Stereo control bits
-#define	PASIC_STEREO_CONTROL_VALUE_SHIFT				0
+#define	PASIC_STEREO_CONTROL_RINGIN						BIT(2)			 // Route the RINGIN ringer input
 
 /* Amplifier path 2 and tone level */
 #define	PASIC_AMPLIFIER_GAIN_2							0x44
