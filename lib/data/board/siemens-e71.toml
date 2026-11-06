@@ -20,10 +20,12 @@ revision = 0xAA
 [peripheral.LOUDSPEAKER]
 type = "speaker"
 port = { IN = "PMIC:MONO" }
+gain_db = 5
 
 [peripheral.HEADSET]
 type = "speaker"
 port = { IN = "PMIC:STEREO" }
+gain_db = 15
 
 [peripheral.FM]
 type = "tea5761uk"

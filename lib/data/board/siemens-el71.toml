@@ -28,6 +28,7 @@ port = { IN = "PMIC:MONO" }
 [peripheral.HEADSET]
 type = "speaker"
 port = { IN = "PMIC:STEREO" }
+gain_db = 15
 
 [gpio.aliases]
 MMCI_DAT1 = "OPEN_CLOSE_SW1"
