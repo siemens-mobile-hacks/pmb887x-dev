@@ -19,16 +19,16 @@ revision = 0xED
 
 [peripheral.RECEIVER]
 type = "speaker"
-port = { IN = "DSP:AFE_EP" }
+port = { in = "DSP:AFE_EP" }
 
 [peripheral.LOUDSPEAKER]
 type = "speaker"
-port = { IN = "PMIC:MONO" }
+port = { in = "PMIC:MONO" }
 
 [peripheral.HEADSET]
 type = "speaker"
-port = { IN = "PMIC:STEREO" }
-gain_db = 15
+port = { in = "PMIC:STEREO" }
+gain = 2250
 
 [gpio.aliases]
 MMCI_DAT1 = "OPEN_CLOSE_SW1"

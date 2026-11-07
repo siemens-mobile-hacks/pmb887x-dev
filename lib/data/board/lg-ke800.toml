@@ -45,23 +45,28 @@ type = "pmb6812"
 bus = "I2C"
 addr = 0x08
 
-# EP1 drives the speaker in receiver mode; EPPA reaches it through the LM4946, which has no audio path yet.
-[peripheral.SPEAKER]
+[peripheral.RECEIVER]
 type = "speaker"
-port = { IN = "DSP:AFE_EP" }
+port = { in = "DSP:AFE_EP" }
 
-[peripheral.AFE_EPPA_SPEAKER]
+[peripheral.LOUDSPEAKER]
 type = "speaker"
-port = { IN = "DSP:AFE_EPPA" }
+port = { in = "AMP:SPEAKER" }
+
+[peripheral.HEADSET]
+type = "speaker"
+port = { in = "AMP:HEADPHONE" }
 
 [peripheral.RF]
 type = "pmb6272"
 port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
 
+# LIN/RIN come from the FM/EPPA multiplexer, which is not modeled: they take EPPA.
 [peripheral.AMP]
 type = "lm4946"
 bus = "I2C"
 addr = 0x7D
+port = { PHONE_IN = "DSP:AFE_EPPA", LINE_IN = "DSP:AFE_EPPA" }
 
 
 [analog]

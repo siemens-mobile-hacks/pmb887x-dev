@@ -14,34 +14,23 @@ in = { ssi-gpio-cs = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RES
 
 [peripheral.PMIC]
 type = "d1094xx"
-port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX" }
+port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX", LINE = "DSP:AFE_EPPA" }
 addr = 0x31
 revision = 0xED
 
 [peripheral.LOUDSPEAKER]
 type = "speaker"
-port = { IN = "PMIC:MONO" }
+port = { in = "PMIC:MONO" }
+gain = 300
 
 [peripheral.HEADSET]
 type = "speaker"
-port = { IN = "PMIC:STEREO" }
+port = { in = "PMIC:STEREO" }
+gain = 2250
 
-# Unverified: no schematic yet, so the AFE outputs drive speakers directly.
-[peripheral.AFE_EP_SPEAKER]
+[peripheral.RECEIVER]
 type = "speaker"
-port = { IN = "DSP:AFE_EP" }
-
-[peripheral.AFE_EPPA_SPEAKER]
-type = "speaker"
-port = { IN = "DSP:AFE_EPPA" }
-
-[peripheral.FM]
-type = "tea5761uk"
-bus = "I2C"
-addr = 0x10
-
-[gpio.aliases]
-MMCI_DAT1 = "HW_DET_FM_RADIO"
+port = { in = "DSP:AFE_EP" }
 
 [gpio.inputs]
 # HWID 404
@@ -51,4 +40,3 @@ HW_DET_MOB_TYPE3=1
 HW_DET_MOB_TYPE4=0
 HW_DET_BLUETOOTH=0
 HW_DET_BAND_SEL=0
-HW_DET_FM_RADIO=1

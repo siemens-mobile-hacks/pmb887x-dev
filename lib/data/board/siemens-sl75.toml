@@ -3,6 +3,9 @@ vendor = "Siemens"
 model = "SL75"
 extends = "include/siemens-sg2-x75.toml"
 
+[peripheral.LOUDSPEAKER]
+gain = 150
+
 [peripheral.LCD0]
 type = "l2f50333t"
 bus = "DIF"

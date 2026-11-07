@@ -11,28 +11,26 @@ height = 320
 rotation = 180
 in = { ssi-gpio-cs = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RESET = "DIF_RESET1" }
 
+# No schematic: the wiring follows the firmware audio route script, which matches EL71.
 [peripheral.PMIC]
 type = "d1094xx"
-port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX" }
+port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX", LINE = "DSP:AFE_EPPA" }
 addr = 0x31
 revision = 0xAA
 
 [peripheral.LOUDSPEAKER]
 type = "speaker"
-port = { IN = "PMIC:MONO" }
+port = { in = "PMIC:MONO" }
+gain = 300
 
 [peripheral.HEADSET]
 type = "speaker"
-port = { IN = "PMIC:STEREO" }
+port = { in = "PMIC:STEREO" }
+gain = 2250
 
-# Unverified: no schematic yet, so the AFE outputs drive speakers directly.
-[peripheral.AFE_EP_SPEAKER]
+[peripheral.RECEIVER]
 type = "speaker"
-port = { IN = "DSP:AFE_EP" }
-
-[peripheral.AFE_EPPA_SPEAKER]
-type = "speaker"
-port = { IN = "DSP:AFE_EPPA" }
+port = { in = "DSP:AFE_EP" }
 
 [gpio.inputs]
 # HWID 407

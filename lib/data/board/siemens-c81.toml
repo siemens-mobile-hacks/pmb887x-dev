@@ -3,12 +3,6 @@ vendor = "BenQ-Siemens"
 model = "C81"
 extends = "include/siemens-sg2-x75.toml"
 
-[peripheral.LOUDSPEAKER]
-gain_db = 5
-
-[peripheral.HEADSET]
-gain_db = 15
-
 [gpio.aliases]
 CIF_HSYNC = "DIF_BYPASS"
 CLKOUT2 = "DIF_RESET"

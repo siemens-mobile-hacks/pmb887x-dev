@@ -44,20 +44,13 @@ revision = 0xDB
 
 [peripheral.LOUDSPEAKER]
 type = "speaker"
-port = { IN = "PMIC:MONO" }
+port = { in = "PMIC:MONO" }
+gain = -150
 
 [peripheral.HEADSET]
 type = "speaker"
-port = { IN = "PMIC:STEREO" }
-
-# Unverified: no schematic yet, so the AFE outputs drive speakers directly.
-[peripheral.AFE_EP_SPEAKER]
-type = "speaker"
-port = { IN = "DSP:AFE_EP" }
-
-[peripheral.AFE_EPPA_SPEAKER]
-type = "speaker"
-port = { IN = "DSP:AFE_EPPA" }
+port = { in = "PMIC:STEREO" }
+gain = 3000
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }

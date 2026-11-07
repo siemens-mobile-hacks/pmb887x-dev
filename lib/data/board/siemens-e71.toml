@@ -13,27 +13,31 @@ in = { ssi-gpio-cs = "DIF_CS1", CD = "DIF_CD", WR = "DIF_WR", RD = "DIF_RD", RES
 
 [peripheral.PMIC]
 type = "d1094xx"
-port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX", LINE = "DSP:AFE_EP" }
+port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX", LINE = "PMIC_LINE_IN:out" }
 addr = 0x31
 revision = 0xAA
 
 [peripheral.LOUDSPEAKER]
 type = "speaker"
-port = { IN = "PMIC:MONO" }
-gain_db = 5
+port = { in = "PMIC:MONO" }
+gain = 750
 
 [peripheral.HEADSET]
 type = "speaker"
-port = { IN = "PMIC:STEREO" }
-gain_db = 15
+port = { in = "PMIC:STEREO" }
+gain = 2250
 
 [peripheral.FM]
 type = "tea5761uk"
 bus = "I2C"
 addr = 0x10
 
+[peripheral.PMIC_LINE_IN]
+type = "audio-junction"
+port = { in0 = "DSP:AFE_EP", in1 = "FM:OUT" }
+
 [gpio.aliases]
-MMCI_DAT1 = "HW_DET_FM_RADIO"
+DIF_HD = "HW_DET_FM_RADIO"
 USIF_TXD_MTSR = "A_FM_STANDBY"
 I2S2_CLK0 = "I2S_CLK"
 I2S2_RX = "PM_I2S_ADC"
@@ -49,6 +53,3 @@ HW_DET_MOB_TYPE4=1
 HW_DET_BLUETOOTH=0
 HW_DET_BAND_SEL=0
 HW_DET_FM_RADIO=1
-
-# FM radio detection
-MMCI_DAT1=1

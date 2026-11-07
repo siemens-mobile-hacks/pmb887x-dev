@@ -10,7 +10,7 @@ out = { FPDAT0 = "DISP_CS1" }
 type = "pcf8882"
 
 [gpio.aliases]
-RF_STR1 = "PM_RINGIN"
+RF_STR1 = "IR_SEL"
 I2S2_CLK0 = "I2S_CLK"
 I2S2_RX = "PM_I2S_ADC"
 I2S2_TX = "I2S_DAC"
