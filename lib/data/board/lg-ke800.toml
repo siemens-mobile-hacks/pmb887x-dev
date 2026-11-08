@@ -83,7 +83,7 @@ port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
 [peripheral.AMP]
 type = "lm4946"
 bus = "I2C"
-addr = 0x7D
+addr = 0x7C
 port = { PHONE_IN = "DSP:AFE_EPPA", LINE_IN = "DSP:AFE_EPPA" }
 
 
