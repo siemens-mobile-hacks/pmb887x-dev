@@ -10,11 +10,7 @@
 #define CRC32_INITIAL_VALUE 0xFFFFFFFF
 #define RECEIVER_DISABLED_FRAME "ignored"
 #define HOST_TRIGGER '!'
-#ifdef PMB8875
-#define USART_HIGH_BAUD_RATE 460800
-#else
-#define USART_HIGH_BAUD_RATE 921600
-#endif
+#define FRAME_BITS_8N1 10
 
 struct usart_configuration {
 	uint32_t baud_reload;
@@ -35,6 +31,7 @@ struct receive_result {
 	uint32_t crc32;
 	uint32_t errors;
 	uint32_t fifo_level;
+	uint32_t burst_us;
 };
 
 static uint32_t crc32_table[256];
@@ -158,6 +155,8 @@ static struct receive_result receive_payload(
 
 	uint32_t received = 0;
 	stopwatch_t start = stopwatch_get();
+	stopwatch_t first_byte_time = 0;
+	stopwatch_t last_byte_time = 0;
 	uint32_t empty_polls = 0;
 	while (received < test_case->length) {
 		uint32_t fifo_level = usart_get_rx_fifo_level(USART0);
@@ -171,6 +170,10 @@ static struct receive_result receive_payload(
 			continue;
 		}
 		empty_polls = 0;
+		stopwatch_t now = stopwatch_get();
+		if (received == 0)
+			first_byte_time = now;
+		last_byte_time = now;
 		while (fifo_level-- != 0 && received < test_case->length)
 			payload[received++] = (uint8_t) USART_RXB(USART0);
 	}
@@ -180,6 +183,7 @@ static struct receive_result receive_payload(
 		.crc32 = crc32(payload, received),
 		.errors = USART_CON(USART0) & (USART_CON_PE | USART_CON_FE | USART_CON_OE),
 		.fifo_level = usart_get_rx_fifo_level(USART0),
+		.burst_us = (last_byte_time - first_byte_time) / stopwatch_ticks_per_us(),
 	};
 	restore_usart_configuration(console);
 	request_host_trigger();
@@ -218,7 +222,7 @@ static void test_receiver_enable(const struct usart_configuration *console) {
 
 int main(void) {
 	static const struct receive_case cases[] = {
-		{ USART_HIGH_BAUD_RATE, 32768, 0x12345678, 0xD1BA9EC0 },
+		{ 921600, 32768, 0x12345678, 0xD1BA9EC0 },
 		{ 115200, 16384, 0xC001D00D, 0xAA5AD126 },
 		{   9600,  1024, 0xA5A5A5A5, 0x2CFF2098 },
 	};
@@ -233,6 +237,7 @@ int main(void) {
 		test_category("Pseudorandom payload after baud-rate change");
 		struct receive_result result = receive_payload(&console, &cases[i]);
 
+		uint32_t line_us = (uint64_t) (cases[i].length - 1) * FRAME_BITS_8N1 * 1000000 / cases[i].baud_rate;
 		printf(
 			"# baud=%lu length=%lu seed=%08lX crc32=%08lX\n",
 			cases[i].baud_rate,
@@ -240,10 +245,18 @@ int main(void) {
 			cases[i].seed,
 			result.crc32
 		);
+		printf(
+			"# Payload burst took %lu us, line time %lu us (%lu%%)\n",
+			result.burst_us,
+			line_us,
+			(uint32_t) ((uint64_t) result.burst_us * 100 / line_us)
+		);
 		test_eq_u32("received payload length", cases[i].length, result.length);
 		test_eq_u32("received payload CRC32", cases[i].crc32, result.crc32);
 		test_eq_u32("payload has no parity, framing, or overrun errors", 0, result.errors);
 		test_eq_u32("RX FIFO drains after payload", 0, result.fifo_level);
+		test_check("payload arrives no faster than the line rate", result.burst_us * 100 >= line_us * 98);
+		test_check("payload arrives at the line rate", result.burst_us * 100 <= line_us * 110);
 	}
 
 	return test_finish();
