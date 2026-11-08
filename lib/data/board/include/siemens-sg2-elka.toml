@@ -78,10 +78,6 @@ I2S1_WA0 = "BT_PCM_SYNC"
 KP_IN5 = "KP_OUT6"
 
 [gpio.inputs]
-# Cable detect
-AC_RTS = 1
-AC_RX = 1
-
 # HWID 407
 HW_DET_MOB_TYPE1 = 0
 HW_DET_MOB_TYPE2 = 0
@@ -89,6 +85,27 @@ HW_DET_MOB_TYPE3 = 0
 HW_DET_MOB_TYPE4 = 1
 HW_DET_BLUETOOTH = 0
 HW_DET_BAND_SEL = 0
+
+# Connector line levels from the firmware detection tables (EL71)
+[peripheral.IO_CONNECTOR]
+type = "accessory-connector"
+unplugged = "none"
+accessories = {
+	none = {
+		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 1, AC_DCD = 1 },
+	},
+	data-cable = {
+		gpio = { AC_RX = 1, AC_CTS = 0, AC_RTS = 1, AC_DCD = 0 },
+	},
+	headset-mono = {
+		gpio = { AC_RX = "AC_TX", AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = 1 },
+		port = { "HEADSET:in" = "PMIC:STEREO" },
+	},
+	headset-stereo = {
+		gpio = { AC_RX = 0, AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = 1 },
+		port = { "HEADSET:in" = "PMIC:STEREO" },
+	},
+}
 
 [keyboard]
 # [KP_OUTx, KP_INx, ..., KP_INx]

@@ -27,7 +27,6 @@ port = { in = "PMIC:MONO" }
 
 [peripheral.HEADSET]
 type = "speaker"
-port = { in = "PMIC:STEREO" }
 gain = 2250
 
 [gpio.aliases]

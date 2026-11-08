@@ -24,7 +24,6 @@ gain = 750
 
 [peripheral.HEADSET]
 type = "speaker"
-port = { in = "PMIC:STEREO" }
 gain = 2250
 
 [peripheral.FM]
