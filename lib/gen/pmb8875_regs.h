@@ -38,10 +38,10 @@
 #define	GPIO_I2S2_RX	32
 #define	GPIO_I2S2_TX	33
 #define	GPIO_I2S2_WA0	34
-#define	GPIO_PIN35		35
-#define	GPIO_PIN36		36
-#define	GPIO_PIN37		37
-#define	GPIO_PIN38		38
+#define	GPIO_I2S1_CLK0	35
+#define	GPIO_I2S1_RX	36
+#define	GPIO_I2S1_TX	37
+#define	GPIO_I2S1_WA0	38
 #define	GPIO_PIN39		39
 #define	GPIO_PIN40		40
 #define	GPIO_PIN41		41

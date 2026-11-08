@@ -23,8 +23,8 @@
 #define	GPIO_USART1_TXD		17
 #define	GPIO_USART1_RTS		18
 #define	GPIO_USART1_CTS		19
-#define	GPIO_USB_DPLUS		20
-#define	GPIO_USB_DMINUS		21
+#define	GPIO_SSC1_SCLK		20
+#define	GPIO_SSC1_MTSR		21
 #define	GPIO_SSC1_MRST		22
 #define	GPIO_DIF_D2			23
 #define	GPIO_DIF_D0			24
@@ -38,9 +38,9 @@
 #define	GPIO_I2S2_RX		32
 #define	GPIO_I2S2_TX		33
 #define	GPIO_I2S2_WA0		34
-#define	GPIO_PIN35			35
-#define	GPIO_PIN36			36
-#define	GPIO_PIN37			37
+#define	GPIO_I2S1_CLK0		35
+#define	GPIO_I2S1_RX		36
+#define	GPIO_I2S1_TX		37
 #define	GPIO_I2S1_WA0		38
 #define	GPIO_MMCI_DAT1		39
 #define	GPIO_MMCI_DAT2		40
@@ -113,8 +113,8 @@
 #define	GPIO_USIF_TXD_MTSR	107
 #define	GPIO_USIF_RXD_MRST	108
 #define	GPIO_USIF_SCLK		109
-#define	GPIO_PIN110			110
-#define	GPIO_PIN111			111
+#define	GPIO_IRDA_TX		110
+#define	GPIO_IRDA_RX		111
 #define	GPIO_I2S1_CLK1		112
 #define	GPIO_CIF_PD			113
 

@@ -104,8 +104,8 @@ M_9 = { type = "resistor", value = 15000 }
 rom_version = 0x0801
 
 [gpio.aliases]
-PIN110 = "RPWRON" # remote poweron
-PIN111 = "SPK_RCV_SEL"
+IRDA_TX = "RPWRON" # remote poweron
+IRDA_RX = "SPK_RCV_SEL"
 T_OUT8 = "JACK_DETECT"
 DIF_VD = "HSO_SEL"
 CLKOUT0 = "SLIDE_OPEN"
