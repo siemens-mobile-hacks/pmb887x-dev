@@ -123,7 +123,7 @@ type = "accessory-connector"
 unplugged = "none"
 accessories = {
 	none = {
-		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 1, AC_DCD = 1 },
+		gpio = { AC_RX = 0, AC_CTS = 1, AC_RTS = 1, AC_DCD = 1 },
 	},
 	data-cable = {
 		gpio = { AC_RX = 1, AC_CTS = 0, AC_RTS = 1, AC_DCD = 0 },
@@ -132,31 +132,37 @@ accessories = {
 		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 1, AC_DCD = 0 },
 	},
 	usb-cable = {
-		gpio = { AC_RX = "AC_TX", AC_CTS = 0, AC_RTS = 0, AC_DCD = 0 },
-	},
-	usb-cable-nc = {
-		gpio = { AC_RX = "AC_TX", AC_CTS = 0, AC_RTS = 1, AC_DCD = 0 },
+		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 0, AC_DCD = 0 },
 	},
 	boot-box = {
-		gpio = { AC_RX = 1, AC_CTS = 0, AC_RTS = 1, AC_DCD = 1 },
+		gpio = { AC_RX = 1, AC_CTS = 1, AC_RTS = 1, AC_DCD = 1 },
+	},
+	desktop-charger = {
+		gpio = { AC_RX = 0, AC_CTS = 1, AC_RTS = 0, AC_DCD = "AC_TX" },
 	},
 	tty = {
-		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 0, AC_DCD = "AC_TX" },
+		gpio = { AC_RX = 0, AC_CTS = "AC_TX", AC_RTS = 1, AC_DCD = 0 },
 	},
-	music-cable = {
-		gpio = { AC_RX = "AC_TX", AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = "AC_TX" },
+	tty-x55 = {
+		gpio = { AC_RX = "AC_TX", AC_CTS = 1, AC_RTS = 0, AC_DCD = 0 },
+	},
+	music-set = {
+		gpio = { AC_RX = 0, AC_CTS = 1, AC_RTS = 1, AC_DCD = 0 },
 		port = { "HEADSET:in" = "PMIC:STEREO" },
 	},
 	headset-mono = {
-		gpio = { AC_RX = "AC_TX", AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = 1 },
+		gpio = { AC_RX = "AC_TX", AC_CTS = 0, AC_RTS = "AC_TX", AC_DCD = 0 },
 		port = { "HEADSET:in" = "PMIC:STEREO" },
 	},
 	headset-stereo = {
-		gpio = { AC_RX = 0, AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = 1 },
+		gpio = { AC_RX = "AC_TX", AC_CTS = 1, AC_RTS = 0, AC_DCD = "AC_TX" },
 		port = { "HEADSET:in" = "PMIC:STEREO" },
 	},
 	atc-device = {
 		gpio = { AC_RX = 1, AC_CTS = 1, AC_RTS = 1, AC_DCD = 0 },
+	},
+	a2i-device = {
+		gpio = { AC_RX = 0, AC_CTS = 1, AC_RTS = 0, AC_DCD = 1 },
 	},
 }
 
