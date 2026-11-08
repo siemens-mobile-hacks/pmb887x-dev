@@ -53,9 +53,27 @@ port = { in = "DSP:AFE_EP" }
 type = "speaker"
 port = { in = "AMP:SPEAKER" }
 
+[peripheral.HEADSET_SWITCH]
+type = "audio-switch"
+port = { in0 = "AMP:HEADPHONE" }
+in = { select = "HSO_SEL" }
+
 [peripheral.HEADSET]
 type = "speaker"
-port = { in = "AMP:HEADPHONE" }
+
+[peripheral.IO_CONNECTOR]
+type = "accessory-connector"
+default = "none"
+unplugged = "none"
+accessories = {
+	none = {
+		gpio = { JACK_DETECT = 1 },
+	},
+	headset-stereo = {
+		gpio = { JACK_DETECT = 0 },
+		port = { "HEADSET:in" = "HEADSET_SWITCH:out" },
+	},
+}
 
 [peripheral.RF]
 type = "pmb6272"
@@ -89,6 +107,7 @@ rom_version = 0x0801
 PIN110 = "RPWRON" # remote poweron
 PIN111 = "SPK_RCV_SEL"
 T_OUT8 = "JACK_DETECT"
+DIF_VD = "HSO_SEL"
 CLKOUT0 = "SLIDE_OPEN"
 USIF_SCLK = "SCROLL_EN"
 
@@ -96,7 +115,6 @@ USIF_SCLK = "SCROLL_EN"
 RPWRON = 1 # remote power on (skips power button hold requirement)
 SLIDE_OPEN = 1
 SCROLL_EN = 1
-JACK_DETECT = 1 # high = no headphones connected
 
 [keyboard]
 # [KP_IN, KP_OUT, ..., KP_OUT]

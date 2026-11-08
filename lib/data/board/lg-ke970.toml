@@ -65,7 +65,20 @@ port = { in = "SPEAKER_SWITCH:out" }
 
 [peripheral.HEADSET]
 type = "speaker"
-port = { in = "HEADSET_SWITCH:out" }
+
+[peripheral.IO_CONNECTOR]
+type = "accessory-connector"
+default = "none"
+unplugged = "none"
+accessories = {
+	none = {
+		gpio = { JACK_DETECT = 1 },
+	},
+	headset-stereo = {
+		gpio = { JACK_DETECT = 0 },
+		port = { "HEADSET:in" = "HEADSET_SWITCH:out" },
+	},
+}
 
 [peripheral.RF]
 type = "pmb6272"
@@ -125,7 +138,6 @@ USIF_SCLK = "USB_EOC"
 [gpio.inputs]
 RPWRON = 1 # remote power on (skips power button hold requirement)
 SLIDE_OPEN = 1
-JACK_DETECT = 1 # high = no headphones connected
 
 [keyboard]
 # [KP_IN, KP_OUT, ..., KP_OUT]
