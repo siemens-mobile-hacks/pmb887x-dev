@@ -99,6 +99,7 @@ DISPLAY_RESET = 1
 
 [peripheral.IO_CONNECTOR]
 type = "accessory-connector"
+default = "data-cable"
 unplugged = "none"
 accessories = {
 	none = {

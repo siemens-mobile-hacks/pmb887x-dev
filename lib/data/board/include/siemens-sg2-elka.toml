@@ -88,6 +88,7 @@ HW_DET_BAND_SEL = 0
 
 [peripheral.IO_CONNECTOR]
 type = "accessory-connector"
+default = "data-cable"
 unplugged = "none"
 accessories = {
 	none = {

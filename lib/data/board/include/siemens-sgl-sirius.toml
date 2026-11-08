@@ -109,6 +109,7 @@ AC_RX = 1
 
 [peripheral.IO_CONNECTOR]
 type = "accessory-connector"
+default = "data-cable"
 unplugged = "none"
 accessories = {
 	none = {
