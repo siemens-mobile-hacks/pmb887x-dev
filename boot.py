@@ -427,6 +427,13 @@ def execute_host_command(port, command, argument, restore_configuration=None):
 		if delay_ms < 0:
 			raise ProtocolError("HOST-CMD WAIT must not be negative")
 		time.sleep(delay_ms / 1000)
+	elif command == b"BREAK":
+		if not argument:
+			raise ProtocolError("HOST-CMD BREAK has no argument")
+		duration_ms = int(argument)
+		if duration_ms <= 0:
+			raise ProtocolError("HOST-CMD BREAK must be positive")
+		port.send_break(duration_ms / 1000)
 	elif command == b"RESTORE":
 		if argument or restore_configuration is None:
 			raise ProtocolError("invalid HOST-CMD RESTORE")
