@@ -156,12 +156,19 @@ sub loadBoard {
 		return $r1;
 	};
 
-	my $cfg = parseToml($file);
-	if (exists $cfg->{board}->{extends}) {
-		my $base_config_file = dirname(realpath($file))."/".$cfg->{board}->{extends};
-		my $base_cfg = parseToml($base_config_file);
-		$cfg = $toml_merge->($base_cfg, $cfg);
-	}
+	my $load_config;
+	$load_config = sub {
+		my ($config_file, $depth) = @_;
+		die "$config_file: too many nested extends\n" if $depth > 8;
+
+		my $config = parseToml($config_file);
+		return $config if !exists $config->{board}->{extends};
+
+		my $base_config_file = dirname(realpath($config_file))."/".$config->{board}->{extends};
+		return $toml_merge->($load_config->($base_config_file, $depth + 1), $config);
+	};
+
+	my $cfg = $load_config->($file, 0);
 
 	$self->{model} = $cfg->{board}->{model};
 	$self->{vendor} = $cfg->{board}->{vendor};
