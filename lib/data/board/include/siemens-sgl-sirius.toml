@@ -118,9 +118,6 @@ accessories = {
 	data-cable = {
 		gpio = { AC_RX = 1, AC_CTS = 0, AC_RTS = 0, AC_DCD = 0 },
 	},
-	serial-cable = {
-		gpio = { AC_RX = 0, AC_CTS = 1, AC_RTS = 0, AC_DCD = 0 },
-	},
 	usb-cable = {
 		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 0, AC_DCD = 0 },
 	},
