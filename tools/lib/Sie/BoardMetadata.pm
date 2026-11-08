@@ -12,6 +12,60 @@ use TOML::Tiny;
 use File::Slurp;
 use Cwd qw(realpath);
 
+# TOML::Tiny only implements TOML 1.0, which keeps inline tables on one line.
+# Board configs use multi-line inline tables (TOML 1.1), so join them first.
+sub joinInlineTables {
+	my ($text) = @_;
+	my $result = '';
+	my $depth = 0;
+	my $quote;
+	my $length = length($text);
+
+	for (my $i = 0; $i < $length; $i++) {
+		my $c = substr($text, $i, 1);
+
+		if (defined $quote) {
+			if ($c eq '\\' && substr($quote, 0, 1) eq '"') {
+				$result .= substr($text, $i++, 2);
+			} elsif (substr($text, $i, length($quote)) eq $quote) {
+				$result .= $quote;
+				$i += length($quote) - 1;
+				undef $quote;
+			} else {
+				$result .= $c;
+			}
+			next;
+		}
+
+		if ($c eq '"' || $c eq "'") {
+			$quote = substr($text, $i, 3) eq $c x 3 ? $c x 3 : $c;
+			$result .= $quote;
+			$i += length($quote) - 1;
+			next;
+		}
+
+		if ($c eq '#') {
+			my $end = index($text, "\n", $i);
+			$end = $length if $end < 0;
+			$result .= substr($text, $i, $end - $i) if $depth == 0;
+			$i = $end - 1;
+			next;
+		}
+
+		$depth++ if $c eq '{';
+		$depth-- if $c eq '}';
+		$c = ' ' if $depth > 0 && ($c eq "\n" || $c eq "\r");
+		$result .= $c;
+	}
+
+	return $result;
+}
+
+sub parseToml {
+	my ($file) = @_;
+	return TOML::Tiny::from_toml(joinInlineTables(scalar(read_file($file))));
+}
+
 sub new {
 	my ($class, $board) = @_;
 	
@@ -102,10 +156,10 @@ sub loadBoard {
 		return $r1;
 	};
 
-	my $cfg = TOML::Tiny::from_toml(scalar(read_file($file)));
+	my $cfg = parseToml($file);
 	if (exists $cfg->{board}->{extends}) {
 		my $base_config_file = dirname(realpath($file))."/".$cfg->{board}->{extends};
-		my $base_cfg = TOML::Tiny::from_toml(scalar(read_file($base_config_file)));
+		my $base_cfg = parseToml($base_config_file);
 		$cfg = $toml_merge->($base_cfg, $cfg);
 	}
 
