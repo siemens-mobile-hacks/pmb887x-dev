@@ -86,7 +86,6 @@ HW_DET_MOB_TYPE4 = 1
 HW_DET_BLUETOOTH = 0
 HW_DET_BAND_SEL = 0
 
-# Connector line levels from the firmware detection tables (EL71)
 [peripheral.IO_CONNECTOR]
 type = "accessory-connector"
 unplugged = "none"
@@ -97,6 +96,25 @@ accessories = {
 	data-cable = {
 		gpio = { AC_RX = 1, AC_CTS = 0, AC_RTS = 1, AC_DCD = 0 },
 	},
+	serial-cable = {
+		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 1, AC_DCD = 0 },
+	},
+	usb-cable = {
+		gpio = { AC_RX = "AC_TX", AC_CTS = 0, AC_RTS = 0, AC_DCD = 0 },
+	},
+	usb-cable-nc = {
+		gpio = { AC_RX = "AC_TX", AC_CTS = 0, AC_RTS = 1, AC_DCD = 0 },
+	},
+	boot-box = {
+		gpio = { AC_RX = 1, AC_CTS = 0, AC_RTS = 1, AC_DCD = 1 },
+	},
+	tty = {
+		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 0, AC_DCD = "AC_TX" },
+	},
+	music-cable = {
+		gpio = { AC_RX = "AC_TX", AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = "AC_TX" },
+		port = { "HEADSET:in" = "PMIC:STEREO" },
+	},
 	headset-mono = {
 		gpio = { AC_RX = "AC_TX", AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = 1 },
 		port = { "HEADSET:in" = "PMIC:STEREO" },
@@ -104,6 +122,9 @@ accessories = {
 	headset-stereo = {
 		gpio = { AC_RX = 0, AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = 1 },
 		port = { "HEADSET:in" = "PMIC:STEREO" },
+	},
+	atc-device = {
+		gpio = { AC_RX = 1, AC_CTS = 1, AC_RTS = 1, AC_DCD = 0 },
 	},
 }
 

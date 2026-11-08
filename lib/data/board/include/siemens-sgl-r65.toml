@@ -44,7 +44,6 @@ gain = 150
 
 [peripheral.HEADSET]
 type = "speaker"
-port = { in = "PMIC:STEREO" }
 gain = 3000
 
 [analog]
@@ -98,9 +97,53 @@ CIF_RESET = 1
 DISPLAY_CS1 = 1
 DISPLAY_RESET = 1
 
-# DCA-510 USB data cable: idle TXD and asserted RTS
-AC_RTS = 0
-AC_RX = 1
+[peripheral.IO_CONNECTOR]
+type = "accessory-connector"
+unplugged = "none"
+accessories = {
+	none = {
+		gpio = { AC_RX = 0, AC_CTS = 1, AC_RTS = 1, AC_DCD = 1 },
+	},
+	data-cable = {
+		gpio = { AC_RX = 1, AC_CTS = 0, AC_RTS = 0, AC_DCD = 0 },
+	},
+	serial-cable = {
+		gpio = { AC_RX = 0, AC_CTS = 1, AC_RTS = 0, AC_DCD = 0 },
+	},
+	usb-cable = {
+		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 0, AC_DCD = 0 },
+	},
+	boot-box = {
+		gpio = { AC_RX = 1, AC_CTS = 1, AC_RTS = 1, AC_DCD = 1 },
+	},
+	desktop-charger = {
+		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 1, AC_DCD = "AC_TX" },
+	},
+	tty = {
+		gpio = { AC_RX = 0, AC_CTS = 1, AC_RTS = "AC_TX", AC_DCD = 0 },
+	},
+	tty-x55 = {
+		gpio = { AC_RX = "AC_TX", AC_CTS = 0, AC_RTS = 1, AC_DCD = 0 },
+	},
+	music-set = {
+		gpio = { AC_RX = "AC_TX", AC_CTS = 1, AC_RTS = 1, AC_DCD = 0 },
+		port = { "HEADSET:in" = "PMIC:STEREO" },
+	},
+	headset-mono = {
+		gpio = { AC_RX = "AC_TX", AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = 1 },
+		port = { "HEADSET:in" = "PMIC:STEREO" },
+	},
+	headset-stereo = {
+		gpio = { AC_RX = "AC_TX", AC_CTS = 0, AC_RTS = 1, AC_DCD = "AC_TX" },
+		port = { "HEADSET:in" = "PMIC:STEREO" },
+	},
+	atc-device = {
+		gpio = { AC_RX = 1, AC_CTS = 1, AC_RTS = 1, AC_DCD = 0 },
+	},
+	a2i-device = {
+		gpio = { AC_RX = 0, AC_CTS = 0, AC_RTS = 1, AC_DCD = 1 },
+	},
+}
 
 [keyboard]
 # [KP_IN, KP_OUT, ..., KP_OUT]
