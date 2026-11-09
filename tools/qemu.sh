@@ -5,7 +5,7 @@ cd $(dirname $0)
 ./gen_decoder.pl --peripherals ../../qemu
 ./gen_decoder.pl --header > ../../qemu/hw/arm/pmb887x/gen/cpu_meta.h
 ./gen_decoder.pl > ../../qemu/hw/arm/pmb887x/gen/cpu_meta.c
-./gen_qemu_flashes.pl > ../../qemu/hw/arm/pmb887x/gen/flash-info.c
+./gen_qemu_flashes.pl > ../../qemu/hw/block/cfi-flash/parts.c
 ./gen_dsp_headers.pl --qemu ../../qemu/hw/arm/pmb887x/gen
 ./gen_cpu_modules_qemu.pl > ../../qemu/hw/arm/pmb887x/gen/cpu_modules.c
 ./gen_dsp_rom_qemu.pl ../../qemu/hw/arm/pmb887x/gen
