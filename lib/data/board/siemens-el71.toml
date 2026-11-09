@@ -24,10 +24,7 @@ port = { in = "DSP:AFE_EP" }
 [peripheral.LOUDSPEAKER]
 type = "speaker"
 port = { in = "PMIC:MONO" }
-
-[peripheral.HEADSET]
-type = "speaker"
-gain = 2250
+gain = -1000
 
 [gpio.aliases]
 MMCI_DAT1 = "OPEN_CLOSE_SW1"

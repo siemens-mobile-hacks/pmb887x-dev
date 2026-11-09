@@ -24,6 +24,18 @@ ram.size = 0x1000000 # 16 Mb
 [peripheral.PMIC]
 out.ON_OFF_OUT = "KP_IN0"
 
+[peripheral.HEADSET_STEREO]
+type = "speaker"
+gain = 1250
+
+[peripheral.HEADSET_MONO]
+type = "speaker"
+gain = 2300
+
+[peripheral.MUSIC_CABLE]
+type = "speaker"
+gain = 1250
+
 #[peripheral.RF]
 #type = "hd155153np"
 #port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
@@ -111,15 +123,15 @@ accessories = {
 	},
 	music-cable = {
 		gpio = { AC_RX = "AC_TX", AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = "AC_TX" },
-		port = { "HEADSET:in" = "PMIC:STEREO" },
+		port = { "MUSIC_CABLE:in" = "PMIC:STEREO" },
 	},
 	headset-mono = {
 		gpio = { AC_RX = "AC_TX", AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = 1 },
-		port = { "HEADSET:in" = "PMIC:STEREO" },
+		port = { "HEADSET_MONO:in" = "PMIC:STEREO" },
 	},
 	headset-stereo = {
 		gpio = { AC_RX = 0, AC_CTS = "AC_TX", AC_RTS = 0, AC_DCD = 1 },
-		port = { "HEADSET:in" = "PMIC:STEREO" },
+		port = { "HEADSET_STEREO:in" = "PMIC:STEREO" },
 	},
 	atc-device = {
 		gpio = { AC_RX = 1, AC_CTS = 1, AC_RTS = 1, AC_DCD = 0 },

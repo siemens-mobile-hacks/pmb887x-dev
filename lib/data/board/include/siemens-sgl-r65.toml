@@ -40,11 +40,11 @@ revision = 0xDB
 [peripheral.LOUDSPEAKER]
 type = "speaker"
 port = { in = "PMIC:MONO" }
-gain = 150
+gain = -850
 
 [peripheral.HEADSET]
 type = "speaker"
-gain = 3000
+gain = 2000
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }

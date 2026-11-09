@@ -4,7 +4,7 @@ model = "C72"
 extends = "include/siemens-sgl-r65.toml"
 
 [peripheral.LOUDSPEAKER]
-gain = 450
+gain = -550
 
 [peripheral.LCD0]
 type = "lh15kah2"

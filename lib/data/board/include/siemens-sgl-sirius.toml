@@ -46,11 +46,11 @@ revision = 0xEC
 [peripheral.LOUDSPEAKER]
 type = "speaker"
 port = { in = "PMIC:MONO" }
-gain = 300
+gain = -700
 
 [peripheral.HEADSET]
 type = "speaker"
-gain = 3000
+gain = 2000
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }

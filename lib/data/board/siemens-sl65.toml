@@ -4,7 +4,7 @@ model = "SL65"
 extends = "include/siemens-sgl-r65.toml"
 
 [peripheral.LOUDSPEAKER]
-gain = -150
+gain = -1150
 
 [peripheral.LCD0]
 type = "l2f50250"
