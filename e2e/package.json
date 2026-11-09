@@ -1,0 +1,19 @@
+{
+	"name": "pmb887x-bsp-e2e",
+	"private": true,
+	"type": "module",
+	"imports": {
+		"#lib/*": "./lib/*"
+	},
+	"scripts": {
+		"typecheck": "tsc"
+	},
+	"dependencies": {
+		"@sie-js/serial": "^1.7.1"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.3",
+		"tsx": "^4.23.15",
+		"typescript": "^7.0.2"
+	}
+}

@@ -1,0 +1,7 @@
+[gsm-at]
+devices = ["siemens-el71"]
+timeout = 180
+
+[gsm-creg]
+devices = ["siemens-el71"]
+timeout = 300

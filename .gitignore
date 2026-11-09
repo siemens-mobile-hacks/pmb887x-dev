@@ -21,3 +21,4 @@ unit/dsp/lle/opcode-aliases/generated/
 unit/dsp/lle/opcode-reserved-modify/generated/
 unit/dsp/lle/delay-slot-overflow/generated/
 __pycache__
+node_modules/

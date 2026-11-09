@@ -1,0 +1,7 @@
+packages:
+  - unit
+  - e2e
+
+allowBuilds:
+  '@sie-js/node-serialport-bindings-cpp': true
+  esbuild: true
