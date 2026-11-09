@@ -27,7 +27,7 @@ in = { ssi-gpio-cs = "CIF_CS", SA0 = "CIF_RS", RESET = "CIF_RESET" }
 
 [peripheral.LCD0]
 type = "ssd1286"
-bus = "GIMMICK"
+bus = "GIMMICK:LCD2"
 in = { ssi-gpio-cs = "DISP_CS1", CD = "GIMMICK:FPLINE" }
 
 [peripheral.SACC]
