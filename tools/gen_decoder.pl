@@ -10,7 +10,8 @@ use Sie::BoardMetadata;
 use Sie::Utils;
 
 my $cpu_meta = Sie::CpuMetadata->new("generic");
-my $peripherals = $cpu_meta->getAllPeripherals();
+my $all_peripherals = $cpu_meta->getAllPeripherals();
+my $peripherals = [grep { !$_->{qemu_dir} } @$all_peripherals];
 my @cpu_metadata = map { Sie::CpuMetadata->new($_) } @{Sie::CpuMetadata::getCpus()};
 my %dsp_definitions;
 
@@ -20,8 +21,13 @@ for my $meta (@cpu_metadata) {
 	}
 }
 
+if (@ARGV == 2 && $ARGV[0] eq "--peripherals") {
+	genModelPeripheralRegs($ARGV[1]);
+	exit;
+}
+
 if (@ARGV) {
-	die "Usage: $0 [--header]\n" if @ARGV != 1 || $ARGV[0] ne "--header";
+	die "Usage: $0 [--header | --peripherals QEMU_ROOT]\n" if @ARGV != 1 || $ARGV[0] ne "--header";
 	print genDecoderHeader($cpu_meta, $peripherals, \%dsp_definitions);
 	exit;
 }
@@ -265,8 +271,22 @@ sub genModuleHeader {
 	return $str."\n";
 }
 
+sub genModelPeripheralRegs {
+	my ($qemu_root) = @_;
+
+	for my $peripheral (grep { $_->{qemu_dir} } @$all_peripherals) {
+		my $var = peripheralVar($peripheral);
+		my $file = "$qemu_root/$peripheral->{qemu_dir}/regs.c";
+		open my $fp, ">", $file or die "open($file): $!";
+		my $str = genPeripheralHeader($peripheral, $var, undef, "${var}_debug_regs", 1);
+		$str =~ s/\n+\z/\n/;
+		print $fp "#include \"qemu/osdep.h\"\n#include \"regs.h\"\n\n".tabsToSpaces($str);
+		close $fp;
+	}
+}
+
 sub genPeripheralHeader {
-	my ($peripheral, $var, $addr_digits) = @_;
+	my ($peripheral, $var, $addr_digits, $exported_var, $use_macros) = @_;
 
 	my $str = "";
 	$var = peripheralVar($peripheral) if !defined($var);
@@ -288,7 +308,8 @@ sub genPeripheralHeader {
 				my $value = $field->{values}->{$value_name} << $field->{start};
 				push @values, [
 					cString($value_name).",",
-					sprintf("0x%08X", $value & $field->{mask})
+					$use_macros ? peripheralValueMacro($peripheral, $reg_name, $field_name, $value_name) :
+						sprintf("0x%08X", $value & $field->{mask})
 				];
 			}
 
@@ -298,10 +319,11 @@ sub genPeripheralHeader {
 				$str .= "};\n\n";
 			}
 
+			my $field_macro = peripheralFieldMacro($peripheral, $reg_name, $field_name);
 			push @fields, [
 				cString($field->{name}).",",
-				sprintf("0x%08X,", $field->{mask}),
-				$field->{start}.",",
+				$use_macros ? "$field_macro," : sprintf("0x%08X,", $field->{mask}),
+				$use_macros ? "${field_macro}_SHIFT," : $field->{start}.",",
 				@values ? $values_var."," : "NULL,",
 				@values ? "ARRAY_SIZE(".$values_var.")" : 0
 			];
@@ -313,9 +335,10 @@ sub genPeripheralHeader {
 			$str .= "};\n\n";
 		}
 
+		my $reg_macro = $peripheral->{id}."_".$reg_name.($reg->{start} != $reg->{end} ? "(0)" : "");
 		push @regs, [
 			cString($reg->{name}).",",
-			sprintf("0x%X,", $reg->{start}),
+			$use_macros ? "$reg_macro," : sprintf("0x%X,", $reg->{start}),
 			@fields ? $fields_var."," : "NULL,",
 			@fields ? "ARRAY_SIZE(".$fields_var.")" : "0"
 		];
@@ -324,7 +347,7 @@ sub genPeripheralHeader {
 	$str .= "static const DebugReg ".$var."_regs[] = {\n";
 	$str .= printTable(\@regs, "\t{ ", " },");
 	$str .= "};\n\n";
-	$str .= genExportedRegs($var, 1, $addr_digits // peripheralAddrDigits($peripheral));
+	$str .= genExportedRegs($var, 1, $addr_digits // peripheralAddrDigits($peripheral), undef, $exported_var);
 
 	return $str."\n";
 }
@@ -342,10 +365,10 @@ sub peripheralAddrDigits {
 }
 
 sub genExportedRegs {
-	my ($var, $reg_size, $addr_digits, $regions_var) = @_;
+	my ($var, $reg_size, $addr_digits, $regions_var, $exported_var) = @_;
 	my $regions = defined($regions_var) ?
 		"\t.regions = $regions_var,\n\t.regions_count = ARRAY_SIZE($regions_var),\n" : "";
-	return "const DebugRegs ".exportedRegsVar($var)." = {\n".
+	return "const DebugRegs ".($exported_var // exportedRegsVar($var))." = {\n".
 		"\t.regs = ${var}_regs,\n".
 		"\t.count = ARRAY_SIZE(${var}_regs),\n".
 		$regions.

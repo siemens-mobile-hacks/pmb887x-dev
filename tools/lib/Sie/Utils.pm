@@ -8,7 +8,7 @@ use File::Slurp qw(read_file);
 use List::Util qw(min max);
 use POSIX qw(ceil);
 
-our @EXPORT = qw|getDataDir parseAnyInt getSortedKeys printTable bin2hex hex2bin parseIniFile hexdump|;
+our @EXPORT = qw|getDataDir parseAnyInt getSortedKeys printTable tabsToSpaces peripheralFieldMacro peripheralValueMacro bin2hex hex2bin parseIniFile hexdump|;
 
 sub bin2hex($) {
 	my ($text) = @_;
@@ -55,6 +55,34 @@ sub countSymbols {
 	$str = "$str";
 	$str =~ s/\t/..../g;
 	return length($str);
+}
+
+sub peripheralFieldMacro {
+	my ($peripheral, $reg_name, $field_name) = @_;
+	my $reg = $peripheral->{regs}->{$reg_name};
+	my $name = $reg->{field_format};
+	$name =~ s/{reg}/$reg_name/g;
+	$name =~ s/{field}/$field_name/g;
+	return $peripheral->{id}."_".$name;
+}
+
+sub peripheralValueMacro {
+	my ($peripheral, $reg_name, $field_name, $value_name) = @_;
+	my $reg = $peripheral->{regs}->{$reg_name};
+	my $name = $reg->{enum_format};
+	$name =~ s/{reg}/$reg_name/g;
+	$name =~ s/{field}/$field_name/g;
+	$name =~ s/{value}/$value_name/g;
+	return $peripheral->{id}."_".$name;
+}
+
+sub tabsToSpaces {
+	my ($str) = @_;
+	my @lines = split /\n/, $str, -1;
+	for my $line (@lines) {
+		1 while $line =~ s/^([^\t]*)\t/$1." " x (4 - length($1) % 4)/e;
+	}
+	return join("\n", @lines);
 }
 
 sub printTable {

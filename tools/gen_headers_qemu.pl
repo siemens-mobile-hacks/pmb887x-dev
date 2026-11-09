@@ -11,8 +11,8 @@ use Sie::BoardMetadata;
 use Sie::Utils;
 
 if (@ARGV) {
-	die "Usage: $0 [--peripherals DIR]\n" if @ARGV != 2 || $ARGV[0] ne "--peripherals";
-	genPeripheralHeaders($ARGV[1]);
+	die "Usage: $0 [--peripherals GEN_DIR QEMU_ROOT]\n" if @ARGV != 3 || $ARGV[0] ne "--peripherals";
+	genPeripheralHeaders($ARGV[1], $ARGV[2]);
 	exit;
 }
 
@@ -34,14 +34,17 @@ for my $module (@{$cpu_meta->getAllModules()}) {
 print $str."\n";
 
 sub genPeripheralHeaders {
-	my ($root) = @_;
+	my ($gen_dir, $qemu_root) = @_;
 	my $cpu_meta = Sie::CpuMetadata->new("generic");
-	make_path($root);
+	make_path($gen_dir);
 
 	for my $peripheral (@{$cpu_meta->getAllPeripherals()}) {
-		my $file = $root."/".$peripheral->{id}.".h";
+		my $file = $peripheral->{qemu_dir} ?
+			"$qemu_root/$peripheral->{qemu_dir}/regs.h" : "$gen_dir/$peripheral->{id}.h";
+		my $str = genPeripheralHeader($peripheral);
+		$str = tabsToSpaces($str) if $peripheral->{qemu_dir};
 		open my $fp, ">", $file or die "open($file): $!";
-		print $fp genPeripheralHeader($peripheral);
+		print $fp $str;
 		close $fp;
 	}
 }
@@ -59,6 +62,7 @@ sub genPeripheralHeader {
 	push @header, "#pragma once";
 	push @header, "";
 	push @header, "#include \"qemu/bitops.h\"";
+	push @header, "#include \"qemu/debug-regs.h\"" if $peripheral->{qemu_dir};
 	push @header, "";
 	push @header, "// ".$peripheral->{id};
 	push @header, "// ".$peripheral->{descr} if $peripheral->{descr};
@@ -84,35 +88,27 @@ sub genPeripheralHeader {
 
 		for my $field_name (getSortedKeys($reg->{fields}, 'start')) {
 			my $field = $reg->{fields}->{$field_name};
-			my $field_name_prepared = $reg->{field_format};
-			$field_name_prepared =~ s/{reg}/$reg_name/g;
-			$field_name_prepared =~ s/{field}/$field_name/g;
+			my $field_macro = peripheralFieldMacro($peripheral, $reg_name, $field_name);
 			my $descr = $field->{descr} ? " // ".$field->{descr} : "";
 
 			if ($field->{size} > 1) {
-				push @header, [
-					"#define",
-					$prefix.$field_name_prepared,
-					"MAKE_64BIT_MASK(".$field->{start}.", ".$field->{size}.")",
-					$descr
-				];
-				push @header, ["#define", $prefix.$field_name_prepared."_SHIFT", $field->{start}];
+				push @header, ["#define", $field_macro, "MAKE_64BIT_MASK(".$field->{start}.", ".$field->{size}.")", $descr];
+				push @header, ["#define", $field_macro."_SHIFT", $field->{start}];
 			} else {
-				push @header, ["#define", $prefix.$field_name_prepared, "BIT(".$field->{start}.")", $descr];
+				push @header, ["#define", $field_macro, "BIT(".$field->{start}.")", $descr];
+				push @header, ["#define", $field_macro."_SHIFT", $field->{start}] if $peripheral->{qemu_dir};
 			}
 
 			for my $value_name (getSortedKeys($field->{values})) {
-				my $value_name_prepared = $reg->{enum_format};
-				$value_name_prepared =~ s/{reg}/$reg_name/g;
-				$value_name_prepared =~ s/{field}/$field_name/g;
-				$value_name_prepared =~ s/{value}/$value_name/g;
-
 				my $value = $field->{values}->{$value_name} << $field->{start};
-				push @header, ["#define", $prefix.$value_name_prepared, sprintf("0x%X", $value)];
+				push @header, ["#define", peripheralValueMacro($peripheral, $reg_name, $field_name, $value_name),
+					sprintf("0x%X", $value)];
 			}
 		}
 		push @header, [];
 	}
+
+	push @header, "extern const DebugRegs ".lc($peripheral->{id})."_debug_regs;" if $peripheral->{qemu_dir};
 
 	my $str = printTable(\@header);
 	$str =~ s/\s+\z/\n/;

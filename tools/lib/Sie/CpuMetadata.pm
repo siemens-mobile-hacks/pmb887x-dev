@@ -584,7 +584,7 @@ sub parseModule {
 				} elsif ($key eq 'gpio') {
 					push @{$module->{gpio_lines}}, $value || "";
 				} else {
-					if ($key eq "type" || $key eq "name" || $key eq "descr" || $key eq "qemu") {
+					if ($key eq "type" || $key eq "name" || $key eq "descr" || $key eq "qemu" || $key eq "qemu_dir") {
 						$module->{$key} = $value;
 					} elsif ($key eq "id") {
 						$module->{ids} = [map { parseAnyInt($_) } split(/\s*,\s*/, $value)];
