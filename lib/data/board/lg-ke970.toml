@@ -91,8 +91,12 @@ addr = 0x7D
 port = { LINE_IN = "DSP:AFE_EPPA" }
 
 [peripheral.SCROLL]
-type = "ke970-scroll"
+# Hall-effect scroll dial: two EM-0611 switches (U601, U602 on the LCD FPCB, fed from V_SCROLL_2.8) under a magnetised wheel, 90 degrees out of phase
+# SCROLL_KEY_A: rising edges captured by CAPCOM1 CC6
+# SCROLL_KEY_B: read as a level
+type = "rotary-encoder"
 out = { A = "SCROLL_KEY_A", B = "SCROLL_KEY_B" }
+steps = 4
 
 [analog]
 # M0  BATT_TEMP Battery temperature measure
