@@ -3,7 +3,7 @@
 #if defined(BOARD_HAS_PMIC_PMB6812)
 #include <pmic/PMB6812.h>
 #elif defined(BOARD_HAS_PMIC_D1094XX)
-#include <pmic/PASIC.h>
+#include <pmic/D1094XX.h>
 #endif
 
 #if defined(SIM_TIMING_TEST) || defined(SIM_LATENCY_TEST)
@@ -165,15 +165,15 @@ static bool sim_supply_set(bool _enabled __attribute__((unused))) {
 #elif defined(BOARD_HAS_PMIC_D1094XX)
 	uint8_t supply_enable;
 
-	if (!i2c_smbus_read_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, &supply_enable))
+	if (!i2c_smbus_read_byte(D1094XX_I2C_ADDR, D1094XX_SUPPLY_ENABLE_1, &supply_enable))
 		return false;
 	if (_enabled) {
-		supply_enable |= PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
+		supply_enable |= D1094XX_SUPPLY_ENABLE_1_VAUDREGA_EN;
 	} else {
-		supply_enable &= ~PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN;
+		supply_enable &= ~D1094XX_SUPPLY_ENABLE_1_VAUDREGA_EN;
 	}
 
-	return i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_1, supply_enable);
+	return i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_SUPPLY_ENABLE_1, supply_enable);
 #else
 	return true;
 #endif

@@ -8,7 +8,7 @@
 
 #ifdef PMB8876
 
-#include <pmic/PASIC.h>
+#include <pmic/D1094XX.h>
 
 #define READ_RUNS 4
 #define LONG_READ 8
@@ -53,7 +53,7 @@ static uint32_t read_ticks(uint32_t size) {
 
 	for (uint32_t i = 0; i < READ_RUNS; i++) {
 		stopwatch_t start = stopwatch_get();
-		if (i2c_v2_smbus_read(PASIC_I2C_ADDR, PASIC_TURNOFF_REASON, data, size) != I2C_V2_DONE)
+		if (i2c_v2_smbus_read(D1094XX_I2C_ADDR, D1094XX_TURNOFF_REASON, data, size) != I2C_V2_DONE)
 			return 0;
 		uint32_t ticks = (uint32_t) stopwatch_elapsed(start);
 		if (ticks < best)

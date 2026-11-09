@@ -8,7 +8,7 @@
 
 #ifdef PMB8876
 
-#include <pmic/PASIC.h>
+#include <pmic/D1094XX.h>
 
 #define TIMING_RUNS 8
 #define DMA_CHANNEL 1
@@ -40,7 +40,7 @@ static uint32_t polled_read_ns(uint32_t size) {
 	for (uint32_t i = 0; i < TIMING_RUNS; i++) {
 		cpu_enable_irq(false);
 		stopwatch_t start = stopwatch_get();
-		i2c_v2_result_t result = i2c_v2_smbus_read(PASIC_I2C_ADDR, PASIC_TURNOFF_REASON, data, size);
+		i2c_v2_result_t result = i2c_v2_smbus_read(D1094XX_I2C_ADDR, D1094XX_TURNOFF_REASON, data, size);
 		uint32_t ns = ticks_to_ns(stopwatch_elapsed(start));
 		cpu_enable_irq(true);
 
@@ -59,7 +59,7 @@ static uint32_t dma_read_ns(uint32_t size) {
 
 	for (uint32_t i = 0; i < TIMING_RUNS; i++) {
 		stopwatch_t start = stopwatch_get();
-		i2c_v2_result_t result = i2c_v2_dma_read(DMA_CHANNEL, PASIC_I2C_ADDR, data, size);
+		i2c_v2_result_t result = i2c_v2_dma_read(DMA_CHANNEL, D1094XX_I2C_ADDR, data, size);
 		uint32_t ns = ticks_to_ns(stopwatch_elapsed(start));
 
 		if (result != I2C_V2_DONE) {

@@ -1,5 +1,5 @@
 #include <pmb887x.h>
-#include <pmic/PASIC.h>
+#include <pmic/D1094XX.h>
 
 #include "lcd-board.h"
 
@@ -12,33 +12,33 @@
 
 bool lcd_board_initialize_light(void) {
 	i2c_init();
-	if (!i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_SUPPLY_ENABLE_2, CX75_SUPPLY_ENABLE_2_INITIAL))
+	if (!i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_SUPPLY_ENABLE_2, CX75_SUPPLY_ENABLE_2_INITIAL))
 		return false;
 	if (!i2c_smbus_write_byte(
-		PASIC_I2C_ADDR,
-		PASIC_LIGHT_ENABLE,
-		PASIC_LIGHT_ENABLE_LED2_EN | PASIC_LIGHT_ENABLE_LED3_EN
+		D1094XX_I2C_ADDR,
+		D1094XX_LIGHT_ENABLE,
+		D1094XX_LIGHT_ENABLE_LED2_EN | D1094XX_LIGHT_ENABLE_LED3_EN
 	))
 		return false;
 
-	return i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_LIGHT_CONTROL, 0);
+	return i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_LIGHT_CONTROL, 0);
 }
 
 bool lcd_board_enable_vboost(void) {
 	return i2c_smbus_write_byte(
-		PASIC_I2C_ADDR,
-		PASIC_SUPPLY_ENABLE_2,
-		CX75_SUPPLY_ENABLE_2_INITIAL | PASIC_SUPPLY_ENABLE_2_VBOOST_EN
+		D1094XX_I2C_ADDR,
+		D1094XX_SUPPLY_ENABLE_2,
+		CX75_SUPPLY_ENABLE_2_INITIAL | D1094XX_SUPPLY_ENABLE_2_VBOOST_EN
 	);
 }
 
 bool lcd_board_enable_backlight(void) {
-	if (!i2c_smbus_write_byte(PASIC_I2C_ADDR, PASIC_LIGHT_PWM1, LCD_BACKLIGHT_LEVEL))
+	if (!i2c_smbus_write_byte(D1094XX_I2C_ADDR, D1094XX_LIGHT_PWM1, LCD_BACKLIGHT_LEVEL))
 		return false;
 
 	return i2c_smbus_write_byte(
-		PASIC_I2C_ADDR,
-		PASIC_LIGHT_CONTROL,
-		PASIC_LIGHT_CONTROL_LED2_EN | PASIC_LIGHT_CONTROL_PWM1_EN | PASIC_LIGHT_CONTROL_MASTER_EN
+		D1094XX_I2C_ADDR,
+		D1094XX_LIGHT_CONTROL,
+		D1094XX_LIGHT_CONTROL_LED2_EN | D1094XX_LIGHT_CONTROL_PWM1_EN | D1094XX_LIGHT_CONTROL_MASTER_EN
 	);
 }

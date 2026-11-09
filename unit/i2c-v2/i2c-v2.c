@@ -16,7 +16,7 @@
 #if defined(BOARD_PLATFORM_APOXI)
 #include <pmic/PMB6812.h>
 #elif defined(BOARD_PLATFORM_SIEMENS)
-#include <pmic/PASIC.h>
+#include <pmic/D1094XX.h>
 #endif
 
 #define I2C_STATUS_CLEAR 0x3F
@@ -55,9 +55,9 @@ static const struct i2c_test_target I2C_TEST_TARGET = {
 };
 #elif defined(BOARD_PLATFORM_SIEMENS)
 static const struct i2c_test_target I2C_TEST_TARGET = {
-	.address = PASIC_I2C_ADDR,
-	.write_register = PASIC_LIGHT_PWM1,
-	.read_register = PASIC_LIGHT_PWM1,
+	.address = D1094XX_I2C_ADDR,
+	.write_register = D1094XX_LIGHT_PWM1,
+	.read_register = D1094XX_LIGHT_PWM1,
 	.write_value = 1,
 	.restore_value = 0,
 	.write_uses_pec = false,

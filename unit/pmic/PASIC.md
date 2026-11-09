@@ -3,7 +3,7 @@
 PASIC is the common register superset for the Dialog Mozart and ST Twigo4 PMIC families. The register map was
 reconstructed from the EL71 firmware and the reset dumps in `qemu/hw/arm/pmb887x/i2c/d1094xx.c`.
 
-The common model is intentionally a superset. A register present in `PASIC.cfg` is not necessarily implemented by
+The common model is intentionally a superset. A register present in `D1094XX.cfg` is not necessarily implemented by
 every physical chip.
 
 ## Identification

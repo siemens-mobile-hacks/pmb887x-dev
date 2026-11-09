@@ -1,6 +1,6 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
-#include <gen/peripheral/pmic/PASIC.h>
+#include <gen/peripheral/pmic/D1094XX.h>
 
 #include "dsp/audio/board/siemens/commands.h"
 #include "dsp/audio/board/siemens/pasic.h"
@@ -81,17 +81,17 @@ static bool audio_stop(void) {
 
 // CX75 firmware state machine at A0826774, in execution order.
 static bool pasic_output_configure(void) {
-	pasic_register_write(PASIC_MONO_CONTROL, 0x00);
-	pasic_register_write(PASIC_STEREO_CONTROL, 0x00);
-	pasic_register_write(PASIC_ADC_CONTROL, 0x0C);
-	pasic_register_write(PASIC_DAC_CONTROL, 0x0C);
-	pasic_register_write(PASIC_I2S_RX_CONTROL, 0x72);
-	pasic_register_write(PASIC_I2S_TX_CONTROL, 0x72);
-	pasic_register_write(PASIC_STEREO_MODE, 0x03);
+	pasic_register_write(D1094XX_MONO_CONTROL, 0x00);
+	pasic_register_write(D1094XX_STEREO_CONTROL, 0x00);
+	pasic_register_write(D1094XX_ADC_CONTROL, 0x0C);
+	pasic_register_write(D1094XX_DAC_CONTROL, 0x0C);
+	pasic_register_write(D1094XX_I2S_RX_CONTROL, 0x72);
+	pasic_register_write(D1094XX_I2S_TX_CONTROL, 0x72);
+	pasic_register_write(D1094XX_STEREO_MODE, 0x03);
 	if (!pasic_adc_sample_rate_set(3))
 		return false;
-	pasic_register_write(PASIC_ADC_CONTROL, 0xF4);
-	pasic_register_write(PASIC_DAC_CONTROL, 0x40);
+	pasic_register_write(D1094XX_ADC_CONTROL, 0xF4);
+	pasic_register_write(D1094XX_DAC_CONTROL, 0x40);
 	if (!pasic_push_pull_route_set(PASIC_PUSH_PULL_ROUTE_1, 3))
 		return false;
 	if (!pasic_push_pull_route_set(PASIC_PUSH_PULL_ROUTE_2, 3))
@@ -100,7 +100,7 @@ static bool pasic_output_configure(void) {
 		&SIEMENS_AUDIO_BOARD.speaker_gain, PASIC_OUTPUT_GAIN_PERCENT)) {
 		return false;
 	}
-	pasic_register_write(PASIC_MUX_INPUT, 0x03);
+	pasic_register_write(D1094XX_MUX_INPUT, 0x03);
 	if (!pasic_amplifier_gain_set(PASIC_AMPLIFIER_PATH_7, 0x0F))
 		return false;
 	if (!pasic_switch_mux_raw_set(PASIC_SWITCH_MUX_PATH_1, 0x00))
@@ -113,7 +113,7 @@ static bool pasic_output_configure(void) {
 		return false;
 	if (!pasic_stereo_route_set(PASIC_STEREO_ROUTE_DISABLED))
 		return false;
-	pasic_register_write(PASIC_SUPPLY_ENABLE_2, 0x19);
+	pasic_register_write(D1094XX_SUPPLY_ENABLE_2, 0x19);
 	if (!pasic_push_pull_configure(PASIC_PUSH_PULL_PATH_A, false, 8))
 		return false;
 	if (!pasic_push_pull_configure(PASIC_PUSH_PULL_PATH_B, false, 8))
@@ -122,22 +122,22 @@ static bool pasic_output_configure(void) {
 		return false;
 	if (!pasic_push_pull_configure(PASIC_PUSH_PULL_PATH_D, true, 6))
 		return false;
-	pasic_register_write(PASIC_STEREO_CONTROL, 0x01);
-	pasic_register_write(PASIC_MONO_CONTROL, 0x01);
+	pasic_register_write(D1094XX_STEREO_CONTROL, 0x01);
+	pasic_register_write(D1094XX_MONO_CONTROL, 0x01);
 	return true;
 }
 
 static void pasic_set_mute(void) {
-	pasic_register_write(PASIC_MONO_CONTROL, 0x00);
-	pasic_register_write(PASIC_STEREO_CONTROL, 0x00);
+	pasic_register_write(D1094XX_MONO_CONTROL, 0x00);
+	pasic_register_write(D1094XX_STEREO_CONTROL, 0x00);
 }
 
 static bool audio_configure(void) {
 	if (!runtime_prepare())
 		return false;
 	pasic_output_enable(
-		PASIC_SUPPLY_MODE_VAUDREGA_MODE | PASIC_SUPPLY_MODE_VAUDREGB_MODE,
-		PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN | PASIC_SUPPLY_ENABLE_1_VAUDREGB_EN,
+		D1094XX_SUPPLY_MODE_VAUDREGA_MODE | D1094XX_SUPPLY_MODE_VAUDREGB_MODE,
+		D1094XX_SUPPLY_ENABLE_1_VAUDREGA_EN | D1094XX_SUPPLY_ENABLE_1_VAUDREGB_EN,
 		0, 25);
 	return pasic_output_configure();
 }

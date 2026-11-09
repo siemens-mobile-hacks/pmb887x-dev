@@ -1,6 +1,6 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
-#include <gen/peripheral/pmic/PASIC.h>
+#include <gen/peripheral/pmic/D1094XX.h>
 
 #include "dsp/audio/board/siemens/commands.h"
 #include "dsp/audio/board/siemens/pasic.h"
@@ -97,20 +97,20 @@ static bool runtime_prepare(void) {
 }
 
 static bool pasic_output_prepare(void) {
-	pasic_register_write(PASIC_SUPPLY_MODE, 0x06);
-	pasic_register_write(PASIC_SUPPLY_ENABLE_1, 0x15);
-	pasic_register_write(PASIC_SUPPLY_ENABLE_2, 0x0D);
+	pasic_register_write(D1094XX_SUPPLY_MODE, 0x06);
+	pasic_register_write(D1094XX_SUPPLY_ENABLE_1, 0x15);
+	pasic_register_write(D1094XX_SUPPLY_ENABLE_2, 0x0D);
 	pasic_audio_controls_reset();
-	pasic_register_write(PASIC_I2S_RX_CONTROL, 0x72);
-	pasic_register_write(PASIC_STEREO_MODE, 0x03);
+	pasic_register_write(D1094XX_I2S_RX_CONTROL, 0x72);
+	pasic_register_write(D1094XX_STEREO_MODE, 0x03);
 	if (!pasic_dac_sample_rate_set(7))
 		return false;
-	pasic_register_write(PASIC_DAC_CONTROL, 0x72);
+	pasic_register_write(D1094XX_DAC_CONTROL, 0x72);
 	return pasic_mono_route_set(PASIC_MONO_ROUTE_DAC);
 }
 
 static bool pasic_output_unmute(void) {
-	pasic_register_write(PASIC_MONO_CONTROL, 0x02);
+	pasic_register_write(D1094XX_MONO_CONTROL, 0x02);
 	return pasic_output_gain_percent_set(PASIC_AMPLIFIER_PATH_4,
 		&SIEMENS_AUDIO_BOARD.speaker_gain, PASIC_OUTPUT_GAIN_PERCENT);
 }
@@ -118,7 +118,7 @@ static bool pasic_output_unmute(void) {
 static bool pasic_set_mute(void) {
 	if (!pasic_amplifier_gain_set(PASIC_AMPLIFIER_PATH_5, 0x00))
 		return false;
-	pasic_register_write(PASIC_MONO_CONTROL, 0x00);
+	pasic_register_write(D1094XX_MONO_CONTROL, 0x00);
 	return true;
 }
 
@@ -150,11 +150,11 @@ static bool runtime_output_configure(void) {
 static bool audio_configure(void) {
 	if (!runtime_prepare())
 		return false;
-	pasic_register_write(PASIC_LIGHT_CONTROL, 0xBA);
+	pasic_register_write(D1094XX_LIGHT_CONTROL, 0xBA);
 	pasic_output_enable(
-		PASIC_SUPPLY_MODE_VAUDREGA_MODE | PASIC_SUPPLY_MODE_VAUDREGB_MODE,
-		PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN,
-		PASIC_SUPPLY_ENABLE_2_VBOOST_EN,
+		D1094XX_SUPPLY_MODE_VAUDREGA_MODE | D1094XX_SUPPLY_MODE_VAUDREGB_MODE,
+		D1094XX_SUPPLY_ENABLE_1_VAUDREGA_EN,
+		D1094XX_SUPPLY_ENABLE_2_VBOOST_EN,
 		25
 	);
 	if (!pasic_output_prepare())

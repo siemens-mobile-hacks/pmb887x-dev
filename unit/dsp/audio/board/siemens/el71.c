@@ -1,6 +1,6 @@
 #include <pmb887x.h>
 #include <gen/dsp.h>
-#include <gen/peripheral/pmic/PASIC.h>
+#include <gen/peripheral/pmic/D1094XX.h>
 #include <stopwatch.h>
 
 #include "dsp/audio/board/siemens/commands.h"
@@ -185,14 +185,14 @@ static bool audio_profile_configure(void) {
 }
 
 static bool pasic_output_configure(void) {
-	pasic_register_write(PASIC_I2S_RX_CONTROL, 0x72);
-	pasic_register_write(PASIC_STEREO_MODE, 0x03);
+	pasic_register_write(D1094XX_I2S_RX_CONTROL, 0x72);
+	pasic_register_write(D1094XX_STEREO_MODE, 0x03);
 	if (!pasic_dac_sample_rate_set(6))
 		return false;
-	pasic_register_write(PASIC_DAC_CONTROL, 0x72);
+	pasic_register_write(D1094XX_DAC_CONTROL, 0x72);
 	if (!pasic_mono_route_set(PASIC_MONO_ROUTE_DAC))
 		return false;
-	pasic_register_write(PASIC_MONO_CONTROL, 0x02);
+	pasic_register_write(D1094XX_MONO_CONTROL, 0x02);
 	return pasic_output_gain_percent_set(PASIC_AMPLIFIER_PATH_4,
 		&SIEMENS_AUDIO_BOARD.speaker_gain, PASIC_OUTPUT_GAIN_PERCENT);
 }
@@ -208,8 +208,8 @@ static bool afe_configure(void) {
 	if (!runtime_configure())
 		return false;
 	pasic_output_enable(
-		PASIC_SUPPLY_MODE_VAUDREGA_MODE | PASIC_SUPPLY_MODE_VAUDREGB_MODE,
-		PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN | PASIC_SUPPLY_ENABLE_1_VAUDREGB_EN,
+		D1094XX_SUPPLY_MODE_VAUDREGA_MODE | D1094XX_SUPPLY_MODE_VAUDREGB_MODE,
+		D1094XX_SUPPLY_ENABLE_1_VAUDREGA_EN | D1094XX_SUPPLY_ENABLE_1_VAUDREGB_EN,
 		0, 25);
 
 	/* Multimedia library profile with no input sink and the AFE as the output sink. */
@@ -239,7 +239,7 @@ static bool afe_configure(void) {
 
 	if (!pasic_line_route_set(PASIC_LINE_ROUTE_MONO))
 		return false;
-	pasic_register_write(PASIC_MONO_CONTROL, 0x02);
+	pasic_register_write(D1094XX_MONO_CONTROL, 0x02);
 	return pasic_output_gain_percent_set(PASIC_AMPLIFIER_PATH_4,
 		&SIEMENS_AUDIO_BOARD.speaker_gain, PASIC_OUTPUT_GAIN_PERCENT);
 }
@@ -247,7 +247,7 @@ static bool afe_configure(void) {
 static bool afe_stop(void) {
 	bool pcm_stopped = pcm_idle();
 	bool muted = pasic_amplifier_gain_set(PASIC_AMPLIFIER_PATH_4, 0x39);
-	pasic_register_write(PASIC_MONO_CONTROL, 0x00);
+	pasic_register_write(D1094XX_MONO_CONTROL, 0x00);
 	ADC_ANA_CTRL &= ~ADC_ANA_CTRL_BG_PWUP;
 	ADC_CLC = MOD_CLC_DISR;
 	return muted && pcm_stopped;
@@ -256,7 +256,7 @@ static bool afe_stop(void) {
 static bool pasic_set_mute(void) {
 	if (!pasic_amplifier_gain_set(PASIC_AMPLIFIER_PATH_5, 0x00))
 		return false;
-	pasic_register_write(PASIC_MONO_CONTROL, 0x00);
+	pasic_register_write(D1094XX_MONO_CONTROL, 0x00);
 	return true;
 }
 
@@ -293,8 +293,8 @@ static bool audio_configure(void) {
 	if (!runtime_configure())
 		return false;
 	pasic_output_enable(
-		PASIC_SUPPLY_MODE_VAUDREGA_MODE | PASIC_SUPPLY_MODE_VAUDREGB_MODE,
-		PASIC_SUPPLY_ENABLE_1_VAUDREGA_EN | PASIC_SUPPLY_ENABLE_1_VAUDREGB_EN,
+		D1094XX_SUPPLY_MODE_VAUDREGA_MODE | D1094XX_SUPPLY_MODE_VAUDREGB_MODE,
+		D1094XX_SUPPLY_ENABLE_1_VAUDREGA_EN | D1094XX_SUPPLY_ENABLE_1_VAUDREGB_EN,
 		0, 25);
 	if (!pasic_output_configure())
 		return false;
