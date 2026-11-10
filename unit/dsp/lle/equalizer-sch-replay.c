@@ -19,6 +19,8 @@
 
 _Static_assert(STREAM_OFFSET + ARRAY_SIZE(EQUALIZER_SCH_REPLAY_STREAM) <= OUTPUT_OFFSET, "stream overlaps the output");
 _Static_assert(STREAM_OFFSET + ARRAY_SIZE(EQUALIZER_RESET_REPLAY_STREAM) <= OUTPUT_OFFSET, "stream overlaps the output");
+_Static_assert(STREAM_OFFSET + ARRAY_SIZE(EQUALIZER_CCH_REPLAY_STREAM) <= OUTPUT_OFFSET, "stream overlaps the output");
+_Static_assert(STREAM_OFFSET + ARRAY_SIZE(EQUALIZER_SQUAL_REPLAY_STREAM) <= OUTPUT_OFFSET, "stream overlaps the output");
 
 static bool replay_stream(const uint16_t *stream, size_t stream_words) {
 	if (!test_check("Mask ROM boot dispatcher becomes ready", dsp_hw_reset()))
@@ -48,6 +50,18 @@ int main(void) {
 	if (replay_stream(EQUALIZER_RESET_REPLAY_STREAM, ARRAY_SIZE(EQUALIZER_RESET_REPLAY_STREAM))) {
 		test_eq_memory("combined outputs match the hardware", EQUALIZER_RESET_REPLAY_EXPECTED,
 			dsp_hw_shared_memory + OUTPUT_OFFSET, sizeof(EQUALIZER_RESET_REPLAY_EXPECTED));
+	}
+
+	test_category("equalizer outputs for a firmware BCCH command stream");
+	if (replay_stream(EQUALIZER_CCH_REPLAY_STREAM, ARRAY_SIZE(EQUALIZER_CCH_REPLAY_STREAM))) {
+		test_eq_memory("equalizer outputs match the hardware", EQUALIZER_CCH_REPLAY_EXPECTED,
+			dsp_hw_shared_memory + OUTPUT_OFFSET, sizeof(EQUALIZER_CCH_REPLAY_EXPECTED));
+	}
+
+	test_category("soft-output histogram across RES_EQ");
+	if (replay_stream(EQUALIZER_SQUAL_REPLAY_STREAM, ARRAY_SIZE(EQUALIZER_SQUAL_REPLAY_STREAM))) {
+		test_eq_memory("equalizer outputs and SQUAL match the hardware", EQUALIZER_SQUAL_REPLAY_EXPECTED,
+			dsp_hw_shared_memory + OUTPUT_OFFSET, sizeof(EQUALIZER_SQUAL_REPLAY_EXPECTED));
 	}
 
 	DSP_COM_CLEAR = UINT16_MAX;
