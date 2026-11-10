@@ -252,6 +252,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-equalizer-burst]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-lle-equalizer-sch-replay]
+devices = ["generic-pmb8876"]
+
 [dsp-lle-i2s1-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 

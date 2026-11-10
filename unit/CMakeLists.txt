@@ -159,6 +159,7 @@ add_peripheral_test(dsp-lle-equalizer-vectors dsp/lle/equalizer-vectors.c dsp/ds
 add_peripheral_test(dsp-lle-equalizer-gmsk-vectors dsp/lle/equalizer-gmsk-vectors.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-equalizer-output dsp/lle/equalizer-output.c dsp/dsp-hw.c)
 add_peripheral_test(dsp-lle-equalizer-burst dsp/lle/equalizer-burst.c dsp/dsp-hw.c)
+add_peripheral_test(dsp-lle-equalizer-sch-replay dsp/lle/equalizer-sch-replay.c dsp/dsp-hw.c)
 foreach(I2S_INSTANCE RANGE 1 3)
 	add_peripheral_test(dsp-lle-i2s${I2S_INSTANCE}-functional dsp/lle/i2s-functional.c dsp/dsp-hw.c)
 	target_compile_definitions(dsp-lle-i2s${I2S_INSTANCE}-functional PRIVATE I2S_INSTANCE=${I2S_INSTANCE})

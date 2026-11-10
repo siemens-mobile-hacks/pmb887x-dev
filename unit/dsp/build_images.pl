@@ -89,6 +89,8 @@ my @images = (
 	[ 'lle/equalizer-output-runner.asm', 'lle/equalizer-output-runner-8876.inc', 'DSP_EQUALIZER_OUTPUT_RUNNER_8876', 'pmb8876' ],
 	[ 'lle/equalizer-burst-runner.asm', 'lle/equalizer-burst-runner-8875.inc', 'DSP_EQUALIZER_BURST_RUNNER_8875', 'pmb8875' ],
 	[ 'lle/equalizer-burst-runner.asm', 'lle/equalizer-burst-runner-8876.inc', 'DSP_EQUALIZER_BURST_RUNNER_8876', 'pmb8876' ],
+	[ 'lle/equalizer-sch-replay.asm', 'lle/equalizer-sch-replay-8875.inc', 'DSP_EQUALIZER_SCH_REPLAY_8875', 'pmb8875' ],
+	[ 'lle/equalizer-sch-replay.asm', 'lle/equalizer-sch-replay-8876.inc', 'DSP_EQUALIZER_SCH_REPLAY_8876', 'pmb8876' ],
 	[ 'lle/i2s-functional.asm', 'lle/i2s-functional-8875.inc', 'DSP_I2S_FUNCTIONAL_8875', 'pmb8875' ],
 	[ 'lle/i2s-functional.asm', 'lle/i2s-functional-8876.inc', 'DSP_I2S_FUNCTIONAL_8876', 'pmb8876' ],
 	[ 'lle/i2s-rx-functional.asm', 'lle/i2s-rx-functional-8875.inc', 'DSP_I2S_RX_FUNCTIONAL_8875', 'pmb8875' ],
