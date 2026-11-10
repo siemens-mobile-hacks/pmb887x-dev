@@ -106,6 +106,8 @@ my @images = (
 	[ 'lle/afe-tx-pacing.asm', 'lle/afe-tx-pacing-8876.inc', 'DSP_AFE_TX_PACING_8876', 'pmb8876' ],
 	[ 'lle/modulator-functional.asm', 'lle/modulator-functional-8875.inc', 'DSP_MODULATOR_FUNCTIONAL_8875', 'pmb8875' ],
 	[ 'lle/modulator-functional.asm', 'lle/modulator-functional-8876.inc', 'DSP_MODULATOR_FUNCTIONAL_8876', 'pmb8876' ],
+	[ 'lle/modulator-clock.asm', 'lle/modulator-clock-8875.inc', 'DSP_MODULATOR_CLOCK_8875', 'pmb8875' ],
+	[ 'lle/modulator-clock.asm', 'lle/modulator-clock-8876.inc', 'DSP_MODULATOR_CLOCK_8876', 'pmb8876' ],
 	[ 'lle/baseband-functional.asm', 'lle/baseband-functional-8875.inc', 'DSP_BASEBAND_FUNCTIONAL_8875', 'pmb8875' ],
 	[ 'lle/baseband-functional.asm', 'lle/baseband-functional-8876.inc', 'DSP_BASEBAND_FUNCTIONAL_8876', 'pmb8876' ],
 	[ 'lle/tpu-events.asm', 'lle/tpu-events-8875.inc', 'DSP_TPU_EVENTS_8875', 'pmb8875' ],

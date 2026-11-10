@@ -52,6 +52,7 @@ success.
 | `dsp-lle-expansion-map-0`…`dsp-lle-expansion-map-18` | Every expansion word of one two-word TeakLite family compared with PMB8876 hardware map hashes per 256 words |
 | `dsp-lle-control-functional` | DSP control, Program/Data ROM mapping and banking, reset, and power-state behavior |
 | `dsp-lle-program-banks` | Mask-specific Program ROM page selection, exact instruction reads, and same-PC execution |
+| `dsp-lle-modulator-clock` | PMB8876 digital modulator: reads from address 0 on MSWACT, one RAM word per four GMSK symbols |
 | `dsp-lle-tpu-events` | PMB8876 TPU Timer RAM decoder values 0–9 and 15–31 observed through Baseband, modulator, and DSP interrupt state |
 | `dsp-lle-tpu-bb-events` | Hardware timing, counts, status, and DSP interrupts for repeating TPU MONON events |
 | `dsp-hle-gsm-channel-scan` | Multiband MON scan using DSP firmware 0801 and auto-discovered EELITE AFC calibration, followed by FCCH detection |

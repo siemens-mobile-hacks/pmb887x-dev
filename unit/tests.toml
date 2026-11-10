@@ -276,6 +276,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [dsp-lle-modulator-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[dsp-lle-modulator-clock]
+devices = ["generic-pmb8876"]
+
 [dsp-lle-baseband-functional]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
