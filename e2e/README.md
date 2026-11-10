@@ -12,4 +12,4 @@ tools/unit.py -d siemens-el71 -f EL71.bin -u e2e/gsm-ppp -- --gsm-trxmux 127.0.0
 
 | Test | Checks |
 | --- | --- |
-| `gsm-ppp` | Network registration, GPRS attach, PPP, ping to the `bts/` GGSN (172.16.32.1) |
+| `gsm-ppp` | Network registration, GPRS attach, PPP, ping to 1.1.1.1 |

@@ -11,7 +11,7 @@ const PPP_CONNECT_TIMEOUT_MS = 60_000;
 const PING_TIMEOUT_MS = 10_000;
 const PDP_CONTEXT_ID = 1;
 const APN = "internet";
-const GGSN_ADDRESS = "172.16.32.1";
+const INTERNET_ADDRESS = "1.1.1.1";
 const REGISTRATION_POLL_INTERVAL_MS = 1000;
 const REGISTERED_STATES = new Set([1, 5]);
 const REGISTRATION_DENIED = 3;
@@ -85,7 +85,7 @@ async function pingOverPpp(at: AtChannel) {
 		const connection = await ppp.connect({ timeout: PPP_CONNECT_TIMEOUT_MS });
 		console.log(`PPP: address ${connection.localAddress}`);
 
-		const reply = await ppp.ping(GGSN_ADDRESS, PING_TIMEOUT_MS);
+		const reply = await ppp.ping(INTERNET_ADDRESS, PING_TIMEOUT_MS);
 		console.log(`ping ${reply.address}: ${reply.bytes} bytes, ${reply.time} ms, TTL ${reply.ttl}`);
 	} finally {
 		await ppp.disconnect();
