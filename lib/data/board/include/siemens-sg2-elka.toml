@@ -36,9 +36,9 @@ gain = 2300
 type = "speaker"
 gain = 1250
 
-#[peripheral.RF]
-#type = "hd155153np"
-#port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+[peripheral.RF]
+type = "hd155153np"
+port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }
