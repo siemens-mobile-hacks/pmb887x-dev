@@ -6,11 +6,10 @@ Tests over the AT interface of the running phone firmware.
 - Shared code: `lib/`.
 
 ```sh
-./run.sh gsm-creg [SERIAL]                              # phone
-tools/unit.py -d siemens-el71 -f EL71.bin -u e2e/gsm-creg  # emulator
+./run.sh gsm-ppp [SERIAL]                                                          # phone
+tools/unit.py -d siemens-el71 -f EL71.bin -u e2e/gsm-ppp -- --gsm-trxmux 127.0.0.1:5750  # emulator, network from bts/
 ```
 
 | Test | Checks |
 | --- | --- |
-| `gsm-at` | AT interface, SIM ready |
-| `gsm-creg` | Network registration |
+| `gsm-ppp` | Network registration, GPRS attach, PPP, ping to the `bts/` GGSN (172.16.32.1) |
