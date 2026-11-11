@@ -16,13 +16,17 @@ export function createPppDispatcher(ppp: PPP, dnsServer: string) {
 	});
 }
 
-async function connectHttp(ppp: PPP, dnsServer: string, protocol: string, hostname: string, port: string) {
-	if (protocol != "http:")
-		throw new Error(`${protocol} is not supported over PPP`);
+export async function connectTcp(ppp: PPP, dnsServer: string, hostname: string, port: number) {
 	const address = isIP(hostname) ? hostname : (await new DNS(ppp).resolveIpv4(hostname, dnsServer))[0];
 	if (address === undefined)
 		throw new Error(`${hostname} has no IPv4 address`);
 	const socket = new TcpSocket(ppp);
-	await socket.connect(address, port ? Number(port) : HTTP_PORT);
+	await socket.connect(address, port);
 	return socket;
+}
+
+async function connectHttp(ppp: PPP, dnsServer: string, protocol: string, hostname: string, port: string) {
+	if (protocol != "http:")
+		throw new Error(`${protocol} is not supported over PPP`);
+	return connectTcp(ppp, dnsServer, hostname, port ? Number(port) : HTTP_PORT);
 }

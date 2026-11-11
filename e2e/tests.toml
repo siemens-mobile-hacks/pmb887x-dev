@@ -1,3 +1,7 @@
 [gsm-ppp]
 devices = ["siemens-el71"]
 timeout = 600
+
+# [gprs-operator-proxy]
+# devices = ["siemens-el71"]
+# timeout = 600

@@ -13,3 +13,4 @@ tools/unit.py -d siemens-el71 -f EL71.bin -u e2e/gsm-ppp -- --gsm-trxmux 127.0.0
 | Test | Checks |
 | --- | --- |
 | `gsm-ppp` | Network registration, GPRS attach, PPP, ping to 1.1.1.1 |
+| `gprs-operator-proxy` | WAP and MMS through operator HTTP proxies, WAP gateways and MMS centers in the `bts/` network (emulator only) |
