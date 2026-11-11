@@ -7,6 +7,7 @@ Tests over the AT interface of the running phone firmware.
 
 ```sh
 ./run.sh gsm-ppp [SERIAL]                                                          # phone
+tools/unit.py -d siemens-el71 -f EL71.bin -u e2e/gsm-ppp                                 # emulator, built-in network
 tools/unit.py -d siemens-el71 -f EL71.bin -u e2e/gsm-ppp -- --gsm-trxmux 127.0.0.1:5750  # emulator, network from bts/
 ```
 
