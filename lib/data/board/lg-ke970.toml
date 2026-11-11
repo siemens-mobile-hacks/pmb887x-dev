@@ -78,6 +78,9 @@ accessories = {
 		gpio = { JACK_DETECT = 0 },
 		port = { "HEADSET:in" = "HEADSET_SWITCH:out" },
 	},
+	data-cable = {
+		gpio = { JACK_DETECT = 1, USART0_CTS = 0 },
+	},
 }
 
 [peripheral.RF]

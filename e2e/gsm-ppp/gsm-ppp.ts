@@ -34,7 +34,7 @@ const REGISTRATION_STATES = new Map([
 
 async function getRegistrationState(at: AtChannel, query: string, prefix: string) {
 	const response = await at.sendCommand(query, prefix);
-	const match = response.lines[0]?.match(/^\S+ \d+,(\d+)/);
+	const match = response.lines[0]?.match(/^\S+ \d+,\s*(\d+)/);
 	if (!response.success || match?.[1] === undefined)
 		throw new Error(`${query}: ${response.lines[0] ?? response.status}`);
 	return { state: Number(match[1]), line: response.lines[0] };
@@ -60,7 +60,7 @@ async function waitForRegistration(at: AtChannel, query: string, prefix: string,
 
 async function checkSignal(at: AtChannel) {
 	const response = await at.sendCommand("AT+CSQ", "+CSQ:");
-	const match = response.lines[0]?.match(/^\+CSQ: (\d+),(\d+)/);
+	const match = response.lines[0]?.match(/^\+CSQ: (\d+),\s*(\d+)/);
 	if (!response.success || match?.[1] === undefined)
 		throw new Error(`AT+CSQ: ${response.lines[0] ?? response.status}`);
 	const rssi = Number(match[1]);
