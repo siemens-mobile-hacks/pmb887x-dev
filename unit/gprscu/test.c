@@ -62,6 +62,97 @@ static const struct gea3_case GEA3_CASES[] = {
 	},
 };
 
+#define GEA12_VECTOR_BYTES 18
+
+struct gea12_case {
+	const char *name;
+	uint32_t control;
+	uint8_t key[8];
+	uint32_t input;
+	uint8_t plaintext[GEA12_VECTOR_BYTES];
+	uint8_t expected[GEA12_VECTOR_BYTES];
+};
+
+/* GEA-1 and GEA-2 known-answer vectors published with github.com/P1sec/gea-implementation. */
+static const struct gea12_case GEA12_CASES[] = {
+	{
+		.name = "GEA1 zero key vector",
+		.control = 0,
+		.key = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+		.input = 0x00000000,
+		.expected = {
+			0x1F, 0xA1, 0x98, 0xAB, 0x21, 0x14, 0xC3, 0x8A, 0x9E, 0xBC, 0xCB, 0x63, 0xAD, 0x48, 0x13, 0xA7,
+			0x40, 0xC1,
+		},
+	},
+	{
+		.name = "GEA1 downlink vector",
+		.control = GPRSCU_CON_DIRECTION,
+		.key = { 0x55, 0xE3, 0x03, 0xEB, 0x7D, 0x55, 0xB6, 0x85 },
+		.input = 0xDA637A83,
+		.plaintext = {
+			0x6E, 0x00, 0xCF, 0xE7, 0xB7, 0xFB, 0x97, 0x48, 0x92, 0xB8, 0xCD, 0xE5, 0xE4, 0x33, 0x63, 0x39,
+			0x7D, 0x85,
+		},
+		.expected = {
+			0x58, 0xDA, 0xD0, 0x64, 0x57, 0xB9, 0xFE, 0x10, 0x15, 0xDA, 0x07, 0x76, 0xED, 0x19, 0x90, 0x7B,
+			0x78, 0x88,
+		},
+	},
+	{
+		.name = "GEA1 uplink vector",
+		.control = 0,
+		.key = { 0xA7, 0x26, 0x5D, 0x19, 0x32, 0xA0, 0xD6, 0x18 },
+		.input = 0x0E9B8ADF,
+		.plaintext = {
+			0x96, 0xE7, 0xB1, 0xD9, 0x2B, 0x1E, 0xA8, 0xFC, 0xDD, 0xA4, 0x12, 0x33, 0xC6, 0x32, 0x94, 0x05,
+			0x53, 0x83,
+		},
+		.expected = {
+			0xD7, 0x21, 0x97, 0xF6, 0x5D, 0x4D, 0x67, 0xB1, 0x4D, 0x2C, 0xEE, 0x81, 0x2C, 0xB0, 0xB9, 0xBE,
+			0xA0, 0xC9,
+		},
+	},
+	{
+		.name = "GEA2 zero key vector",
+		.control = GPRSCU_CON_GEA2,
+		.key = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+		.input = 0x00000000,
+		.expected = {
+			0x04, 0x51, 0x15, 0xD5, 0xE5, 0xA2, 0xD6, 0x25, 0x41, 0xDA, 0x07, 0x8B, 0x18, 0xBA, 0xA5, 0x3F,
+			0xFE, 0x14,
+		},
+	},
+	{
+		.name = "GEA2 downlink vector",
+		.control = GPRSCU_CON_GEA2 | GPRSCU_CON_DIRECTION,
+		.key = { 0xB1, 0x0F, 0x38, 0x9B, 0x78, 0xA6, 0x16, 0x48 },
+		.input = 0x24C05B01,
+		.plaintext = {
+			0xEA, 0xBF, 0x6D, 0x3C, 0x6B, 0xA5, 0xDB, 0xF7, 0x6E, 0xBB, 0x3C, 0x4C, 0x0A, 0xC0, 0x24, 0x0C,
+			0xB0, 0xAB,
+		},
+		.expected = {
+			0x51, 0x56, 0x56, 0x9D, 0x2A, 0xB9, 0x82, 0x57, 0xBE, 0x1A, 0x37, 0xD6, 0x0D, 0xDF, 0x07, 0xAE,
+			0x90, 0x75,
+		},
+	},
+	{
+		.name = "GEA2 uplink vector",
+		.control = GPRSCU_CON_GEA2,
+		.key = { 0x0C, 0x34, 0xB2, 0x94, 0x0A, 0x97, 0x07, 0xFD },
+		.input = 0xF59CC96A,
+		.plaintext = {
+			0xF9, 0x37, 0x3D, 0xE5, 0x2E, 0xA6, 0x2C, 0x49, 0x06, 0x97, 0x11, 0xE8, 0x33, 0x89, 0xD0, 0x37,
+			0xFC, 0x17,
+		},
+		.expected = {
+			0x50, 0x9C, 0x19, 0xB7, 0x8D, 0x1D, 0x4C, 0xEB, 0x49, 0xC3, 0xB1, 0xF4, 0x3D, 0xF0, 0x14, 0xF7,
+			0x4C, 0xDA,
+		},
+	},
+};
+
 static void gprscu_initialize(uint32_t control) {
 	GPRSCU_CON = control | GPRSCU_CON_INIT;
 	for (uint32_t attempt = 0; attempt < 10000 && (GPRSCU_CON & GPRSCU_CON_BUSY) != 0; attempt++)
@@ -617,6 +708,228 @@ static void test_gea3_case(const struct gea3_case *test_case) {
 		(GPRSCU_STAT & GPRSCU_STAT_INPUT_FREE) >> GPRSCU_STAT_INPUT_FREE_SHIFT);
 }
 
+static uint32_t gprscu_key_word(const uint8_t *key) {
+	return key[0] | (key[1] << 8) | (key[2] << 16) | ((uint32_t) key[3] << 24);
+}
+
+static void test_gea12_case(const struct gea12_case *test_case) {
+	uint8_t actual[GEA12_VECTOR_BYTES];
+	size_t received = 0;
+
+	GPRSCU_CON = GPRSCU_CON_SEGMENT_MODE | GPRSCU_CON_SEGMENT_RESET;
+	GPRSCU_SEGMENT = GEA12_VECTOR_BYTES | GPRSCU_SEGMENT_CIPH_CTRL;
+	GPRSCU_INPUT(0) = test_case->input;
+	GPRSCU_KEY(0) = gprscu_key_word(&test_case->key[0]);
+	GPRSCU_KEY(1) = gprscu_key_word(&test_case->key[4]);
+	gprscu_initialize(test_case->control | GPRSCU_CON_SEGMENT_MODE | GPRSCU_CON_CIPH_CTRL);
+
+	for (size_t index = 0; index < GEA12_VECTOR_BYTES; index++)
+		GPRSCU_DATA_BYTE = test_case->plaintext[index];
+	GPRSCU_CON |= GPRSCU_CON_SEGMENT_START;
+	while (received < GEA12_VECTOR_BYTES && gprscu_wait_output_available())
+		actual[received++] = GPRSCU_DATA_BYTE;
+
+	if (!test_check("GEA1/2 produces every output byte", received == GEA12_VECTOR_BYTES))
+		return;
+	test_eq_memory(test_case->name, test_case->expected, actual, sizeof(actual));
+}
+
+static uint32_t gprscu_lockstep_status_reads;
+
+static uint16_t gprscu_lockstep(uint16_t value, bool halfword) {
+	uint32_t status_reads = 1;
+
+	if (halfword) {
+		GPRSCU_DATA_HALFWORD = value;
+	} else {
+		GPRSCU_DATA_BYTE = value;
+	}
+	while ((GPRSCU_STAT & GPRSCU_STAT_OUTPUT_COUNT) == 0 && status_reads < 100000)
+		status_reads++;
+	gprscu_lockstep_status_reads = MAX(gprscu_lockstep_status_reads, status_reads);
+	return halfword ? GPRSCU_DATA_HALFWORD : GPRSCU_DATA_BYTE;
+}
+
+static void gprscu_lockstep_bytes(const uint8_t *input, uint8_t *output, size_t size) {
+	size_t index = 0;
+
+	for (; index + 1 < size; index += 2) {
+		uint16_t value = gprscu_lockstep(input[index] | (input[index + 1] << 8), true);
+		output[index] = value;
+		output[index + 1] = value >> 8;
+	}
+	if (index < size)
+		output[index] = gprscu_lockstep(input[index], false);
+}
+
+static void gprscu_configure_control(const uint8_t *key, uint32_t input, uint32_t control) {
+	GPRSCU_CON = GPRSCU_CON_SEGMENT_RESET;
+	GPRSCU_KEY(0) = gprscu_key_word(&key[0]);
+	GPRSCU_KEY(1) = gprscu_key_word(&key[4]);
+	GPRSCU_INPUT(0) = input;
+	gprscu_initialize(control);
+	GPRSCU_POLYNOM = GPRSCU_LLC_POLYNOM;
+	GPRSCU_FCS = GPRSCU_LLC_FCS_INIT;
+}
+
+static void test_control_cipher_frame(void) {
+	/* LLC UI header, the first 15 bytes of the GEA1 uplink vector, then its complemented FCS. */
+	static const uint8_t HEADER[] = { 0x01, 0xC0 };
+	static const uint8_t EXPECTED_FCS_OUTPUT[] = { 0xD4, 0xA5, 0xC1 };
+	const struct gea12_case *vector = &GEA12_CASES[2];
+	size_t body_size = GEA12_VECTOR_BYTES - ARRAY_SIZE(EXPECTED_FCS_OUTPUT);
+	uint8_t header[ARRAY_SIZE(HEADER)];
+	uint8_t body[GEA12_VECTOR_BYTES];
+	uint8_t fcs_output[ARRAY_SIZE(EXPECTED_FCS_OUTPUT)];
+
+	gprscu_lockstep_status_reads = 0;
+	gprscu_configure_control(vector->key, vector->input, 0);
+	GPRSCU_CON |= GPRSCU_CON_CRC_CTRL;
+	gprscu_lockstep_bytes(HEADER, header, sizeof(header));
+	GPRSCU_CON |= GPRSCU_CON_CIPH_CTRL;
+	gprscu_lockstep_bytes(vector->plaintext, body, body_size);
+	uint32_t fcs = GPRSCU_FCS;
+	GPRSCU_CON &= ~GPRSCU_CON_CRC_CTRL;
+	for (size_t index = 0; index < ARRAY_SIZE(fcs_output); index++)
+		fcs_output[index] = gprscu_lockstep((~fcs >> (8 * (index + 1))) & 0xFF, false);
+	GPRSCU_CON = 0;
+
+	test_eq_memory("CRC-only header passes unciphered", HEADER, header, sizeof(header));
+	test_eq_memory("control cipher starts the keystream at the first ciphered byte", vector->expected, body,
+		body_size);
+	test_eq_u32("control CRC covers the plaintext header and body", 0x74A99094, fcs);
+	test_eq_memory("FCS bytes continue the keystream with CRC disabled", EXPECTED_FCS_OUTPUT, fcs_output,
+		sizeof(fcs_output));
+	test_check("each processed entry is readable within 10 status reads", gprscu_lockstep_status_reads <= 10);
+	printf("# GPRSCU lockstep: max status reads %lu\n", gprscu_lockstep_status_reads);
+}
+
+static void test_control_downlink_residue(void) {
+	/* The frame of test_control_cipher_frame() in plaintext with its FCS. */
+	static const uint8_t FRAME[] = {
+		0x01, 0xC0, 0x96, 0xE7, 0xB1, 0xD9, 0x2B, 0x1E, 0xA8, 0xFC, 0xDD, 0xA4, 0x12, 0x33, 0xC6, 0x32,
+		0x94, 0x6F, 0x56, 0x8B,
+	};
+	uint8_t output[ARRAY_SIZE(FRAME)];
+
+	gprscu_configure_control(GEA12_CASES[0].key, 0, GPRSCU_CON_DIRECTION);
+	GPRSCU_CON = GPRSCU_CON_DIRECTION | GPRSCU_CON_CRC_CTRL;
+	gprscu_lockstep_bytes(FRAME, output, sizeof(output));
+	GPRSCU_CON = GPRSCU_CON_DIRECTION;
+
+	test_eq_u32("a frame with a valid FCS leaves the CRC-24/LLC residue", 0x0C91B600, GPRSCU_FCS & 0xFFFFFF00);
+}
+
+static void test_control_downlink_cipher(void) {
+	/* LLC UI header, the first 15 bytes of the GEA1 downlink vector and its FCS, as received and in plaintext. */
+	static const uint8_t RECEIVED[] = {
+		0x01, 0xC0, 0x58, 0xDA, 0xD0, 0x64, 0x57, 0xB9, 0xFE, 0x10, 0x15, 0xDA, 0x07, 0x76, 0xED, 0x19,
+		0x90, 0xEC, 0x97, 0x55,
+	};
+	static const uint8_t PLAINTEXT[] = {
+		0x01, 0xC0, 0x6E, 0x00, 0xCF, 0xE7, 0xB7, 0xFB, 0x97, 0x48, 0x92, 0xB8, 0xCD, 0xE5, 0xE4, 0x33,
+		0x63, 0xAE, 0x92, 0x58,
+	};
+	static const size_t HEADER_SIZE = 2;
+	const struct gea12_case *vector = &GEA12_CASES[1];
+	uint8_t output[ARRAY_SIZE(RECEIVED)];
+
+	gprscu_configure_control(vector->key, vector->input, GPRSCU_CON_DIRECTION);
+	GPRSCU_CON = GPRSCU_CON_DIRECTION | GPRSCU_CON_CRC_CTRL;
+	gprscu_lockstep_bytes(RECEIVED, output, HEADER_SIZE);
+	GPRSCU_CON |= GPRSCU_CON_CIPH_CTRL;
+	gprscu_lockstep_bytes(&RECEIVED[HEADER_SIZE], &output[HEADER_SIZE], sizeof(RECEIVED) - HEADER_SIZE);
+	GPRSCU_CON = GPRSCU_CON_DIRECTION;
+
+	test_eq_memory("downlink control cipher decrypts the body and FCS", PLAINTEXT, output, sizeof(output));
+	test_eq_u32("downlink CRC covers the decrypted frame", 0x0C91B600, GPRSCU_FCS & 0xFFFFFF00);
+}
+
+static void test_control_gea3(void) {
+	const struct gea3_case *vector = &GEA3_CASES[0];
+	uint8_t zeros[ARRAY_SIZE(vector->expected)] = { 0 };
+	uint8_t actual[ARRAY_SIZE(vector->expected)];
+
+	GPRSCU_CON = GPRSCU_CON_SEGMENT_RESET;
+	GPRSCU_INPUT(0) = vector->input;
+	GPRSCU_INPUT(1) = vector->input_suffix;
+	GPRSCU_KEY(0) = vector->key[0];
+	GPRSCU_KEY(1) = vector->key[1];
+	GPRSCU_KEY(2) = vector->key[0];
+	GPRSCU_KEY(3) = vector->key[1];
+	gprscu_initialize(GPRSCU_CON_GEA3);
+	GPRSCU_POLYNOM = GPRSCU_LLC_POLYNOM;
+	GPRSCU_FCS = GPRSCU_LLC_FCS_INIT;
+	GPRSCU_CON = GPRSCU_CON_GEA3 | GPRSCU_CON_CRC_CTRL | GPRSCU_CON_CIPH_CTRL;
+	gprscu_lockstep_bytes(zeros, actual, sizeof(actual));
+	GPRSCU_CON = GPRSCU_CON_GEA3;
+
+	test_eq_memory("control-register GEA3 matches the uplink vector", vector->expected, actual, sizeof(actual));
+	test_eq_u32("control-register GEA3 CRC covers the plaintext", vector->expected_fcs, GPRSCU_FCS);
+}
+
+static void test_control_gea1_after_gea3(void) {
+	const struct gea12_case *vector = &GEA12_CASES[2];
+	uint8_t actual[GEA12_VECTOR_BYTES];
+
+	gprscu_configure_control(vector->key, vector->input, 0);
+	GPRSCU_CON = GPRSCU_CON_CIPH_CTRL;
+	gprscu_lockstep_bytes(vector->plaintext, actual, sizeof(actual));
+	GPRSCU_CON = 0;
+
+	test_eq_memory("GEA1 after GEA3 without an intermediate GEA3 reset", vector->expected, actual, sizeof(actual));
+}
+
+static void test_control_gea3_registers(void) {
+	/* Keystreams of the GEA3 vector 1 and vector 3 keys on PMB8875 hardware with modified registers. */
+	static const struct {
+		const char *name;
+		uint32_t input;
+		uint32_t input_suffix;
+		uint32_t key[4];
+		uint8_t expected[16];
+	} CASES[] = {
+		{
+			"KEY2 holds the third key word from the top",
+			0x8E9421A3, 0x00FF0000, { 0x82C5BC00, 0x2BD6459F, 0x00000001, 0x00000000 },
+			{ 0xB2, 0xC6, 0x2E, 0x7F, 0x26, 0xC9, 0x3E, 0x0F, 0x0C, 0x10, 0x0B, 0xD3, 0xB4, 0x88, 0x50, 0x9C },
+		},
+		{
+			"KEY3 holds the most significant key word",
+			0x8E9421A3, 0x00FF0000, { 0x82C5BC00, 0x2BD6459F, 0x00000000, 0x00000001 },
+			{ 0x12, 0x66, 0x0B, 0xF8, 0xC3, 0x3E, 0x33, 0xE4, 0x8A, 0xDA, 0x64, 0x3F, 0x27, 0x8E, 0xA1, 0x1F },
+		},
+		{
+			"INPUT1 bits defined as zero still enter KGCORE",
+			0x4BDBD5E5, 0x05FF0000, { 0x9E720C2A, 0xEFA8B222, 0x9E720C2A, 0xEFA8B222 },
+			{ 0x03, 0x67, 0x79, 0x8A, 0x06, 0xBD, 0xB6, 0x25, 0xF2, 0xE1, 0x03, 0xF9, 0x62, 0x4E, 0x9D, 0xFD },
+		},
+	};
+	uint8_t zeros[16] = { 0 };
+
+	for (size_t c = 0; c < ARRAY_SIZE(CASES); c++) {
+		uint8_t actual[16];
+
+		GPRSCU_CON = GPRSCU_CON_SEGMENT_RESET;
+		GPRSCU_INPUT(0) = CASES[c].input;
+		GPRSCU_INPUT(1) = CASES[c].input_suffix;
+		for (size_t i = 0; i < 4; i++)
+			GPRSCU_KEY(i) = CASES[c].key[i];
+		gprscu_initialize(GPRSCU_CON_GEA3);
+		GPRSCU_CON = GPRSCU_CON_GEA3 | GPRSCU_CON_CIPH_CTRL;
+		gprscu_lockstep_bytes(zeros, actual, sizeof(actual));
+		GPRSCU_CON = 0;
+		test_eq_memory(CASES[c].name, CASES[c].expected, actual, sizeof(actual));
+	}
+}
+
+static void test_gea12(void) {
+	for (size_t index = 0; index < ARRAY_SIZE(GEA12_CASES); index++) {
+		test_category(GEA12_CASES[index].name);
+		test_gea12_case(&GEA12_CASES[index]);
+	}
+}
+
 static void test_gea3(void) {
 	for (size_t index = 0; index < ARRAY_SIZE(GEA3_CASES); index++) {
 		test_category(GEA3_CASES[index].name);
@@ -655,7 +968,20 @@ int main(void) {
 	test_segment_completion_interrupt();
 	test_category("Descriptor transition");
 	test_descriptor_transition();
+	test_gea12();
 	test_gea3();
+	test_category("Control-register cipher frame");
+	test_control_cipher_frame();
+	test_category("Control-register downlink residue");
+	test_control_downlink_residue();
+	test_category("Control-register downlink cipher");
+	test_control_downlink_cipher();
+	test_category("Control-register GEA3");
+	test_control_gea3();
+	test_category("Control-register GEA1 after GEA3");
+	test_control_gea1_after_gea3();
+	test_category("Control-register GEA3 key and input registers");
+	test_control_gea3_registers();
 
 	return test_finish();
 }
