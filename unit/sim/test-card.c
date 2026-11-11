@@ -1030,6 +1030,9 @@ static void sim_test_pps(void) {
 
 /* FPI1 OSC with RMC=2 gives the 3.25 MHz SIM clock that firmware gets from PLL/2 with RMC=4. */
 #define SIM_LATENCY_RMC 2
+#define SIM_POWER_CYCLE_MS 100
+#define SIM_LATENCY_CLOCK_TOLERANCE_PERCENT 25
+#define SIM_LATENCY_CLOCK_TOLERANCE_US 100
 #define SIM_CLOCK_FPI1_DIVIDER 4
 #define SIM_ATR_MIN_CLOCKS 400
 #define SIM_ATR_MAX_CLOCKS 40000
@@ -1194,6 +1197,8 @@ static const struct firmware_apdu FIRMWARE_BOOT_APDUS[] = {
 	{ GSM_INS_STATUS, 0x00, 0x00, 0x17, 0 },
 };
 
+static const uint32_t SIM_LATENCY_CHECK_RMCS[] = { 4, 1 };
+
 /* Mean processing times of the reference SIM (ATR 3B 1E 95 80 67 21 54 4D 4D ...). */
 static struct apdu_latency_stats apdu_latency_stats[] = {
 	{ .ins = GSM_INS_SELECT, .name = "SELECT", .reference_us = 3138 },
@@ -1262,41 +1267,46 @@ static bool sim_firmware_apdu_exchange(const struct firmware_apdu *apdu, struct 
 	return sim_exchange(header, NULL, 0, apdu->p3, response);
 }
 
-static void sim_test_firmware_apdus(uint32_t character_ticks) {
+static void sim_print_firmware_apdu(
+	size_t index,
+	const struct firmware_apdu *apdu,
+	const struct apdu_response *response,
+	uint32_t character_ticks
+) {
+	const struct apdu_timing *timing = &response->timing;
+	const struct apdu_latency_stats *stats = apdu_latency_stats_find(apdu->ins);
+	bool acknowledged = timing->procedure_tick != timing->sw1_tick;
+
+	printf("# %3u %s", (unsigned int) index, stats->name);
+	if (apdu->ins == GSM_INS_SELECT) {
+		printf(" %04X", apdu->file_id);
+	} else {
+		printf(" P3=%u", apdu->p3);
+	}
+	if (acknowledged) {
+		printf(": ACK after %lu us", card_delay_us(timing->header_sent_tick, timing->procedure_tick, character_ticks));
+	} else {
+		printf(": no ACK");
+	}
+	printf(", status %02X%02X %lu us after data, %lu NULL bytes\n", response->sw1, response->sw2,
+		card_delay_us(timing->data_done_tick, timing->sw1_tick, character_ticks), timing->null_bytes);
+}
+
+static size_t sim_replay_firmware_apdus(uint32_t character_ticks, bool verbose) {
 	static struct apdu_response response;
 
-	size_t completed = 0;
-	while (completed < ARRAY_SIZE(FIRMWARE_BOOT_APDUS)) {
-		const struct firmware_apdu *apdu = &FIRMWARE_BOOT_APDUS[completed];
-		if (!sim_firmware_apdu_exchange(apdu, &response))
-			break;
+	for (size_t index = 0; index < ARRAY_SIZE(FIRMWARE_BOOT_APDUS); index++) {
+		const struct firmware_apdu *apdu = &FIRMWARE_BOOT_APDUS[index];
 
-		const struct apdu_timing *timing = &response.timing;
-		bool acknowledged = timing->procedure_tick != timing->sw1_tick;
-		uint32_t ack_us = acknowledged ?
-			card_delay_us(timing->header_sent_tick, timing->procedure_tick, character_ticks) : 0;
-		uint32_t status_us = card_delay_us(timing->data_done_tick, timing->sw1_tick, character_ticks);
+		if (!sim_firmware_apdu_exchange(apdu, &response)) {
+			printf("# APDU %u got no complete answer\n", (unsigned int) index);
+			return index;
+		}
 		apdu_latency_record(apdu->ins, &response, apdu->ins == GSM_INS_SELECT, character_ticks);
-		const struct apdu_latency_stats *stats = apdu_latency_stats_find(apdu->ins);
-
-		printf("# %3u %s", (unsigned int) completed, stats->name);
-		if (apdu->ins == GSM_INS_SELECT) {
-			printf(" %04X", apdu->file_id);
-		} else {
-			printf(" P3=%u", apdu->p3);
-		}
-		if (acknowledged) {
-			printf(": ACK after %lu us", ack_us);
-		} else {
-			printf(": no ACK");
-		}
-		printf(", status %02X%02X %lu us after data, %lu NULL bytes\n",
-			response.sw1, response.sw2, status_us, timing->null_bytes);
-		completed++;
+		if (verbose)
+			sim_print_firmware_apdu(index, apdu, &response, character_ticks);
 	}
-	if (completed < ARRAY_SIZE(FIRMWARE_BOOT_APDUS))
-		printf("# APDU %u got no complete answer\n", (unsigned int) completed);
-	test_check("Card answers every firmware boot APDU", completed == ARRAY_SIZE(FIRMWARE_BOOT_APDUS));
+	return ARRAY_SIZE(FIRMWARE_BOOT_APDUS);
 }
 
 static void apdu_latency_stats_check(void) {
@@ -1522,10 +1532,93 @@ static void sim_measure_toolkit(uint32_t character_ticks) {
 		sat_complete_session(&response, SAT_RESULT_BEYOND_TERMINAL_CAPABILITIES, character_ticks));
 }
 
+static bool sim_negotiate_atr_rate(const uint8_t *atr, size_t atr_size, uint32_t rmc, uint32_t *character_ticks) {
+	bool has_ta1 = atr_size > SIM_ATR_TA1_OFFSET && (atr[1] & SIM_ATR_T0_TA1_PRESENT) != 0;
+	uint8_t ta1 = has_ta1 ? atr[SIM_ATR_TA1_OFFSET] : 0;
+	uint32_t brf = has_ta1 ? sim_ta1_to_brf(ta1) : 0;
+
+	*character_ticks = sim_character_ticks(rmc, SIM_DEFAULT_BRF);
+	if (brf == 0) {
+		printf("# ATR offers no supported TA1, APDUs use the default rate\n");
+		return true;
+	}
+	if (!sim_exchange_pps(ta1))
+		return false;
+	uint32_t pps_us = card_delay_us(sim_last_tx_tick, sim_last_rx_tick, SIM_PPS_SIZE * *character_ticks);
+	printf("# PPS TA1=%02X: card answers %lu us after the request, BRF %lu\n", ta1, pps_us, brf);
+	SIM_BRF = brf;
+	*character_ticks = sim_character_ticks(rmc, brf);
+	return true;
+}
+
+static void apdu_latency_stats_take_means(uint32_t means_us[ARRAY_SIZE(apdu_latency_stats)]) {
+	for (size_t i = 0; i < ARRAY_SIZE(apdu_latency_stats); i++) {
+		struct apdu_latency_stats *stats = &apdu_latency_stats[i];
+
+		means_us[i] = stats->count ? stats->processing_us_sum / stats->count : 0;
+		stats->count = 0;
+		stats->processing_us_sum = 0;
+		stats->processing_us_max = 0;
+		stats->null_bytes = 0;
+	}
+}
+
+static bool latency_is_within_tolerance(uint32_t value_us, uint32_t reference_us) {
+	uint32_t tolerance_us = MAX(reference_us * SIM_LATENCY_CLOCK_TOLERANCE_PERCENT / 100,
+		SIM_LATENCY_CLOCK_TOLERANCE_US);
+	return value_us + tolerance_us >= reference_us && value_us <= reference_us + tolerance_us;
+}
+
+static void sim_test_latency_clock_independence(uint32_t reference_atr_us, const uint32_t *reference_us) {
+	static uint8_t atr[SIM_MAX_ATR_SIZE];
+	static uint32_t atr_ticks[SIM_MAX_ATR_SIZE];
+	uint32_t means_us[ARRAY_SIZE(apdu_latency_stats)];
+	char name[128];
+
+	test_category("Card processing time does not follow the SIM clock");
+	for (size_t r = 0; r < ARRAY_SIZE(SIM_LATENCY_CHECK_RMCS); r++) {
+		uint32_t rmc = SIM_LATENCY_CHECK_RMCS[r];
+		uint32_t sim_clock_hz = cpu_get_fpi1_freq() / SIM_CLOCK_FPI1_DIVIDER / rmc;
+		size_t atr_size = 0;
+		uint32_t character_ticks;
+
+		sim_power_off();
+		stopwatch_msleep_wd(SIM_POWER_CYCLE_MS);
+		bool started = sim_power_on(rmc, atr, atr_ticks, &atr_size) &&
+			sim_negotiate_atr_rate(atr, atr_size, rmc, &character_ticks);
+		snprintf(name, sizeof(name), "Card starts at SIM clock %lu Hz", sim_clock_hz);
+		test_check(name, started);
+		if (!started)
+			continue;
+
+		uint32_t atr_us = card_delay_us(sim_reset_tick, atr_ticks[0], sim_character_ticks(rmc, SIM_DEFAULT_BRF));
+		printf("# SIM clock %lu Hz: ATR starts %lu us after RST, %lu us at the reference clock\n", sim_clock_hz,
+			atr_us, reference_atr_us);
+		snprintf(name, sizeof(name), "ATR delay at SIM clock %lu Hz matches the reference clock", sim_clock_hz);
+		test_check(name, latency_is_within_tolerance(atr_us, reference_atr_us));
+
+		bool replayed = sim_replay_firmware_apdus(character_ticks, false) == ARRAY_SIZE(FIRMWARE_BOOT_APDUS);
+		snprintf(name, sizeof(name), "Card answers every firmware boot APDU at SIM clock %lu Hz", sim_clock_hz);
+		test_check(name, replayed);
+		apdu_latency_stats_take_means(means_us);
+		for (size_t i = 0; replayed && i < ARRAY_SIZE(apdu_latency_stats); i++) {
+			if (means_us[i] == 0 || reference_us[i] == 0)
+				continue;
+			printf("# SIM clock %lu Hz: %s processing mean %lu us, %lu us at the reference clock\n", sim_clock_hz,
+				apdu_latency_stats[i].name, means_us[i], reference_us[i]);
+			snprintf(name, sizeof(name), "%s processing at SIM clock %lu Hz matches the reference clock",
+				apdu_latency_stats[i].name, sim_clock_hz);
+			test_check(name, latency_is_within_tolerance(means_us[i], reference_us[i]));
+		}
+	}
+}
+
 static void sim_test_firmware_latency(void) {
 	static uint8_t atr[SIM_MAX_ATR_SIZE];
 	static uint32_t atr_ticks[SIM_MAX_ATR_SIZE];
+	uint32_t reference_us[ARRAY_SIZE(apdu_latency_stats)];
 	size_t atr_size = 0;
+	uint32_t character_ticks;
 
 	test_category("Firmware boot APDU latency");
 	cgu_fpi1_select(CGU_FPI1_OSC, 0);
@@ -1537,30 +1630,31 @@ static void sim_test_firmware_latency(void) {
 	if (!powered)
 		return;
 	print_bytes("ATR", atr, atr_size);
-	uint32_t character_ticks = sim_character_ticks(SIM_LATENCY_RMC, SIM_DEFAULT_BRF);
-	uint32_t atr_delay_us = card_delay_us(sim_reset_tick, atr_ticks[0], character_ticks);
+	uint32_t atr_delay_us = card_delay_us(sim_reset_tick, atr_ticks[0],
+		sim_character_ticks(SIM_LATENCY_RMC, SIM_DEFAULT_BRF));
 	uint32_t atr_delay_clocks = (uint64_t) atr_delay_us * sim_clock_hz / 1000000;
 	printf("# ATR starts %lu us (%lu SIM clocks) after RST\n", atr_delay_us, atr_delay_clocks);
 	test_check("ATR starts within the ISO 7816-3 window of 400 to 40000 SIM clocks after RST",
 		test_u32_in_interval(atr_delay_clocks, SIM_ATR_MIN_CLOCKS, SIM_ATR_MAX_CLOCKS));
 
-	bool has_ta1 = atr_size > SIM_ATR_TA1_OFFSET && (atr[1] & SIM_ATR_T0_TA1_PRESENT) != 0;
-	uint8_t ta1 = has_ta1 ? atr[SIM_ATR_TA1_OFFSET] : 0;
-	uint32_t brf = has_ta1 ? sim_ta1_to_brf(ta1) : 0;
-	if (brf != 0) {
-		bool negotiated = sim_exchange_pps(ta1);
-		test_check("Card echoes PPS that selects TA1", negotiated);
-		if (!negotiated)
-			return;
-		uint32_t pps_us = card_delay_us(sim_last_tx_tick, sim_last_rx_tick, SIM_PPS_SIZE * character_ticks);
-		printf("# PPS TA1=%02X: card answers %lu us after the request, BRF %lu\n", ta1, pps_us, brf);
-		SIM_BRF = brf;
-		character_ticks = sim_character_ticks(SIM_LATENCY_RMC, brf);
-	} else {
-		printf("# ATR offers no supported TA1, APDUs use the default rate\n");
-	}
+	bool negotiated = sim_negotiate_atr_rate(atr, atr_size, SIM_LATENCY_RMC, &character_ticks);
+	test_check("Card echoes PPS that selects TA1", negotiated);
+	if (!negotiated)
+		return;
 
-	sim_test_firmware_apdus(character_ticks);
+	test_check("Card answers every firmware boot APDU",
+		sim_replay_firmware_apdus(character_ticks, true) == ARRAY_SIZE(FIRMWARE_BOOT_APDUS));
+	apdu_latency_stats_take_means(reference_us);
+	sim_test_latency_clock_independence(atr_delay_us, reference_us);
+
+	sim_power_off();
+	stopwatch_msleep_wd(SIM_POWER_CYCLE_MS);
+	powered = sim_power_on(SIM_LATENCY_RMC, atr, atr_ticks, &atr_size) &&
+		sim_negotiate_atr_rate(atr, atr_size, SIM_LATENCY_RMC, &character_ticks);
+	test_check("Card restarts at the reference clock", powered);
+	if (!powered)
+		return;
+	sim_replay_firmware_apdus(character_ticks, false);
 	test_category("Command latency");
 	sim_measure_writes(character_ticks);
 	sim_measure_toolkit(character_ticks);
@@ -1847,6 +1941,27 @@ static void sim_test_cyclic(void) {
 	test_check("EF_LND is restored", sim_restore_cyclic(&info));
 }
 
+static void sim_test_cyclic_select_pointer(void) {
+	static struct apdu_response response;
+	uint8_t newest[GSM_ACM_SIZE];
+	struct sim_ef_info info;
+
+	test_category("Record pointer after selecting a cyclic EF");
+	bool selected = sim_select_ef(GSM_DF_GSM, GSM_EF_ACM, &info) && info.structure == GSM_EF_CYCLIC &&
+		info.record_size == GSM_ACM_SIZE && sim_read_record(1, SIM_RECORD_ABSOLUTE, GSM_ACM_SIZE, &response) &&
+		sim_status_word(&response) == GSM_STATUS_SUCCESS;
+	test_check("READ cyclic EF_ACM record 1", selected);
+	if (!selected)
+		return;
+	memcpy(newest, response.data, GSM_ACM_SIZE);
+
+	bool reselected = sim_select_ef(GSM_DF_GSM, GSM_EF_ACM, &info) &&
+		sim_read_record(SIM_RECORD_CURRENT, SIM_RECORD_ABSOLUTE, GSM_ACM_SIZE, &response);
+	print_status("READ RECORD current after SELECT", &response);
+	test_check("SELECT points a cyclic EF at its newest record", reselected &&
+		sim_status_word(&response) == GSM_STATUS_SUCCESS && memcmp(response.data, newest, GSM_ACM_SIZE) == 0);
+}
+
 static void sim_test_increase(void) {
 	static struct apdu_response response;
 	uint8_t newest[SIM_MAX_APDU_DATA];
@@ -2002,6 +2117,7 @@ static void sim_test_read_write(void) {
 	sim_test_update_denied("EF_ICCID", GSM_MF, GSM_EF_ICCID);
 	sim_test_linear_fixed();
 	sim_test_cyclic();
+	sim_test_cyclic_select_pointer();
 	sim_test_increase();
 	sim_test_increase_allowed();
 	sim_test_invalidate_denied();
