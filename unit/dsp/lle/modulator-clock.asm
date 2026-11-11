@@ -1,7 +1,7 @@
-// Digital modulator RAM read rate. Shared words: 0x0020 counts poll iterations
-// from MSWACT to MODU at address 0x030, 0x0021 from there to MODU at 0x080;
-// 0x0010 counts MODU flags at the MCU-supplied addresses 0x0040.. for MCU
-// timestamps.
+// Digital modulator RAM read rate. The runner writes the MCU-supplied word 0x0011
+// to MOD_CTRL. Shared words: 0x0020 counts poll iterations from that write to MODU
+// at address 0x030, 0x0021 from there to MODU at 0x080; 0x0010 counts MODU flags
+// at the MCU-supplied addresses 0x0040.. for MCU timestamps.
 segment p 0100
 mov 0x$0001 a0l
 mov a0l [0x$TEAK_MCS_CFR]
@@ -22,7 +22,7 @@ mov 0x$0030 a0l
 mov a0l [0x$TEAK_MOD_INT_ADDR]
 mov 0x$0080 a0l
 mov a0l [0x$TEAK_INT_RINTA0]
-mov 0x$0100 a0l
+mov [0x$TEAK_ADDR(TEAK_SHARED_RAM_BASE, 0x0011)] a0
 mov a0l [0x$TEAK_MOD_CTRL]
 clr a1 always
 br 0x0000$0180 always
