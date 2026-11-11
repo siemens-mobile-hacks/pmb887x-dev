@@ -1,8 +1,10 @@
 import { setTimeout as delay } from "node:timers/promises";
 
 import type { AtChannel } from "@sie-js/serial";
+import { fetch } from "undici";
 
 import { waitForSimReady, withModem } from "#lib/modem.ts";
+import { createPppDispatcher } from "#lib/ppp.ts";
 
 const REGISTRATION_TIMEOUT_MS = 180_000;
 const ATTACH_TIMEOUT_MS = 120_000;
@@ -12,6 +14,8 @@ const PING_TIMEOUT_MS = 10_000;
 const PDP_CONTEXT_ID = 1;
 const APN = "internet";
 const INTERNET_ADDRESS = "1.1.1.1";
+const HTTP_URL = "http://example.org/";
+const HTTP_TIMEOUT_MS = 60_000;
 const REGISTRATION_POLL_INTERVAL_MS = 1000;
 const REGISTERED_STATES = new Set([1, 5]);
 const REGISTRATION_DENIED = 3;
@@ -87,6 +91,19 @@ async function pingOverPpp(at: AtChannel) {
 
 		const reply = await ppp.ping(INTERNET_ADDRESS, PING_TIMEOUT_MS);
 		console.log(`ping ${reply.address}: ${reply.bytes} bytes, ${reply.time} ms, TTL ${reply.ttl}`);
+
+		if (connection.primaryDns === undefined)
+			throw new Error("PPP: no DNS server");
+		const dispatcher = createPppDispatcher(ppp, connection.primaryDns);
+		try {
+			const response = await fetch(HTTP_URL, { dispatcher, signal: AbortSignal.timeout(HTTP_TIMEOUT_MS) });
+			const body = await response.text();
+			if (!response.ok)
+				throw new Error(`GET ${HTTP_URL}: HTTP ${response.status}`);
+			console.log(`GET ${HTTP_URL}: HTTP ${response.status}, ${body.length} bytes`);
+		} finally {
+			await dispatcher.close();
+		}
 	} finally {
 		await ppp.disconnect();
 		await at.exitDataMode();

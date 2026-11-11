@@ -169,8 +169,11 @@ importers:
   e2e:
     dependencies:
       '@sie-js/serial':
-        specifier: ^1.7.1
-        version: 1.7.1(debug@4.4.3)
+        specifier: ^1.8.0
+        version: 1.8.0(debug@4.4.3)
+      undici:
+        specifier: ^8.12.4
+        version: 8.12.4
     devDependencies:
       '@types/node':
         specifier: ^26.6.3
@@ -358,8 +361,8 @@ packages:
     resolution: {integrity: sha512-GJGMZjkHJD4ZRpRyZxQCuM0pJvTPC5E4wX1FIjzlfGwEblBDTJlleUD5WIrk9Z7EB1b8brvbCzkl5Yb/CJYZnw==}
     engines: {node: '>=18.0.0'}
 
-  '@sie-js/serial@1.7.1':
-    resolution: {integrity: sha512-uI+EDR/YjnnEkNiZzcOoKQZO26Ds4HO2KNMVe8MjoBKzEL6jYo4C+MMs+5oK9586YVsMB4PEKVJHwX0Y2laLkg==}
+  '@sie-js/serial@1.8.0':
+    resolution: {integrity: sha512-d9KznxzvWkaKdqadmQBPShx9y4p2mRceyVxWTvh2g5sMwvKzQNPIs8rwDPmE305NroRbpERhfsejp1UXXK4cdg==}
     peerDependencies:
       debug: ^4.4.3
 
@@ -541,6 +544,10 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
+  undici@8.12.4:
+    resolution: {integrity: sha512-8Mx+uNKKER2bA4AdtedkqRbwUCIJFr2nJckXRe5yrDqzePqwLP7VNcctN8/XdmDSbF7mS+jJKIszlL+vbam1VA==}
+    engines: {node: '>=22.19.0'}
+
 snapshots:
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -639,7 +646,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@sie-js/serial@1.7.1(debug@4.4.3)':
+  '@sie-js/serial@1.8.0(debug@4.4.3)':
     dependencies:
       '@serialport/bindings-interface': 1.2.2
       '@sie-js/node-serialport-bindings-cpp': 0.0.2
@@ -790,3 +797,5 @@ snapshots:
       '@typescript/typescript-win32-x64': 7.0.2
 
   undici-types@8.9.0: {}
+
+  undici@8.12.4: {}
