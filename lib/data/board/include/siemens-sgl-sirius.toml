@@ -52,6 +52,10 @@ gain = -700
 type = "speaker"
 gain = 2000
 
+[peripheral.RF]
+type = "hd155155npeb"
+port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+
 [analog]
 M_0 = { type = "resistor", value = 9300 }
 M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
