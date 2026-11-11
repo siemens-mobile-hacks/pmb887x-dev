@@ -16,6 +16,7 @@ const APN = "internet";
 const INTERNET_ADDRESS = "1.1.1.1";
 const HTTP_URL = "http://example.org/";
 const HTTP_TIMEOUT_MS = 60_000;
+const SIGNAL_TIMEOUT_MS = 30_000;
 const REGISTRATION_POLL_INTERVAL_MS = 1000;
 const REGISTERED_STATES = new Set([1, 5]);
 const REGISTRATION_DENIED = 3;
@@ -58,15 +59,21 @@ async function waitForRegistration(at: AtChannel, query: string, prefix: string,
 	throw new Error(`no ${name} within ${timeout / 1000} s`);
 }
 
-async function checkSignal(at: AtChannel) {
-	const response = await at.sendCommand("AT+CSQ", "+CSQ:");
-	const match = response.lines[0]?.match(/^\+CSQ: (\d+),\s*(\d+)/);
-	if (!response.success || match?.[1] === undefined)
-		throw new Error(`AT+CSQ: ${response.lines[0] ?? response.status}`);
-	const rssi = Number(match[1]);
-	if (rssi == CSQ_RSSI_UNKNOWN)
-		throw new Error("registered, but AT+CSQ reports unknown signal level");
-	console.log(`signal: ${CSQ_RSSI_MIN_DBM + CSQ_RSSI_STEP_DB * rssi} dBm (${response.lines[0]})`);
+async function waitForSignal(at: AtChannel) {
+	const deadline = Date.now() + SIGNAL_TIMEOUT_MS;
+	while (Date.now() < deadline) {
+		const response = await at.sendCommand("AT+CSQ", "+CSQ:");
+		const match = response.lines[0]?.match(/^\+CSQ: (\d+),\s*(\d+)/);
+		if (!response.success || match?.[1] === undefined)
+			throw new Error(`AT+CSQ: ${response.lines[0] ?? response.status}`);
+		const rssi = Number(match[1]);
+		if (rssi != CSQ_RSSI_UNKNOWN) {
+			console.log(`signal: ${CSQ_RSSI_MIN_DBM + CSQ_RSSI_STEP_DB * rssi} dBm (${response.lines[0]})`);
+			return;
+		}
+		await delay(REGISTRATION_POLL_INTERVAL_MS);
+	}
+	throw new Error(`registered, but AT+CSQ reports no signal level within ${SIGNAL_TIMEOUT_MS / 1000} s`);
 }
 
 async function attachGprs(at: AtChannel) {
@@ -125,7 +132,7 @@ await withModem(async (at) => {
 		throw new Error(`AT+COPS?: ${operator.status}`);
 	console.log(`operator: ${operator.lines[0]}`);
 
-	await checkSignal(at);
+	await waitForSignal(at);
 	await attachGprs(at);
 	await definePdpContext(at);
 	await pingOverPpp(at);
