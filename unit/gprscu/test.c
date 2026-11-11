@@ -370,6 +370,28 @@ static void test_llc_fcs(void) {
 		gprscu_crc24(MULTI_SEGMENT, sizeof(MULTI_SEGMENT), MULTI_SEGMENTS, ARRAY_SIZE(MULTI_SEGMENTS)));
 }
 
+static void test_control_crc(void) {
+	/* "12345678" as halfwords with the first byte in the low half, then "9" as a byte. */
+	static const uint16_t CHECK_STRING_HALFWORDS[] = { 0x3231, 0x3433, 0x3635, 0x3837 };
+	static const uint8_t CHECK_STRING_TAIL = '9';
+	size_t entries = ARRAY_SIZE(CHECK_STRING_HALFWORDS) + 1;
+
+	gprscu_initialize(0);
+	GPRSCU_CON = GPRSCU_CON_SEGMENT_RESET;
+	GPRSCU_POLYNOM = GPRSCU_LLC_POLYNOM;
+	GPRSCU_FCS = GPRSCU_LLC_FCS_INIT;
+	GPRSCU_CON = GPRSCU_CON_CRC_CTRL;
+	for (size_t index = 0; index < ARRAY_SIZE(CHECK_STRING_HALFWORDS); index++)
+		GPRSCU_DATA_HALFWORD = CHECK_STRING_HALFWORDS[index];
+	GPRSCU_DATA_BYTE = CHECK_STRING_TAIL;
+	gprscu_wait_output_count(entries);
+	GPRSCU_CON = 0;
+
+	test_eq_u32("control CRC covers every byte of halfword writes without descriptors", 0xB1793439, GPRSCU_FCS);
+	for (size_t index = 0; index < entries; index++)
+		(void) GPRSCU_DATA;
+}
+
 static void test_segment_lengths(void) {
 	static const uint16_t FULL_FIFO_SEGMENT[] = { GPRSCU_FIFO_ENTRIES };
 	uint8_t buffered[GPRSCU_FIFO_ENTRIES];
@@ -621,6 +643,8 @@ int main(void) {
 	test_initialize_pending_fifo();
 	test_category("LLC frame check sequence");
 	test_llc_fcs();
+	test_category("Control-register CRC without descriptors");
+	test_control_crc();
 	test_category("Segment length boundaries");
 	test_segment_lengths();
 	test_category("Segment reset and restart");
