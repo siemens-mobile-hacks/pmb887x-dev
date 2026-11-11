@@ -9,6 +9,10 @@ gain = -1150
 [peripheral.LCD0]
 type = "l2f50250"
 
+[peripheral.RF]
+type = "hd155155npeb"
+port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+
 [gpio.aliases]
 # DIF_CS (A6) is left open; the display CS comes from CLKOUT0 (DISP_CS_18).
 DIF_CS = "DISP_CS_NC"

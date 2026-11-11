@@ -1,5 +1,5 @@
 [gsm-ppp]
-devices = ["siemens-el71", "siemens-s75", "siemens-sl75", "siemens-c81", "siemens-cx75"]
+devices = ["siemens-el71", "siemens-s75", "siemens-sl75", "siemens-c81", "siemens-cx75", "siemens-sl65", "siemens-cx65"]
 timeout = 600
 
 # [gprs-operator-proxy]
