@@ -9,10 +9,12 @@ const ATTACH_TIMEOUT_MS = 120_000;
 const DIAL_TIMEOUT_MS = 120_000;
 const PPP_CONNECT_TIMEOUT_MS = 60_000;
 const SIGNAL_TIMEOUT_MS = 30_000;
+const OPERATOR_SELECT_TIMEOUT_MS = 60_000;
 const REGISTRATION_POLL_INTERVAL_MS = 1000;
 const PDP_CONTEXT_ID = 1;
 const REGISTERED_STATES = new Set([1, 5]);
 const REGISTRATION_DENIED = 3;
+const COPS_MODE_AUTOMATIC = 0;
 const CSQ_RSSI_UNKNOWN = 99;
 const CSQ_RSSI_MIN_DBM = -113;
 const CSQ_RSSI_STEP_DB = 2;
@@ -69,8 +71,23 @@ async function waitForSignal(at: AtChannel) {
 	throw new Error(`registered, but AT+CSQ reports no signal level within ${SIGNAL_TIMEOUT_MS / 1000} s`);
 }
 
+async function selectAutomaticOperator(at: AtChannel) {
+	const response = await at.sendCommand("AT+COPS?", "+COPS:");
+	const match = response.lines[0]?.match(/^\+COPS: (\d+)/);
+	if (!response.success || match?.[1] === undefined)
+		throw new Error(`AT+COPS?: ${response.lines[0] ?? response.status}`);
+	if (Number(match[1]) == COPS_MODE_AUTOMATIC)
+		return;
+
+	console.log(`operator selection: ${response.lines[0]}, switching to automatic`);
+	const select = await at.sendCommandNoResponse(`AT+COPS=${COPS_MODE_AUTOMATIC}`, OPERATOR_SELECT_TIMEOUT_MS);
+	if (!select.success)
+		throw new Error(`AT+COPS=${COPS_MODE_AUTOMATIC}: ${select.status}`);
+}
+
 export async function registerAndAttachGprs(at: AtChannel) {
 	await waitForSimReady(at);
+	await selectAutomaticOperator(at);
 	await waitForRegistration(at, "AT+CREG?", "+CREG:", "registration", REGISTRATION_TIMEOUT_MS);
 
 	const operator = await at.sendCommand("AT+COPS?", "+COPS:");

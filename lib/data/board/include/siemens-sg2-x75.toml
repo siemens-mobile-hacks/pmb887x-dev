@@ -39,9 +39,9 @@ out.ON_OFF_OUT = "KP_IN0"
 addr = 0x31
 revision = 0xED
 
-#[peripheral.RF]
-#type = "hd155153np"
-#port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+[peripheral.RF]
+type = "hd155153np"
+port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
 
 [peripheral.LOUDSPEAKER]
 type = "speaker"
