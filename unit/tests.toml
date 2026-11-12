@@ -443,6 +443,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [tpu-rf-ssc]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[tpu-rf-ssc-timing]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [tpu-baseband-clock]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
