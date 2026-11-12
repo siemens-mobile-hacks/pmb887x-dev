@@ -63,14 +63,17 @@ type = "speaker"
 
 [peripheral.IO_CONNECTOR]
 type = "accessory-connector"
-default = "none"
+default = "data-cable"
 unplugged = "none"
 accessories = {
 	none = {
-		gpio = { JACK_DETECT = 1 },
+		gpio = { JACK_DETECT = 1, CTS_0 = 1 },
+	},
+	data-cable = {
+		gpio = { JACK_DETECT = 1, CTS_0 = 0 },
 	},
 	headset-stereo = {
-		gpio = { JACK_DETECT = 0 },
+		gpio = { JACK_DETECT = 0, CTS_0 = 1 },
 		port = { "HEADSET:in" = "HEADSET_SWITCH:out" },
 	},
 }
@@ -107,6 +110,8 @@ rom_version = 0x0801
 IRDA_TX = "RPWRON" # remote poweron
 IRDA_RX = "SPK_RCV_SEL"
 T_OUT8 = "JACK_DETECT"
+USART0_CTS = "CTS_0"
+USART0_RTS = "RTS_0"
 DIF_VD = "HSO_SEL"
 CLKOUT0 = "SLIDE_OPEN"
 USIF_SCLK = "SCROLL_EN"
