@@ -8,6 +8,10 @@ type = "lr38826"
 width = 132
 height = 176
 
+[peripheral.RF]
+type = "pmb6270"
+port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+
 [gpio.inputs]
 # HWID 322
 HW_DET_MOB_TYPE1 = 0

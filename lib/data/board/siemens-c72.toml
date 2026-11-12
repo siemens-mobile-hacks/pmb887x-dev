@@ -9,6 +9,10 @@ gain = -550
 [peripheral.LCD0]
 type = "lh15kah2"
 
+[peripheral.RF]
+type = "pmb6270"
+port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+
 [gpio.inputs]
 # HWID 5005
 HW_DET_MOB_TYPE1 = 0
