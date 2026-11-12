@@ -3,6 +3,10 @@ vendor = "Siemens"
 model = "ME75"
 extends = "include/siemens-sgl-r65.toml"
 
+[peripheral.RF]
+type = "hd155165bp"
+port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+
 [gpio.inputs]
 # HWID 5004
 HW_DET_MOB_TYPE1 = 1
