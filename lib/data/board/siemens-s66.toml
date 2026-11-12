@@ -1,0 +1,8 @@
+[board]
+vendor = "Siemens"
+model = "S66"
+extends = "siemens-s65.toml"
+
+[gpio.inputs]
+# HWID 333
+HW_DET_BAND_SEL = 1
