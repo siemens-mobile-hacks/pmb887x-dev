@@ -9,6 +9,10 @@ type = "lr38826"
 width = 132
 height = 176
 
+[peripheral.RF]
+type = "hd155155npeb"
+port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+
 [gpio.aliases]
 KP_IN6 = "AC_CLIPIT_DIR"
 
