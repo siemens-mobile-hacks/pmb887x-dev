@@ -37,7 +37,7 @@ type = "speaker"
 gain = 1250
 
 [peripheral.RF]
-type = "hd155153np"
+type = "bright-6pla"
 port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
 
 [analog]

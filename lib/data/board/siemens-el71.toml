@@ -26,6 +26,10 @@ type = "speaker"
 port = { in = "PMIC:MONO" }
 gain = -1000
 
+[peripheral.RF]
+type = "hd155153np"
+port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+
 [gpio.aliases]
 MMCI_DAT1 = "OPEN_CLOSE_SW1"
 DIF_HD = "OPEN_CLOSE_SW2"
