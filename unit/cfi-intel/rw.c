@@ -58,17 +58,17 @@ static void program_buffer(const struct flash_device *flash, uint32_t address, c
 
 static uint16_t program_buffer_with_suspend(const struct flash_device *flash, uint32_t address, const uint16_t *data,
 	uint32_t words, const uint16_t *read_sample, uint32_t read_address) {
-	MMIO16(address) = 0x50;
-	MMIO16(address) = flash->command_set == P_ID_INTEL_PERFORMANCE ? 0xE9 : 0xE8;
+	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(address) = flash->command_set == P_ID_INTEL_PERFORMANCE ? CFI_CMD_BUFFER_PROGRAM : CFI_CMD_BUFFERED_PROGRAM;
 	uint16_t buffer_status = cfi_wait_ready(address);
 	test_check("suspended write buffer is ready", (buffer_status & STATUS_READY) != 0);
 	MMIO16(address) = words - 1;
 	for (uint32_t word = 0; word < words; word++) {
 		MMIO16(address + word * 2) = data[word];
 	}
-	MMIO16(address) = 0xD0;
-	MMIO16(address) = 0xB0;
-	MMIO16(address) = 0x70;
+	MMIO16(address) = CFI_CMD_CONFIRM;
+	MMIO16(address) = CFI_CMD_PROGRAM_ERASE_SUSPEND;
+	MMIO16(address) = CFI_CMD_READ_STATUS_REGISTER;
 	uint16_t status = cfi_wait_ready(address);
 	if (!(status & STATUS_PROGRAM_SUSPEND)) {
 		test_skip("buffer program enters suspend", "program completed before suspend");
@@ -84,8 +84,8 @@ static uint16_t program_buffer_with_suspend(const struct flash_device *flash, ui
 		(const void *) read_address,
 		MAP_SAMPLE_WORDS * sizeof(uint16_t)
 	);
-	MMIO16(address) = 0xD0;
-	MMIO16(address) = 0x70;
+	MMIO16(address) = CFI_CMD_CONFIRM;
+	MMIO16(address) = CFI_CMD_READ_STATUS_REGISTER;
 	status = cfi_wait_ready(address);
 	test_eq_u32("program suspend clears after resume", 0, status & STATUS_PROGRAM_SUSPEND);
 	cfi_enter_read_array(address);
@@ -93,11 +93,11 @@ static uint16_t program_buffer_with_suspend(const struct flash_device *flash, ui
 }
 
 static uint16_t erase_with_suspend(uint32_t address, const uint16_t *read_sample, uint32_t read_address) {
-	MMIO16(address) = 0x50;
-	MMIO16(address) = 0x20;
-	MMIO16(address) = 0xD0;
-	MMIO16(address) = 0xB0;
-	MMIO16(address) = 0x70;
+	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(address) = CFI_CMD_BLOCK_ERASE_SETUP;
+	MMIO16(address) = CFI_CMD_CONFIRM;
+	MMIO16(address) = CFI_CMD_PROGRAM_ERASE_SUSPEND;
+	MMIO16(address) = CFI_CMD_READ_STATUS_REGISTER;
 	uint16_t status = cfi_wait_ready(address);
 	if (!(status & STATUS_ERASE_SUSPEND)) {
 		test_skip("erase enters suspend", "erase completed before suspend");
@@ -113,32 +113,12 @@ static uint16_t erase_with_suspend(uint32_t address, const uint16_t *read_sample
 		(const void *) read_address,
 		MAP_SAMPLE_WORDS * sizeof(uint16_t)
 	);
-	MMIO16(address) = 0xD0;
-	MMIO16(address) = 0x70;
+	MMIO16(address) = CFI_CMD_CONFIRM;
+	MMIO16(address) = CFI_CMD_READ_STATUS_REGISTER;
 	status = cfi_wait_ready(address);
 	test_eq_u32("erase suspend clears after resume", 0, status & STATUS_ERASE_SUSPEND);
 	cfi_enter_read_array(address);
 	return status;
-}
-
-static void test_undocumented_program_commands(const struct flash_device *flash) {
-	if (flash->command_set != P_ID_INTEL_PERFORMANCE) {
-		test_skip("undocumented program commands are ignored", "command set documents 0x10 and 0xE8");
-		return;
-	}
-
-	MMIO16(flash->test_block) = 0x50;
-	MMIO16(flash->test_block) = 0x10;
-	MMIO16(flash->test_block) = 0x1234;
-	test_eq_u32("command 0x10 is ignored", 0xFFFF, MMIO16(flash->test_block));
-	MMIO16(flash->test_block) = 0xE8;
-	test_eq_u32("command 0xE8 is ignored", 0xFFFF, MMIO16(flash->test_block));
-	uint16_t status = cfi_clear_status(flash->test_block);
-	test_check("ignored program commands set no status error", (status & STATUS_ERRORS) == 0);
-	if (!cfi_range_is_blank(flash->test_block, flash->test_block_size)) {
-		uint16_t erase_status = cfi_erase_block(flash->test_block, false);
-		test_operation("block erase after ignored program commands completes", erase_status);
-	}
 }
 
 static void test_program_and_cleanup(struct flash_device *flash) {
@@ -213,7 +193,6 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 		uint16_t blank_status = cfi_blank_check(flash->test_block);
 		test_check("blank check accepts cleaned block", (blank_status & (STATUS_READY | BIT(5))) == STATUS_READY);
 	}
-	test_undocumented_program_commands(flash);
 	test_eq_memory(
 		"previous block is unchanged",
 		previous_block,

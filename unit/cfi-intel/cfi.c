@@ -35,19 +35,19 @@ uint32_t cfi_read_u32(uint32_t base, uint32_t offset) {
 }
 
 void cfi_enter_read_array(uint32_t base) {
-	MMIO16(base) = 0xFF;
+	MMIO16(base) = CFI_CMD_READ_ARRAY;
 }
 
 void cfi_enter_id(uint32_t base) {
-	MMIO16(base) = 0x90;
+	MMIO16(base) = CFI_CMD_READ_DEVICE_IDENTIFIER;
 }
 
 void cfi_enter_query(uint32_t base) {
-	MMIO16(base + CFI_QUERY_ADDRESS * 2) = 0x98;
+	MMIO16(base + CFI_QUERY_ADDRESS * 2) = CFI_CMD_CFI_QUERY;
 }
 
 void cfi_enter_status(uint32_t base) {
-	MMIO16(base) = 0x70;
+	MMIO16(base) = CFI_CMD_READ_STATUS_REGISTER;
 }
 
 void cfi_disable_chip_selects(void) {
@@ -290,42 +290,48 @@ uint16_t cfi_read_lock_status(uint32_t address) {
 }
 
 uint16_t cfi_clear_status(uint32_t address) {
-	MMIO16(address) = 0x50;
-	MMIO16(address) = 0x70;
+	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(address) = CFI_CMD_READ_STATUS_REGISTER;
 	uint16_t status = MMIO16(address);
 	cfi_enter_read_array(address);
 	return status;
 }
 
 uint16_t cfi_unlock_block(uint32_t address, bool efa) {
-	MMIO16(address) = 0x50;
-	MMIO16(address) = efa ? 0x64 : 0x60;
-	MMIO16(address) = 0xD0;
+	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(address) = efa ? CFI_CMD_EFA_BLOCK_LOCK_SETUP : CFI_CMD_BLOCK_LOCK_SETUP;
+	MMIO16(address) = CFI_CMD_CONFIRM;
 	uint16_t status = cfi_wait_ready(address);
 	cfi_enter_read_array(address);
 	return status;
 }
 
 uint16_t cfi_lock_block(uint32_t address, bool efa) {
-	MMIO16(address) = 0x50;
-	MMIO16(address) = efa ? 0x64 : 0x60;
-	MMIO16(address) = 0x01;
+	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(address) = efa ? CFI_CMD_EFA_BLOCK_LOCK_SETUP : CFI_CMD_BLOCK_LOCK_SETUP;
+	MMIO16(address) = CFI_CMD_BLOCK_LOCK_CONFIRM;
 	uint16_t status = cfi_wait_ready(address);
 	cfi_enter_read_array(address);
 	return status;
 }
 
 uint16_t cfi_lock_down_block(uint32_t address, bool efa) {
-	MMIO16(address) = efa ? 0x64 : 0x60;
-	MMIO16(address) = 0x2F;
+	MMIO16(address) = efa ? CFI_CMD_EFA_BLOCK_LOCK_SETUP : CFI_CMD_BLOCK_LOCK_SETUP;
+	MMIO16(address) = CFI_CMD_BLOCK_LOCK_DOWN_CONFIRM;
 	uint16_t status = cfi_wait_ready(address);
 	cfi_enter_read_array(address);
 	return status;
 }
 
 uint16_t cfi_program_word(const struct flash_device *flash, uint32_t address, uint16_t value, bool efa) {
-	MMIO16(address) = 0x50;
-	MMIO16(address) = efa ? 0x44 : flash->command_set == P_ID_INTEL_PERFORMANCE ? 0x41 : 0x40;
+	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	uint16_t command = CFI_CMD_WORD_PROGRAM_SETUP;
+	if (efa) {
+		command = CFI_CMD_EFA_PROGRAM_SETUP;
+	} else if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+		command = CFI_CMD_PROGRAM_SETUP;
+	}
+	MMIO16(address) = command;
 	MMIO16(address) = value;
 	uint16_t status = cfi_wait_ready(address);
 	cfi_enter_read_array(address);
@@ -334,45 +340,47 @@ uint16_t cfi_program_word(const struct flash_device *flash, uint32_t address, ui
 
 uint16_t cfi_program_buffer(const struct flash_device *flash, uint32_t address, const uint16_t *data,
 	uint32_t words, uint16_t *buffer_status) {
-	MMIO16(address) = 0x50;
-	MMIO16(address) = flash->command_set == P_ID_INTEL_PERFORMANCE ? 0xE9 : 0xE8;
+	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(address) = flash->command_set == P_ID_INTEL_PERFORMANCE ? CFI_CMD_BUFFER_PROGRAM : CFI_CMD_BUFFERED_PROGRAM;
 	*buffer_status = cfi_wait_ready(address);
 	MMIO16(address) = words - 1;
 	for (uint32_t word = 0; word < words; word++) {
 		MMIO16(address + word * 2) = data[word];
 	}
-	MMIO16(address) = 0xD0;
+	MMIO16(address) = CFI_CMD_CONFIRM;
 	uint16_t status = cfi_wait_ready(address);
 	cfi_enter_read_array(address);
 	return status;
 }
 
 uint16_t cfi_erase_block(uint32_t address, bool efa) {
-	MMIO16(address) = 0x50;
-	MMIO16(address) = efa ? 0x24 : 0x20;
-	MMIO16(address) = 0xD0;
+	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(address) = efa ? CFI_CMD_EFA_BLOCK_ERASE_SETUP : CFI_CMD_BLOCK_ERASE_SETUP;
+	MMIO16(address) = CFI_CMD_CONFIRM;
 	uint16_t status = cfi_wait_ready(address);
 	cfi_enter_read_array(address);
 	return status;
 }
 
 uint16_t cfi_blank_check(uint32_t address) {
-	MMIO16(address) = 0xBC;
-	MMIO16(address) = 0xD0;
+	MMIO16(address) = CFI_CMD_BLANK_CHECK_SETUP;
+	MMIO16(address) = CFI_CMD_CONFIRM;
 	uint16_t status = cfi_wait_ready(address);
 	cfi_enter_read_array(address);
-	MMIO16(address) = 0x50;
+	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
 	return status;
 }
 
 void cfi_program_configuration(uint32_t base, uint16_t value, bool enhanced) {
 	uint32_t address = base + value * 2;
-	MMIO16(address) = 0x60;
-	MMIO16(address) = enhanced ? 0x04 : 0x03;
+	MMIO16(address) = CFI_CMD_BLOCK_LOCK_SETUP;
+	MMIO16(address) = enhanced ?
+		CFI_CMD_SET_ENHANCED_CONFIGURATION_REGISTER_CONFIRM :
+		CFI_CMD_SET_CONFIGURATION_REGISTER_CONFIRM;
 }
 
 void cfi_enter_efa(uint32_t address) {
-	MMIO16(address) = 0x94;
+	MMIO16(address) = CFI_CMD_READ_EFA;
 }
 
 bool cfi_efa_range_is_blank(uint32_t address, uint32_t size) {
@@ -421,7 +429,7 @@ uint32_t cfi_read_efa_lock_status(uint32_t address) {
 }
 
 uint16_t cfi_program_otp_word(uint32_t address, uint16_t value) {
-	MMIO16(address) = 0xC0;
+	MMIO16(address) = CFI_CMD_PROTECTION_REGISTER_PROGRAM;
 	MMIO16(address) = value;
 	uint16_t status = cfi_wait_ready(address);
 	cfi_enter_read_array(address);

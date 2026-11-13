@@ -11,10 +11,14 @@
 #define RCR_WAIT_POLARITY BIT(10)
 #define RCR_BURST_LENGTH (BIT(2) | BIT(1) | BIT(0))
 #define ECR_DRIVER_STRENGTH (BIT(2) | BIT(1) | BIT(0))
-#define ECR_DRIVER_STRENGTH_CODE_3 (BIT(1) | BIT(0))
-#define ECR_DRIVER_STRENGTH_CODE_4 BIT(2)
 #define SPLIT_PROBE_WINDOW_EXPONENT 26
-#define UNDEFINED_COMMAND_DATA_SEARCH_WORDS 0x10000
+#define UNDECLARED_COMMAND_DATA_SEARCH_WORDS 0x10000
+#define UNDECLARED_COMMANDS_MAX 16
+
+enum ecr_driver_strength {
+	ECR_DRIVER_STRENGTH_CODE_3 = 3,
+	ECR_DRIVER_STRENGTH_CODE_4 = 4,
+};
 
 static struct flash_device flashes[FLASH_CHIP_SELECT_COUNT];
 static uint32_t flash_count;
@@ -234,9 +238,9 @@ static void test_lock_command_burst(const struct flash_device *flash) {
 	}
 
 	for (uint32_t iteration = 0; iteration < LOCK_COMMAND_BURST_ITERATIONS; iteration++) {
-		MMIO16(address) = 0x60;
-		MMIO16(address) = 0x01;
-		MMIO16(address) = 0xFF;
+		MMIO16(address) = CFI_CMD_BLOCK_LOCK_SETUP;
+		MMIO16(address) = CFI_CMD_BLOCK_LOCK_CONFIRM;
+		MMIO16(address) = CFI_CMD_READ_ARRAY;
 	}
 	test_eq_u32("repeated lock commands preserve block state", initial_lock, cfi_read_lock_status(address) & 0x3);
 }
@@ -303,7 +307,7 @@ static void test_otp(const struct flash_device *flash) {
 
 static void read_efa_samples(const struct flash_device *flash, uint16_t samples[3][MAP_SAMPLE_WORDS]) {
 	uint32_t offsets[] = {0, flash->efa_size / 2, flash->efa_size - sizeof(samples[0])};
-	MMIO16(flash->base) = 0x94;
+	MMIO16(flash->base) = CFI_CMD_READ_EFA;
 	for (uint32_t sample = 0; sample < ARRAY_SIZE(offsets); sample++) {
 		for (uint32_t word = 0; word < MAP_SAMPLE_WORDS; word++) {
 			samples[sample][word] = MMIO16(flash->base + offsets[sample] + word * 2);
@@ -330,39 +334,70 @@ static void test_efa(const struct flash_device *flash) {
 	test_eq_memory("read array restored after EFA mode", array_data, (const void *) flash->base, sizeof(array_data));
 }
 
-static void test_undefined_commands(const struct flash_device *flash) {
+static uint32_t undeclared_commands(const struct flash_device *flash, uint16_t commands[UNDECLARED_COMMANDS_MAX]) {
 	static const uint16_t UNDEFINED_COMMANDS[] = { 0x00, 0xAA, 0x55, 0xF0 };
+	uint32_t count = 0;
+	for (uint32_t i = 0; i < ARRAY_SIZE(UNDEFINED_COMMANDS); i++)
+		commands[count++] = UNDEFINED_COMMANDS[i];
+
+	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+		commands[count++] = CFI_CMD_WORD_PROGRAM_SETUP;
+		commands[count++] = CFI_CMD_WORD_PROGRAM_SETUP_ALTERNATE;
+		commands[count++] = CFI_CMD_BUFFERED_PROGRAM;
+	} else {
+		commands[count++] = CFI_CMD_PROGRAM_SETUP;
+		commands[count++] = CFI_CMD_BUFFER_PROGRAM;
+		commands[count++] = CFI_CMD_BLANK_CHECK_SETUP;
+	}
+	if (!flash->efa_size) {
+		commands[count++] = CFI_CMD_READ_EFA;
+		commands[count++] = CFI_CMD_EFA_PROGRAM_SETUP;
+		commands[count++] = CFI_CMD_EFA_BLOCK_ERASE_SETUP;
+		commands[count++] = CFI_CMD_EFA_BLOCK_LOCK_SETUP;
+	}
+	if (!(flash->features & BIT(6)))
+		commands[count++] = CFI_CMD_PROTECTION_REGISTER_PROGRAM;
+	return count;
+}
+
+static void test_undeclared_commands(const struct flash_device *flash) {
+	uint16_t commands[UNDECLARED_COMMANDS_MAX];
+	uint32_t commands_n = undeclared_commands(flash, commands);
 	uint32_t data_offset = 0;
-	while (cfi_read_word(flash->base, data_offset) == 0xFFFF && data_offset < UNDEFINED_COMMAND_DATA_SEARCH_WORDS)
+	while (cfi_read_word(flash->base, data_offset) == 0xFFFF && data_offset < UNDECLARED_COMMAND_DATA_SEARCH_WORDS)
 		data_offset++;
 	uint16_t array_word = cfi_read_word(flash->base, data_offset);
 
 	bool keeps_read_array = true;
 	bool keeps_identifier_mode = true;
 	bool sets_no_error = true;
-	for (uint32_t i = 0; i < ARRAY_SIZE(UNDEFINED_COMMANDS); i++) {
-		MMIO16(flash->base) = UNDEFINED_COMMANDS[i];
+	printf("# undeclared commands:");
+	for (uint32_t i = 0; i < commands_n; i++) {
+		printf(" %02X", commands[i]);
+		MMIO16(flash->base) = commands[i];
 		keeps_read_array &= cfi_read_word(flash->base, data_offset) == array_word;
+		MMIO16(flash->base) = CFI_CMD_READ_ARRAY;
 		sets_no_error &= (cfi_clear_status(flash->base) & STATUS_ERRORS) == 0;
 
 		cfi_enter_id(flash->base);
-		MMIO16(flash->base) = UNDEFINED_COMMANDS[i];
+		MMIO16(flash->base) = commands[i];
 		keeps_identifier_mode &= cfi_read_word(flash->base, 0) == flash->manufacturer;
+		MMIO16(flash->base) = CFI_CMD_READ_ARRAY;
 		sets_no_error &= (cfi_clear_status(flash->base) & STATUS_ERRORS) == 0;
 	}
-	printf("# undefined commands 00/AA/55/F0, array word at offset %lX: %04X\n", data_offset, array_word);
+	printf("; array word at offset %lX: %04X\n", data_offset, array_word);
 	if (array_word == 0xFFFF) {
-		test_skip("undefined commands keep read array mode", "no programmed word near the flash base");
+		test_skip("undeclared commands keep read array mode", "no programmed word near the flash base");
 	} else {
-		test_check("undefined commands keep read array mode", keeps_read_array);
+		test_check("undeclared commands keep read array mode", keeps_read_array);
 	}
-	test_check("undefined commands keep identifier mode", keeps_identifier_mode);
-	test_check("undefined commands set no status error", sets_no_error);
+	test_check("undeclared commands keep identifier mode", keeps_identifier_mode);
+	test_check("undeclared commands set no status error", sets_no_error);
 }
 
 static void test_status_register(const struct flash_device *flash) {
 	uint16_t array_data = cfi_read_word(flash->base, 0);
-	MMIO16(flash->base) = 0x50;
+	MMIO16(flash->base) = CFI_CMD_CLEAR_STATUS_REGISTER;
 	test_eq_u32("clear status preserves read-array mode", array_data, cfi_read_word(flash->base, 0));
 
 	cfi_enter_status(flash->base);
@@ -385,8 +420,8 @@ static void test_blank_check(const struct flash_device *flash) {
 	memcpy(samples[0], (const void *) flash->base, sizeof(samples[0]));
 	memcpy(samples[1], (const void *) (flash->base + block_size / 2), sizeof(samples[1]));
 	memcpy(samples[2], (const void *) (flash->base + block_size - sizeof(samples[2])), sizeof(samples[2]));
-	MMIO16(flash->base) = 0xBC;
-	MMIO16(flash->base) = 0xD0;
+	MMIO16(flash->base) = CFI_CMD_BLANK_CHECK_SETUP;
+	MMIO16(flash->base) = CFI_CMD_CONFIRM;
 	uint16_t status = cfi_wait_ready(flash->base);
 	printf("# blank check status=%04X\n", status);
 	test_check("blank check completes", (status & STATUS_READY) != 0);
@@ -406,7 +441,7 @@ static void test_blank_check(const struct flash_device *flash) {
 		(const void *) (flash->base + block_size - sizeof(samples[2])),
 		sizeof(samples[2])
 	);
-	MMIO16(flash->base) = 0x50;
+	MMIO16(flash->base) = CFI_CMD_CLEAR_STATUS_REGISTER;
 }
 
 static void test_blank_space(struct flash_device *flash) {
@@ -459,12 +494,12 @@ static void test_blank_space(struct flash_device *flash) {
 			flash->blank_size >> 20
 		);
 		if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
-			MMIO16(flash->blank_base) = 0xBC;
-			MMIO16(flash->blank_base) = 0xD0;
+			MMIO16(flash->blank_base) = CFI_CMD_BLANK_CHECK_SETUP;
+			MMIO16(flash->blank_base) = CFI_CMD_CONFIRM;
 			uint16_t status = cfi_wait_ready(flash->blank_base);
 			test_check("blank check accepts erased block", (status & (STATUS_READY | BIT(5))) == STATUS_READY);
 			cfi_enter_read_array(flash->blank_base);
-			MMIO16(flash->blank_base) = 0x50;
+			MMIO16(flash->blank_base) = CFI_CMD_CLEAR_STATUS_REGISTER;
 		}
 	} else {
 		test_skip("aligned blank area for write tests", "none on this flash device");
@@ -898,8 +933,8 @@ int main(void) {
 		test_efa(&flashes[i]);
 		test_category("Status register");
 		test_status_register(&flashes[i]);
-		test_category("Undefined commands");
-		test_undefined_commands(&flashes[i]);
+		test_category("Undeclared commands");
+		test_undeclared_commands(&flashes[i]);
 		test_category("Blank check");
 		test_blank_check(&flashes[i]);
 		test_category("Blank space");

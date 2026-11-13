@@ -176,9 +176,9 @@ static uint32_t program_value(uint32_t index) {
 
 static bool buffered_program_command(const struct flash_device *flash, uint16_t *command) {
 	if (flash->command_set == P_ID_INTEL_EXT) {
-		*command = 0xE8;
+		*command = CFI_CMD_BUFFERED_PROGRAM;
 	} else if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
-		*command = 0xE9;
+		*command = CFI_CMD_BUFFER_PROGRAM;
 	} else {
 		return false;
 	}
@@ -201,13 +201,13 @@ static bool emergency_cleanup(const struct flash_device *flash, const flash_bloc
 	printf("# emergency cleanup delay: %u ms (CFI max %u ms)\n", (unsigned int) delay_ms,
 		(unsigned int) cfi_max_ms);
 	wdt_set_max_execution_time(OPERATION_TIMEOUT_MS);
-	MMIO16(block->base) = 0x50;
-	MMIO16(block->base) = 0x20;
-	MMIO16(block->base) = 0xD0;
+	MMIO16(block->base) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(block->base) = CFI_CMD_BLOCK_ERASE_SETUP;
+	MMIO16(block->base) = CFI_CMD_CONFIRM;
 	stopwatch_t started = stopwatch_get();
 	while (stopwatch_elapsed_ms(started) < delay_ms)
 		test_watchdog_serve();
-	MMIO16(block->base) = 0x70;
+	MMIO16(block->base) = CFI_CMD_READ_STATUS_REGISTER;
 	uint16_t status = MMIO16(block->base);
 	if ((status & STATUS_READY) != 0)
 		cfi_enter_read_array(block->base);
@@ -221,16 +221,16 @@ static bool emergency_cleanup(const struct flash_device *flash, const flash_bloc
 static void test_abort_trace(const struct flash_device *flash, uint16_t command, uint32_t abort_writes,
 	uint32_t setup_address, const flash_block_t *block) {
 	uint32_t abort_address = setup_address ^ block->size;
-	MMIO16(setup_address) = 0x50;
-	MMIO16(setup_address) = 0xFF;
+	MMIO16(setup_address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(setup_address) = CFI_CMD_READ_ARRAY;
 	MMIO16(setup_address) = command;
 	uint16_t status_before_abort = cfi_wait_ready(setup_address);
 	print_status("status before abort", status_before_abort);
 	bool accepted = (status_before_abort & (STATUS_READY | STATUS_LOW_ERRORS)) == STATUS_READY;
 	test_check("abort trace accepts the buffer setup command", accepted);
 	if (!accepted) {
-		MMIO16(setup_address) = 0x50;
-		MMIO16(setup_address) = 0xFF;
+		MMIO16(setup_address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+		MMIO16(setup_address) = CFI_CMD_READ_ARRAY;
 		return;
 	}
 
@@ -239,17 +239,17 @@ static void test_abort_trace(const struct flash_device *flash, uint16_t command,
 		MMIO32(setup_address + index * sizeof(uint32_t)) = program_value(index);
 	MMIO16(abort_address) = 0xFFFF;
 	uint16_t status_after_abort = MMIO16(setup_address);
-	MMIO16(setup_address) = 0x50;
+	MMIO16(setup_address) = CFI_CMD_CLEAR_STATUS_REGISTER;
 	uint16_t status_after_clear = MMIO16(setup_address);
 
-	MMIO16(setup_address) = 0x50;
-	MMIO16(setup_address) = 0x70;
-	MMIO16(setup_address) = 0xFF;
+	MMIO16(setup_address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(setup_address) = CFI_CMD_READ_STATUS_REGISTER;
+	MMIO16(setup_address) = CFI_CMD_READ_ARRAY;
 	uint32_t array_after_ff = MMIO32(setup_address);
-	MMIO16(setup_address) = 0x70;
+	MMIO16(setup_address) = CFI_CMD_READ_STATUS_REGISTER;
 	uint16_t status_after_ff = MMIO16(setup_address);
-	MMIO16(setup_address) = 0x70;
-	MMIO16(setup_address) = 0xFF;
+	MMIO16(setup_address) = CFI_CMD_READ_STATUS_REGISTER;
+	MMIO16(setup_address) = CFI_CMD_READ_ARRAY;
 
 	print_status("status immediately after abort", status_after_abort);
 	print_status("status after 50", status_after_clear);
@@ -282,10 +282,10 @@ static void test_abort_trace(const struct flash_device *flash, uint16_t command,
 			(retry_abort_status & STATUS_ABORT_ERRORS) == STATUS_ABORT_ERRORS
 		);
 	}
-	MMIO16(setup_address) = 0x50;
-	MMIO16(setup_address) = 0xFF;
-	MMIO16(abort_address) = 0x50;
-	MMIO16(abort_address) = 0xFF;
+	MMIO16(setup_address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(setup_address) = CFI_CMD_READ_ARRAY;
+	MMIO16(abort_address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(abort_address) = CFI_CMD_READ_ARRAY;
 }
 
 int main(void) {
@@ -356,8 +356,8 @@ int main(void) {
 			emergency_cleanup(&flash, &test_block));
 	}
 
-	MMIO16(setup_address) = 0x50;
-	MMIO16(setup_address) = 0xFF;
+	MMIO16(setup_address) = CFI_CMD_CLEAR_STATUS_REGISTER;
+	MMIO16(setup_address) = CFI_CMD_READ_ARRAY;
 	uint16_t restore_status = initial_lock ? cfi_lock_block(test_block.base, false) :
 		cfi_unlock_block(test_block.base, false);
 	print_status("lock restore status", restore_status);
