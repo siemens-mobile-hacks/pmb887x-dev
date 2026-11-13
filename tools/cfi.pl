@@ -3,28 +3,10 @@ use warnings;
 use strict;
 use File::Basename;
 use lib dirname(__FILE__).'/lib';
-use Data::Dumper;
-use File::Slurp qw(read_file);
 use Sie::CFI;
 use Sie::Utils;
 
-my $path = getDataDir().'/cfi';
-opendir my $fp, $path or die "opendir($path): $!";
-my @files = readdir $fp;
-closedir $fp;
-
-for my $dump_file (@files) {
-	next if $dump_file !~ /^([a-f0-9]+)-([a-f0-9]+)\.hex$/i;
-	my ($vid, $pid) = (hex $1, hex $2);
-	
-	my $dump_text = scalar(read_file("$path/$dump_file"));
-	$dump_text =~ s/#.*?$//gm;
-	$dump_text =~ s/^\s+|\s+$//g;
-	
-	my @dump = map { hex $_ } split(/\s+/s, $dump_text);
-	my $info = Sie::CFI::parseFlashDump($vid, $pid, \@dump);
-	printFlashDump($info);
-}
+printFlashDump($_) for Sie::CFI::loadFlashes();
 
 sub printFlashDump {
 	my ($info) = @_;

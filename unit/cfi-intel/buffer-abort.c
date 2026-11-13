@@ -175,15 +175,13 @@ static uint32_t program_value(uint32_t index) {
 }
 
 static bool buffered_program_command(const struct flash_device *flash, uint16_t *command) {
-	cfi_enter_query(flash->base);
-	uint16_t primary_command_set = cfi_read_u16(flash->base, 0x13);
-	cfi_enter_read_array(flash->base);
-	if (primary_command_set == 0x0001)
+	if (flash->command_set == P_ID_INTEL_EXT) {
 		*command = 0xE8;
-	else if (primary_command_set == 0x0200)
+	} else if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
 		*command = 0xE9;
-	else
+	} else {
 		return false;
+	}
 	return true;
 }
 

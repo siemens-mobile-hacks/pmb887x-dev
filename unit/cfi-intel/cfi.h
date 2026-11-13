@@ -8,6 +8,9 @@
 #define CFI_MAX_ERASE_REGIONS 4
 #define MAP_SAMPLE_WORDS 4
 #define FLASH_CHIP_SELECT_COUNT 3
+#define P_ID_INTEL_EXT 0x0001
+#define P_ID_INTEL_STD 0x0003
+#define P_ID_INTEL_PERFORMANCE 0x0200
 #define STATUS_READY BIT(7)
 #define STATUS_ERASE_SUSPEND BIT(6)
 #define STATUS_PROGRAM_SUSPEND BIT(2)
@@ -23,14 +26,20 @@ struct flash_device {
 	uint32_t base;
 	uint32_t manufacturer;
 	uint32_t device;
+	uint32_t command_set;
 	uint32_t primary_address;
+	uint32_t otp0_address;
+	uint32_t otp0_factory_size;
+	uint32_t otp0_user_size;
+	uint32_t otp1_address;
+	uint32_t otp1_group_size;
 	uint32_t size_exponent;
 	uint32_t size;
 	uint32_t regions;
 	uint32_t write_buffer_size;
 	uint32_t features;
-	uint32_t efa_blocks;
-	uint32_t efa_block_size;
+	uint32_t efa_regions;
+	uint32_t efa_size;
 	uint32_t blank_base;
 	uint32_t blank_size;
 	uint32_t test_block;
@@ -40,6 +49,7 @@ struct flash_device {
 	uint32_t high_cs;
 	uint32_t window_size;
 	struct erase_region erase[CFI_MAX_ERASE_REGIONS];
+	struct erase_region efa_erase[CFI_MAX_ERASE_REGIONS];
 	uint16_t map_samples[3][MAP_SAMPLE_WORDS];
 };
 
@@ -72,7 +82,7 @@ uint16_t cfi_blank_check(uint32_t address);
 void cfi_program_configuration(uint32_t base, uint16_t value, bool enhanced);
 void cfi_enter_efa(uint32_t address);
 bool cfi_efa_range_is_blank(uint32_t address, uint32_t size);
-bool cfi_find_blank_efa_block(const struct flash_device *flash, uint32_t *address);
+bool cfi_find_blank_efa_block(const struct flash_device *flash, uint32_t *address, uint32_t *size);
 uint16_t cfi_read_efa_word(uint32_t address);
 uint32_t cfi_read_efa_lock_status(uint32_t address);
 uint16_t cfi_program_otp_word(uint32_t address, uint16_t value);

@@ -11,21 +11,16 @@ static bool find_test_flash(struct flash_device *flash) {
 		if (!cfi_probe(cfi_chip_selects[i], flash)) {
 			continue;
 		}
-		bool valid_efa = (
-			(flash->features & BIT(10)) != 0 &&
-			flash->efa_blocks > 0 &&
-			flash->efa_block_size > 0
-		);
-		if (!valid_efa) {
+		if (!flash->efa_size) {
 			continue;
 		}
 		printf(
-			"# CS%lu %04lX:%04lX EFA=%lu blocks x %lu KiB\n",
+			"# CS%lu %04lX:%04lX EFA=%lu KiB in %lu erase regions\n",
 			flash->cs,
 			flash->manufacturer,
 			flash->device,
-			flash->efa_blocks,
-			flash->efa_block_size >> 10
+			flash->efa_size >> 10,
+			flash->efa_regions
 		);
 		return true;
 	}
@@ -40,7 +35,7 @@ static void test_operation(const char *name, uint16_t status) {
 	}
 }
 
-static void test_efa_program_and_cleanup(const struct flash_device *flash, uint32_t address) {
+static void test_efa_program_and_cleanup(const struct flash_device *flash, uint32_t address, uint32_t block_size) {
 	uint16_t main_array[MAP_SAMPLE_WORDS];
 	memcpy(main_array, (const void *) flash->base, sizeof(main_array));
 
@@ -56,7 +51,7 @@ static void test_efa_program_and_cleanup(const struct flash_device *flash, uint3
 	test_operation("EFA block unlock completes", cfi_unlock_block(address, true));
 	test_operation("EFA cleanup erase completes", cfi_erase_block(address, true));
 	test_watchdog_reset();
-	test_check("EFA cleanup erased the complete block", cfi_efa_range_is_blank(address, flash->efa_block_size));
+	test_check("EFA cleanup erased the complete block", cfi_efa_range_is_blank(address, block_size));
 	test_operation("EFA block lock completes", cfi_lock_block(address, true));
 	test_eq_u32("clean EFA block is locked", 1, cfi_read_efa_lock_status(address));
 	test_eq_memory("cleanup preserves main array", main_array, (const void *) flash->base, sizeof(main_array));
@@ -83,15 +78,16 @@ int main(void) {
 	}
 	test_check("EFA flash is found", true);
 	uint32_t address = 0;
-	bool blank = cfi_find_blank_efa_block(&flash, &address);
+	uint32_t block_size = 0;
+	bool blank = cfi_find_blank_efa_block(&flash, &address, &block_size);
 	if (!blank) {
 		test_skip("blank EFA block is found", "all EFA blocks contain data");
 		return test_finish();
 	}
 	test_check("blank EFA block is found", true);
-	printf("# selected EFA block: %08lX..%08lX\n", address, address + flash.efa_block_size - 1);
+	printf("# selected EFA block: %08lX..%08lX\n", address, address + block_size - 1);
 
 	test_category("Program and cleanup");
-	test_efa_program_and_cleanup(&flash, address);
+	test_efa_program_and_cleanup(&flash, address, block_size);
 	return test_finish();
 }

@@ -59,7 +59,7 @@ static void program_buffer(const struct flash_device *flash, uint32_t address, c
 static uint16_t program_buffer_with_suspend(const struct flash_device *flash, uint32_t address, const uint16_t *data,
 	uint32_t words, const uint16_t *read_sample, uint32_t read_address) {
 	MMIO16(address) = 0x50;
-	MMIO16(address) = flash->manufacturer == 0x0020 ? 0xE9 : 0xE8;
+	MMIO16(address) = flash->command_set == P_ID_INTEL_PERFORMANCE ? 0xE9 : 0xE8;
 	uint16_t buffer_status = cfi_wait_ready(address);
 	test_check("suspended write buffer is ready", (buffer_status & STATUS_READY) != 0);
 	MMIO16(address) = words - 1;
@@ -121,6 +121,26 @@ static uint16_t erase_with_suspend(uint32_t address, const uint16_t *read_sample
 	return status;
 }
 
+static void test_undocumented_program_commands(const struct flash_device *flash) {
+	if (flash->command_set != P_ID_INTEL_PERFORMANCE) {
+		test_skip("undocumented program commands are ignored", "command set documents 0x10 and 0xE8");
+		return;
+	}
+
+	MMIO16(flash->test_block) = 0x50;
+	MMIO16(flash->test_block) = 0x10;
+	MMIO16(flash->test_block) = 0x1234;
+	test_eq_u32("command 0x10 is ignored", 0xFFFF, MMIO16(flash->test_block));
+	MMIO16(flash->test_block) = 0xE8;
+	test_eq_u32("command 0xE8 is ignored", 0xFFFF, MMIO16(flash->test_block));
+	uint16_t status = cfi_clear_status(flash->test_block);
+	test_check("ignored program commands set no status error", (status & STATUS_ERRORS) == 0);
+	if (!cfi_range_is_blank(flash->test_block, flash->test_block_size)) {
+		uint16_t erase_status = cfi_erase_block(flash->test_block, false);
+		test_operation("block erase after ignored program commands completes", erase_status);
+	}
+}
+
 static void test_program_and_cleanup(struct flash_device *flash) {
 	uint16_t buffer[512];
 	uint32_t words = flash->write_buffer_size / 2;
@@ -136,7 +156,7 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 	test_eq_u32("test block starts locked", 1, cfi_read_lock_status(flash->test_block) & 0x3);
 	test_locked_operation(flash, false, "locked word program is rejected");
 	test_locked_operation(flash, true, "locked erase is rejected");
-	if (flash->manufacturer == 0x0020) {
+	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
 		uint16_t blank_status = cfi_blank_check(flash->test_block);
 		test_check("blank check reports erased block", (blank_status & (STATUS_READY | BIT(5))) == STATUS_READY);
 	}
@@ -168,7 +188,7 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 		program_buffer(flash, full_buffer, buffer, words);
 	}
 	test_eq_memory("full buffer reads back", buffer, (const void *) full_buffer, flash->write_buffer_size);
-	if (flash->manufacturer == 0x0020) {
+	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
 		test_check("blank check reports programmed block", (cfi_blank_check(flash->test_block) & BIT(5)) != 0);
 	}
 
@@ -189,10 +209,11 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 	test_operation("cleanup erase completes", erase_status);
 	test_watchdog_reset();
 	test_check("cleanup erased the complete block", cfi_range_is_blank(flash->test_block, flash->test_block_size));
-	if (flash->manufacturer == 0x0020) {
+	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
 		uint16_t blank_status = cfi_blank_check(flash->test_block);
 		test_check("blank check accepts cleaned block", (blank_status & (STATUS_READY | BIT(5))) == STATUS_READY);
 	}
+	test_undocumented_program_commands(flash);
 	test_eq_memory(
 		"previous block is unchanged",
 		previous_block,

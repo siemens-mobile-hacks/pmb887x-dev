@@ -7,6 +7,16 @@
 	(1u << EBU_BUSCON_CMULT_SHIFT) | EBU_BUSCON_DLOAD | (1u << EBU_BUSCON_BCGEN_SHIFT) | \
 	(1u << EBU_BUSCON_PORTW_SHIFT))
 #define CFI_QUERY_ADDRESS 0x55
+#define PRI_FEATURES 0x05
+#define PRI_PROTECTION_FIELDS 0x0E
+#define PRI_OTP_GROUP_COUNT_BYTES 2
+#define PRI_OTP_SIZE_EXPONENT_BYTES 1
+#define PRI_PAGE_MODE_BYTES 1
+#define PRI_V14_RECORD_SIZE_BYTES 2
+#define PRI_BANK_COUNT_BYTES 2
+#define PRI_SIMULTANEOUS_OPS_BYTES 3
+#define PRI_ERASE_REGION_BYTES 8
+#define PRI_V14_ERASE_REGION_BYTES 6
 #define EBU_CS_COUNT 7
 #define RAM_CS 1
 
@@ -55,6 +65,7 @@ void cfi_map(uint32_t cs, uint32_t base, uint32_t mask) {
 }
 
 static void cfi_read_geometry(struct flash_device *flash) {
+	flash->command_set = cfi_read_u16(flash->base, 0x13);
 	flash->primary_address = cfi_read_u16(flash->base, 0x15);
 	flash->size_exponent = cfi_read_word(flash->base, 0x27);
 	flash->size = flash->size_exponent < 32 ? 1u << flash->size_exponent : 0;
@@ -69,45 +80,92 @@ static void cfi_read_geometry(struct flash_device *flash) {
 	}
 }
 
-static void cfi_skip_pri_regions(uint32_t base, uint32_t *cursor, bool st) {
+static uint32_t cfi_read_bank_region_header(uint32_t base, uint32_t *cursor, bool v14) {
+	*cursor += v14 ? PRI_V14_RECORD_SIZE_BYTES : 0;
+	uint32_t banks = cfi_read_u16(base, *cursor);
+	*cursor += PRI_BANK_COUNT_BYTES + PRI_SIMULTANEOUS_OPS_BYTES;
+	return banks;
+}
+
+static uint32_t cfi_erase_region_bytes(bool v14) {
+	return PRI_ERASE_REGION_BYTES + (v14 ? PRI_V14_ERASE_REGION_BYTES : 0);
+}
+
+static void cfi_skip_pri_regions(uint32_t base, uint32_t *cursor, bool v14) {
 	uint32_t regions = cfi_read_word(base, (*cursor)++);
 	for (uint32_t region = 0; region < regions; region++) {
-		*cursor += st ? 2 : 0;
-		*cursor += 5;
+		cfi_read_bank_region_header(base, cursor, v14);
 		uint32_t erase_regions = cfi_read_word(base, (*cursor)++);
-		*cursor += erase_regions * (st ? 14 : 8);
+		*cursor += erase_regions * cfi_erase_region_bytes(v14);
+	}
+}
+
+static bool cfi_read_efa_regions(struct flash_device *flash, uint32_t *cursor, bool v14) {
+	uint32_t regions = cfi_read_word(flash->base, (*cursor)++);
+	for (uint32_t region = 0; region < regions; region++) {
+		uint32_t banks = cfi_read_bank_region_header(flash->base, cursor, v14);
+		uint32_t erase_regions = cfi_read_word(flash->base, (*cursor)++);
+		if (erase_regions > CFI_MAX_ERASE_REGIONS)
+			return false;
+
+		struct erase_region bank[CFI_MAX_ERASE_REGIONS];
+		for (uint32_t i = 0; i < erase_regions; i++) {
+			bank[i].blocks = cfi_read_u16(flash->base, *cursor) + 1;
+			bank[i].block_size = cfi_read_u16(flash->base, *cursor + 2) * 256;
+			*cursor += cfi_erase_region_bytes(v14);
+		}
+		for (uint32_t i = 0; i < banks; i++) {
+			for (uint32_t j = 0; j < erase_regions; j++) {
+				if (flash->efa_regions == CFI_MAX_ERASE_REGIONS)
+					return false;
+				flash->efa_erase[flash->efa_regions++] = bank[j];
+				flash->efa_size += bank[j].blocks * bank[j].block_size;
+			}
+		}
+	}
+	return true;
+}
+
+static void cfi_read_protection_fields(struct flash_device *flash, uint32_t *cursor) {
+	uint32_t fields = cfi_read_word(flash->base, (*cursor)++);
+	for (uint32_t field = 0; field < fields; field++) {
+		if (field == 0) {
+			flash->otp0_address = cfi_read_u16(flash->base, *cursor);
+			*cursor += 2;
+			flash->otp0_factory_size = 1u << cfi_read_word(flash->base, (*cursor)++);
+			flash->otp0_user_size = 1u << cfi_read_word(flash->base, (*cursor)++);
+			continue;
+		}
+
+		uint32_t address = cfi_read_u32(flash->base, *cursor);
+		*cursor += 4;
+		*cursor += PRI_OTP_GROUP_COUNT_BYTES + PRI_OTP_SIZE_EXPONENT_BYTES + PRI_OTP_GROUP_COUNT_BYTES;
+		uint32_t group_size = 1u << cfi_read_word(flash->base, (*cursor)++);
+		if (field == 1) {
+			flash->otp1_address = address;
+			flash->otp1_group_size = group_size;
+		}
 	}
 }
 
 static void cfi_read_extended_geometry(struct flash_device *flash) {
-	flash->features = cfi_read_u32(flash->base, flash->primary_address + 5);
+	flash->features = cfi_read_u32(flash->base, flash->primary_address + PRI_FEATURES);
+	uint32_t cursor = flash->primary_address + PRI_PROTECTION_FIELDS;
+	if (flash->features & BIT(6))
+		cfi_read_protection_fields(flash, &cursor);
 	if (!(flash->features & BIT(9)) || !(flash->features & BIT(10))) {
 		return;
 	}
 
-	uint32_t cursor = flash->primary_address + 0xE;
-	if (flash->features & BIT(6)) {
-		uint32_t fields = cfi_read_word(flash->base, cursor++);
-		cursor += fields ? 4 + (fields - 1) * 10 : 0;
-	}
-	cursor++;
+	cursor += PRI_PAGE_MODE_BYTES;
 	uint32_t synchronous_modes = cfi_read_word(flash->base, cursor++);
 	cursor += synchronous_modes;
-	bool st = cfi_read_u16(flash->base, 0x13) == 0x0200;
-	cfi_skip_pri_regions(flash->base, &cursor, st);
-
-	uint32_t regions = cfi_read_word(flash->base, cursor++);
-	if (!regions) {
-		return;
+	bool v14 = flash->command_set == P_ID_INTEL_PERFORMANCE;
+	cfi_skip_pri_regions(flash->base, &cursor, v14);
+	if (!cfi_read_efa_regions(flash, &cursor, v14)) {
+		flash->efa_regions = 0;
+		flash->efa_size = 0;
 	}
-	cursor += st ? 2 : 0;
-	cursor += 5;
-	uint32_t erase_regions = cfi_read_word(flash->base, cursor++);
-	if (!erase_regions) {
-		return;
-	}
-	flash->efa_blocks = cfi_read_u16(flash->base, cursor) + 1;
-	flash->efa_block_size = cfi_read_u16(flash->base, cursor + 2) * 256;
 }
 
 static void cfi_read_map_sample(struct flash_device *flash, uint32_t sample, uint32_t offset) {
@@ -139,6 +197,7 @@ bool cfi_probe(uint32_t cs, struct flash_device *flash) {
 		return false;
 	}
 
+	*flash = (struct flash_device) { 0 };
 	flash->cs = cs;
 	flash->base = FLASH_WINDOW_BASE;
 	cfi_read_geometry(flash);
@@ -266,7 +325,7 @@ uint16_t cfi_lock_down_block(uint32_t address, bool efa) {
 
 uint16_t cfi_program_word(const struct flash_device *flash, uint32_t address, uint16_t value, bool efa) {
 	MMIO16(address) = 0x50;
-	MMIO16(address) = efa ? 0x44 : flash->manufacturer == 0x0020 ? 0x41 : 0x40;
+	MMIO16(address) = efa ? 0x44 : flash->command_set == P_ID_INTEL_PERFORMANCE ? 0x41 : 0x40;
 	MMIO16(address) = value;
 	uint16_t status = cfi_wait_ready(address);
 	cfi_enter_read_array(address);
@@ -276,7 +335,7 @@ uint16_t cfi_program_word(const struct flash_device *flash, uint32_t address, ui
 uint16_t cfi_program_buffer(const struct flash_device *flash, uint32_t address, const uint16_t *data,
 	uint32_t words, uint16_t *buffer_status) {
 	MMIO16(address) = 0x50;
-	MMIO16(address) = flash->manufacturer == 0x0020 ? 0xE9 : 0xE8;
+	MMIO16(address) = flash->command_set == P_ID_INTEL_PERFORMANCE ? 0xE9 : 0xE8;
 	*buffer_status = cfi_wait_ready(address);
 	MMIO16(address) = words - 1;
 	for (uint32_t word = 0; word < words; word++) {
@@ -330,13 +389,18 @@ bool cfi_efa_range_is_blank(uint32_t address, uint32_t size) {
 	return blank;
 }
 
-bool cfi_find_blank_efa_block(const struct flash_device *flash, uint32_t *address) {
-	for (uint32_t block = 0; block < flash->efa_blocks; block++) {
-		uint32_t candidate = flash->base + block * flash->efa_block_size;
-		test_watchdog_reset();
-		if (cfi_efa_range_is_blank(candidate, flash->efa_block_size)) {
-			*address = candidate;
-			return true;
+bool cfi_find_blank_efa_block(const struct flash_device *flash, uint32_t *address, uint32_t *size) {
+	uint32_t candidate = flash->base;
+	for (uint32_t region = 0; region < flash->efa_regions; region++) {
+		const struct erase_region *erase = &flash->efa_erase[region];
+		for (uint32_t block = 0; block < erase->blocks; block++) {
+			test_watchdog_reset();
+			if (cfi_efa_range_is_blank(candidate, erase->block_size)) {
+				*address = candidate;
+				*size = erase->block_size;
+				return true;
+			}
+			candidate += erase->block_size;
 		}
 	}
 	return false;

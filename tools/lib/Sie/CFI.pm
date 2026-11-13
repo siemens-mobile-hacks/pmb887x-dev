@@ -284,6 +284,25 @@ sub parsePRI {
 	return $pri;
 }
 
+sub loadFlashes {
+	my $path = getDataDir().'/cfi';
+	opendir my $fp, $path or die "opendir($path): $!";
+	my @files = sort readdir $fp;
+	closedir $fp;
+
+	my @flashes;
+	for my $file (@files) {
+		next if $file !~ /^([a-f0-9]+)-([a-f0-9]+)\.hex$/i;
+		my ($vid, $pid) = (hex $1, hex $2);
+		my $dump_text = scalar(read_file("$path/$file"));
+		$dump_text =~ s/#.*?$//gm;
+		$dump_text =~ s/^\s+|\s+$//g;
+		my @dump = map { hex $_ } split(/\s+/s, $dump_text);
+		push @flashes, parseFlashDump($vid, $pid, \@dump);
+	}
+	return @flashes;
+}
+
 sub parseFlashDump {
 	my ($vid, $pid, $dump) = @_;
 	

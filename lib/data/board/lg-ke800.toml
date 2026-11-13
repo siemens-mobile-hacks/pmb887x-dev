@@ -22,17 +22,15 @@ type = "iso7816-slot"
 bus = "SIM"
 in = { RST = "SIM:CC_RST" }
 
+# PF38F6070M0Y0BE: CE# = CS0 AND CS2, A25 = CS0 (service manual, p. 85).
 [peripheral.FLASH0]
 type = "cfi-flash"
 bus = "EBU"
-ebu.cs = 0
-flash = { vid = 0x0089, pid = 0x88B0, size = 0x4000000 }
-
-[peripheral.FLASH1]
-type = "cfi-flash"
-bus = "EBU"
-ebu.cs = 2
-flash = { vid = 0x0089, pid = 0x88B0, size = 0x4000000 }
+flash = { vid = 0x0089, pid = 0x88B0 }
+ebu.windows = [
+	{ cs = 0, offset = 0x0000000, size = 0x4000000 },
+	{ cs = 2, offset = 0x4000000, size = 0x4000000 },
+]
 
 [peripheral.SDRAM]
 type = "sdram"

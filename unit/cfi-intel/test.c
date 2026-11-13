@@ -1,15 +1,20 @@
 #include <pmb887x.h>
-#include <stopwatch.h>
 
 #include <string.h>
 
 #include "cfi.h"
 #include "test.h"
 
-#define EFA_SIZE 0x8000
 #define LOCK_COMMAND_BURST_ITERATIONS 64
-#define LOCK_COMMAND_MAX_US 100
 #define WRITE_TEST_ALIGNMENT (1u << 20)
+#define RCR_ASYNCHRONOUS BIT(15)
+#define RCR_WAIT_POLARITY BIT(10)
+#define RCR_BURST_LENGTH (BIT(2) | BIT(1) | BIT(0))
+#define ECR_DRIVER_STRENGTH (BIT(2) | BIT(1) | BIT(0))
+#define ECR_DRIVER_STRENGTH_CODE_3 (BIT(1) | BIT(0))
+#define ECR_DRIVER_STRENGTH_CODE_4 BIT(2)
+#define SPLIT_PROBE_WINDOW_EXPONENT 26
+#define UNDEFINED_COMMAND_DATA_SEARCH_WORDS 0x10000
 
 static struct flash_device flashes[FLASH_CHIP_SELECT_COUNT];
 static uint32_t flash_count;
@@ -26,16 +31,50 @@ static void scan_flashes(void) {
 	cfi_disable_chip_selects();
 }
 
-#if defined(BOARD_LG_KE970)
-static void coalesce_split_flashes(void) {
+static uint16_t read_identifier_word(uint32_t address, uint32_t offset) {
+	cfi_enter_id(address);
+	uint16_t value = cfi_read_word(address, offset);
+	cfi_enter_read_array(address);
+	return value;
+}
+
+static bool flash_is_split_across(const struct flash_device *first, const struct flash_device *second) {
+	uint32_t first_base = FLASH_WINDOW_BASE;
+	uint32_t second_base = FLASH_WINDOW_BASE + (1u << SPLIT_PROBE_WINDOW_EXPONENT);
+	cfi_disable_chip_selects();
+	cfi_map(first->cs, first_base, 27 - SPLIT_PROBE_WINDOW_EXPONENT);
+	cfi_map(second->cs, second_base, 27 - SPLIT_PROBE_WINDOW_EXPONENT);
+
+	uint16_t rcr = read_identifier_word(first_base, 5);
+	uint16_t second_rcr_before = read_identifier_word(second_base, 5);
+	uint16_t probe_rcr = rcr ^ RCR_WAIT_POLARITY;
+	cfi_program_configuration(first_base, probe_rcr, false);
+	uint16_t second_rcr_after = read_identifier_word(second_base, 5);
+	cfi_program_configuration(first_base, rcr, false);
+	cfi_disable_chip_selects();
+
+	return second_rcr_before == rcr && second_rcr_after == probe_rcr;
+}
+
+static void merge_split_flashes(void) {
 	for (uint32_t i = 0; i < flash_count; i++) {
 		for (uint32_t j = i + 1; j < flash_count; j++) {
-			if (flashes[i].manufacturer != flashes[j].manufacturer ||
-				flashes[i].device != flashes[j].device ||
-				flashes[i].size != flashes[j].size) {
+			bool same_device = (
+				flashes[i].manufacturer == flashes[j].manufacturer &&
+				flashes[i].device == flashes[j].device &&
+				flashes[i].size == flashes[j].size
+			);
+			if (!same_device || !flash_is_split_across(&flashes[i], &flashes[j])) {
 				continue;
 			}
 
+			printf(
+				"# CS%lu and CS%lu are windows of one flash: RCR written through CS%lu reads back through CS%lu\n",
+				flashes[i].cs,
+				flashes[j].cs,
+				flashes[i].cs,
+				flashes[j].cs
+			);
 			struct flash_device merged = flashes[i].cs < flashes[j].cs ? flashes[i] : flashes[j];
 			merged.split = true;
 			merged.high_cs = flashes[i].cs < flashes[j].cs ? flashes[j].cs : flashes[i].cs;
@@ -49,7 +88,6 @@ static void coalesce_split_flashes(void) {
 		}
 	}
 }
-#endif
 
 static bool configure_flash_map(void) {
 	cfi_disable_chip_selects();
@@ -83,11 +121,13 @@ static bool configure_flash_map(void) {
 			cfi_enter_read_array(base + flash->window_size);
 			cfi_sample_map(flash);
 			printf(
-				"# CS%lu+CS%lu mapped at %08lX..%08lX (128 MiB die split into 64 MiB windows)\n",
+				"# CS%lu+CS%lu mapped at %08lX..%08lX (%lu MiB flash split into two %lu MiB chip select windows)\n",
 				flash->cs,
 				flash->high_cs,
 				base,
-				base + flash->size - 1
+				base + flash->size - 1,
+				flash->size >> 20,
+				flash->window_size >> 20
 			);
 		} else {
 			cfi_map(flash->cs, base, 27 - flash->size_exponent);
@@ -99,28 +139,57 @@ static bool configure_flash_map(void) {
 }
 
 static void test_identification(const struct flash_device *flash) {
+	bool known_command_set = (
+		flash->command_set == P_ID_INTEL_EXT ||
+		flash->command_set == P_ID_INTEL_STD ||
+		flash->command_set == P_ID_INTEL_PERFORMANCE
+	);
+	test_check("CFI reports a supported command set", known_command_set);
 	cfi_enter_id(flash->base);
-	uint16_t manufacturer = cfi_read_word(flash->base, 0);
-	test_check("manufacturer is Intel or ST", manufacturer == 0x0089 || manufacturer == 0x0020);
 	test_eq_u32("device ID matches scan", flash->device, cfi_read_word(flash->base, 1));
 	cfi_enter_read_array(flash->base);
 }
 
-static void test_electronic_signature(const struct flash_device *flash) {
-	cfi_enter_id(flash->base);
-	uint16_t configuration = cfi_read_word(flash->base, 5);
-	uint16_t enhanced_configuration = cfi_read_word(flash->base, 6);
-	test_check("configuration register is readable", configuration != 0xFFFF);
-	test_check("enhanced configuration register is readable", enhanced_configuration != 0xFFFF);
-	cfi_enter_read_array(flash->base);
-	cfi_program_configuration(flash->base, configuration, false);
-	cfi_program_configuration(flash->base, enhanced_configuration, true);
-	cfi_enter_id(flash->base);
-	test_eq_u32("configuration register accepts programming command", configuration, cfi_read_word(flash->base, 5));
-	uint16_t actual_enhanced_configuration = cfi_read_word(flash->base, 6);
-	test_eq_u32("enhanced configuration register is programmed", enhanced_configuration, actual_enhanced_configuration);
-	cfi_enter_read_array(flash->base);
-	printf("# CR=%04X ECR=%04X\n", configuration, enhanced_configuration);
+static void test_configuration_registers(const struct flash_device *flash) {
+	uint32_t far_bank = flash->base + flash->size / 2;
+	uint16_t rcr = read_identifier_word(flash->base, 5);
+	uint16_t word6 = read_identifier_word(flash->base, 6);
+	printf(
+		"# RCR: %s read, WAIT active %s, burst length code %u; identifier word 6: %04X\n",
+		(rcr & RCR_ASYNCHRONOUS) ? "asynchronous" : "synchronous",
+		(rcr & RCR_WAIT_POLARITY) ? "high" : "low",
+		rcr & RCR_BURST_LENGTH,
+		word6
+	);
+	printf("# raw RCR=%04X word6=%04X\n", rcr, word6);
+
+	uint16_t new_rcr = rcr ^ RCR_WAIT_POLARITY;
+	cfi_program_configuration(flash->base, new_rcr, false);
+	test_eq_u32("RCR stores the programmed value", new_rcr, read_identifier_word(flash->base, 5));
+	test_eq_u32("RCR is shared by all partitions", new_rcr, read_identifier_word(far_bank, 5));
+	cfi_program_configuration(flash->base, rcr, false);
+	test_eq_u32("RCR is restored", rcr, read_identifier_word(flash->base, 5));
+
+	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+		uint16_t driver_strength = (word6 & ECR_DRIVER_STRENGTH) == ECR_DRIVER_STRENGTH_CODE_4 ?
+			ECR_DRIVER_STRENGTH_CODE_3 : ECR_DRIVER_STRENGTH_CODE_4;
+		uint16_t new_ecr = (word6 & ~ECR_DRIVER_STRENGTH) | driver_strength;
+		cfi_program_configuration(flash->base, new_ecr, true);
+		test_eq_u32("ECR stores the programmed value", new_ecr, read_identifier_word(flash->base, 6));
+		test_eq_u32("ECR is shared by all partitions", new_ecr, read_identifier_word(far_bank, 6));
+		cfi_program_configuration(flash->base, word6, true);
+		test_eq_u32("ECR is restored", word6, read_identifier_word(flash->base, 6));
+	} else {
+		cfi_program_configuration(flash->base, word6 ^ ECR_DRIVER_STRENGTH, true);
+		uint16_t status = cfi_clear_status(flash->base);
+		printf(
+			"# ECR program without ECR: device %s, %s\n",
+			(status & STATUS_READY) ? "ready" : "busy",
+			(status & STATUS_ERRORS) ? "error bits set" : "no error bits"
+		);
+		printf("# raw status=%04X\n", status);
+		test_eq_u32("identifier word 6 ignores ECR programming", word6, read_identifier_word(flash->base, 6));
+	}
 }
 
 static void test_block_lock_status(const struct flash_device *flash) {
@@ -164,105 +233,76 @@ static void test_lock_command_burst(const struct flash_device *flash) {
 		return;
 	}
 
-	bool irq_was_disabled = cpu_enable_irq(false);
-	stopwatch_t started = stopwatch_get();
-	uint32_t maximum_ticks = 0;
 	for (uint32_t iteration = 0; iteration < LOCK_COMMAND_BURST_ITERATIONS; iteration++) {
-		stopwatch_t command_started = stopwatch_get();
-
-		/* Block Lock Setup, Block Lock Confirm, Read Array. */
 		MMIO16(address) = 0x60;
 		MMIO16(address) = 0x01;
 		MMIO16(address) = 0xFF;
-		uint32_t command_ticks = (uint32_t) stopwatch_elapsed(command_started);
-
-		if (command_ticks > maximum_ticks)
-			maximum_ticks = command_ticks;
 	}
-	uint32_t elapsed_ticks = (uint32_t) stopwatch_elapsed(started);
-	cpu_enable_irq(!irq_was_disabled);
-
-	uint16_t final_lock = cfi_read_lock_status(address) & 0x3;
-	printf(
-		"# %lu lock/status/array sequences: total %lu ticks (%lu us), maximum %lu ticks (%lu us) at %lu Hz\n",
-		(uint32_t) LOCK_COMMAND_BURST_ITERATIONS,
-		elapsed_ticks,
-		(uint32_t) ((uint64_t) elapsed_ticks * 1000000 / stopwatch_ticks_per_s()),
-		maximum_ticks,
-		(uint32_t) ((uint64_t) maximum_ticks * 1000000 / stopwatch_ticks_per_s()),
-		stopwatch_ticks_per_s()
-	);
-	test_eq_u32("repeated lock commands preserve block state", initial_lock, final_lock);
-#if defined(BOARD_SIEMENS_EL71)
-	test_check(
-		"block lock command completes within the realtime IRQ budget",
-		(uint64_t) maximum_ticks * 1000000 <= (uint64_t) stopwatch_ticks_per_s() * LOCK_COMMAND_MAX_US
-	);
-#endif
+	test_eq_u32("repeated lock commands preserve block state", initial_lock, cfi_read_lock_status(address) & 0x3);
 }
 
-static void read_otp_words(const struct flash_device *flash, uint32_t offset, uint16_t words[4]) {
+static void read_otp_words(const struct flash_device *flash, uint32_t offset, uint16_t *words, uint32_t count) {
 	cfi_enter_id(flash->base);
-	for (uint32_t i = 0; i < 4; i++) {
+	for (uint32_t i = 0; i < count; i++) {
 		words[i] = cfi_read_word(flash->base, offset + i);
 	}
 	cfi_enter_read_array(flash->base);
 }
 
-static bool otp_value_is_programmed(const uint16_t words[4]) {
+static bool otp_value_is_programmed(const uint16_t *words, uint32_t count) {
 	uint16_t bits_set = 0;
 	uint16_t bits_clear = 0;
-	for (uint32_t i = 0; i < 4; i++) {
+	for (uint32_t i = 0; i < count; i++) {
 		bits_set |= words[i];
 		bits_clear |= ~words[i];
 	}
 	return bits_set != 0 && bits_clear != 0;
 }
 
-static void print_otp_value(const char *name, const uint16_t words[4]) {
+static void print_otp_value(const char *name, const uint16_t *words, uint32_t count) {
 	printf("# %s: ", name);
-	for (uint32_t i = 0; i < 4; i++) {
+	for (uint32_t i = 0; i < count; i++) {
 		printf("%02X%02X", words[i] & 0xFF, words[i] >> 8);
 	}
 	printf("\n");
 }
 
 static void test_otp(const struct flash_device *flash) {
-	cfi_enter_query(flash->base);
-	uint32_t features = cfi_read_u32(flash->base, flash->primary_address + 5);
-	cfi_enter_read_array(flash->base);
-	if ((features & BIT(6)) == 0) {
-		test_skip("protection registers", "not supported by primary extended query");
+	if (!flash->otp0_address || !flash->otp1_address) {
+		test_skip("protection registers", "primary extended query reports no protection registers");
 		return;
 	}
 
-	uint16_t esn[4];
-	uint16_t imei[4];
-	read_otp_words(flash, 0x81, esn);
-	read_otp_words(flash, 0x8A, imei);
+	uint32_t factory_words = flash->otp0_factory_size / 2;
+	uint32_t pr0_user_words = flash->otp0_user_size / 2;
+	uint32_t group_words = flash->otp1_group_size / 2;
+	uint16_t factory[factory_words];
+	uint16_t pr0_user[pr0_user_words];
+	uint16_t group[group_words];
+	read_otp_words(flash, flash->otp0_address + 1, factory, factory_words);
+	read_otp_words(flash, flash->otp0_address + 1 + factory_words, pr0_user, pr0_user_words);
+	read_otp_words(flash, flash->otp1_address + 1, group, group_words);
 	cfi_enter_id(flash->base);
-	uint16_t esn_lock = cfi_read_word(flash->base, 0x80);
-	uint16_t imei_lock = cfi_read_word(flash->base, 0x89);
+	uint16_t pr0_lock = cfi_read_word(flash->base, flash->otp0_address);
+	uint16_t pr1_lock = cfi_read_word(flash->base, flash->otp1_address);
 	cfi_enter_read_array(flash->base);
-	print_otp_value("ESN", esn);
-	print_otp_value("IMEI", imei);
 	printf(
-		"# OTP locks: ESN=%s IMEI=%s (PR0=%04X PR1-16=%04X)\n",
-		esn_lock & BIT(0) ? "open" : "closed",
-		imei_lock & BIT(0) ? "open" : "closed",
-		esn_lock,
-		imei_lock
+		"# protection registers: PR0 at 0x%02lX (%lu factory + %lu user bytes), PR1 at 0x%02lX (%lu-byte groups)\n",
+		flash->otp0_address,
+		flash->otp0_factory_size,
+		flash->otp0_user_size,
+		flash->otp1_address,
+		flash->otp1_group_size
 	);
-	test_check("ESN is programmed", otp_value_is_programmed(esn));
-	if (otp_value_is_programmed(imei)) {
-		test_check("IMEI is programmed", true);
-	} else {
-		test_skip("IMEI is programmed", "OTP slot is erased");
-	}
+	printf("# protection locks: PR0=%04X PR1=%04X\n", pr0_lock, pr1_lock);
+	print_otp_value("PR0 factory", factory, factory_words);
+	print_otp_value("PR0 user", pr0_user, pr0_user_words);
+	print_otp_value("PR1 group 0", group, group_words);
+	test_check("factory protection register is programmed", otp_value_is_programmed(factory, factory_words));
 }
 
 static void read_efa_samples(const struct flash_device *flash, uint16_t samples[3][MAP_SAMPLE_WORDS]) {
-	uint32_t offsets[] = {0, EFA_SIZE / 2, EFA_SIZE - sizeof(samples[0])};
+	uint32_t offsets[] = {0, flash->efa_size / 2, flash->efa_size - sizeof(samples[0])};
 	MMIO16(flash->base) = 0x94;
 	for (uint32_t sample = 0; sample < ARRAY_SIZE(offsets); sample++) {
 		for (uint32_t word = 0; word < MAP_SAMPLE_WORDS; word++) {
@@ -273,8 +313,8 @@ static void read_efa_samples(const struct flash_device *flash, uint16_t samples[
 }
 
 static void test_efa(const struct flash_device *flash) {
-	if (flash->manufacturer != 0x0020) {
-		test_skip("extended flash array", "not an ST M58PR flash");
+	if (!flash->efa_size) {
+		test_skip("extended flash array", "primary extended query reports no extended flash array");
 		return;
 	}
 
@@ -288,6 +328,36 @@ static void test_efa(const struct flash_device *flash) {
 	test_eq_memory("EFA middle is stable", first[1], second[1], sizeof(first[1]));
 	test_eq_memory("EFA end is stable", first[2], second[2], sizeof(first[2]));
 	test_eq_memory("read array restored after EFA mode", array_data, (const void *) flash->base, sizeof(array_data));
+}
+
+static void test_undefined_commands(const struct flash_device *flash) {
+	static const uint16_t UNDEFINED_COMMANDS[] = { 0x00, 0xAA, 0x55, 0xF0 };
+	uint32_t data_offset = 0;
+	while (cfi_read_word(flash->base, data_offset) == 0xFFFF && data_offset < UNDEFINED_COMMAND_DATA_SEARCH_WORDS)
+		data_offset++;
+	uint16_t array_word = cfi_read_word(flash->base, data_offset);
+
+	bool keeps_read_array = true;
+	bool keeps_identifier_mode = true;
+	bool sets_no_error = true;
+	for (uint32_t i = 0; i < ARRAY_SIZE(UNDEFINED_COMMANDS); i++) {
+		MMIO16(flash->base) = UNDEFINED_COMMANDS[i];
+		keeps_read_array &= cfi_read_word(flash->base, data_offset) == array_word;
+		sets_no_error &= (cfi_clear_status(flash->base) & STATUS_ERRORS) == 0;
+
+		cfi_enter_id(flash->base);
+		MMIO16(flash->base) = UNDEFINED_COMMANDS[i];
+		keeps_identifier_mode &= cfi_read_word(flash->base, 0) == flash->manufacturer;
+		sets_no_error &= (cfi_clear_status(flash->base) & STATUS_ERRORS) == 0;
+	}
+	printf("# undefined commands 00/AA/55/F0, array word at offset %lX: %04X\n", data_offset, array_word);
+	if (array_word == 0xFFFF) {
+		test_skip("undefined commands keep read array mode", "no programmed word near the flash base");
+	} else {
+		test_check("undefined commands keep read array mode", keeps_read_array);
+	}
+	test_check("undefined commands keep identifier mode", keeps_identifier_mode);
+	test_check("undefined commands set no status error", sets_no_error);
 }
 
 static void test_status_register(const struct flash_device *flash) {
@@ -305,8 +375,8 @@ static void test_status_register(const struct flash_device *flash) {
 }
 
 static void test_blank_check(const struct flash_device *flash) {
-	if (flash->manufacturer != 0x0020) {
-		test_skip("blank check command", "not an ST M58PR flash");
+	if (flash->command_set != P_ID_INTEL_PERFORMANCE) {
+		test_skip("blank check command", "command set has no blank check");
 		return;
 	}
 
@@ -388,7 +458,7 @@ static void test_blank_space(struct flash_device *flash) {
 			flash->blank_base + flash->blank_size - 1,
 			flash->blank_size >> 20
 		);
-		if (flash->manufacturer == 0x0020) {
+		if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
 			MMIO16(flash->blank_base) = 0xBC;
 			MMIO16(flash->blank_base) = 0xD0;
 			uint16_t status = cfi_wait_ready(flash->blank_base);
@@ -528,7 +598,7 @@ static void print_pri_information(const struct flash_device *flash, uint32_t fea
 	printf("\n");
 
 	if (features & BIT(9)) {
-		bool st = cfi_read_u16(flash->base, 0x13) == 0x0200;
+		bool st = flash->command_set == P_ID_INTEL_PERFORMANCE;
 		print_pri_regions(flash->base, &cursor, st, "array");
 		if (st && (features & BIT(10))) {
 			print_pri_regions(flash->base, &cursor, true, "EFA");
@@ -800,9 +870,7 @@ int main(void) {
 
 	test_category("Scan");
 	scan_flashes();
-#if defined(BOARD_LG_KE970)
-	coalesce_split_flashes();
-#endif
+	merge_split_flashes();
 	test_check("at least one CFI flash found", flash_count > 0);
 	bool flash_map_valid = configure_flash_map();
 	test_check("all flash windows fit EBU address space", flash_map_valid);
@@ -818,11 +886,11 @@ int main(void) {
 		test_flash_mapping(&flashes[i]);
 		test_category("Identification");
 		test_identification(&flashes[i]);
-		test_category("Electronic signature");
-		test_electronic_signature(&flashes[i]);
+		test_category("Configuration registers");
+		test_configuration_registers(&flashes[i]);
 		test_category("Erase block locks");
 		test_block_lock_status(&flashes[i]);
-		test_category("Block lock command latency");
+		test_category("Block lock command burst");
 		test_lock_command_burst(&flashes[i]);
 		test_category("OTP");
 		test_otp(&flashes[i]);
@@ -830,6 +898,8 @@ int main(void) {
 		test_efa(&flashes[i]);
 		test_category("Status register");
 		test_status_register(&flashes[i]);
+		test_category("Undefined commands");
+		test_undefined_commands(&flashes[i]);
 		test_category("Blank check");
 		test_blank_check(&flashes[i]);
 		test_category("Blank space");

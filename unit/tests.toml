@@ -596,7 +596,6 @@ emulator_args = ["--sim", "none"]
 
 [cfi-intel]
 devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
-emulator_args = ["--siemens-esn", "12345678", "--siemens-imei", "490154203237518"]
 
 [cfi-intel-rw]
 devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
