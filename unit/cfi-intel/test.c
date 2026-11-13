@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "cfi.h"
+#include "intel.h"
 #include "test.h"
 
 #define LOCK_COMMAND_BURST_ITERATIONS 64
@@ -66,7 +66,7 @@ static void merge_split_flashes(void) {
 			bool same_device = (
 				flashes[i].manufacturer == flashes[j].manufacturer &&
 				flashes[i].device == flashes[j].device &&
-				flashes[i].size == flashes[j].size
+				flashes[i].cfi.size == flashes[j].cfi.size
 			);
 			if (!same_device || !flash_is_split_across(&flashes[i], &flashes[j])) {
 				continue;
@@ -82,7 +82,7 @@ static void merge_split_flashes(void) {
 			struct flash_device merged = flashes[i].cs < flashes[j].cs ? flashes[i] : flashes[j];
 			merged.split = true;
 			merged.high_cs = flashes[i].cs < flashes[j].cs ? flashes[j].cs : flashes[i].cs;
-			merged.window_size = merged.size / 2;
+			merged.window_size = merged.cfi.size / 2;
 			flashes[i] = merged;
 			for (uint32_t k = j; k + 1 < flash_count; k++) {
 				flashes[k] = flashes[k + 1];
@@ -100,16 +100,16 @@ static bool configure_flash_map(void) {
 	for (uint32_t mapped = 0; mapped < flash_count; mapped++) {
 		struct flash_device *flash = NULL;
 		for (uint32_t i = 0; i < flash_count; i++) {
-			if (!flashes[i].mapped && (!flash || flashes[i].size > flash->size)) {
+			if (!flashes[i].mapped && (!flash || flashes[i].cfi.size > flash->cfi.size)) {
 				flash = &flashes[i];
 			}
 		}
 
 		bool valid_size = (
-			flash->size >= 1u << 20 &&
-			flash->size <= 1u << 27 &&
-			(flash->size & (flash->size - 1)) == 0 &&
-			flash->size <= FLASH_WINDOW_END - base
+			flash->cfi.size >= 1u << 20 &&
+			flash->cfi.size <= 1u << 27 &&
+			(flash->cfi.size & (flash->cfi.size - 1)) == 0 &&
+			flash->cfi.size <= FLASH_WINDOW_END - base
 		);
 		if (!valid_size) {
 			return false;
@@ -118,7 +118,7 @@ static bool configure_flash_map(void) {
 		flash->base = base;
 		flash->mapped = true;
 		if (flash->split) {
-			uint32_t window_exponent = flash->size_exponent - 1;
+			uint32_t window_exponent = flash->cfi.size_exponent - 1;
 			cfi_map(flash->cs, base, 27 - window_exponent);
 			cfi_map(flash->high_cs, base + flash->window_size, 27 - window_exponent);
 			cfi_enter_read_array(base);
@@ -129,33 +129,27 @@ static bool configure_flash_map(void) {
 				flash->cs,
 				flash->high_cs,
 				base,
-				base + flash->size - 1,
-				flash->size >> 20,
+				base + flash->cfi.size - 1,
+				flash->cfi.size >> 20,
 				flash->window_size >> 20
 			);
 		} else {
-			cfi_map(flash->cs, base, 27 - flash->size_exponent);
-			printf("# CS%lu mapped at %08lX..%08lX\n", flash->cs, base, base + flash->size - 1);
+			cfi_map(flash->cs, base, 27 - flash->cfi.size_exponent);
+			printf("# CS%lu mapped at %08lX..%08lX\n", flash->cs, base, base + flash->cfi.size - 1);
 		}
-		base += flash->size;
+		base += flash->cfi.size;
 	}
 	return true;
 }
 
 static void test_identification(const struct flash_device *flash) {
-	bool known_command_set = (
-		flash->command_set == P_ID_INTEL_EXT ||
-		flash->command_set == P_ID_INTEL_STD ||
-		flash->command_set == P_ID_INTEL_PERFORMANCE
-	);
-	test_check("CFI reports a supported command set", known_command_set);
 	cfi_enter_id(flash->base);
 	test_eq_u32("device ID matches scan", flash->device, cfi_read_word(flash->base, 1));
 	cfi_enter_read_array(flash->base);
 }
 
 static void test_configuration_registers(const struct flash_device *flash) {
-	uint32_t far_bank = flash->base + flash->size / 2;
+	uint32_t far_bank = flash->base + flash->cfi.size / 2;
 	uint16_t rcr = read_identifier_word(flash->base, 5);
 	uint16_t word6 = read_identifier_word(flash->base, 6);
 	printf(
@@ -174,7 +168,7 @@ static void test_configuration_registers(const struct flash_device *flash) {
 	cfi_program_configuration(flash->base, rcr, false);
 	test_eq_u32("RCR is restored", rcr, read_identifier_word(flash->base, 5));
 
-	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+	if (flash->cfi.command_set == P_ID_INTEL_PERFORMANCE) {
 		uint16_t driver_strength = (word6 & ECR_DRIVER_STRENGTH) == ECR_DRIVER_STRENGTH_CODE_4 ?
 			ECR_DRIVER_STRENGTH_CODE_3 : ECR_DRIVER_STRENGTH_CODE_4;
 		uint16_t new_ecr = (word6 & ~ECR_DRIVER_STRENGTH) | driver_strength;
@@ -198,21 +192,21 @@ static void test_configuration_registers(const struct flash_device *flash) {
 
 static void test_block_lock_status(const struct flash_device *flash) {
 	cfi_enter_query(flash->base);
-	uint16_t status_mask = cfi_read_u16(flash->base, flash->primary_address + 0xA);
+	uint16_t status_mask = cfi_read_u16(flash->base, flash->cfi.primary_address + 0xA);
 	cfi_enter_read_array(flash->base);
 
 	uint32_t offset = 0;
 	bool valid = true;
-	for (uint32_t region = 0; region < flash->regions; region++) {
+	for (uint32_t region = 0; region < flash->cfi.regions; region++) {
 		uint32_t states[4] = {0};
-		for (uint32_t block = 0; block < flash->erase[region].blocks; block++) {
+		for (uint32_t block = 0; block < flash->cfi.erase[region].blocks; block++) {
 			uint32_t address = flash->base + offset;
 			cfi_enter_id(address);
 			uint16_t status = cfi_read_word(address, 2);
 			cfi_enter_read_array(address);
 			valid &= (status & ~status_mask) == 0;
 			states[status & 0x3]++;
-			offset += flash->erase[region].block_size;
+			offset += flash->cfi.erase[region].block_size;
 			test_watchdog_serve();
 		}
 		printf(
@@ -225,7 +219,7 @@ static void test_block_lock_status(const struct flash_device *flash) {
 		);
 	}
 	test_check("all erase block lock status values are valid", valid);
-	test_eq_u32("lock status covers the complete flash", flash->size, offset);
+	test_eq_u32("lock status covers the complete flash", flash->cfi.size, offset);
 }
 
 static void test_lock_command_burst(const struct flash_device *flash) {
@@ -340,7 +334,7 @@ static uint32_t undeclared_commands(const struct flash_device *flash, uint16_t c
 	for (uint32_t i = 0; i < ARRAY_SIZE(UNDEFINED_COMMANDS); i++)
 		commands[count++] = UNDEFINED_COMMANDS[i];
 
-	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+	if (flash->cfi.command_set == P_ID_INTEL_PERFORMANCE) {
 		commands[count++] = CFI_CMD_WORD_PROGRAM_SETUP;
 		commands[count++] = CFI_CMD_WORD_PROGRAM_SETUP_ALTERNATE;
 		commands[count++] = CFI_CMD_BUFFERED_PROGRAM;
@@ -410,12 +404,12 @@ static void test_status_register(const struct flash_device *flash) {
 }
 
 static void test_blank_check(const struct flash_device *flash) {
-	if (flash->command_set != P_ID_INTEL_PERFORMANCE) {
+	if (flash->cfi.command_set != P_ID_INTEL_PERFORMANCE) {
 		test_skip("blank check command", "command set has no blank check");
 		return;
 	}
 
-	uint32_t block_size = flash->erase[0].block_size;
+	uint32_t block_size = flash->cfi.erase[0].block_size;
 	uint16_t samples[3][MAP_SAMPLE_WORDS];
 	memcpy(samples[0], (const void *) flash->base, sizeof(samples[0]));
 	memcpy(samples[1], (const void *) (flash->base + block_size / 2), sizeof(samples[1]));
@@ -447,7 +441,7 @@ static void test_blank_check(const struct flash_device *flash) {
 static void test_blank_space(struct flash_device *flash) {
 	uint32_t range_base = 0;
 	uint32_t range_size = 0;
-	for (uint32_t offset = 0; offset < flash->size; offset += WRITE_TEST_ALIGNMENT) {
+	for (uint32_t offset = 0; offset < flash->cfi.size; offset += WRITE_TEST_ALIGNMENT) {
 		test_watchdog_reset();
 		if (cfi_range_is_blank(flash->base + offset, WRITE_TEST_ALIGNMENT)) {
 			if (!range_size) {
@@ -493,7 +487,7 @@ static void test_blank_space(struct flash_device *flash) {
 			flash->blank_base + flash->blank_size - 1,
 			flash->blank_size >> 20
 		);
-		if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+		if (flash->cfi.command_set == P_ID_INTEL_PERFORMANCE) {
 			MMIO16(flash->blank_base) = CFI_CMD_BLANK_CHECK_SETUP;
 			MMIO16(flash->blank_base) = CFI_CMD_CONFIRM;
 			uint16_t status = cfi_wait_ready(flash->blank_base);
@@ -504,37 +498,6 @@ static void test_blank_space(struct flash_device *flash) {
 	} else {
 		test_skip("aligned blank area for write tests", "none on this flash device");
 	}
-}
-
-static void test_cfi_query(const struct flash_device *flash) {
-	cfi_enter_query(flash->base);
-	test_eq_u32("CFI Q signature", 'Q', cfi_read_word(flash->base, 0x10));
-	test_eq_u32("CFI R signature", 'R', cfi_read_word(flash->base, 0x11));
-	test_eq_u32("CFI Y signature", 'Y', cfi_read_word(flash->base, 0x12));
-	test_check("primary command set is present", cfi_read_u16(flash->base, 0x13) != 0);
-	test_check("primary table address is valid", flash->primary_address >= 0x31 && flash->primary_address < 0x1000);
-	test_eq_u32("primary P signature", 'P', cfi_read_word(flash->base, flash->primary_address));
-	test_eq_u32("primary R signature", 'R', cfi_read_word(flash->base, flash->primary_address + 1));
-	test_eq_u32("primary I signature", 'I', cfi_read_word(flash->base, flash->primary_address + 2));
-	test_check("device size is valid", (
-		flash->size_exponent >= 20 &&
-		flash->size_exponent <= 27 &&
-		(flash->size & (flash->size - 1)) == 0
-	));
-	test_check("erase region count is valid", flash->regions > 0 && flash->regions <= CFI_MAX_ERASE_REGIONS);
-
-	uint32_t erase_size = 0;
-	for (uint32_t region = 0; region < flash->regions && region < CFI_MAX_ERASE_REGIONS; region++) {
-		test_check("erase region has blocks", flash->erase[region].blocks > 0);
-		uint32_t block_size = flash->erase[region].block_size;
-		test_check("erase block size is valid", (
-			block_size >= 256 &&
-			(block_size & (block_size - 1)) == 0
-		));
-		erase_size += flash->erase[region].blocks * flash->erase[region].block_size;
-	}
-	test_eq_u32("erase regions cover device", flash->size, erase_size);
-	cfi_enter_read_array(flash->base);
 }
 
 static uint32_t query_power_of_two(uint32_t value) {
@@ -590,8 +553,8 @@ static void print_pri_regions(uint32_t base, uint32_t *cursor, bool st, const ch
 	}
 }
 
-static void print_pri_information(const struct flash_device *flash, uint32_t features) {
-	uint32_t cursor = flash->primary_address + 0xE;
+static void print_pri_tables(const struct flash_device *flash, uint32_t features) {
+	uint32_t cursor = flash->cfi.primary_address + 0xE;
 	if (features & BIT(6)) {
 		uint32_t fields = cfi_read_word(flash->base, cursor++);
 		printf("# PRI OTP fields: %lu\n", fields);
@@ -633,7 +596,7 @@ static void print_pri_information(const struct flash_device *flash, uint32_t fea
 	printf("\n");
 
 	if (features & BIT(9)) {
-		bool st = flash->command_set == P_ID_INTEL_PERFORMANCE;
+		bool st = flash->cfi.command_set == P_ID_INTEL_PERFORMANCE;
 		print_pri_regions(flash->base, &cursor, st, "array");
 		if (st && (features & BIT(10))) {
 			print_pri_regions(flash->base, &cursor, true, "EFA");
@@ -641,74 +604,16 @@ static void print_pri_information(const struct flash_device *flash, uint32_t fea
 	}
 }
 
-static void print_cfi_information(const struct flash_device *flash) {
+static void print_pri(const struct flash_device *flash) {
 	cfi_enter_query(flash->base);
-	uint32_t primary_set = cfi_read_u16(flash->base, 0x13);
-	uint32_t alternate_set = cfi_read_u16(flash->base, 0x17);
-	uint32_t alternate_address = cfi_read_u16(flash->base, 0x19);
-	uint32_t interface = cfi_read_u16(flash->base, 0x28);
-	uint32_t write_buffer_exponent = cfi_read_u16(flash->base, 0x2A);
-	uint32_t features = cfi_read_u32(flash->base, flash->primary_address + 5);
-
-	printf(
-		"# CFI: primary=%04lX at %04lX alternate=%04lX at %04lX interface=%04lX\n",
-		primary_set,
-		flash->primary_address,
-		alternate_set,
-		alternate_address,
-		interface
-	);
-	printf(
-		"# voltage: VCC=%X.%X..%X.%X V VPP=%X.%X..%X.%X V\n",
-		cfi_read_word(flash->base, 0x1B) >> 4,
-		cfi_read_word(flash->base, 0x1B) & 0xF,
-		cfi_read_word(flash->base, 0x1C) >> 4,
-		cfi_read_word(flash->base, 0x1C) & 0xF,
-		cfi_read_word(flash->base, 0x1D) >> 4,
-		cfi_read_word(flash->base, 0x1D) & 0xF,
-		cfi_read_word(flash->base, 0x1E) >> 4,
-		cfi_read_word(flash->base, 0x1E) & 0xF
-	);
-	printf(
-		"# timeout exponents: word=%u buffer=%u erase=%u chip=%u max=%u/%u/%u/%u\n",
-		cfi_read_word(flash->base, 0x1F),
-		cfi_read_word(flash->base, 0x20),
-		cfi_read_word(flash->base, 0x21),
-		cfi_read_word(flash->base, 0x22),
-		cfi_read_word(flash->base, 0x23),
-		cfi_read_word(flash->base, 0x24),
-		cfi_read_word(flash->base, 0x25),
-		cfi_read_word(flash->base, 0x26)
-	);
-	printf(
-		"# geometry: size=%lu MiB write-buffer=%u bytes erase-regions=%lu\n",
-		flash->size >> 20,
-		write_buffer_exponent < 32 ? 1u << write_buffer_exponent : 0,
-		flash->regions
-	);
-
-	uint32_t region_start = 0;
-	for (uint32_t region = 0; region < flash->regions && region < CFI_MAX_ERASE_REGIONS; region++) {
-		uint32_t region_size = flash->erase[region].blocks * flash->erase[region].block_size;
-		printf(
-			"# erase region %lu: %08lX..%08lX, %lu blocks x %lu KiB = %lu KiB\n",
-			region,
-			region_start,
-			region_start + region_size - 1,
-			flash->erase[region].blocks,
-			flash->erase[region].block_size >> 10,
-			region_size >> 10
-		);
-		region_start += region_size;
-	}
-
+	uint32_t features = cfi_read_u32(flash->base, flash->cfi.primary_address + 5);
 	printf(
 		"# PRI: version=%c.%c features=%08lX suspend=%02X block-status=%04lX\n",
-		cfi_read_word(flash->base, flash->primary_address + 3),
-		cfi_read_word(flash->base, flash->primary_address + 4),
+		cfi_read_word(flash->base, flash->cfi.primary_address + 3),
+		cfi_read_word(flash->base, flash->cfi.primary_address + 4),
 		features,
-		cfi_read_word(flash->base, flash->primary_address + 9),
-		cfi_read_u16(flash->base, flash->primary_address + 0xA)
+		cfi_read_word(flash->base, flash->cfi.primary_address + 9),
+		cfi_read_u16(flash->base, flash->cfi.primary_address + 0xA)
 	);
 	printf(
 		"# PRI features 0-4: chip-erase=%u erase-suspend=%u program-suspend=%u legacy-lock=%u queued-erase=%u\n",
@@ -734,12 +639,12 @@ static void print_cfi_information(const struct flash_device *flash) {
 	);
 	printf(
 		"# PRI optimum voltage: VCC=%X.%X V VPP=%X.%X V\n",
-		cfi_read_word(flash->base, flash->primary_address + 0xC) >> 4,
-		cfi_read_word(flash->base, flash->primary_address + 0xC) & 0xF,
-		cfi_read_word(flash->base, flash->primary_address + 0xD) >> 4,
-		cfi_read_word(flash->base, flash->primary_address + 0xD) & 0xF
+		cfi_read_word(flash->base, flash->cfi.primary_address + 0xC) >> 4,
+		cfi_read_word(flash->base, flash->cfi.primary_address + 0xC) & 0xF,
+		cfi_read_word(flash->base, flash->cfi.primary_address + 0xD) >> 4,
+		cfi_read_word(flash->base, flash->cfi.primary_address + 0xD) & 0xF
 	);
-	print_pri_information(flash, features);
+	print_pri_tables(flash, features);
 	cfi_enter_read_array(flash->base);
 }
 
@@ -754,10 +659,10 @@ static bool flash_words_match(uint32_t address, const uint16_t expected[MAP_SAMP
 
 static uint32_t find_command_partition_size(const struct flash_device *flash) {
 	uint32_t offset = 0;
-	for (uint32_t region = 0; region < flash->regions; region++) {
-		for (uint32_t block = 0; block < flash->erase[region].blocks; block++) {
-			offset += flash->erase[region].block_size;
-			if (offset >= flash->size) {
+	for (uint32_t region = 0; region < flash->cfi.regions; region++) {
+		for (uint32_t block = 0; block < flash->cfi.erase[region].blocks; block++) {
+			offset += flash->cfi.erase[region].block_size;
+			if (offset >= flash->cfi.size) {
 				return 0;
 			}
 
@@ -778,11 +683,11 @@ static uint32_t find_command_partition_size(const struct flash_device *flash) {
 
 static void test_partition_modes(const struct flash_device *flash) {
 	cfi_enter_query(flash->base);
-	bool simultaneous_operations = (cfi_read_u32(flash->base, flash->primary_address + 5) & BIT(9)) != 0;
+	bool simultaneous_operations = (cfi_read_u32(flash->base, flash->cfi.primary_address + 5) & BIT(9)) != 0;
 	cfi_enter_read_array(flash->base);
 	uint32_t partition_size = find_command_partition_size(flash);
 	test_eq_u32("command partitions match PRI simultaneous operations", simultaneous_operations, partition_size != 0);
-	if (!partition_size || partition_size * 2 > flash->size) {
+	if (!partition_size || partition_size * 2 > flash->cfi.size) {
 		return;
 	}
 
@@ -854,16 +759,13 @@ static void test_read_array_recovery(const struct flash_device *flash) {
 	cfi_enter_id(flash->base);
 	cfi_enter_read_array(flash->base);
 	test_eq_memory("read array restored after ID mode", array_data, (const void *) flash->base, sizeof(array_data));
-	cfi_enter_query(flash->base);
-	cfi_enter_read_array(flash->base);
-	test_eq_memory("read array restored after query mode", array_data, (const void *) flash->base, sizeof(array_data));
 }
 
 static void test_flash_mapping(const struct flash_device *flash) {
 	if (flash->split) {
 		uint32_t window = (
 			EBU_ADDRSEL_REGENAB |
-			((28 - flash->size_exponent) << EBU_ADDRSEL_MASK_SHIFT)
+			((28 - flash->cfi.size_exponent) << EBU_ADDRSEL_MASK_SHIFT)
 		);
 		test_eq_u32("EBU low window", window | flash->base, EBU_ADDRSEL(flash->cs));
 		test_eq_u32(
@@ -874,7 +776,7 @@ static void test_flash_mapping(const struct flash_device *flash) {
 	} else {
 		uint32_t expected_addrsel = (
 			EBU_ADDRSEL_REGENAB |
-			((27 - flash->size_exponent) << EBU_ADDRSEL_MASK_SHIFT) |
+			((27 - flash->cfi.size_exponent) << EBU_ADDRSEL_MASK_SHIFT) |
 			flash->base
 		);
 		test_eq_u32("EBU address window", expected_addrsel, EBU_ADDRSEL(flash->cs));
@@ -888,13 +790,13 @@ static void test_flash_mapping(const struct flash_device *flash) {
 	test_eq_memory(
 		"flash middle is mapped",
 		flash->map_samples[1],
-		(const void *) (flash->base + flash->size / 2),
+		(const void *) (flash->base + flash->cfi.size / 2),
 		sizeof(flash->map_samples[1])
 	);
 	test_eq_memory(
 		"flash end is mapped",
 		flash->map_samples[2],
-		(const void *) (flash->base + flash->size - sizeof(flash->map_samples[2])),
+		(const void *) (flash->base + flash->cfi.size - sizeof(flash->map_samples[2])),
 		sizeof(flash->map_samples[2])
 	);
 }
@@ -939,9 +841,7 @@ int main(void) {
 		test_blank_check(&flashes[i]);
 		test_category("Blank space");
 		test_blank_space(&flashes[i]);
-		test_category("CFI query and geometry");
-		test_cfi_query(&flashes[i]);
-		print_cfi_information(&flashes[i]);
+		print_pri(&flashes[i]);
 		test_category("Command partitions");
 		test_partition_modes(&flashes[i]);
 		test_category("Read array recovery");

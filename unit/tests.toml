@@ -594,6 +594,9 @@ devices = ["generic-pmb8876"]
 devices = ["generic-pmb8876"]
 emulator_args = ["--sim", "none"]
 
+[cfi]
+devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970", "siemens-cf75"]
+
 [cfi-intel]
 devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
 
@@ -609,3 +612,9 @@ devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
 [cfi-intel-otp-rw]
 devices = ["siemens-cx75", "siemens-el71", "siemens-sl75", "lg-ke970"]
 emulator_args = ["--flash-otp1", "FFFF"]
+
+[cfi-amd]
+devices = ["siemens-cf75"]
+
+[cfi-amd-rw]
+devices = ["siemens-cf75"]

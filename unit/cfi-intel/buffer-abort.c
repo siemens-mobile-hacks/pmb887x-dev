@@ -1,6 +1,6 @@
 #include <pmb887x.h>
 
-#include "cfi.h"
+#include "intel.h"
 #include "test.h"
 
 #define TRACE_ABORT_X32_WRITES 112
@@ -79,14 +79,14 @@ static bool range_is_blank(uint32_t address, uint32_t size) {
 }
 
 static bool find_block(const struct flash_device *flash, uint32_t address, flash_block_t *result) {
-	if (address < flash->base || address - flash->base >= flash->size)
+	if (address < flash->base || address - flash->base >= flash->cfi.size)
 		return false;
 
 	uint32_t region_base = flash->base;
-	for (uint32_t region = 0; region < flash->regions; region++) {
-		uint32_t block_size = flash->erase[region].block_size;
-		uint32_t region_size = flash->erase[region].blocks * block_size;
-		if (block_size == 0 || region_size / block_size != flash->erase[region].blocks)
+	for (uint32_t region = 0; region < flash->cfi.regions; region++) {
+		uint32_t block_size = flash->cfi.erase[region].block_size;
+		uint32_t region_size = flash->cfi.erase[region].blocks * block_size;
+		if (block_size == 0 || region_size / block_size != flash->cfi.erase[region].blocks)
 			return false;
 		if (address - flash->base < region_base - flash->base + region_size) {
 			result->base = region_base + (address - region_base) / block_size * block_size;
@@ -100,19 +100,19 @@ static bool find_block(const struct flash_device *flash, uint32_t address, flash
 }
 
 static uint32_t select_setup_offset(const struct flash_device *flash, const flash_block_t *block) {
-	return (block->size / 2) & ~(flash->write_buffer_size - 1);
+	return (block->size / 2) & ~(flash->cfi.write_buffer_size - 1);
 }
 
 static bool block_is_usable(const struct flash_device *flash, const flash_block_t *block,
 	flash_block_t *neighbor) {
-	if (block->size < flash->write_buffer_size || (block->size & (block->size - 1)) != 0)
+	if (block->size < flash->cfi.write_buffer_size || (block->size & (block->size - 1)) != 0)
 		return false;
 
 	uint32_t setup_offset = select_setup_offset(flash, block);
-	if (setup_offset + flash->write_buffer_size > block->size)
+	if (setup_offset + flash->cfi.write_buffer_size > block->size)
 		return false;
 	uint32_t setup_address = block->base + setup_offset;
-	if ((setup_address & (flash->write_buffer_size - 1)) != 0)
+	if ((setup_address & (flash->cfi.write_buffer_size - 1)) != 0)
 		return false;
 
 	uint32_t abort_address = setup_address ^ block->size;
@@ -134,23 +134,23 @@ static bool find_blank_test_block(struct flash_device *flash, flash_block_t *blo
 		struct flash_device candidate = {0};
 		if (!cfi_probe(cfi_chip_selects[chip], &candidate))
 			continue;
-		if (candidate.size_exponent < 20 || candidate.size_exponent > 27 ||
-			candidate.write_buffer_size < 2 * sizeof(uint32_t) ||
-			(candidate.write_buffer_size & (candidate.write_buffer_size - 1)) != 0)
+		if (candidate.cfi.size_exponent < 20 || candidate.cfi.size_exponent > 27 ||
+			candidate.cfi.write_buffer_size < 2 * sizeof(uint32_t) ||
+			(candidate.cfi.write_buffer_size & (candidate.cfi.write_buffer_size - 1)) != 0)
 			continue;
-		cfi_map(candidate.cs, candidate.base, 27 - candidate.size_exponent);
+		cfi_map(candidate.cs, candidate.base, 27 - candidate.cfi.size_exponent);
 
 		printf(
 			"# probing CS%u vendor/device=%04X:%04X buffer=%u bytes\n",
 			(unsigned int) candidate.cs,
 			(unsigned int) candidate.manufacturer,
 			(unsigned int) candidate.device,
-			(unsigned int) candidate.write_buffer_size
+			(unsigned int) candidate.cfi.write_buffer_size
 		);
 		uint32_t address = candidate.base;
-		for (uint32_t region = 0; region < candidate.regions; region++) {
-			uint32_t block_size = candidate.erase[region].block_size;
-			for (uint32_t index = 0; index < candidate.erase[region].blocks; index++) {
+		for (uint32_t region = 0; region < candidate.cfi.regions; region++) {
+			uint32_t block_size = candidate.cfi.erase[region].block_size;
+			for (uint32_t index = 0; index < candidate.cfi.erase[region].blocks; index++) {
 				flash_block_t current = {
 					.base = address,
 					.size = block_size,
@@ -175,9 +175,9 @@ static uint32_t program_value(uint32_t index) {
 }
 
 static bool buffered_program_command(const struct flash_device *flash, uint16_t *command) {
-	if (flash->command_set == P_ID_INTEL_EXT) {
+	if (flash->cfi.command_set == P_ID_INTEL_EXT) {
 		*command = CFI_CMD_BUFFERED_PROGRAM;
-	} else if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+	} else if (flash->cfi.command_set == P_ID_INTEL_PERFORMANCE) {
 		*command = CFI_CMD_BUFFER_PROGRAM;
 	} else {
 		return false;
@@ -234,7 +234,7 @@ static void test_abort_trace(const struct flash_device *flash, uint16_t command,
 		return;
 	}
 
-	MMIO16(setup_address) = flash->write_buffer_size / sizeof(uint16_t) - 1;
+	MMIO16(setup_address) = flash->cfi.write_buffer_size / sizeof(uint16_t) - 1;
 	for (uint32_t index = 0; index < abort_writes; index++)
 		MMIO32(setup_address + index * sizeof(uint32_t)) = program_value(index);
 	MMIO16(abort_address) = 0xFFFF;
@@ -271,7 +271,7 @@ static void test_abort_trace(const struct flash_device *flash, uint16_t command,
 	bool retry_accepted = (retry_status & (STATUS_READY | STATUS_LOW_ERRORS)) == STATUS_READY;
 	test_check("flash accepts a buffered-program command after abort recovery", retry_accepted);
 	if (retry_accepted) {
-		MMIO16(setup_address) = flash->write_buffer_size / sizeof(uint16_t) - 1;
+		MMIO16(setup_address) = flash->cfi.write_buffer_size / sizeof(uint16_t) - 1;
 		for (uint32_t index = 0; index < abort_writes; index++)
 			MMIO32(setup_address + index * sizeof(uint32_t)) = program_value(index);
 		MMIO16(abort_address) = 0xFFFF;
@@ -300,15 +300,15 @@ int main(void) {
 
 	uint32_t setup_address = test_block.base + select_setup_offset(&flash, &test_block);
 	uint32_t abort_address = setup_address ^ test_block.size;
-	uint32_t requested_words = flash.write_buffer_size / sizeof(uint16_t);
-	uint32_t full_writes = flash.write_buffer_size / sizeof(uint32_t);
+	uint32_t requested_words = flash.cfi.write_buffer_size / sizeof(uint16_t);
+	uint32_t full_writes = flash.cfi.write_buffer_size / sizeof(uint32_t);
 	uint32_t abort_writes = full_writes > TRACE_ABORT_X32_WRITES ?
 		TRACE_ABORT_X32_WRITES : full_writes - 1;
 	uint16_t command;
 	if (!buffered_program_command(&flash, &command))
 		return skip_destructive_test("unsupported CFI primary command set");
 	printf("# vendor/device ID: %04lX:%04lX\n", flash.manufacturer, flash.device);
-	printf("# CFI buffer size: %u bytes\n", (unsigned int) flash.write_buffer_size);
+	printf("# CFI buffer size: %u bytes\n", (unsigned int) flash.cfi.write_buffer_size);
 	printf("# erase block size: %u bytes\n", (unsigned int) test_block.size);
 	printf("# buffered-program command: %02X\n", command);
 	printf("# EBU: CLC=%08X ADDRSEL=%08X BUSCON=%08X\n", (unsigned int) EBU_CLC,
@@ -326,7 +326,7 @@ int main(void) {
 	uint32_t neighbor_crc = crc32_block(neighbor_block.base, neighbor_block.size);
 	printf("# CRC before: test=%08lX neighbor=%08lX\n", test_crc, neighbor_crc);
 	test_check("setup buffer is blank before abort trace",
-		range_is_blank(setup_address, flash.write_buffer_size));
+		range_is_blank(setup_address, flash.cfi.write_buffer_size));
 	test_eq_u32("abort word is erased before abort trace", UINT16_MAX, MMIO16(abort_address));
 
 	uint16_t unlock_status = cfi_unlock_block(test_block.base, false);
@@ -347,7 +347,7 @@ int main(void) {
 	cfi_enter_read_array(neighbor_block.base);
 	bool test_preserved = test_check(
 		"unconfirmed buffered data is not programmed",
-		range_is_blank(setup_address, flash.write_buffer_size)
+		range_is_blank(setup_address, flash.cfi.write_buffer_size)
 	);
 	test_eq_u32("abort write preserves its target word", UINT16_MAX, MMIO16(abort_address));
 	if (!test_preserved) {
@@ -377,7 +377,7 @@ int main(void) {
 	test_eq_u32("test block CRC is preserved", test_crc, test_crc_after);
 	test_eq_u32("neighbor block CRC is preserved", neighbor_crc, neighbor_crc_after);
 	test_check("cleanup leaves the setup buffer blank",
-		range_is_blank(setup_address, flash.write_buffer_size));
+		range_is_blank(setup_address, flash.cfi.write_buffer_size));
 	test_eq_u32("cleanup leaves the abort word erased", UINT16_MAX, MMIO16(abort_address));
 
 	return test_finish();

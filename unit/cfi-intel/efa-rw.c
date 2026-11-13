@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "cfi.h"
+#include "intel.h"
 #include "test.h"
 
 static bool find_test_flash(struct flash_device *flash) {

@@ -3,11 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define FLASH_WINDOW_BASE 0xA0000000
-#define FLASH_WINDOW_END 0xA8000000
-#define CFI_MAX_ERASE_REGIONS 4
+#include "cfi/cfi.h"
+
 #define MAP_SAMPLE_WORDS 4
-#define FLASH_CHIP_SELECT_COUNT 3
 #define STATUS_READY BIT(7)
 #define STATUS_ERASE_SUSPEND BIT(6)
 #define STATUS_PROGRAM_SUSPEND BIT(2)
@@ -46,27 +44,17 @@ enum cfi_command {
 	CFI_CMD_READ_ARRAY = 0xFF,
 };
 
-struct erase_region {
-	uint32_t blocks;
-	uint32_t block_size;
-};
-
 struct flash_device {
 	uint32_t cs;
 	uint32_t base;
 	uint32_t manufacturer;
 	uint32_t device;
-	uint32_t command_set;
-	uint32_t primary_address;
+	struct cfi_geometry cfi;
 	uint32_t otp0_address;
 	uint32_t otp0_factory_size;
 	uint32_t otp0_user_size;
 	uint32_t otp1_address;
 	uint32_t otp1_group_size;
-	uint32_t size_exponent;
-	uint32_t size;
-	uint32_t regions;
-	uint32_t write_buffer_size;
 	uint32_t features;
 	uint32_t efa_regions;
 	uint32_t efa_size;
@@ -78,25 +66,15 @@ struct flash_device {
 	bool split;
 	uint32_t high_cs;
 	uint32_t window_size;
-	struct erase_region erase[CFI_MAX_ERASE_REGIONS];
 	struct erase_region efa_erase[CFI_MAX_ERASE_REGIONS];
 	uint16_t map_samples[3][MAP_SAMPLE_WORDS];
 };
 
-extern const uint32_t cfi_chip_selects[];
-
-uint16_t cfi_read_word(uint32_t base, uint32_t offset);
-uint32_t cfi_read_u16(uint32_t base, uint32_t offset);
-uint32_t cfi_read_u32(uint32_t base, uint32_t offset);
 void cfi_enter_read_array(uint32_t base);
 void cfi_enter_id(uint32_t base);
-void cfi_enter_query(uint32_t base);
 void cfi_enter_status(uint32_t base);
-void cfi_disable_chip_selects(void);
-void cfi_map(uint32_t cs, uint32_t base, uint32_t mask);
 bool cfi_probe(uint32_t cs, struct flash_device *flash);
 void cfi_sample_map(struct flash_device *flash);
-bool cfi_range_is_blank(uint32_t address, uint32_t size);
 bool cfi_find_blank_block(struct flash_device *flash, uint32_t alignment);
 uint16_t cfi_wait_ready(uint32_t address);
 uint16_t cfi_read_lock_status(uint32_t address);

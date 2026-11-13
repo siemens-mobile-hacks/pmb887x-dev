@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "cfi.h"
+#include "intel.h"
 #include "test.h"
 
 #define SEARCH_ALIGNMENT (1u << 20)
@@ -21,7 +21,7 @@ static bool find_test_flash(struct flash_device *flash) {
 				flash->device,
 				flash->test_block,
 				flash->test_block + flash->test_block_size - 1,
-				flash->write_buffer_size
+				flash->cfi.write_buffer_size
 			);
 			return true;
 		}
@@ -59,7 +59,7 @@ static void program_buffer(const struct flash_device *flash, uint32_t address, c
 static uint16_t program_buffer_with_suspend(const struct flash_device *flash, uint32_t address, const uint16_t *data,
 	uint32_t words, const uint16_t *read_sample, uint32_t read_address) {
 	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
-	MMIO16(address) = flash->command_set == P_ID_INTEL_PERFORMANCE ? CFI_CMD_BUFFER_PROGRAM : CFI_CMD_BUFFERED_PROGRAM;
+	MMIO16(address) = flash->cfi.command_set == P_ID_INTEL_PERFORMANCE ? CFI_CMD_BUFFER_PROGRAM : CFI_CMD_BUFFERED_PROGRAM;
 	uint16_t buffer_status = cfi_wait_ready(address);
 	test_check("suspended write buffer is ready", (buffer_status & STATUS_READY) != 0);
 	MMIO16(address) = words - 1;
@@ -123,7 +123,7 @@ static uint16_t erase_with_suspend(uint32_t address, const uint16_t *read_sample
 
 static void test_program_and_cleanup(struct flash_device *flash) {
 	uint16_t buffer[512];
-	uint32_t words = flash->write_buffer_size / 2;
+	uint32_t words = flash->cfi.write_buffer_size / 2;
 	for (uint32_t word = 0; word < words; word++) {
 		buffer[word] = 0xA500 ^ word;
 	}
@@ -136,7 +136,7 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 	test_eq_u32("test block starts locked", 1, cfi_read_lock_status(flash->test_block) & 0x3);
 	test_locked_operation(flash, false, "locked word program is rejected");
 	test_locked_operation(flash, true, "locked erase is rejected");
-	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+	if (flash->cfi.command_set == P_ID_INTEL_PERFORMANCE) {
 		uint16_t blank_status = cfi_blank_check(flash->test_block);
 		test_check("blank check reports erased block", (blank_status & (STATUS_READY | BIT(5))) == STATUS_READY);
 	}
@@ -145,13 +145,13 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 
 	test_operation("single-word program completes", cfi_program_word(flash, flash->test_block, 0x5AA5, false));
 	test_eq_u32("single word reads back", 0x5AA5, MMIO16(flash->test_block));
-	uint32_t short_buffer = flash->test_block + flash->write_buffer_size;
+	uint32_t short_buffer = flash->test_block + flash->cfi.write_buffer_size;
 	program_buffer(flash, short_buffer, buffer, 1);
 	test_eq_memory("one-word buffer reads back", buffer, (const void *) short_buffer, sizeof(buffer[0]));
-	uint32_t odd_buffer = flash->test_block + flash->write_buffer_size * 2;
+	uint32_t odd_buffer = flash->test_block + flash->cfi.write_buffer_size * 2;
 	program_buffer(flash, odd_buffer, buffer, 7);
 	test_eq_memory("seven-word buffer reads back", buffer, (const void *) odd_buffer, sizeof(buffer[0]) * 7);
-	uint32_t full_buffer = flash->test_block + flash->test_block_size - flash->write_buffer_size;
+	uint32_t full_buffer = flash->test_block + flash->test_block_size - flash->cfi.write_buffer_size;
 	uint16_t full_status;
 	if (flash->features & BIT(2)) {
 		full_status = program_buffer_with_suspend(
@@ -167,8 +167,8 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 		test_skip("buffer program suspend", "not supported");
 		program_buffer(flash, full_buffer, buffer, words);
 	}
-	test_eq_memory("full buffer reads back", buffer, (const void *) full_buffer, flash->write_buffer_size);
-	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+	test_eq_memory("full buffer reads back", buffer, (const void *) full_buffer, flash->cfi.write_buffer_size);
+	if (flash->cfi.command_set == P_ID_INTEL_PERFORMANCE) {
 		test_check("blank check reports programmed block", (cfi_blank_check(flash->test_block) & BIT(5)) != 0);
 	}
 
@@ -189,7 +189,7 @@ static void test_program_and_cleanup(struct flash_device *flash) {
 	test_operation("cleanup erase completes", erase_status);
 	test_watchdog_reset();
 	test_check("cleanup erased the complete block", cfi_range_is_blank(flash->test_block, flash->test_block_size));
-	if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+	if (flash->cfi.command_set == P_ID_INTEL_PERFORMANCE) {
 		uint16_t blank_status = cfi_blank_check(flash->test_block);
 		test_check("blank check accepts cleaned block", (blank_status & (STATUS_READY | BIT(5))) == STATUS_READY);
 	}

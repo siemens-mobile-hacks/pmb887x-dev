@@ -1,12 +1,8 @@
 #include <pmb887x.h>
 
-#include "cfi.h"
+#include "intel.h"
 #include "test.h"
 
-#define FLASH_BUSCON (EBU_BUSCON_AALIGN | (1u << EBU_BUSCON_CTYPE_SHIFT) | \
-	(1u << EBU_BUSCON_CMULT_SHIFT) | EBU_BUSCON_DLOAD | (1u << EBU_BUSCON_BCGEN_SHIFT) | \
-	(1u << EBU_BUSCON_PORTW_SHIFT))
-#define CFI_QUERY_ADDRESS 0x55
 #define PRI_FEATURES 0x05
 #define PRI_PROTECTION_FIELDS 0x0E
 #define PRI_OTP_GROUP_COUNT_BYTES 2
@@ -17,22 +13,6 @@
 #define PRI_SIMULTANEOUS_OPS_BYTES 3
 #define PRI_ERASE_REGION_BYTES 8
 #define PRI_V14_ERASE_REGION_BYTES 6
-#define EBU_CS_COUNT 7
-#define RAM_CS 1
-
-const uint32_t cfi_chip_selects[] = {0, 2, 3};
-
-uint16_t cfi_read_word(uint32_t base, uint32_t offset) {
-	return MMIO16(base + offset * 2);
-}
-
-uint32_t cfi_read_u16(uint32_t base, uint32_t offset) {
-	return cfi_read_word(base, offset) | (cfi_read_word(base, offset + 1) << 8);
-}
-
-uint32_t cfi_read_u32(uint32_t base, uint32_t offset) {
-	return cfi_read_u16(base, offset) | (cfi_read_u16(base, offset + 2) << 16);
-}
 
 void cfi_enter_read_array(uint32_t base) {
 	MMIO16(base) = CFI_CMD_READ_ARRAY;
@@ -42,42 +22,8 @@ void cfi_enter_id(uint32_t base) {
 	MMIO16(base) = CFI_CMD_READ_DEVICE_IDENTIFIER;
 }
 
-void cfi_enter_query(uint32_t base) {
-	MMIO16(base + CFI_QUERY_ADDRESS * 2) = CFI_CMD_CFI_QUERY;
-}
-
 void cfi_enter_status(uint32_t base) {
 	MMIO16(base) = CFI_CMD_READ_STATUS_REGISTER;
-}
-
-void cfi_disable_chip_selects(void) {
-	for (uint32_t cs = 0; cs < EBU_CS_COUNT; cs++) {
-		if (cs != RAM_CS) {
-			EBU_ADDRSEL(cs) = 0;
-			EBU_BUSCON(cs) = 0;
-		}
-	}
-}
-
-void cfi_map(uint32_t cs, uint32_t base, uint32_t mask) {
-	EBU_BUSCON(cs) = FLASH_BUSCON;
-	EBU_ADDRSEL(cs) = EBU_ADDRSEL_REGENAB | (mask << EBU_ADDRSEL_MASK_SHIFT) | base;
-}
-
-static void cfi_read_geometry(struct flash_device *flash) {
-	flash->command_set = cfi_read_u16(flash->base, 0x13);
-	flash->primary_address = cfi_read_u16(flash->base, 0x15);
-	flash->size_exponent = cfi_read_word(flash->base, 0x27);
-	flash->size = flash->size_exponent < 32 ? 1u << flash->size_exponent : 0;
-	uint32_t buffer_exponent = cfi_read_u16(flash->base, 0x2A);
-	flash->write_buffer_size = buffer_exponent < 32 ? 1u << buffer_exponent : 0;
-	flash->regions = cfi_read_word(flash->base, 0x2C);
-	uint32_t regions = flash->regions < CFI_MAX_ERASE_REGIONS ? flash->regions : CFI_MAX_ERASE_REGIONS;
-	for (uint32_t region = 0; region < regions; region++) {
-		uint32_t offset = 0x2D + region * 4;
-		flash->erase[region].blocks = cfi_read_u16(flash->base, offset) + 1;
-		flash->erase[region].block_size = cfi_read_u16(flash->base, offset + 2) * 256;
-	}
 }
 
 static uint32_t cfi_read_bank_region_header(uint32_t base, uint32_t *cursor, bool v14) {
@@ -149,8 +95,8 @@ static void cfi_read_protection_fields(struct flash_device *flash, uint32_t *cur
 }
 
 static void cfi_read_extended_geometry(struct flash_device *flash) {
-	flash->features = cfi_read_u32(flash->base, flash->primary_address + PRI_FEATURES);
-	uint32_t cursor = flash->primary_address + PRI_PROTECTION_FIELDS;
+	flash->features = cfi_read_u32(flash->base, flash->cfi.primary_address + PRI_FEATURES);
+	uint32_t cursor = flash->cfi.primary_address + PRI_PROTECTION_FIELDS;
 	if (flash->features & BIT(6))
 		cfi_read_protection_fields(flash, &cursor);
 	if (!(flash->features & BIT(9)) || !(flash->features & BIT(10))) {
@@ -160,7 +106,7 @@ static void cfi_read_extended_geometry(struct flash_device *flash) {
 	cursor += PRI_PAGE_MODE_BYTES;
 	uint32_t synchronous_modes = cfi_read_word(flash->base, cursor++);
 	cursor += synchronous_modes;
-	bool v14 = flash->command_set == P_ID_INTEL_PERFORMANCE;
+	bool v14 = flash->cfi.command_set == P_ID_INTEL_PERFORMANCE;
 	cfi_skip_pri_regions(flash->base, &cursor, v14);
 	if (!cfi_read_efa_regions(flash, &cursor, v14)) {
 		flash->efa_regions = 0;
@@ -176,8 +122,16 @@ static void cfi_read_map_sample(struct flash_device *flash, uint32_t sample, uin
 
 void cfi_sample_map(struct flash_device *flash) {
 	cfi_read_map_sample(flash, 0, 0);
-	cfi_read_map_sample(flash, 1, flash->size / 2);
-	cfi_read_map_sample(flash, 2, flash->size - sizeof(flash->map_samples[0]));
+	cfi_read_map_sample(flash, 1, flash->cfi.size / 2);
+	cfi_read_map_sample(flash, 2, flash->cfi.size - sizeof(flash->map_samples[0]));
+}
+
+static bool is_intel_command_set(uint32_t command_set) {
+	return (
+		command_set == P_ID_INTEL_EXT ||
+		command_set == P_ID_INTEL_STD ||
+		command_set == P_ID_INTEL_PERFORMANCE
+	);
 }
 
 bool cfi_probe(uint32_t cs, struct flash_device *flash) {
@@ -185,12 +139,13 @@ bool cfi_probe(uint32_t cs, struct flash_device *flash) {
 	cfi_map(cs, FLASH_WINDOW_BASE, 0);
 	cfi_enter_read_array(FLASH_WINDOW_BASE);
 	cfi_enter_query(FLASH_WINDOW_BASE);
-	bool valid_signature = (
-		cfi_read_word(FLASH_WINDOW_BASE, 0x10) == 'Q' &&
-		cfi_read_word(FLASH_WINDOW_BASE, 0x11) == 'R' &&
-		cfi_read_word(FLASH_WINDOW_BASE, 0x12) == 'Y'
-	);
-	if (!valid_signature) {
+	struct cfi_geometry geometry = { 0 };
+	bool has_cfi = cfi_has_query_signature(FLASH_WINDOW_BASE);
+	if (has_cfi)
+		cfi_read_geometry(FLASH_WINDOW_BASE, &geometry);
+	if (!has_cfi || !is_intel_command_set(geometry.command_set)) {
+		if (has_cfi)
+			printf("# CS%lu: command set %04lX is not Intel, skipped\n", cs, geometry.command_set);
 		cfi_enter_read_array(FLASH_WINDOW_BASE);
 		EBU_ADDRSEL(cs) = 0;
 		EBU_BUSCON(cs) = 0;
@@ -200,52 +155,40 @@ bool cfi_probe(uint32_t cs, struct flash_device *flash) {
 	*flash = (struct flash_device) { 0 };
 	flash->cs = cs;
 	flash->base = FLASH_WINDOW_BASE;
-	cfi_read_geometry(flash);
+	flash->cfi = geometry;
 	cfi_read_extended_geometry(flash);
 	cfi_enter_id(flash->base);
 	flash->manufacturer = cfi_read_word(flash->base, 0);
 	flash->device = cfi_read_word(flash->base, 1);
 	cfi_enter_read_array(flash->base);
 	bool can_sample_map = (
-		flash->size >= sizeof(flash->map_samples[0]) &&
-		flash->size <= FLASH_WINDOW_END - FLASH_WINDOW_BASE
+		flash->cfi.size >= sizeof(flash->map_samples[0]) &&
+		flash->cfi.size <= FLASH_WINDOW_END - FLASH_WINDOW_BASE
 	);
-	flash->window_size = flash->size;
+	flash->window_size = flash->cfi.size;
 	if (can_sample_map) {
 		cfi_sample_map(flash);
 	}
 	return (
-		flash->size <= FLASH_WINDOW_END - FLASH_WINDOW_BASE &&
-		flash->regions > 0 &&
-		flash->regions <= CFI_MAX_ERASE_REGIONS &&
-		flash->write_buffer_size >= 2 &&
-		flash->write_buffer_size <= 1024
+		flash->cfi.size <= FLASH_WINDOW_END - FLASH_WINDOW_BASE &&
+		flash->cfi.regions > 0 &&
+		flash->cfi.regions <= CFI_MAX_ERASE_REGIONS &&
+		flash->cfi.write_buffer_size >= 2 &&
+		flash->cfi.write_buffer_size <= 1024
 	);
-}
-
-bool cfi_range_is_blank(uint32_t address, uint32_t size) {
-	for (uint32_t offset = 0; offset < size; offset += sizeof(uint32_t)) {
-		if (MMIO32(address + offset) != 0xFFFFFFFF) {
-			return false;
-		}
-		if ((offset & 0x3FFF) == 0) {
-			test_watchdog_serve();
-		}
-	}
-	return true;
 }
 
 static bool cfi_select_erase_block(struct flash_device *flash, uint32_t blank_offset, uint32_t alignment) {
 	uint32_t offset = 0;
-	for (uint32_t region = 0; region < flash->regions; region++) {
-		for (uint32_t block = 0; block < flash->erase[region].blocks; block++) {
-			uint32_t block_size = flash->erase[region].block_size;
+	for (uint32_t region = 0; region < flash->cfi.regions; region++) {
+		for (uint32_t block = 0; block < flash->cfi.erase[region].blocks; block++) {
+			uint32_t block_size = flash->cfi.erase[region].block_size;
 			bool inside_blank_range = (
 				offset >= blank_offset &&
 				offset + block_size <= blank_offset + alignment
 			);
 			bool has_previous_sample = offset >= MAP_SAMPLE_WORDS * sizeof(uint16_t);
-			bool has_next_sample = offset + block_size + MAP_SAMPLE_WORDS * sizeof(uint16_t) <= flash->size;
+			bool has_next_sample = offset + block_size + MAP_SAMPLE_WORDS * sizeof(uint16_t) <= flash->cfi.size;
 			if (inside_blank_range && has_previous_sample && has_next_sample) {
 				flash->test_block = flash->base + offset;
 				flash->test_block_size = block_size;
@@ -258,7 +201,7 @@ static bool cfi_select_erase_block(struct flash_device *flash, uint32_t blank_of
 }
 
 bool cfi_find_blank_block(struct flash_device *flash, uint32_t alignment) {
-	for (uint32_t offset = 0; offset + alignment <= flash->size; offset += alignment) {
+	for (uint32_t offset = 0; offset + alignment <= flash->cfi.size; offset += alignment) {
 		test_watchdog_reset();
 		if (!cfi_range_is_blank(flash->base + offset, alignment)) {
 			continue;
@@ -328,7 +271,7 @@ uint16_t cfi_program_word(const struct flash_device *flash, uint32_t address, ui
 	uint16_t command = CFI_CMD_WORD_PROGRAM_SETUP;
 	if (efa) {
 		command = CFI_CMD_EFA_PROGRAM_SETUP;
-	} else if (flash->command_set == P_ID_INTEL_PERFORMANCE) {
+	} else if (flash->cfi.command_set == P_ID_INTEL_PERFORMANCE) {
 		command = CFI_CMD_PROGRAM_SETUP;
 	}
 	MMIO16(address) = command;
@@ -341,7 +284,7 @@ uint16_t cfi_program_word(const struct flash_device *flash, uint32_t address, ui
 uint16_t cfi_program_buffer(const struct flash_device *flash, uint32_t address, const uint16_t *data,
 	uint32_t words, uint16_t *buffer_status) {
 	MMIO16(address) = CFI_CMD_CLEAR_STATUS_REGISTER;
-	MMIO16(address) = flash->command_set == P_ID_INTEL_PERFORMANCE ? CFI_CMD_BUFFER_PROGRAM : CFI_CMD_BUFFERED_PROGRAM;
+	MMIO16(address) = flash->cfi.command_set == P_ID_INTEL_PERFORMANCE ? CFI_CMD_BUFFER_PROGRAM : CFI_CMD_BUFFERED_PROGRAM;
 	*buffer_status = cfi_wait_ready(address);
 	MMIO16(address) = words - 1;
 	for (uint32_t word = 0; word < words; word++) {

@@ -1,6 +1,6 @@
 #include <pmb887x.h>
 
-#include "cfi.h"
+#include "intel.h"
 #include "test.h"
 
 static const uint16_t user_otp_value[] = {0x9400, 0x1099, 0x0460, 0xFF00};
