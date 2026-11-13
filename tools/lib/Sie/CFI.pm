@@ -87,6 +87,8 @@ sub parsePRI {
 	my $pri = {};
 	$pri->{version} = $r->readBytes(1).".".$r->readBytes(1);
 	
+	return parseAmdPRI($r, $pri) if $pri_vendor_id == 0x0002;
+
 	my $pri_vendor;
 	if ($pri_vendor_id == 0x0001) {
 		die "Unknown Intel PRI version: ".$pri->{version} if $pri->{version} ne '1.3';
@@ -284,6 +286,44 @@ sub parsePRI {
 	return $pri;
 }
 
+sub parseAmdPRI {
+	my ($r, $pri) = @_;
+
+	die "Unknown AMD PRI version: ".$pri->{version} if $pri->{version} ne '1.3' && $pri->{version} ne '1.4';
+
+	my $unlock_and_technology = $r->readUInt8();
+	$pri->{address_sensitive_unlock} = ($unlock_and_technology & 0x3) == 0 ? 1 : 0;
+	$pri->{silicon_technology} = ($unlock_and_technology >> 2) & 0xF;
+	$pri->{erase_suspend} = $r->readUInt8();
+	$pri->{sector_protect_group_size} = $r->readUInt8();
+	$pri->{temporary_sector_unprotect} = $r->readUInt8();
+	$pri->{sector_protect_scheme} = $r->readUInt8();
+	$pri->{simultaneous_operation_sectors} = $r->readUInt8();
+	$pri->{burst_mode} = $r->readUInt8();
+	$pri->{page_mode} = $r->readUInt8();
+	$pri->{acc_min} = $r->readUInt8();
+	$pri->{acc_max} = $r->readUInt8();
+	$pri->{boot_sector_flag} = $r->readUInt8();
+	$pri->{otp} = [];
+	$pri->{regions} = [];
+	$pri->{banks} = [];
+
+	if ($pri->{version} eq '1.4') {
+		$pri->{program_suspend} = $r->readUInt8();
+		$pri->{unlock_bypass} = $r->readUInt8();
+		$pri->{secsi_sector_size} = 1 << $r->readUInt8();
+		$pri->{reset_timeout_busy} = 1 << $r->readUInt8();
+		$pri->{reset_timeout_idle} = 1 << $r->readUInt8();
+		$pri->{erase_suspend_timeout} = 1 << $r->readUInt8();
+		$pri->{program_suspend_timeout} = 1 << $r->readUInt8();
+		my $banks = $r->readUInt8();
+		push @{$pri->{banks}}, $r->readUInt8() for 1..$banks;
+	}
+
+	$pri->{size} = $r->offset();
+	return $pri;
+}
+
 sub loadFlashes {
 	my $path = getDataDir().'/cfi';
 	opendir my $fp, $path or die "opendir($path): $!";
@@ -292,19 +332,23 @@ sub loadFlashes {
 
 	my @flashes;
 	for my $file (@files) {
-		next if $file !~ /^([a-f0-9]+)-([a-f0-9]+)\.hex$/i;
-		my ($vid, $pid) = (hex $1, hex $2);
+		next if $file !~ /^([a-f0-9]+)((?:-[a-f0-9]+)+)\.hex$/i;
+		my $vid = hex $1;
+		my @pid = map { hex $_ } grep { $_ ne '' } split(/-/, $2);
 		my $dump_text = scalar(read_file("$path/$file"));
 		$dump_text =~ s/#.*?$//gm;
 		$dump_text =~ s/^\s+|\s+$//g;
 		my @dump = map { hex $_ } split(/\s+/s, $dump_text);
-		push @flashes, parseFlashDump($vid, $pid, \@dump);
+		my $flash = parseFlashDump(\@dump);
+		my $name = join("-", map { sprintf("%04X", $_) } $flash->{vid}, @{$flash->{pid}});
+		die "$file: dump identifies $name" if $vid != $flash->{vid} || "@pid" ne "@{$flash->{pid}}";
+		push @flashes, $flash;
 	}
 	return @flashes;
 }
 
 sub parseFlashDump {
-	my ($vid, $pid, $dump) = @_;
+	my ($dump) = @_;
 	
 	my $CFI_ADDR = 0x10;
 	
@@ -327,12 +371,14 @@ sub parseFlashDump {
 		$otp_bin[$otp->{id}] = $value;
 	}
 	
+	my $amd = $cfi->{pri_vendor} == 0x0002;
 	return {
 		vid		=> $dump->[0],
-		pid		=> $dump->[1],
+		pid		=> $amd ? [$dump->[0x01], $dump->[0x0E], $dump->[0x0F]] : [$dump->[0x01]],
 		lock	=> $dump->[2],
-		cr		=> $dump->[5],
-		ehcr	=> $dump->[6],
+		cr		=> $amd ? 0 : $dump->[5],
+		ehcr	=> $amd ? 0 : $dump->[6],
+		indicator_bits	=> $amd ? $dump->[3] : 0,
 		cfi		=> $cfi,
 		pri		=> $pri,
 		cfi_bin	=> substr($lo_bytes, $CFI_ADDR, $cfi->{size}),

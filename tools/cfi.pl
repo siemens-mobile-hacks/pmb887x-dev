@@ -13,10 +13,16 @@ sub printFlashDump {
 	
 	my $CFI_ADDR = 0x10;
 	
-	printf("FLASH: %04X:%04X\n", $info->{vid}, $info->{pid});
-	printf("Lock status: %04X\n", $info->{lock});
-	printf("CR: %04X\n", $info->{cr});
-	printf("EHCR: %04X\n", $info->{ehcr});
+	my $amd = $info->{cfi}->{pri_vendor} == 0x0002;
+	printf("FLASH: %s\n", join(":", map { sprintf("%04X", $_) } $info->{vid}, @{$info->{pid}}));
+	if ($amd) {
+		printf("Sector protection: %04X\n", $info->{lock});
+		printf("Indicator bits: %04X\n", $info->{indicator_bits});
+	} else {
+		printf("Lock status: %04X\n", $info->{lock});
+		printf("CR: %04X\n", $info->{cr});
+		printf("EHCR: %04X\n", $info->{ehcr});
+	}
 	print "\n";
 	
 	my $cfi = $info->{cfi};
@@ -56,6 +62,14 @@ sub printFlashDump {
 	print "---- Primary Vendor-Specific Extended Query ----\n";
 	printf(" PRI: %s\n", bin2hex($info->{pri_bin}));
 	printf(" PRI version: %s\n", $pri->{version});
+	if ($amd) {
+		for my $k (sort grep { !ref $pri->{$_} } keys %$pri) {
+			printf(" %s: %s\n", $k, $pri->{$k});
+		}
+		printf(" Sectors per bank: %s\n", join(" ", @{$pri->{banks}}));
+		print "------------------------------------------\n";
+		return;
+	}
 	printf(" Features:\n");
 	for my $k (sort keys %{$pri->{features}}) {
 		printf("   %s: %d\n", $k, $pri->{features}->{$k});
