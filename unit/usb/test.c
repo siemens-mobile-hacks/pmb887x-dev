@@ -25,10 +25,10 @@ static void pulse_usb_reset(void) {
 static void usb_clear_events(void) {
 	USB_EVENT_INT_STATUS = UINT8_MAX;
 	USB_GLOBAL_INT_STATUS = UINT8_MAX;
-	USB_EP_A_INT_STATUS_LOW = UINT8_MAX;
-	USB_EP_A_INT_STATUS_HIGH = UINT8_MAX;
-	USB_EP_B_INT_STATUS_LOW = UINT8_MAX;
-	USB_EP_B_INT_STATUS_HIGH = UINT8_MAX;
+	USB_EP_READY_INT_STATUS_LOW = UINT8_MAX;
+	USB_EP_READY_INT_STATUS_HIGH = UINT8_MAX;
+	USB_EP_DONE_INT_STATUS_LOW = UINT8_MAX;
+	USB_EP_DONE_INT_STATUS_HIGH = UINT8_MAX;
 }
 
 static bool usb_wait_event(uint32_t event, uint32_t timeout_ms) {
@@ -106,14 +106,14 @@ static void test_reset_values(void) {
 	test_eq_u32("DMA interrupt group 1 enable reset value", 0, USB_DMA1_INT_ENABLE);
 	test_eq_u32("USB event interrupt status reset value", USB_EVENT_INT_STATUS_RESET, USB_EVENT_INT_STATUS);
 	test_eq_u32("USB event interrupt enable reset value", 0, USB_EVENT_INT_ENABLE);
-	test_eq_u32("endpoint group A low status reset value", 0, USB_EP_A_INT_STATUS_LOW);
-	test_eq_u32("endpoint group A low enable reset value", 0, USB_EP_A_INT_ENABLE_LOW);
-	test_eq_u32("endpoint group A high status reset value", 0, USB_EP_A_INT_STATUS_HIGH);
-	test_eq_u32("endpoint group A high enable reset value", 0, USB_EP_A_INT_ENABLE_HIGH);
-	test_eq_u32("endpoint group B low status reset value", 0, USB_EP_B_INT_STATUS_LOW);
-	test_eq_u32("endpoint group B low enable reset value", 0, USB_EP_B_INT_ENABLE_LOW);
-	test_eq_u32("endpoint group B high status reset value", 0, USB_EP_B_INT_STATUS_HIGH);
-	test_eq_u32("endpoint group B high enable reset value", 0, USB_EP_B_INT_ENABLE_HIGH);
+	test_eq_u32("endpoint FIFO ready low status reset value", 0, USB_EP_READY_INT_STATUS_LOW);
+	test_eq_u32("endpoint FIFO ready low enable reset value", 0, USB_EP_READY_INT_ENABLE_LOW);
+	test_eq_u32("endpoint FIFO ready high status reset value", 0, USB_EP_READY_INT_STATUS_HIGH);
+	test_eq_u32("endpoint FIFO ready high enable reset value", 0, USB_EP_READY_INT_ENABLE_HIGH);
+	test_eq_u32("endpoint transfer done low status reset value", 0, USB_EP_DONE_INT_STATUS_LOW);
+	test_eq_u32("endpoint transfer done low enable reset value", 0, USB_EP_DONE_INT_ENABLE_LOW);
+	test_eq_u32("endpoint transfer done high status reset value", 0, USB_EP_DONE_INT_STATUS_HIGH);
+	test_eq_u32("endpoint transfer done high enable reset value", 0, USB_EP_DONE_INT_ENABLE_HIGH);
 	test_eq_u32("PHY control reset value", 0, USB_PHY_CONTROL);
 	test_eq_u32("frame number reset value", 0, USB_FRAME_NUMBER);
 	test_eq_u32(
@@ -121,9 +121,9 @@ static void test_reset_values(void) {
 		USB_EVENT_INT_STATUS_RESET << USB_GLOBAL_EVENT_INT_STATUS_EVENT_SHIFT,
 		USB_GLOBAL_EVENT_INT_STATUS
 	);
-	test_eq_u32("packed DMA and group A status reset value", 0, USB_DMA_EP_A_INT_STATUS);
-	test_eq_u32("packed global, event and group B enable reset value", 0, USB_GLOBAL_EVENT_EP_B_INT_ENABLE);
-	test_eq_u32("packed DMA and group A enable reset value", 0, USB_DMA_EP_A_INT_ENABLE);
+	test_eq_u32("packed DMA and FIFO ready status reset value", 0, USB_DMA_EP_READY_INT_STATUS);
+	test_eq_u32("packed global, event and transfer done enable reset value", 0, USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE);
+	test_eq_u32("packed DMA and FIFO ready enable reset value", 0, USB_DMA_EP_READY_INT_ENABLE);
 	test_eq_u32("packed EP0 count reset value", 0x50205000, USB_EP0_COUNT);
 
 	static const uint8_t SLOT_CONFIG_RESET[USB_SLOT_COUNT] = {
@@ -175,45 +175,45 @@ static void test_interrupt_enable_reset(void) {
 	USB_DMA0_INT_ENABLE = UINT8_MAX;
 	USB_DMA1_INT_ENABLE = UINT8_MAX;
 	USB_EVENT_INT_ENABLE = UINT8_MAX;
-	USB_EP_A_INT_ENABLE_LOW = UINT8_MAX;
-	USB_EP_A_INT_ENABLE_HIGH = 7;
-	USB_EP_B_INT_ENABLE_LOW = UINT8_MAX;
-	USB_EP_B_INT_ENABLE_HIGH = 7;
+	USB_EP_READY_INT_ENABLE_LOW = UINT8_MAX;
+	USB_EP_READY_INT_ENABLE_HIGH = 7;
+	USB_EP_DONE_INT_ENABLE_LOW = UINT8_MAX;
+	USB_EP_DONE_INT_ENABLE_HIGH = 7;
 	pulse_usb_reset();
 	USB_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("global interrupt enable returns to reset value", 0, USB_GLOBAL_INT_ENABLE);
 	test_eq_u32("DMA interrupt group 0 enable returns to reset value", 0, USB_DMA0_INT_ENABLE);
 	test_eq_u32("DMA interrupt group 1 enable returns to reset value", 0, USB_DMA1_INT_ENABLE);
 	test_eq_u32("USB event interrupt enable returns to reset value", 0, USB_EVENT_INT_ENABLE);
-	test_eq_u32("endpoint group A low enable returns to reset value", 0, USB_EP_A_INT_ENABLE_LOW);
-	test_eq_u32("endpoint group A high enable returns to reset value", 0, USB_EP_A_INT_ENABLE_HIGH);
-	test_eq_u32("endpoint group B low enable returns to reset value", 0, USB_EP_B_INT_ENABLE_LOW);
-	test_eq_u32("endpoint group B high enable returns to reset value", 0, USB_EP_B_INT_ENABLE_HIGH);
+	test_eq_u32("endpoint FIFO ready low enable returns to reset value", 0, USB_EP_READY_INT_ENABLE_LOW);
+	test_eq_u32("endpoint FIFO ready high enable returns to reset value", 0, USB_EP_READY_INT_ENABLE_HIGH);
+	test_eq_u32("endpoint transfer done low enable returns to reset value", 0, USB_EP_DONE_INT_ENABLE_LOW);
+	test_eq_u32("endpoint transfer done high enable returns to reset value", 0, USB_EP_DONE_INT_ENABLE_HIGH);
 }
 
 static void test_packed_registers(void) {
 	usb_start();
-	USB_GLOBAL_EVENT_EP_B_INT_ENABLE = 0x06884411;
-	USB_DMA_EP_A_INT_ENABLE = 0x05220199;
+	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE = 0x06884411;
+	USB_DMA_EP_READY_INT_ENABLE = 0x05220199;
 	test_eq_u32("packed enable writes global enable", 0x11, USB_GLOBAL_INT_ENABLE);
 	test_eq_u32("packed enable writes event enable", 0x44, USB_EVENT_INT_ENABLE);
-	test_eq_u32("packed enable writes group B low enable", 0x88, USB_EP_B_INT_ENABLE_LOW);
-	test_eq_u32("packed enable writes group B high enable", 0x06, USB_EP_B_INT_ENABLE_HIGH);
+	test_eq_u32("packed enable writes transfer done low enable", 0x88, USB_EP_DONE_INT_ENABLE_LOW);
+	test_eq_u32("packed enable writes transfer done high enable", 0x06, USB_EP_DONE_INT_ENABLE_HIGH);
 	test_eq_u32("packed enable writes DMA group 0 enable", 0x99, USB_DMA0_INT_ENABLE);
 	test_eq_u32("packed enable writes DMA group 1 enable", 0x01, USB_DMA1_INT_ENABLE);
-	test_eq_u32("packed enable writes group A low enable", 0x22, USB_EP_A_INT_ENABLE_LOW);
-	test_eq_u32("packed enable writes group A high enable", 0x05, USB_EP_A_INT_ENABLE_HIGH);
+	test_eq_u32("packed enable writes FIFO ready low enable", 0x22, USB_EP_READY_INT_ENABLE_LOW);
+	test_eq_u32("packed enable writes FIFO ready high enable", 0x05, USB_EP_READY_INT_ENABLE_HIGH);
 
 	USB_GLOBAL_INT_ENABLE = 0x24;
 	USB_EVENT_INT_ENABLE = 0x81;
-	USB_EP_B_INT_ENABLE_LOW = 0x3C;
-	USB_EP_B_INT_ENABLE_HIGH = 0x01;
+	USB_EP_DONE_INT_ENABLE_LOW = 0x3C;
+	USB_EP_DONE_INT_ENABLE_HIGH = 0x01;
 	USB_DMA0_INT_ENABLE = 0x42;
 	USB_DMA1_INT_ENABLE = 0x02;
-	USB_EP_A_INT_ENABLE_LOW = 0xA5;
-	USB_EP_A_INT_ENABLE_HIGH = 0x02;
-	test_eq_u32("packed enable reads global, event and group B", 0x013C8124, USB_GLOBAL_EVENT_EP_B_INT_ENABLE);
-	test_eq_u32("packed enable reads DMA and group A", 0x02A50242, USB_DMA_EP_A_INT_ENABLE);
+	USB_EP_READY_INT_ENABLE_LOW = 0xA5;
+	USB_EP_READY_INT_ENABLE_HIGH = 0x02;
+	test_eq_u32("packed enable reads global, event and transfer done", 0x013C8124, USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE);
+	test_eq_u32("packed enable reads DMA and FIFO ready", 0x02A50242, USB_DMA_EP_READY_INT_ENABLE);
 
 	usb_start();
 	USB_EVENT_INT_ENABLE = USB_EVENT_INT_ENABLE_RESET;
@@ -333,38 +333,38 @@ static void test_endpoint_interrupts(void) {
 		uint32_t data;
 		uint32_t status;
 	} FLUSHES[] = {
-		{ "flushing an empty IN FIFO raises no group A event", true, 0, 0 },
-		{ "flushing a disabled IN data path raises no group A event", false, 1, 0 },
-		{ "flushing queued IN data raises group A", true, 1, BIT(1) },
+		{ "flushing an empty IN FIFO raises no FIFO ready", true, 0, 0 },
+		{ "flushing a disabled IN data path raises no FIFO ready", false, 1, 0 },
+		{ "flushing queued IN data raises a FIFO ready", true, 1, BIT(1) },
 	};
 	for (uint32_t index = 0; index < ARRAY_SIZE(FLUSHES); index++) {
 		usb_start();
-		USB_EP_A_INT_ENABLE_LOW = UINT8_MAX;
+		USB_EP_READY_INT_ENABLE_LOW = UINT8_MAX;
 		USB_EP_FIFO_SIZE(1) = 2 << USB_EP_FIFO_SIZE_SIZE_SHIFT;
 		USB_EP_CONTROL(EP1_IN_SLOT) = FLUSHES[index].in_enable ? USB_EP_CONTROL_IN_ENABLE : 0;
 		ep1_write(FLUSHES[index].data);
 		USB_EP_CONTROL(EP1_IN_SLOT) |= USB_EP_CONTROL_FLUSH;
-		test_eq_u32(FLUSHES[index].name, FLUSHES[index].status, USB_EP_A_INT_STATUS_LOW);
+		test_eq_u32(FLUSHES[index].name, FLUSHES[index].status, USB_EP_READY_INT_STATUS_LOW);
 	}
 	test_eq_u32(
-		"enabled group A event latches the global summary",
-		USB_GLOBAL_INT_STATUS_EP_A_LOW,
+		"enabled FIFO ready latches the global summary",
+		USB_GLOBAL_INT_STATUS_EP_READY_LOW,
 		USB_GLOBAL_INT_STATUS
 	);
 	test_eq_u32(
-		"packed status reports group A low",
-		BIT(1) << USB_DMA_EP_A_INT_STATUS_EP_A_LOW_SHIFT,
-		USB_DMA_EP_A_INT_STATUS
+		"packed status reports FIFO ready of endpoints 0-7",
+		BIT(1) << USB_DMA_EP_READY_INT_STATUS_EP_READY_LOW_SHIFT,
+		USB_DMA_EP_READY_INT_STATUS
 	);
-	USB_EP_A_INT_STATUS_LOW = BIT(1);
-	test_eq_u32("group A status is write-one-to-clear", 0, USB_EP_A_INT_STATUS_LOW);
+	USB_EP_READY_INT_STATUS_LOW = BIT(1);
+	test_eq_u32("FIFO ready status is write-one-to-clear", 0, USB_EP_READY_INT_STATUS_LOW);
 
 	usb_start();
 	ep1_configure_fifo();
 	ep1_write(1);
 	USB_EP_CONTROL(EP1_IN_SLOT) |= USB_EP_CONTROL_FLUSH;
-	test_eq_u32("group A status latches without its enable", BIT(1), USB_EP_A_INT_STATUS_LOW);
-	test_eq_u32("disabled group A event leaves the global summary clear", 0, USB_GLOBAL_INT_STATUS);
+	test_eq_u32("FIFO ready status latches without its enable", BIT(1), USB_EP_READY_INT_STATUS_LOW);
+	test_eq_u32("disabled FIFO ready leaves the global summary clear", 0, USB_GLOBAL_INT_STATUS);
 }
 
 static void test_interrupt_summary(void) {
@@ -550,17 +550,17 @@ static void test_remote_wakeup(void) {
 	stopwatch_t start = stopwatch_get();
 	test_check("remote wakeup drives K after bus idle", usb_wait_line_state(USB_PHY_CONTROL_LINE_STATE_K, start));
 	test_eq_u32(
-		"wakeup end flag is set while K is driven",
-		USB_PHY_CONTROL_WAKEUP_END,
-		USB_PHY_CONTROL & USB_PHY_CONTROL_WAKEUP_END
+		"wakeup started flag is set while K is driven",
+		USB_PHY_CONTROL_WAKEUP_STARTED,
+		USB_PHY_CONTROL & USB_PHY_CONTROL_WAKEUP_STARTED
 	);
 	bool k_ended = usb_wait_line_state(USB_PHY_CONTROL_LINE_STATE_J, start);
 	USB_PHY_CONTROL = 0;
 	test_check("remote wakeup K returns to J", k_ended);
 	test_eq_u32(
-		"wakeup end flag stays set after remote wakeup",
-		USB_PHY_CONTROL_WAKEUP_END | USB_PHY_CONTROL_LINE_STATE_J,
-		USB_PHY_CONTROL & (USB_PHY_CONTROL_WAKEUP_END | USB_PHY_CONTROL_LINE_STATE)
+		"wakeup started flag stays set after remote wakeup",
+		USB_PHY_CONTROL_WAKEUP_STARTED | USB_PHY_CONTROL_LINE_STATE_J,
+		USB_PHY_CONTROL & (USB_PHY_CONTROL_WAKEUP_STARTED | USB_PHY_CONTROL_LINE_STATE)
 	);
 	test_eq_u32(
 		"remote wakeup on an idle bus does not finish",
@@ -579,9 +579,9 @@ static void test_remote_wakeup(void) {
 	test_check("remote wakeup drives no K without the drive enable", !k_driven);
 #endif
 	test_eq_u32(
-		"remote wakeup without the drive enable sets the wakeup end flag",
-		USB_PHY_CONTROL_WAKEUP_END,
-		USB_PHY_CONTROL & USB_PHY_CONTROL_WAKEUP_END
+		"remote wakeup without the drive enable sets the wakeup started flag",
+		USB_PHY_CONTROL_WAKEUP_STARTED,
+		USB_PHY_CONTROL & USB_PHY_CONTROL_WAKEUP_STARTED
 	);
 }
 
@@ -593,8 +593,8 @@ static void test_core_disable(void) {
 	USB_EP_ENABLE_HIGH = 0x05;
 	USB_EP_CONFIG(EP1_IN_SLOT) = 0x48;
 	USB_EP_MAX_PACKET_LOW(0) = 0x20;
-	USB_GLOBAL_EVENT_EP_B_INT_ENABLE = 0x07FFFFFF;
-	USB_DMA_EP_A_INT_ENABLE = 0x07FF03FF;
+	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE = 0x07FFFFFF;
+	USB_DMA_EP_READY_INT_ENABLE = 0x07FF03FF;
 	ep1_configure_fifo();
 	ep1_write(1);
 	USB_EP_CONTROL(EP1_IN_SLOT) |= USB_EP_CONTROL_COMMIT;
@@ -610,8 +610,8 @@ static void test_core_disable(void) {
 	test_eq_u32("core disable resets endpoint configuration", 0x28, USB_EP_CONFIG(EP1_IN_SLOT));
 	test_eq_u32("core disable resets FIFO control", 0, USB_EP_CONTROL(EP1_IN_SLOT));
 	test_eq_u32("core disable resets the maximum packet size", 0, USB_EP_MAX_PACKET_LOW(0));
-	test_eq_u32("core disable resets interrupt enables", 0, USB_GLOBAL_EVENT_EP_B_INT_ENABLE);
-	test_eq_u32("core disable resets group A and DMA enables", 0, USB_DMA_EP_A_INT_ENABLE);
+	test_eq_u32("core disable resets interrupt enables", 0, USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE);
+	test_eq_u32("core disable resets FIFO ready and DMA enables", 0, USB_DMA_EP_READY_INT_ENABLE);
 	test_eq_u32("core disable keeps the device address", USB_DEVICE_ADDRESS_ENABLE | 5, USB_DEVICE_ADDRESS);
 	test_eq_u32("core disable keeps endpoints 0-7 enabled", 0x07, USB_EP_ENABLE_LOW);
 	test_eq_u32("core disable keeps endpoints 8-10 enabled", 0x05, USB_EP_ENABLE_HIGH);

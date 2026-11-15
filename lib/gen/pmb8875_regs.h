@@ -1359,269 +1359,269 @@
 
 // USB [MOD_NUM=F047, MOD_REV=00, MOD_32BIT=C0]
 // sci-worx USB device controller
-#define	USB_BASE											0xF2200000
+#define	USB_BASE												0xF2200000
 /* Endpoint Enable Register, endpoints 0-7 */
-#define	USB_EP_ENABLE_LOW									MMIO32(USB_BASE + 0x00)
-#define	USB_EP_ENABLE_LOW_ENDPOINTS							GENMASK(7, 0)							 // Bit n enables endpoint n
-#define	USB_EP_ENABLE_LOW_ENDPOINTS_SHIFT					0
+#define	USB_EP_ENABLE_LOW										MMIO32(USB_BASE + 0x00)
+#define	USB_EP_ENABLE_LOW_ENDPOINTS								GENMASK(7, 0)							 // Bit n enables endpoint n
+#define	USB_EP_ENABLE_LOW_ENDPOINTS_SHIFT						0
 
 /* Endpoint Enable Register, endpoints 8-10 */
-#define	USB_EP_ENABLE_HIGH									MMIO32(USB_BASE + 0x04)
-#define	USB_EP_ENABLE_HIGH_ENDPOINTS						GENMASK(2, 0)							 // Bit n enables endpoint n + 8
-#define	USB_EP_ENABLE_HIGH_ENDPOINTS_SHIFT					0
+#define	USB_EP_ENABLE_HIGH										MMIO32(USB_BASE + 0x04)
+#define	USB_EP_ENABLE_HIGH_ENDPOINTS							GENMASK(2, 0)							 // Bit n enables endpoint n + 8
+#define	USB_EP_ENABLE_HIGH_ENDPOINTS_SHIFT						0
 
 /* USB Device Address Register (bus reset clears ADDRESS) */
-#define	USB_DEVICE_ADDRESS									MMIO32(USB_BASE + 0x08)
-#define	USB_DEVICE_ADDRESS_ADDRESS							GENMASK(6, 0)							 // USB device address
-#define	USB_DEVICE_ADDRESS_ADDRESS_SHIFT					0
-#define	USB_DEVICE_ADDRESS_ENABLE							BIT(7)									 // Enable the device function
+#define	USB_DEVICE_ADDRESS										MMIO32(USB_BASE + 0x08)
+#define	USB_DEVICE_ADDRESS_ADDRESS								GENMASK(6, 0)							 // USB device address
+#define	USB_DEVICE_ADDRESS_ADDRESS_SHIFT						0
+#define	USB_DEVICE_ADDRESS_ENABLE								BIT(7)									 // Enable the device function
 
 /* USB Frame Number High Register */
-#define	USB_FRAME_NUMBER_HIGH								MMIO32(USB_BASE + 0x0C)
-#define	USB_FRAME_NUMBER_HIGH_VALUE							GENMASK(2, 0)							 // Frame number bits 10:8
-#define	USB_FRAME_NUMBER_HIGH_VALUE_SHIFT					0
+#define	USB_FRAME_NUMBER_HIGH									MMIO32(USB_BASE + 0x0C)
+#define	USB_FRAME_NUMBER_HIGH_VALUE								GENMASK(2, 0)							 // Frame number bits 10:8
+#define	USB_FRAME_NUMBER_HIGH_VALUE_SHIFT						0
 
 /* USB Frame Number Low Register */
-#define	USB_FRAME_NUMBER_LOW								MMIO32(USB_BASE + 0x10)
-#define	USB_FRAME_NUMBER_LOW_VALUE							GENMASK(7, 0)							 // Frame number bits 7:0
-#define	USB_FRAME_NUMBER_LOW_VALUE_SHIFT					0
+#define	USB_FRAME_NUMBER_LOW									MMIO32(USB_BASE + 0x10)
+#define	USB_FRAME_NUMBER_LOW_VALUE								GENMASK(7, 0)							 // Frame number bits 7:0
+#define	USB_FRAME_NUMBER_LOW_VALUE_SHIFT						0
 
 /* USB Core Control Register */
-#define	USB_CONTROL											MMIO32(USB_BASE + 0x18)
-#define	USB_CONTROL_ENABLE									BIT(0)									 // Enable the core; 0 resets configuration, interrupts and timers, core registers read 0
+#define	USB_CONTROL												MMIO32(USB_BASE + 0x18)
+#define	USB_CONTROL_ENABLE										BIT(0)									 // Enable the core; 0 resets configuration, interrupts and timers, core registers read 0
 
 /* Setup Packet Byte Register */
-#define	USB_SETUP_PACKET(n)									MMIO32(USB_BASE + 0x1C + ((n) * 0x4))
-#define	USB_SETUP_PACKET_DATA								GENMASK(7, 0)							 // SETUP packet byte
-#define	USB_SETUP_PACKET_DATA_SHIFT							0
+#define	USB_SETUP_PACKET(n)										MMIO32(USB_BASE + 0x1C + ((n) * 0x4))
+#define	USB_SETUP_PACKET_DATA									GENMASK(7, 0)							 // SETUP packet byte
+#define	USB_SETUP_PACKET_DATA_SHIFT								0
 
 /* Endpoint Configuration Register; slot 0 = EP0 OUT, 1 = EP0 IN, n + 1 = EPn */
-#define	USB_EP_CONFIG(n)									MMIO32(USB_BASE + 0x3C + ((n) * 0x4))
-#define	USB_EP_CONFIG_ZLP									BIT(0)									 // IN: send a zero-length packet; OUT: zero-length packet received
-#define	USB_EP_CONFIG_ISO									BIT(1)									 // Isochronous endpoint (EP1-EP10); bits 5:4 read as zero while set
-#define	USB_EP_CONFIG_CONTROL								BIT(2)									 // Control endpoint (read-only)
-#define	USB_EP_CONFIG_IN									BIT(3)									 // IN endpoint (read-only)
-#define	USB_EP_CONFIG_NAK									BIT(5)									 // Slot not armed; set when a transfer completes
-#define	USB_EP_CONFIG_STALL									BIT(6)									 // Answer tokens with STALL
+#define	USB_EP_CONFIG(n)										MMIO32(USB_BASE + 0x3C + ((n) * 0x4))
+#define	USB_EP_CONFIG_ZLP										BIT(0)									 // IN: send a zero-length packet; OUT: zero-length packet received
+#define	USB_EP_CONFIG_ISO										BIT(1)									 // Isochronous endpoint (EP1-EP10); bits 5:4 read as zero while set
+#define	USB_EP_CONFIG_CONTROL									BIT(2)									 // Control endpoint (read-only)
+#define	USB_EP_CONFIG_IN										BIT(3)									 // IN endpoint (read-only)
+#define	USB_EP_CONFIG_NAK										BIT(5)									 // Slot not armed; set when a transfer completes
+#define	USB_EP_CONFIG_STALL										BIT(6)									 // Answer tokens with STALL
 
 /* Endpoint Maximum Packet Size High Register, endpoints 0-10 */
-#define	USB_EP_MAX_PACKET_HIGH(n)							MMIO32(USB_BASE + 0x80 + ((n) * 0x10))
-#define	USB_EP_MAX_PACKET_HIGH_VALUE						GENMASK(2, 0)							 // Maximum packet size bits 10:8
-#define	USB_EP_MAX_PACKET_HIGH_VALUE_SHIFT					0
+#define	USB_EP_MAX_PACKET_HIGH(n)								MMIO32(USB_BASE + 0x80 + ((n) * 0x10))
+#define	USB_EP_MAX_PACKET_HIGH_VALUE							GENMASK(2, 0)							 // Maximum packet size bits 10:8
+#define	USB_EP_MAX_PACKET_HIGH_VALUE_SHIFT						0
 
 /* Endpoint Maximum Packet Size Low Register, endpoints 0-10 */
-#define	USB_EP_MAX_PACKET_LOW(n)							MMIO32(USB_BASE + 0x84 + ((n) * 0x10))
-#define	USB_EP_MAX_PACKET_LOW_VALUE							GENMASK(7, 0)							 // Maximum packet size bits 7:0
-#define	USB_EP_MAX_PACKET_LOW_VALUE_SHIFT					0
+#define	USB_EP_MAX_PACKET_LOW(n)								MMIO32(USB_BASE + 0x84 + ((n) * 0x10))
+#define	USB_EP_MAX_PACKET_LOW_VALUE								GENMASK(7, 0)							 // Maximum packet size bits 7:0
+#define	USB_EP_MAX_PACKET_LOW_VALUE_SHIFT						0
 
 /* Global Interrupt Status Register (write one to clear) */
-#define	USB_GLOBAL_INT_STATUS								MMIO32(USB_BASE + 0x180)
-#define	USB_GLOBAL_INT_STATUS_EP0_OUT						BIT(1)									 // EP0 OUT or SETUP packet received
-#define	USB_GLOBAL_INT_STATUS_EP0_IN						BIT(2)									 // EP0 IN packet sent
-#define	USB_GLOBAL_INT_STATUS_EVENT							BIT(5)									 // Enabled USB event latched
-#define	USB_GLOBAL_INT_STATUS_EP_A_LOW						BIT(6)									 // Enabled group A event of endpoints 0-7
-#define	USB_GLOBAL_INT_STATUS_EP_A_HIGH						BIT(7)									 // Enabled group A event of endpoints 8-10
+#define	USB_GLOBAL_INT_STATUS									MMIO32(USB_BASE + 0x180)
+#define	USB_GLOBAL_INT_STATUS_EP0_OUT							BIT(1)									 // EP0 OUT or SETUP packet received
+#define	USB_GLOBAL_INT_STATUS_EP0_IN							BIT(2)									 // EP0 IN packet sent
+#define	USB_GLOBAL_INT_STATUS_EVENT								BIT(5)									 // Enabled USB event latched
+#define	USB_GLOBAL_INT_STATUS_EP_READY_LOW						BIT(6)									 // Enabled FIFO ready event of endpoints 0-7
+#define	USB_GLOBAL_INT_STATUS_EP_READY_HIGH						BIT(7)									 // Enabled FIFO ready event of endpoints 8-10
 
 /* Global Interrupt Enable Register (gates the IRQ line) */
-#define	USB_GLOBAL_INT_ENABLE								MMIO32(USB_BASE + 0x184)
-#define	USB_GLOBAL_INT_ENABLE_EP0_OUT						BIT(1)									 // EP0 OUT or SETUP packet received
-#define	USB_GLOBAL_INT_ENABLE_EP0_IN						BIT(2)									 // EP0 IN packet sent
-#define	USB_GLOBAL_INT_ENABLE_EVENT							BIT(5)									 // Enabled USB event latched
-#define	USB_GLOBAL_INT_ENABLE_EP_A_LOW						BIT(6)									 // Enabled group A event of endpoints 0-7
-#define	USB_GLOBAL_INT_ENABLE_EP_A_HIGH						BIT(7)									 // Enabled group A event of endpoints 8-10
+#define	USB_GLOBAL_INT_ENABLE									MMIO32(USB_BASE + 0x184)
+#define	USB_GLOBAL_INT_ENABLE_EP0_OUT							BIT(1)									 // EP0 OUT or SETUP packet received
+#define	USB_GLOBAL_INT_ENABLE_EP0_IN							BIT(2)									 // EP0 IN packet sent
+#define	USB_GLOBAL_INT_ENABLE_EVENT								BIT(5)									 // Enabled USB event latched
+#define	USB_GLOBAL_INT_ENABLE_EP_READY_LOW						BIT(6)									 // Enabled FIFO ready event of endpoints 0-7
+#define	USB_GLOBAL_INT_ENABLE_EP_READY_HIGH						BIT(7)									 // Enabled FIFO ready event of endpoints 8-10
 
 /* DMA Channel Group 0 Interrupt Status Register (write one to clear) */
-#define	USB_DMA0_INT_STATUS									MMIO32(USB_BASE + 0x188)
-#define	USB_DMA0_INT_STATUS_SOURCES							GENMASK(7, 0)
-#define	USB_DMA0_INT_STATUS_SOURCES_SHIFT					0
+#define	USB_DMA0_INT_STATUS										MMIO32(USB_BASE + 0x188)
+#define	USB_DMA0_INT_STATUS_SOURCES								GENMASK(7, 0)
+#define	USB_DMA0_INT_STATUS_SOURCES_SHIFT						0
 
 /* DMA Channel Group 0 Interrupt Enable Register */
-#define	USB_DMA0_INT_ENABLE									MMIO32(USB_BASE + 0x18C)
-#define	USB_DMA0_INT_ENABLE_SOURCES							GENMASK(7, 0)
-#define	USB_DMA0_INT_ENABLE_SOURCES_SHIFT					0
+#define	USB_DMA0_INT_ENABLE										MMIO32(USB_BASE + 0x18C)
+#define	USB_DMA0_INT_ENABLE_SOURCES								GENMASK(7, 0)
+#define	USB_DMA0_INT_ENABLE_SOURCES_SHIFT						0
 
 /* DMA Channel Group 1 Interrupt Status Register (write one to clear) */
-#define	USB_DMA1_INT_STATUS									MMIO32(USB_BASE + 0x190)
-#define	USB_DMA1_INT_STATUS_SOURCES							GENMASK(1, 0)
-#define	USB_DMA1_INT_STATUS_SOURCES_SHIFT					0
+#define	USB_DMA1_INT_STATUS										MMIO32(USB_BASE + 0x190)
+#define	USB_DMA1_INT_STATUS_SOURCES								GENMASK(1, 0)
+#define	USB_DMA1_INT_STATUS_SOURCES_SHIFT						0
 
 /* DMA Channel Group 1 Interrupt Enable Register */
-#define	USB_DMA1_INT_ENABLE									MMIO32(USB_BASE + 0x194)
-#define	USB_DMA1_INT_ENABLE_SOURCES							GENMASK(1, 0)
-#define	USB_DMA1_INT_ENABLE_SOURCES_SHIFT					0
+#define	USB_DMA1_INT_ENABLE										MMIO32(USB_BASE + 0x194)
+#define	USB_DMA1_INT_ENABLE_SOURCES								GENMASK(1, 0)
+#define	USB_DMA1_INT_ENABLE_SOURCES_SHIFT						0
 
 /* USB Event Interrupt Status Register (write one to clear) */
-#define	USB_EVENT_INT_STATUS								MMIO32(USB_BASE + 0x198)
-#define	USB_EVENT_INT_STATUS_WAKEUP_DONE					BIT(0)									 // Remote wakeup signalling finished
-#define	USB_EVENT_INT_STATUS_SUSPEND						BIT(1)									 // Bus idle for 3 ms
-#define	USB_EVENT_INT_STATUS_IDLE							BIT(2)									 // Bus idle for 5 ms (2 ms after SUSPEND)
-#define	USB_EVENT_INT_STATUS_RESET							BIT(3)									 // Bus reset (SE0) detected
-#define	USB_EVENT_INT_STATUS_RESUME							BIT(4)									 // Resume signalling from the host
-#define	USB_EVENT_INT_STATUS_SETUP							BIT(5)									 // SETUP packet received
-#define	USB_EVENT_INT_STATUS_EP_B_LOW						BIT(6)									 // Group B event of endpoints 0-7
-#define	USB_EVENT_INT_STATUS_EP_B_HIGH						BIT(7)									 // Group B event of endpoints 8-10
+#define	USB_EVENT_INT_STATUS									MMIO32(USB_BASE + 0x198)
+#define	USB_EVENT_INT_STATUS_WAKEUP_DONE						BIT(0)									 // Remote wakeup signalling finished
+#define	USB_EVENT_INT_STATUS_SUSPEND							BIT(1)									 // Bus idle for 3 ms
+#define	USB_EVENT_INT_STATUS_IDLE								BIT(2)									 // Bus idle for 5 ms (2 ms after SUSPEND)
+#define	USB_EVENT_INT_STATUS_RESET								BIT(3)									 // Bus reset (SE0) detected
+#define	USB_EVENT_INT_STATUS_RESUME								BIT(4)									 // Resume signalling from the host
+#define	USB_EVENT_INT_STATUS_SETUP								BIT(5)									 // SETUP packet received
+#define	USB_EVENT_INT_STATUS_EP_DONE_LOW						BIT(6)									 // Transfer done event of endpoints 0-7
+#define	USB_EVENT_INT_STATUS_EP_DONE_HIGH						BIT(7)									 // Transfer done event of endpoints 8-10
 
 /* USB Event Interrupt Enable Register (gates GLOBAL_INT_STATUS.EVENT) */
-#define	USB_EVENT_INT_ENABLE								MMIO32(USB_BASE + 0x19C)
-#define	USB_EVENT_INT_ENABLE_WAKEUP_DONE					BIT(0)									 // Remote wakeup signalling finished
-#define	USB_EVENT_INT_ENABLE_SUSPEND						BIT(1)									 // Bus idle for 3 ms
-#define	USB_EVENT_INT_ENABLE_IDLE							BIT(2)									 // Bus idle for 5 ms (2 ms after SUSPEND)
-#define	USB_EVENT_INT_ENABLE_RESET							BIT(3)									 // Bus reset (SE0) detected
-#define	USB_EVENT_INT_ENABLE_RESUME							BIT(4)									 // Resume signalling from the host
-#define	USB_EVENT_INT_ENABLE_SETUP							BIT(5)									 // SETUP packet received
-#define	USB_EVENT_INT_ENABLE_EP_B_LOW						BIT(6)									 // Group B event of endpoints 0-7
-#define	USB_EVENT_INT_ENABLE_EP_B_HIGH						BIT(7)									 // Group B event of endpoints 8-10
+#define	USB_EVENT_INT_ENABLE									MMIO32(USB_BASE + 0x19C)
+#define	USB_EVENT_INT_ENABLE_WAKEUP_DONE						BIT(0)									 // Remote wakeup signalling finished
+#define	USB_EVENT_INT_ENABLE_SUSPEND							BIT(1)									 // Bus idle for 3 ms
+#define	USB_EVENT_INT_ENABLE_IDLE								BIT(2)									 // Bus idle for 5 ms (2 ms after SUSPEND)
+#define	USB_EVENT_INT_ENABLE_RESET								BIT(3)									 // Bus reset (SE0) detected
+#define	USB_EVENT_INT_ENABLE_RESUME								BIT(4)									 // Resume signalling from the host
+#define	USB_EVENT_INT_ENABLE_SETUP								BIT(5)									 // SETUP packet received
+#define	USB_EVENT_INT_ENABLE_EP_DONE_LOW						BIT(6)									 // Transfer done event of endpoints 0-7
+#define	USB_EVENT_INT_ENABLE_EP_DONE_HIGH						BIT(7)									 // Transfer done event of endpoints 8-10
 
-/* Endpoint Interrupt Group A Status Register, endpoints 0-7 (write one to clear) */
-#define	USB_EP_A_INT_STATUS_LOW								MMIO32(USB_BASE + 0x1A0)
-#define	USB_EP_A_INT_STATUS_LOW_ENDPOINTS					GENMASK(7, 0)							 // Bit n reports endpoint n
-#define	USB_EP_A_INT_STATUS_LOW_ENDPOINTS_SHIFT				0
+/* Endpoint FIFO Ready Status Register, endpoints 0-7 (write one to clear) */
+#define	USB_EP_READY_INT_STATUS_LOW								MMIO32(USB_BASE + 0x1A0)
+#define	USB_EP_READY_INT_STATUS_LOW_ENDPOINTS					GENMASK(7, 0)							 // Bit n reports endpoint n
+#define	USB_EP_READY_INT_STATUS_LOW_ENDPOINTS_SHIFT				0
 
-/* Endpoint Interrupt Group A Enable Register, endpoints 0-7 */
-#define	USB_EP_A_INT_ENABLE_LOW								MMIO32(USB_BASE + 0x1A4)
-#define	USB_EP_A_INT_ENABLE_LOW_ENDPOINTS					GENMASK(7, 0)							 // Bit n enables endpoint n
-#define	USB_EP_A_INT_ENABLE_LOW_ENDPOINTS_SHIFT				0
+/* Endpoint FIFO Ready Enable Register, endpoints 0-7 */
+#define	USB_EP_READY_INT_ENABLE_LOW								MMIO32(USB_BASE + 0x1A4)
+#define	USB_EP_READY_INT_ENABLE_LOW_ENDPOINTS					GENMASK(7, 0)							 // Bit n enables endpoint n
+#define	USB_EP_READY_INT_ENABLE_LOW_ENDPOINTS_SHIFT				0
 
-/* Endpoint Interrupt Group A Status Register, endpoints 8-10 (write one to clear) */
-#define	USB_EP_A_INT_STATUS_HIGH							MMIO32(USB_BASE + 0x1A8)
-#define	USB_EP_A_INT_STATUS_HIGH_ENDPOINTS					GENMASK(2, 0)							 // Bit n reports endpoint n + 8
-#define	USB_EP_A_INT_STATUS_HIGH_ENDPOINTS_SHIFT			0
+/* Endpoint FIFO Ready Status Register, endpoints 8-10 (write one to clear) */
+#define	USB_EP_READY_INT_STATUS_HIGH							MMIO32(USB_BASE + 0x1A8)
+#define	USB_EP_READY_INT_STATUS_HIGH_ENDPOINTS					GENMASK(2, 0)							 // Bit n reports endpoint n + 8
+#define	USB_EP_READY_INT_STATUS_HIGH_ENDPOINTS_SHIFT			0
 
-/* Endpoint Interrupt Group A Enable Register, endpoints 8-10 */
-#define	USB_EP_A_INT_ENABLE_HIGH							MMIO32(USB_BASE + 0x1AC)
-#define	USB_EP_A_INT_ENABLE_HIGH_ENDPOINTS					GENMASK(2, 0)							 // Bit n enables endpoint n + 8
-#define	USB_EP_A_INT_ENABLE_HIGH_ENDPOINTS_SHIFT			0
+/* Endpoint FIFO Ready Enable Register, endpoints 8-10 */
+#define	USB_EP_READY_INT_ENABLE_HIGH							MMIO32(USB_BASE + 0x1AC)
+#define	USB_EP_READY_INT_ENABLE_HIGH_ENDPOINTS					GENMASK(2, 0)							 // Bit n enables endpoint n + 8
+#define	USB_EP_READY_INT_ENABLE_HIGH_ENDPOINTS_SHIFT			0
 
-/* Endpoint Interrupt Group B Status Register, endpoints 0-7 (write one to clear) */
-#define	USB_EP_B_INT_STATUS_LOW								MMIO32(USB_BASE + 0x1B0)
-#define	USB_EP_B_INT_STATUS_LOW_ENDPOINTS					GENMASK(7, 0)							 // Bit n reports endpoint n
-#define	USB_EP_B_INT_STATUS_LOW_ENDPOINTS_SHIFT				0
+/* Endpoint Transfer Done Status Register, endpoints 0-7 (write one to clear) */
+#define	USB_EP_DONE_INT_STATUS_LOW								MMIO32(USB_BASE + 0x1B0)
+#define	USB_EP_DONE_INT_STATUS_LOW_ENDPOINTS					GENMASK(7, 0)							 // Bit n reports endpoint n
+#define	USB_EP_DONE_INT_STATUS_LOW_ENDPOINTS_SHIFT				0
 
-/* Endpoint Interrupt Group B Enable Register, endpoints 0-7 */
-#define	USB_EP_B_INT_ENABLE_LOW								MMIO32(USB_BASE + 0x1B4)
-#define	USB_EP_B_INT_ENABLE_LOW_ENDPOINTS					GENMASK(7, 0)							 // Bit n enables endpoint n
-#define	USB_EP_B_INT_ENABLE_LOW_ENDPOINTS_SHIFT				0
+/* Endpoint Transfer Done Enable Register, endpoints 0-7 */
+#define	USB_EP_DONE_INT_ENABLE_LOW								MMIO32(USB_BASE + 0x1B4)
+#define	USB_EP_DONE_INT_ENABLE_LOW_ENDPOINTS					GENMASK(7, 0)							 // Bit n enables endpoint n
+#define	USB_EP_DONE_INT_ENABLE_LOW_ENDPOINTS_SHIFT				0
 
-/* Endpoint Interrupt Group B Status Register, endpoints 8-10 (write one to clear) */
-#define	USB_EP_B_INT_STATUS_HIGH							MMIO32(USB_BASE + 0x1B8)
-#define	USB_EP_B_INT_STATUS_HIGH_ENDPOINTS					GENMASK(2, 0)							 // Bit n reports endpoint n + 8
-#define	USB_EP_B_INT_STATUS_HIGH_ENDPOINTS_SHIFT			0
+/* Endpoint Transfer Done Status Register, endpoints 8-10 (write one to clear) */
+#define	USB_EP_DONE_INT_STATUS_HIGH								MMIO32(USB_BASE + 0x1B8)
+#define	USB_EP_DONE_INT_STATUS_HIGH_ENDPOINTS					GENMASK(2, 0)							 // Bit n reports endpoint n + 8
+#define	USB_EP_DONE_INT_STATUS_HIGH_ENDPOINTS_SHIFT				0
 
-/* Endpoint Interrupt Group B Enable Register, endpoints 8-10 */
-#define	USB_EP_B_INT_ENABLE_HIGH							MMIO32(USB_BASE + 0x1BC)
-#define	USB_EP_B_INT_ENABLE_HIGH_ENDPOINTS					GENMASK(2, 0)							 // Bit n enables endpoint n + 8
-#define	USB_EP_B_INT_ENABLE_HIGH_ENDPOINTS_SHIFT			0
+/* Endpoint Transfer Done Enable Register, endpoints 8-10 */
+#define	USB_EP_DONE_INT_ENABLE_HIGH								MMIO32(USB_BASE + 0x1BC)
+#define	USB_EP_DONE_INT_ENABLE_HIGH_ENDPOINTS					GENMASK(2, 0)							 // Bit n enables endpoint n + 8
+#define	USB_EP_DONE_INT_ENABLE_HIGH_ENDPOINTS_SHIFT				0
 
 /* Endpoint FIFO Data Register, one byte per access; slot as EP_CONFIG */
-#define	USB_EP_DATA(n)										MMIO32(USB_BASE + 0x1C0 + ((n) * 0x10))
-#define	USB_EP_DATA_DATA									GENMASK(7, 0)							 // FIFO byte
-#define	USB_EP_DATA_DATA_SHIFT								0
+#define	USB_EP_DATA(n)											MMIO32(USB_BASE + 0x1C0 + ((n) * 0x10))
+#define	USB_EP_DATA_DATA										GENMASK(7, 0)							 // FIFO byte
+#define	USB_EP_DATA_DATA_SHIFT									0
 
 /* Endpoint FIFO Control Register; slot as EP_CONFIG */
-#define	USB_EP_CONTROL(n)									MMIO32(USB_BASE + 0x1C4 + ((n) * 0x10))
-#define	USB_EP_CONTROL_FLUSH								BIT(0)									 // Discard the FIFO contents (self-clearing)
-#define	USB_EP_CONTROL_ARM									BIT(1)									 // Hand the buffer to the SIE (self-clearing)
-#define	USB_EP_CONTROL_COMMIT								BIT(3)									 // IN: end the packet before it reaches the maximum packet size
-#define	USB_EP_CONTROL_IN_ENABLE							BIT(6)									 // Enable the IN data path
-#define	USB_EP_CONTROL_OUT_ENABLE							BIT(7)									 // Enable the OUT data path
+#define	USB_EP_CONTROL(n)										MMIO32(USB_BASE + 0x1C4 + ((n) * 0x10))
+#define	USB_EP_CONTROL_FLUSH									BIT(0)									 // Discard the FIFO contents (self-clearing)
+#define	USB_EP_CONTROL_ARM										BIT(1)									 // Hand the buffer to the SIE (self-clearing)
+#define	USB_EP_CONTROL_COMMIT									BIT(3)									 // IN: end the packet before it reaches the maximum packet size
+#define	USB_EP_CONTROL_IN_ENABLE								BIT(6)									 // Enable the IN data path
+#define	USB_EP_CONTROL_OUT_ENABLE								BIT(7)									 // Enable the OUT data path
 
 /* Endpoint FIFO Byte Count Low Register; IN: free bytes, OUT: received bytes */
-#define	USB_EP_COUNT_LOW(n)									MMIO32(USB_BASE + 0x1C8 + ((n) * 0x10))
-#define	USB_EP_COUNT_LOW_VALUE								GENMASK(7, 0)							 // Byte count bits 7:0
-#define	USB_EP_COUNT_LOW_VALUE_SHIFT						0
+#define	USB_EP_COUNT_LOW(n)										MMIO32(USB_BASE + 0x1C8 + ((n) * 0x10))
+#define	USB_EP_COUNT_LOW_VALUE									GENMASK(7, 0)							 // Byte count bits 7:0
+#define	USB_EP_COUNT_LOW_VALUE_SHIFT							0
 
 /* Endpoint FIFO Byte Count High Register */
-#define	USB_EP_COUNT_HIGH(n)								MMIO32(USB_BASE + 0x1CC + ((n) * 0x10))
-#define	USB_EP_COUNT_HIGH_VALUE								GENMASK(2, 0)							 // Byte count bits 10:8
-#define	USB_EP_COUNT_HIGH_VALUE_SHIFT						0
-#define	USB_EP_COUNT_HIGH_ARMED								BIT(3)									 // OUT FIFO armed
-#define	USB_EP_COUNT_HIGH_LOW_LEVEL							BIT(4)									 // FIFO used <= 1/4
-#define	USB_EP_COUNT_HIGH_HIGH_LEVEL						BIT(5)									 // FIFO used >= 3/4
-#define	USB_EP_COUNT_HIGH_EMPTY								BIT(6)									 // FIFO holds no data
-#define	USB_EP_COUNT_HIGH_FULL								BIT(7)									 // FIFO has no free space
+#define	USB_EP_COUNT_HIGH(n)									MMIO32(USB_BASE + 0x1CC + ((n) * 0x10))
+#define	USB_EP_COUNT_HIGH_VALUE									GENMASK(2, 0)							 // Byte count bits 10:8
+#define	USB_EP_COUNT_HIGH_VALUE_SHIFT							0
+#define	USB_EP_COUNT_HIGH_ARMED									BIT(3)									 // OUT FIFO armed
+#define	USB_EP_COUNT_HIGH_LOW_LEVEL								BIT(4)									 // FIFO used <= 1/4
+#define	USB_EP_COUNT_HIGH_HIGH_LEVEL							BIT(5)									 // FIFO used >= 3/4
+#define	USB_EP_COUNT_HIGH_EMPTY									BIT(6)									 // FIFO holds no data
+#define	USB_EP_COUNT_HIGH_FULL									BIT(7)									 // FIFO has no free space
 
 /* USB PHY Control and Status Register */
-#define	USB_PHY_CONTROL										MMIO32(USB_BASE + 0x2FC)
-#define	USB_PHY_CONTROL_SUSPEND								BIT(0)									 // Bus idle for 3 ms (read-only)
-#define	USB_PHY_CONTROL_WAKEUP_END							BIT(1)									 // Set when remote wakeup K starts (sticky)
-#define	USB_PHY_CONTROL_LINE_STATE							GENMASK(3, 2)							 // Received bus state (read-only)
-#define	USB_PHY_CONTROL_LINE_STATE_SHIFT					2
-#define	USB_PHY_CONTROL_LINE_STATE_SE0						0x0
-#define	USB_PHY_CONTROL_LINE_STATE_J						0x4
-#define	USB_PHY_CONTROL_LINE_STATE_K						0x8
-#define	USB_PHY_CONTROL_RESUME								BIT(5)									 // Drive remote wakeup K after 5 ms of bus idle
+#define	USB_PHY_CONTROL											MMIO32(USB_BASE + 0x2FC)
+#define	USB_PHY_CONTROL_SUSPEND									BIT(0)									 // Bus idle for 3 ms (read-only)
+#define	USB_PHY_CONTROL_WAKEUP_STARTED							BIT(1)									 // Set when remote wakeup K starts (sticky)
+#define	USB_PHY_CONTROL_LINE_STATE								GENMASK(3, 2)							 // Received bus state (read-only)
+#define	USB_PHY_CONTROL_LINE_STATE_SHIFT						2
+#define	USB_PHY_CONTROL_LINE_STATE_SE0							0x0
+#define	USB_PHY_CONTROL_LINE_STATE_J							0x4
+#define	USB_PHY_CONTROL_LINE_STATE_K							0x8
+#define	USB_PHY_CONTROL_RESUME									BIT(5)									 // Drive remote wakeup K after 5 ms of bus idle
 
 /* Endpoint FIFO Start Register, endpoints 0-10 */
-#define	USB_EP_FIFO_START(n)								MMIO32(USB_BASE + 0x300 + ((n) * 0x8))
-#define	USB_EP_FIFO_START_START								GENMASK(7, 0)							 // FIFO start in buffer RAM
-#define	USB_EP_FIFO_START_START_SHIFT						0
+#define	USB_EP_FIFO_START(n)									MMIO32(USB_BASE + 0x300 + ((n) * 0x8))
+#define	USB_EP_FIFO_START_START									GENMASK(7, 0)							 // FIFO start in buffer RAM
+#define	USB_EP_FIFO_START_START_SHIFT							0
 
 /* Endpoint FIFO Size Register, endpoints 0-10 */
-#define	USB_EP_FIFO_SIZE(n)									MMIO32(USB_BASE + 0x304 + ((n) * 0x8))
-#define	USB_EP_FIFO_SIZE_SIZE								GENMASK(6, 4)							 // FIFO size 16 << SIZE bytes; 0 = no FIFO
-#define	USB_EP_FIFO_SIZE_SIZE_SHIFT							4
+#define	USB_EP_FIFO_SIZE(n)										MMIO32(USB_BASE + 0x304 + ((n) * 0x8))
+#define	USB_EP_FIFO_SIZE_SIZE									GENMASK(6, 4)							 // FIFO size 16 << SIZE bytes; 0 = no FIFO
+#define	USB_EP_FIFO_SIZE_SIZE_SHIFT								4
 
 /* USB Frame Number Register */
-#define	USB_FRAME_NUMBER									MMIO32(USB_BASE + 0x400)
-#define	USB_FRAME_NUMBER_VALUE								GENMASK(10, 0)							 // Frame number
-#define	USB_FRAME_NUMBER_VALUE_SHIFT						0
+#define	USB_FRAME_NUMBER										MMIO32(USB_BASE + 0x400)
+#define	USB_FRAME_NUMBER_VALUE									GENMASK(10, 0)							 // Frame number
+#define	USB_FRAME_NUMBER_VALUE_SHIFT							0
 
 /* Packed GLOBAL and EVENT Interrupt Status Register (write one to clear) */
-#define	USB_GLOBAL_EVENT_INT_STATUS							MMIO32(USB_BASE + 0x40C)
-#define	USB_GLOBAL_EVENT_INT_STATUS_GLOBAL					GENMASK(7, 0)							 // GLOBAL_INT_STATUS
-#define	USB_GLOBAL_EVENT_INT_STATUS_GLOBAL_SHIFT			0
-#define	USB_GLOBAL_EVENT_INT_STATUS_EVENT					GENMASK(15, 8)							 // EVENT_INT_STATUS
-#define	USB_GLOBAL_EVENT_INT_STATUS_EVENT_SHIFT				8
+#define	USB_GLOBAL_EVENT_INT_STATUS								MMIO32(USB_BASE + 0x40C)
+#define	USB_GLOBAL_EVENT_INT_STATUS_GLOBAL						GENMASK(7, 0)							 // GLOBAL_INT_STATUS
+#define	USB_GLOBAL_EVENT_INT_STATUS_GLOBAL_SHIFT				0
+#define	USB_GLOBAL_EVENT_INT_STATUS_EVENT						GENMASK(15, 8)							 // EVENT_INT_STATUS
+#define	USB_GLOBAL_EVENT_INT_STATUS_EVENT_SHIFT					8
 
-/* Packed DMA and Endpoint Group A Interrupt Status Register */
-#define	USB_DMA_EP_A_INT_STATUS								MMIO32(USB_BASE + 0x410)
-#define	USB_DMA_EP_A_INT_STATUS_EP_A_LOW					GENMASK(23, 16)							 // EP_A_INT_STATUS_LOW
-#define	USB_DMA_EP_A_INT_STATUS_EP_A_LOW_SHIFT				16
+/* Packed DMA and Endpoint FIFO Ready Status Register */
+#define	USB_DMA_EP_READY_INT_STATUS								MMIO32(USB_BASE + 0x410)
+#define	USB_DMA_EP_READY_INT_STATUS_EP_READY_LOW				GENMASK(23, 16)							 // EP_READY_INT_STATUS_LOW
+#define	USB_DMA_EP_READY_INT_STATUS_EP_READY_LOW_SHIFT			16
 
-/* Packed GLOBAL, EVENT and Endpoint Group B Interrupt Enable Register */
-#define	USB_GLOBAL_EVENT_EP_B_INT_ENABLE					MMIO32(USB_BASE + 0x414)
-#define	USB_GLOBAL_EVENT_EP_B_INT_ENABLE_GLOBAL				GENMASK(7, 0)							 // GLOBAL_INT_ENABLE
-#define	USB_GLOBAL_EVENT_EP_B_INT_ENABLE_GLOBAL_SHIFT		0
-#define	USB_GLOBAL_EVENT_EP_B_INT_ENABLE_EVENT				GENMASK(15, 8)							 // EVENT_INT_ENABLE
-#define	USB_GLOBAL_EVENT_EP_B_INT_ENABLE_EVENT_SHIFT		8
-#define	USB_GLOBAL_EVENT_EP_B_INT_ENABLE_EP_B_LOW			GENMASK(23, 16)							 // EP_B_INT_ENABLE_LOW
-#define	USB_GLOBAL_EVENT_EP_B_INT_ENABLE_EP_B_LOW_SHIFT		16
-#define	USB_GLOBAL_EVENT_EP_B_INT_ENABLE_EP_B_HIGH			GENMASK(26, 24)							 // EP_B_INT_ENABLE_HIGH
-#define	USB_GLOBAL_EVENT_EP_B_INT_ENABLE_EP_B_HIGH_SHIFT	24
+/* Packed GLOBAL, EVENT and Endpoint Transfer Done Enable Register */
+#define	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE						MMIO32(USB_BASE + 0x414)
+#define	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE_GLOBAL				GENMASK(7, 0)							 // GLOBAL_INT_ENABLE
+#define	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE_GLOBAL_SHIFT		0
+#define	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE_EVENT				GENMASK(15, 8)							 // EVENT_INT_ENABLE
+#define	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE_EVENT_SHIFT			8
+#define	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE_EP_DONE_LOW			GENMASK(23, 16)							 // EP_DONE_INT_ENABLE_LOW
+#define	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE_EP_DONE_LOW_SHIFT	16
+#define	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE_EP_DONE_HIGH		GENMASK(26, 24)							 // EP_DONE_INT_ENABLE_HIGH
+#define	USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE_EP_DONE_HIGH_SHIFT	24
 
-/* Packed DMA and Endpoint Group A Interrupt Enable Register */
-#define	USB_DMA_EP_A_INT_ENABLE								MMIO32(USB_BASE + 0x418)
-#define	USB_DMA_EP_A_INT_ENABLE_DMA0						GENMASK(7, 0)							 // DMA0_INT_ENABLE
-#define	USB_DMA_EP_A_INT_ENABLE_DMA0_SHIFT					0
-#define	USB_DMA_EP_A_INT_ENABLE_DMA1						GENMASK(9, 8)							 // DMA1_INT_ENABLE
-#define	USB_DMA_EP_A_INT_ENABLE_DMA1_SHIFT					8
-#define	USB_DMA_EP_A_INT_ENABLE_EP_A_LOW					GENMASK(23, 16)							 // EP_A_INT_ENABLE_LOW
-#define	USB_DMA_EP_A_INT_ENABLE_EP_A_LOW_SHIFT				16
-#define	USB_DMA_EP_A_INT_ENABLE_EP_A_HIGH					GENMASK(26, 24)							 // EP_A_INT_ENABLE_HIGH
-#define	USB_DMA_EP_A_INT_ENABLE_EP_A_HIGH_SHIFT				24
+/* Packed DMA and Endpoint FIFO Ready Enable Register */
+#define	USB_DMA_EP_READY_INT_ENABLE								MMIO32(USB_BASE + 0x418)
+#define	USB_DMA_EP_READY_INT_ENABLE_DMA0						GENMASK(7, 0)							 // DMA0_INT_ENABLE
+#define	USB_DMA_EP_READY_INT_ENABLE_DMA0_SHIFT					0
+#define	USB_DMA_EP_READY_INT_ENABLE_DMA1						GENMASK(9, 8)							 // DMA1_INT_ENABLE
+#define	USB_DMA_EP_READY_INT_ENABLE_DMA1_SHIFT					8
+#define	USB_DMA_EP_READY_INT_ENABLE_EP_READY_LOW				GENMASK(23, 16)							 // EP_READY_INT_ENABLE_LOW
+#define	USB_DMA_EP_READY_INT_ENABLE_EP_READY_LOW_SHIFT			16
+#define	USB_DMA_EP_READY_INT_ENABLE_EP_READY_HIGH				GENMASK(26, 24)							 // EP_READY_INT_ENABLE_HIGH
+#define	USB_DMA_EP_READY_INT_ENABLE_EP_READY_HIGH_SHIFT			24
 
 /* Packed EP0 FIFO Byte Count Register */
-#define	USB_EP0_COUNT										MMIO32(USB_BASE + 0x41C)
-#define	USB_EP0_COUNT_OUT									GENMASK(15, 0)							 // EP_COUNT_HIGH(0) and EP_COUNT_LOW(0)
-#define	USB_EP0_COUNT_OUT_SHIFT								0
-#define	USB_EP0_COUNT_IN									GENMASK(31, 16)							 // EP_COUNT_HIGH(1) and EP_COUNT_LOW(1)
-#define	USB_EP0_COUNT_IN_SHIFT								16
+#define	USB_EP0_COUNT											MMIO32(USB_BASE + 0x41C)
+#define	USB_EP0_COUNT_OUT										GENMASK(15, 0)							 // EP_COUNT_HIGH(0) and EP_COUNT_LOW(0)
+#define	USB_EP0_COUNT_OUT_SHIFT									0
+#define	USB_EP0_COUNT_IN										GENMASK(31, 16)							 // EP_COUNT_HIGH(1) and EP_COUNT_LOW(1)
+#define	USB_EP0_COUNT_IN_SHIFT									16
 
 /* Packed FIFO Byte Count Register, endpoints 1-10 */
-#define	USB_EP_COUNT(n)										MMIO32(USB_BASE + 0x420 + ((n) * 0x4))
-#define	USB_EP_COUNT_VALUE									GENMASK(15, 0)							 // EP_COUNT_HIGH and EP_COUNT_LOW of the endpoint
-#define	USB_EP_COUNT_VALUE_SHIFT							0
+#define	USB_EP_COUNT(n)											MMIO32(USB_BASE + 0x420 + ((n) * 0x4))
+#define	USB_EP_COUNT_VALUE										GENMASK(15, 0)							 // EP_COUNT_HIGH and EP_COUNT_LOW of the endpoint
+#define	USB_EP_COUNT_VALUE_SHIFT								0
 
 /* Clock Control Register */
-#define	USB_CLC												MMIO32(USB_BASE + 0x800)
+#define	USB_CLC													MMIO32(USB_BASE + 0x800)
 
 /* Wrapper Configuration Register */
-#define	USB_CFG												MMIO32(USB_BASE + 0x804)
-#define	USB_CFG_PHY_ENABLE									BIT(0)									 // Enable the transceiver; SE0 while the core is enabled signals a bus reset
-#define	USB_CFG_DRIVE_ENABLE								BIT(1)									 // Allow the device to drive K; reads 0 and has no effect on PMB8875, which always drives K
+#define	USB_CFG													MMIO32(USB_BASE + 0x804)
+#define	USB_CFG_PHY_ENABLE										BIT(0)									 // Enable the transceiver; SE0 while the core is enabled signals a bus reset
+#define	USB_CFG_DRIVE_ENABLE									BIT(1)									 // Allow the device to drive K; reads 0 and has no effect on PMB8875, which always drives K
 
 /* Module Identifier Register */
-#define	USB_ID												MMIO32(USB_BASE + 0x808)
+#define	USB_ID													MMIO32(USB_BASE + 0x808)
 
 
 // VIC [MOD_NUM=0031, MOD_REV=01, MOD_32BIT=C0]
