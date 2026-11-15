@@ -470,6 +470,9 @@ devices = ["generic-pmb8876"]
 [usb]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[usb-clock]
+devices = ["generic-pmb8875", "generic-pmb8876"]
+
 [i2c-v1]
 devices = ["siemens-cx75"]
 
