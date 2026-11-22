@@ -3,4 +3,4 @@ set -e
 set -x
 cmake -B build -DBOARD=$BOARD
 cmake --build build
-exec ../../boot.py build/app.bin "$@"
+exec ../../boot.sh build/app.bin "$@"

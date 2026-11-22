@@ -1,10 +1,11 @@
 packages:
   - unit
   - e2e
+  - host
 
 allowBuilds:
-  '@sie-js/node-serialport-bindings-cpp': true
+  usb: true
   esbuild: true
 
 minimumReleaseAgeExclude:
-  - '@sie-js/serial@1.8.0'
+  - '@sie-js/serial@1.9.1'

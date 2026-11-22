@@ -7,11 +7,13 @@ cd "$(dirname "$0")"
 test_name="$1"
 serial="$2"
 
+marker=../node_modules/.modules.yaml
+if [[ ! -f $marker || ../pnpm-lock.yaml -nt $marker ]]; then
+	pnpm --dir .. install --frozen-lockfile --prefer-offline
+	touch "$marker"
+fi
+
 if [[ -f $test_name/$test_name.ts ]]; then
-	marker=../node_modules/.modules.yaml
-	if [[ ! -f $marker || ../pnpm-lock.yaml -nt $marker ]]; then
-		pnpm --dir .. install --frozen-lockfile --prefer-offline
-	fi
 	command=(node_modules/.bin/tsx "$test_name/$test_name.ts")
 elif [[ -f $test_name/$test_name.py ]]; then
 	command=(python3 -u "$test_name/$test_name.py")
@@ -21,7 +23,8 @@ else
 fi
 
 if [[ -z $serial ]]; then
-	serial=$(python3 -c 'import sys; sys.path.insert(0, ".."); import boot; print(boot.autodetect_device())')
+	serial=$(node --import tsx --input-type=module -e \
+		'const { findSerialAdapter } = await import("../host/src/serial.ts"); console.log((await findSerialAdapter()).path);')
 fi
 
 status=0

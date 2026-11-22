@@ -2,4 +2,4 @@
 set -e
 cd "$(dirname "$0")"
 ./build.sh
-exec ../boot.py "$@"
+exec ../boot.sh "$@"

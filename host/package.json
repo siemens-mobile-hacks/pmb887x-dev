@@ -1,0 +1,27 @@
+{
+	"name": "pmb887x-bsp-host",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=20.11"
+	},
+	"scripts": {
+		"boot": "node boot.js",
+		"typecheck": "tsc"
+	},
+	"dependencies": {
+		"@sie-js/serial": "^1.9.1",
+		"commander": "^15.1.0",
+		"lz4js": "^0.2.0",
+		"serialport-bindings-socket": "^1.0.4",
+		"serialport-bindings-webusb": "^0.2.0",
+		"serialport-rs": "^0.7.3",
+		"tsx": "^4.23.15",
+		"usb": "^2.19.1"
+	},
+	"devDependencies": {
+		"@types/lz4js": "^0.2.2",
+		"@types/node": "^26.6.3",
+		"typescript": "^7.0.2"
+	}
+}

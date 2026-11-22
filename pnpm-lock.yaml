@@ -169,8 +169,8 @@ importers:
   e2e:
     dependencies:
       '@sie-js/serial':
-        specifier: ^1.8.0
-        version: 1.8.0(debug@4.4.3)
+        specifier: ^1.9.1
+        version: 1.9.1(debug@4.4.3)
       undici:
         specifier: ^8.12.4
         version: 8.12.4
@@ -181,6 +181,43 @@ importers:
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  host:
+    dependencies:
+      '@sie-js/serial':
+        specifier: ^1.9.1
+        version: 1.9.1(debug@4.4.3)
+      commander:
+        specifier: ^15.1.0
+        version: 15.1.0
+      lz4js:
+        specifier: ^0.2.0
+        version: 0.2.0
+      serialport-bindings-socket:
+        specifier: ^1.0.4
+        version: 1.0.4
+      serialport-bindings-webusb:
+        specifier: ^0.2.0
+        version: 0.2.0(@serialport/bindings-interface@1.2.2)(usb@2.19.1)
+      serialport-rs:
+        specifier: ^0.7.3
+        version: 0.7.3
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+      usb:
+        specifier: ^2.19.1
+        version: 2.19.1
+    devDependencies:
+      '@types/lz4js':
+        specifier: ^0.2.2
+        version: 0.2.2
+      '@types/node':
+        specifier: ^26.6.3
+        version: 26.6.6
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -349,25 +386,19 @@ packages:
     resolution: {integrity: sha512-CJaUd5bLvtM9c5dmO9rPBHPXTa9R2UwpkJ0wdh9JCYcbrPWsKz+ErvR0hBLeo7NPeiFdjFO4sonRljiw4d2XiA==}
     engines: {node: ^12.22 || ^14.13 || >=16}
 
-  '@serialport/parser-delimiter@13.0.0':
-    resolution: {integrity: sha512-Qqyb0FX1avs3XabQqNaZSivyVbl/yl0jywImp7ePvfZKLwx7jBZjvL+Hawt9wIG6tfq6zbFM24vzCCK7REMUig==}
-    engines: {node: '>=20.0.0'}
-
-  '@serialport/parser-readline@13.0.0':
-    resolution: {integrity: sha512-dov3zYoyf0dt1Sudd1q42VVYQ4WlliF0MYvAMA3MOyiU1IeG4hl0J6buBA2w4gl3DOCC05tGgLDN/3yIL81gsA==}
-    engines: {node: '>=20.0.0'}
-
-  '@sie-js/node-serialport-bindings-cpp@0.0.2':
-    resolution: {integrity: sha512-GJGMZjkHJD4ZRpRyZxQCuM0pJvTPC5E4wX1FIjzlfGwEblBDTJlleUD5WIrk9Z7EB1b8brvbCzkl5Yb/CJYZnw==}
-    engines: {node: '>=18.0.0'}
-
-  '@sie-js/serial@1.8.0':
-    resolution: {integrity: sha512-d9KznxzvWkaKdqadmQBPShx9y4p2mRceyVxWTvh2g5sMwvKzQNPIs8rwDPmE305NroRbpERhfsejp1UXXK4cdg==}
+  '@sie-js/serial@1.9.1':
+    resolution: {integrity: sha512-LhENlZPG1ZjLy5VIL2yXt33SKGfF3Oqp6yQkJvSRMpyGuR9CajZI8OM8V/BzrKIsBdsB3t65j5Qcr4KD5Ud/7w==}
     peerDependencies:
       debug: ^4.4.3
 
+  '@types/lz4js@0.2.2':
+    resolution: {integrity: sha512-pqXfoJ2AwllcLTf1Nia0+HT1KHj8z4wWo3bBP6vn7Aen5ySywBqrh/u1TyBwWxuKDS+mPzVHkPbHivqZEfk6pA==}
+
   '@types/node@26.6.6':
     resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
+
+  '@types/w3c-web-usb@1.0.14':
+    resolution: {integrity: sha512-Qu3Nn6JFuF4+sHKYl+IcX9vYiI40ogleXzFFSxoE1W94rG98o/kXs8uJ0QSfFzuwBCZWlGfUGpPkgwuuX4PchA==}
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
@@ -489,14 +520,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  debug@4.4.0:
-    resolution: {integrity: sha512-6WTZ/IxCY/T6BALoZHaE4ctp9xm+Z5kY/pzYaCHRFeyVhojxlrm+46y68HA6hr0TcwEssoxNiDEUJQjfPZ/RYA==}
-    engines: {node: '>=6.0'}
-    peerDependencies:
-      supports-color: '*'
-    peerDependenciesMeta:
-      supports-color:
-        optional: true
+  commander@15.1.0:
+    resolution: {integrity: sha512-cgnQ88TRrWcC7pVq46RzJVRMktu3W2RcbnoidnfBsl1bmDCBwJS/udcIZpKoCrbAYYaCqsz1yZCVIgbIaU3ddQ==}
+    engines: {node: '>=22.12.0'}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -517,16 +543,40 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
+  lz4js@0.2.0:
+    resolution: {integrity: sha512-gY2Ia9Lm7Ep8qMiuGRhvUq0Q7qUereeldZPP1PMEJxPtEWHJLqw9pgX68oHajBH0nzJK4MaZEA/YNV3jT8u8Bg==}
+
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  node-addon-api@8.3.0:
-    resolution: {integrity: sha512-8VOpLHFrOQlAH+qA0ZzuGRlALRA6/LVh8QJldbrC4DY0hXoMP0l4Acq8TzFC018HztWiRqyCEj2aTWY2UvnJUg==}
+  node-addon-api@8.9.2:
+    resolution: {integrity: sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==}
     engines: {node: ^18 || ^20 || >= 21}
 
   node-gyp-build@4.8.4:
     resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
     hasBin: true
+
+  serialport-bindings-socket@1.0.4:
+    resolution: {integrity: sha512-IsUwMFOIa7iNrqJz5KHesv94HlRejIhjAdz6any9s/YIJ7imxLyYPok2AzCslKbg9cY0kXLWE7og4hSTiitktw==}
+
+  serialport-bindings-webusb@0.2.0:
+    resolution: {integrity: sha512-4DuTntj/a7UbGx7uD0ve3WmdQLOlEicLm4lUaO9IxqCgD0X0fGgWcGYSKzsoroMQqP6smFpz4lVgYzS3ZeoJkw==}
+    engines: {node: '>=22.12.0'}
+    peerDependencies:
+      '@serialport/bindings-interface': ^1.2.2
+      usb: ^2.18.0
+    peerDependenciesMeta:
+      usb:
+        optional: true
+
+  serialport-rs@0.7.3:
+    resolution: {integrity: sha512-WY2jb83FvNqvj888Qsjq/DDtYf8z/bzyO2/kinzkjCBgzTHxqKkxy0vqz4wRjQYGzzEkgpI7VlkWpeHdheAkLw==}
+    engines: {node: '>=20'}
+
+  serialport-rs@1.0.0:
+    resolution: {integrity: sha512-hiPl5fDZAFCiCP/HMZhsuBvv1DP+6VtvmFpWjtukED8wj+XJpIwEFXLRs0M7K59G+hV1Wmbj+eNcuDAscuairw==}
+    engines: {node: '>=22 <27'}
 
   sprintf-js@1.1.3:
     resolution: {integrity: sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA==}
@@ -547,6 +597,10 @@ packages:
   undici@8.12.4:
     resolution: {integrity: sha512-8Mx+uNKKER2bA4AdtedkqRbwUCIJFr2nJckXRe5yrDqzePqwLP7VNcctN8/XdmDSbF7mS+jJKIszlL+vbam1VA==}
     engines: {node: '>=22.19.0'}
+
+  usb@2.19.1:
+    resolution: {integrity: sha512-fjVddzu00GFc1Z5fd5+zuZrqylsfuBbmKKygx3rbIS9w5Nh3ddGVWDHkPBQ/BbB3PVEp6kdsZfX9WXhlsRdPDQ==}
+    engines: {node: '>=12.22.0 <13.0 || >=14.17.0'}
 
 snapshots:
 
@@ -630,34 +684,20 @@ snapshots:
 
   '@serialport/bindings-interface@1.2.2': {}
 
-  '@serialport/parser-delimiter@13.0.0': {}
-
-  '@serialport/parser-readline@13.0.0':
-    dependencies:
-      '@serialport/parser-delimiter': 13.0.0
-
-  '@sie-js/node-serialport-bindings-cpp@0.0.2':
+  '@sie-js/serial@1.9.1(debug@4.4.3)':
     dependencies:
       '@serialport/bindings-interface': 1.2.2
-      '@serialport/parser-readline': 13.0.0
-      debug: 4.4.0
-      node-addon-api: 8.3.0
-      node-gyp-build: 4.8.4
-    transitivePeerDependencies:
-      - supports-color
-
-  '@sie-js/serial@1.8.0(debug@4.4.3)':
-    dependencies:
-      '@serialport/bindings-interface': 1.2.2
-      '@sie-js/node-serialport-bindings-cpp': 0.0.2
       debug: 4.4.3
+      serialport-rs: 1.0.0
       sprintf-js: 1.1.3
-    transitivePeerDependencies:
-      - supports-color
+
+  '@types/lz4js@0.2.2': {}
 
   '@types/node@26.6.6':
     dependencies:
       undici-types: 8.9.0
+
+  '@types/w3c-web-usb@1.0.14': {}
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     optional: true
@@ -719,9 +759,7 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
 
-  debug@4.4.0:
-    dependencies:
-      ms: 2.1.3
+  commander@15.1.0: {}
 
   debug@4.4.3:
     dependencies:
@@ -759,11 +797,29 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
+  lz4js@0.2.0: {}
+
   ms@2.1.3: {}
 
-  node-addon-api@8.3.0: {}
+  node-addon-api@8.9.2: {}
 
   node-gyp-build@4.8.4: {}
+
+  serialport-bindings-socket@1.0.4: {}
+
+  serialport-bindings-webusb@0.2.0(@serialport/bindings-interface@1.2.2)(usb@2.19.1):
+    dependencies:
+      '@serialport/bindings-interface': 1.2.2
+      '@types/w3c-web-usb': 1.0.14
+      debug: 4.4.3
+    optionalDependencies:
+      usb: 2.19.1
+    transitivePeerDependencies:
+      - supports-color
+
+  serialport-rs@0.7.3: {}
+
+  serialport-rs@1.0.0: {}
 
   sprintf-js@1.1.3: {}
 
@@ -799,3 +855,9 @@ snapshots:
   undici-types@8.9.0: {}
 
   undici@8.12.4: {}
+
+  usb@2.19.1:
+    dependencies:
+      '@types/w3c-web-usb': 1.0.14
+      node-addon-api: 8.9.2
+      node-gyp-build: 4.8.4

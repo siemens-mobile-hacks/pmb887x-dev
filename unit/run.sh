@@ -13,4 +13,4 @@ cmake_args=(-B "$build_dir" -DBOARD="$board" -DBOOT=extram -DTEST_COLOR="${TEST_
 cmake "${cmake_args[@]}"
 cmake --build "$build_dir" --target "$test_name"
 
-../boot.py "$build_dir/$test_name.bin" "$@" | awk -f tap-result.awk
+../boot.sh "$build_dir/$test_name.bin" "$@" | awk -f tap-result.awk

@@ -4,4 +4,4 @@ set -x
 cmake -B build -DBOARD=$BOARD
 cmake --build build
 # sie-tool boot -i build/app.bin --follow "$@"
-exec ../../boot.py build/app.bin "$@"
+exec ../../boot.sh build/app.bin "$@"
