@@ -1,6 +1,6 @@
 #include <pmb887x.h>
-#include <sdram.h>
 
+#include "sdram.h"
 #include "crc.h"
 #include "lz4.h"
 
