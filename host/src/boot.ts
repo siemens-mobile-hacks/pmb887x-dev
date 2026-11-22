@@ -7,13 +7,6 @@ import { DEFAULT_FORMAT, openPort, waitForUsbDevice } from "./serial.ts";
 import { formatHex } from "./utils.ts";
 
 const BOOT_SPEED = 115200;
-const EXTRAM_ADDRESS = 0xB0000000;
-const EXTRAM_SIZE = 0x02000000;
-
-const MEMORY_REGIONS = [
-	{ start: 0x00080000, end: 0x00098000 },
-	{ start: EXTRAM_ADDRESS, end: EXTRAM_ADDRESS + EXTRAM_SIZE },
-];
 
 export type BootOptions = {
 	payloadPath: string;
@@ -22,7 +15,6 @@ export type BootOptions = {
 	speed: number | undefined;
 	writeAddress: number | undefined;
 	execAddress: number | undefined;
-	ignition: boolean;
 };
 
 function resolvePayloadLayout(options: BootOptions, payload: Buffer) {
@@ -60,11 +52,6 @@ export async function boot(options: BootOptions) {
 	const layout = resolvePayloadLayout(options, payload);
 	const address = layout.writeAddress;
 	const writeAddress = formatHex(address, 8);
-	const region = MEMORY_REGIONS.find((region) => region.start <= address && address < region.end);
-	if (region === undefined)
-		throw new Error(`unsupported payload write address: 0x${writeAddress}`);
-	if (payload.length > region.end - address)
-		throw new Error(`payload does not fit at 0x${writeAddress}`);
 
 	if (options.devicePath.startsWith("webusb:")) {
 		console.error(`Waiting for USB device ${options.devicePath}...`);
@@ -74,8 +61,10 @@ export async function boot(options: BootOptions) {
 	try {
 		await port.flush();
 		console.error("Waiting for BootROM...");
-		const preloader = await Preloader.load(port, layout.platform, layout.cpu, options.ignition);
+		const preloader = await Preloader.load(port, layout.platform);
 		console.error(`CPU detected: ${preloader.cpu.toUpperCase()}${preloader.secureBoot ? " (secure boot)" : ""}`);
+		if (layout.cpu !== undefined && preloader.cpu != layout.cpu)
+			throw new Error("payload CPU does not match the connected phone");
 		if (options.speed !== undefined)
 			await preloader.setSpeed(options.speed);
 		await preloader.ping();

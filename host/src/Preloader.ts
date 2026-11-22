@@ -45,12 +45,10 @@ export class Preloader {
 		this.#port = port;
 	}
 
-	static async load(port: AsyncSerialPort, platform: Platform, payloadCpu: string | undefined, ignition: boolean) {
+	static async load(port: AsyncSerialPort, platform: Platform) {
 		const result = await loadBootCode(port, ({ cpu }) => {
-			if (payloadCpu !== undefined && cpu != payloadCpu)
-				throw new Error("payload CPU does not match the connected phone");
 			return readFileSync(join(PRELOADER_DIR, `preloader-${platform}-${cpu}.bin`));
-		}, { autoIgnition: ignition });
+		});
 		if (!result.success)
 			throw new Error(`BSL: ${result.error}`);
 		if (result.status != BSLStatus.SUCCESS)

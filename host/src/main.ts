@@ -15,7 +15,6 @@ type Options = {
 	speed: number;
 	writeAddr?: number;
 	execAddr?: number;
-	ign: boolean;
 };
 
 const program = new Command()
@@ -30,7 +29,6 @@ const program = new Command()
 		.conflicts("usb"))
 	.option("--write-addr <address>", "write address (default: from header)", parseAddressOption)
 	.option("--exec-addr <address>", "entry address (default: from header)", parseAddressOption)
-	.option("--no-ign", "disable DTR ignition")
 	.showHelpAfterError()
 	.parse();
 const options = program.opts<Options>();
@@ -51,7 +49,6 @@ try {
 		speed: options.usb ? undefined : options.speed,
 		writeAddress: options.writeAddr,
 		execAddress: options.execAddr,
-		ignition: options.ign,
 	});
 } catch (error) {
 	console.error(error instanceof Error ? error.message : String(error));
