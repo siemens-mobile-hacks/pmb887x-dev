@@ -11,8 +11,8 @@ const EXTRAM_ADDRESS = 0xB0000000;
 const EXTRAM_SIZE = 0x02000000;
 
 const MEMORY_REGIONS = [
-	{ start: 0x00080000, end: 0x00098000, initExtram: false },
-	{ start: EXTRAM_ADDRESS, end: EXTRAM_ADDRESS + EXTRAM_SIZE, initExtram: true },
+	{ start: 0x00080000, end: 0x00098000 },
+	{ start: EXTRAM_ADDRESS, end: EXTRAM_ADDRESS + EXTRAM_SIZE },
 ];
 
 export type BootOptions = {
@@ -80,9 +80,6 @@ export async function boot(options: BootOptions) {
 			await preloader.setSpeed(options.speed);
 		await preloader.ping();
 		console.error("Preloader ready");
-
-		if (region.initExtram)
-			await preloader.initExtram(EXTRAM_ADDRESS, EXTRAM_SIZE);
 
 		const board = layout.board === undefined ? "" : ` [${layout.board}]`;
 		console.error(`Loading payload: ${options.payloadPath}${board} -> 0x${writeAddress} (${payload.length} bytes)`);

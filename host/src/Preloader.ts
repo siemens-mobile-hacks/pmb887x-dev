@@ -15,7 +15,6 @@ const LZ4_HASH_TABLE_SIZE = 1 << 16;
 
 enum Command {
 	PING = 0x41,
-	INIT_EXTRAM = 0x45,
 	GOTO = 0x47,
 	SET_SPEED = 0x48,
 	WRITE_RAM_LZ4 = 0x4C,
@@ -88,13 +87,6 @@ export class Preloader {
 
 	async ping() {
 		await this.#command(Command.PING, Buffer.alloc(0), Status.PONG);
-	}
-
-	async initExtram(address: number, size: number) {
-		const argument = Buffer.alloc(8);
-		argument.writeUInt32LE(address, 0);
-		argument.writeUInt32LE(size, 4);
-		await this.#command(Command.INIT_EXTRAM, argument);
 	}
 
 	async writePayload(address: number, data: Buffer) {

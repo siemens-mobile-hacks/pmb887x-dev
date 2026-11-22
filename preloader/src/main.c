@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <sdram.h>
 
 #include "crc.h"
 #include "lz4.h"
@@ -10,7 +11,6 @@
 
 enum command {
 	CMD_PING = 0x41,
-	CMD_INIT_EXTRAM = 0x45,
 	CMD_GOTO = 0x47,
 	CMD_SET_SPEED = 0x48,
 	CMD_WRITE_RAM_LZ4 = 0x4C,
@@ -41,54 +41,6 @@ static void dtcm_disable(void) {
 static void cmd_ping(void) {
 	wdt_serve();
 	usart_putc(USART0, STATUS_PONG);
-}
-
-static void cmd_init_extram(void) {
-	uint32_t address;
-	usart_read(USART0, &address, sizeof(address));
-	uint32_t size;
-	usart_read(USART0, &size, sizeof(size));
-
-	if (size < 0x00001000) {
-		usart_putc(USART0, STATUS_FAILURE);
-		return;
-	}
-
-	if (size > 0x08000000) {
-		usart_putc(USART0, STATUS_FAILURE);
-		return;
-	}
-
-	if ((size & (size - 1)) != 0) {
-		usart_putc(USART0, STATUS_FAILURE);
-		return;
-	}
-
-	if ((address & (size - 1)) != 0) {
-		usart_putc(USART0, STATUS_FAILURE);
-		return;
-	}
-
-	uint32_t mask = 27 - __builtin_ctz(size);
-	EBU_ADDRSEL(1) = address | (mask << EBU_ADDRSEL_MASK_SHIFT) | EBU_ADDRSEL_REGENAB;
-	EBU_BUSCON(1) = (
-		EBU_BUSCON_AGEN_SDRAM_0 |
-		(1U << EBU_BUSCON_PORTW_SHIFT) |
-		(3U << EBU_BUSCON_BCGEN_SHIFT) |
-		EBU_BUSCON_DLOAD |
-		EBU_BUSCON_AALIGN
-	);
-	EBU_SDRMREF(0) = (6U << EBU_SDRMREF_REFRESHC_SHIFT);
-	EBU_SDRMCON(0) = (
-		(2U << EBU_SDRMCON_BANKM_SHIFT) |
-		(1U << EBU_SDRMCON_PAGEM_SHIFT) |
-		(1U << EBU_SDRMCON_CRC_SHIFT) |
-		(1U << EBU_SDRMCON_AWIDTH_SHIFT) |
-		(3U << EBU_SDRMCON_CRP_SHIFT) |
-		(7U << EBU_SDRMCON_CRFSH_SHIFT)
-	);
-	EBU_SDRMOD(0) = (2U << EBU_SDRMOD_CASLAT_SHIFT) | (3U << EBU_SDRMOD_BURSTL_SHIFT);
-	usart_putc(USART0, STATUS_SUCCESS);
 }
 
 static void cmd_set_speed(void) {
@@ -201,6 +153,7 @@ static void cmd_goto(void) {
 int main(void) {
 	dtcm_enable();
 	wdt_init();
+	sdram_init();
 	usart_putc(USART0, STATUS_READY);
 
 	while (1) {
@@ -209,8 +162,6 @@ int main(void) {
 
 		if (command == CMD_PING) {
 			cmd_ping();
-		} else if (command == CMD_INIT_EXTRAM) {
-			cmd_init_extram();
 		} else if (command == CMD_GOTO) {
 			cmd_goto();
 		} else if (command == CMD_SET_SPEED) {
