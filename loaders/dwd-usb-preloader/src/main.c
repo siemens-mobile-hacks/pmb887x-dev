@@ -1,5 +1,5 @@
 #include <pmb887x.h>
-#include <sdram.h>
+#include "sdram.h"
 #include "usb.h"
 #include "crc.h"
 #include "wdt.h"

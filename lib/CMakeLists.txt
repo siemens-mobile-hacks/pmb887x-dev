@@ -26,7 +26,7 @@ add_library(pmb887x OBJECT
 	init/signature.S
 	init/reset_handler.c
 	usart.c
-	sdram.c
+	usb.c
 	i2c.c
 	i2c-v1.c
 	i2c-v2.c
