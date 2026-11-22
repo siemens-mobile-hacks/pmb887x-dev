@@ -347,235 +347,327 @@
 
 // EBU [MOD_NUM=0014, MOD_REV=05, MOD_32BIT=C0]
 // External Bus Unit (see EBU in XMC4500)
-#define	EBU_BASE							0xF0000000
+#define	EBU_BASE								0xF0000000
 /* Clock Control Register */
-#define	EBU_CLC								MMIO32(EBU_BASE + 0x00)
+#define	EBU_CLC									MMIO32(EBU_BASE + 0x00)
 
 /* Module Identifier Register */
-#define	EBU_ID								MMIO32(EBU_BASE + 0x08)
+#define	EBU_ID									MMIO32(EBU_BASE + 0x08)
 
-#define	EBU_CON								MMIO32(EBU_BASE + 0x10)
-#define	EBU_CON_EXTRECON					BIT(1)									 // External reconfiguration
-#define	EBU_CON_EXTSVM						BIT(2)									 // Perform master in
-#define	EBU_CON_EXTACC						BIT(3)									 // External access FPI-bus
-#define	EBU_CON_EXTLOCK						BIT(4)									 // Lock external bus
-#define	EBU_CON_ARBSYNC						BIT(5)									 // Arbitration evaluation
-#define	EBU_CON_ARBMODE						GENMASK(7, 6)							 // Arbitration mode
-#define	EBU_CON_ARBMODE_SHIFT				6
-#define	EBU_CON_TOUTC						GENMASK(15, 8)							 // Time-out control
-#define	EBU_CON_TOUTC_SHIFT					8
-#define	EBU_CON_GLOBALCS					GENMASK(23, 16)							 // Global chip select signal
-#define	EBU_CON_GLOBALCS_SHIFT				16
-#define	EBU_CON_BUSCLK						GENMASK(25, 24)							 // Clock generation
-#define	EBU_CON_BUSCLK_SHIFT				24
-#define	EBU_CON_SDCMSEL						BIT(26)									 // SDRAM Clock Mode Select
-#define	EBU_CON_CS0FAM						BIT(27)									 // CS0 Fills Address Map
-#define	EBU_CON_EMUFAM						BIT(28)									 // CSEMU Fills Address Map
-#define	EBU_CON_BFSSS						BIT(29)									 // Burst FLASH Single Stage Synchronization
+/* EBU Configuration Register */
+#define	EBU_CON									MMIO32(EBU_BASE + 0x10)
+#define	EBU_CON_EXTRECON						BIT(1)									 // External master can reconfigure EXTCON
+#define	EBU_CON_EXTSVM							BIT(2)									 // External accesses to the FPI bus in supervisor mode
+#define	EBU_CON_EXTACC							BIT(3)									 // External device access to the FPI bus
+#define	EBU_CON_EXTLOCK							BIT(4)									 // Lock the external bus after gaining ownership
+#define	EBU_CON_ARBSYNC							BIT(5)									 // Arbitration inputs are asynchronous
+#define	EBU_CON_ARBMODE							GENMASK(7, 6)							 // Arbitration mode
+#define	EBU_CON_ARBMODE_SHIFT					6
+#define	EBU_CON_ARBMODE_DISABLED				0x0
+#define	EBU_CON_ARBMODE_EXTERNAL_MASTER			0x40
+#define	EBU_CON_ARBMODE_EXTERNAL_SLAVE			0x80
+#define	EBU_CON_ARBMODE_SOLE_MASTER				0xC0
+#define	EBU_CON_TOUTC							GENMASK(15, 8)							 // Bus time-out in units of 8 clock cycles, 0 disables it
+#define	EBU_CON_TOUTC_SHIFT						8
+#define	EBU_CON_GLOBALCS						GENMASK(23, 16)							 // Chip selects that also assert CSglb
+#define	EBU_CON_GLOBALCS_SHIFT					16
+#define	EBU_CON_BUSCLK							GENMASK(25, 24)							 // EBU clock divider from the LMB clock
+#define	EBU_CON_BUSCLK_SHIFT					24
+#define	EBU_CON_BUSCLK_LMB						0x0
+#define	EBU_CON_BUSCLK_LMB_DIV2					0x1000000
+#define	EBU_CON_BUSCLK_LMB_DIV4					0x2000000
+#define	EBU_CON_SDCMSEL							BIT(26)									 // SDRAM Clock Mode Select
+#define	EBU_CON_CS0FAM							BIT(27)									 // CS0 Fills Address Map
+#define	EBU_CON_EMUFAM							BIT(28)									 // CSEMU Fills Address Map
+#define	EBU_CON_BFSSS							BIT(29)									 // Burst FLASH Single Stage Synchronization
 
-#define	EBU_BFCON							MMIO32(EBU_BASE + 0x20)
-#define	EBU_BFCON_FETBLEN0					GENMASK(3, 0)							 // Fetch Burst Length for Burst FLASH Type 0
-#define	EBU_BFCON_FETBLEN0_SHIFT			0
-#define	EBU_BFCON_FBBMSEL0					BIT(4)									 // FLASH Burst Buffer Mode Select for Burst FLASH Type 0
-#define	EBU_BFCON_WAITFUNC0					BIT(5)									 // Function of WAIT Input for Burst FLASH Type 0
-#define	EBU_BFCON_EXTCLOCK					GENMASK(7, 6)							 // Frequency of external clock
-#define	EBU_BFCON_EXTCLOCK_SHIFT			6
-#define	EBU_BFCON_BFCMSEL					BIT(8)									 // Burst FLASH Clock Mode Select
-#define	EBU_BFCON_EBSE0						BIT(9)									 // Early Burst Signal Enable for Burst FLASH Type 0
-#define	EBU_BFCON_DBA0						BIT(10)									 // Disable Burst Address Wrapping
-#define	EBU_BFCON_FDBKEN					BIT(11)									 // Burst FLASH Clock Feedback Enable
-#define	EBU_BFCON_DTALTNCY					GENMASK(15, 12)							 // Latency Cycle Control
-#define	EBU_BFCON_DTALTNCY_SHIFT			12
-#define	EBU_BFCON_FETBLEN1					GENMASK(19, 16)							 // Fetch Burst Length for Burst FLASH Type 1
-#define	EBU_BFCON_FETBLEN1_SHIFT			16
-#define	EBU_BFCON_FBBMSEL1					BIT(20)									 // FLASH Burst Buffer Mode Select for Burst FLASH Type 1
-#define	EBU_BFCON_WAITFUNC1					BIT(21)									 // Function of WAIT Input for Burst FLASH Type 1
-#define	EBU_BFCON_EBSE1						BIT(25)									 // Early Burst Signal Enable for Burst FLASH Type 1
-#define	EBU_BFCON_DBA1						BIT(26)									 // Disable Burst Address Wrapping for Burst FLASH Type 1
+/* EBU Burst Flash Control Register */
+#define	EBU_BFCON								MMIO32(EBU_BASE + 0x20)
+#define	EBU_BFCON_FETBLEN0						GENMASK(3, 0)							 // Fetch Burst Length for Burst FLASH Type 0
+#define	EBU_BFCON_FETBLEN0_SHIFT				0
+#define	EBU_BFCON_FETBLEN0_1					0x0
+#define	EBU_BFCON_FETBLEN0_2					0x1
+#define	EBU_BFCON_FETBLEN0_4					0x2
+#define	EBU_BFCON_FETBLEN0_8					0x3
+#define	EBU_BFCON_FBBMSEL0						BIT(4)									 // FLASH Burst Buffer Mode Select for Burst FLASH Type 0
+#define	EBU_BFCON_WAITFUNC0						BIT(5)									 // Function of WAIT Input for Burst FLASH Type 0
+#define	EBU_BFCON_EXTCLOCK						GENMASK(7, 6)							 // Frequency of external clock
+#define	EBU_BFCON_EXTCLOCK_SHIFT				6
+#define	EBU_BFCON_EXTCLOCK_LMB					0x0
+#define	EBU_BFCON_EXTCLOCK_LMB_DIV2				0x40
+#define	EBU_BFCON_EXTCLOCK_LMB_DIV3				0x80
+#define	EBU_BFCON_EXTCLOCK_LMB_DIV4				0xC0
+#define	EBU_BFCON_BFCMSEL						BIT(8)									 // Burst FLASH Clock Mode Select
+#define	EBU_BFCON_EBSE0							BIT(9)									 // Early Burst Signal Enable for Burst FLASH Type 0
+#define	EBU_BFCON_DBA0							BIT(10)									 // Disable Burst Address Wrapping
+#define	EBU_BFCON_FDBKEN						BIT(11)									 // Burst FLASH Clock Feedback Enable
+#define	EBU_BFCON_DTALTNCY						GENMASK(15, 12)							 // Read latency with clock feedback, 2 * (EXTCLOCK + 1)
+#define	EBU_BFCON_DTALTNCY_SHIFT				12
+#define	EBU_BFCON_FETBLEN1						GENMASK(19, 16)							 // Fetch Burst Length for Burst FLASH Type 1
+#define	EBU_BFCON_FETBLEN1_SHIFT				16
+#define	EBU_BFCON_FETBLEN1_1					0x0
+#define	EBU_BFCON_FETBLEN1_2					0x10000
+#define	EBU_BFCON_FETBLEN1_4					0x20000
+#define	EBU_BFCON_FETBLEN1_8					0x30000
+#define	EBU_BFCON_FBBMSEL1						BIT(20)									 // FLASH Burst Buffer Mode Select for Burst FLASH Type 1
+#define	EBU_BFCON_WAITFUNC1						BIT(21)									 // Function of WAIT Input for Burst FLASH Type 1
+#define	EBU_BFCON_EBSE1							BIT(25)									 // Early Burst Signal Enable for Burst FLASH Type 1
+#define	EBU_BFCON_DBA1							BIT(26)									 // Disable Burst Address Wrapping for Burst FLASH Type 1
 
-#define	EBU_SDRMREF(n)						MMIO32(EBU_BASE + 0x40 + ((n) * 0x8))
-#define	EBU_SDRMREF_REFRESHC				GENMASK(5, 0)							 // Refresh counter period
-#define	EBU_SDRMREF_REFRESHC_SHIFT			0
-#define	EBU_SDRMREF_REFRESHR				GENMASK(8, 6)							 // Number of refresh commands
-#define	EBU_SDRMREF_REFRESHR_SHIFT			6
-#define	EBU_SDRMREF_SELFREXST				BIT(9)									 // Self refresh exit status
-#define	EBU_SDRMREF_SELFREX					BIT(10)									 // Self refresh exit
-#define	EBU_SDRMREF_SELFRENST				BIT(11)									 // Self refresh entry status
-#define	EBU_SDRMREF_SELFREN					BIT(12)									 // Self refresh entry
-#define	EBU_SDRMREF_AUTOSELFR				BIT(13)									 // Automatic self refresh
+/* EBU SDRAM Refresh Register */
+#define	EBU_SDRMREF(n)							MMIO32(EBU_BASE + 0x40 + ((n) * 0x8))
+#define	EBU_SDRMREF_REFRESHC					GENMASK(5, 0)							 // Refresh period in units of 64 clock cycles, 0 disables refresh
+#define	EBU_SDRMREF_REFRESHC_SHIFT				0
+#define	EBU_SDRMREF_REFRESHR					GENMASK(8, 6)							 // Additional refresh commands per refresh
+#define	EBU_SDRMREF_REFRESHR_SHIFT				6
+#define	EBU_SDRMREF_SELFREXST					BIT(9)									 // Self refresh exit command was issued
+#define	EBU_SDRMREF_SELFREX						BIT(10)									 // Issue the self refresh exit command
+#define	EBU_SDRMREF_SELFRENST					BIT(11)									 // Self refresh entry command was issued
+#define	EBU_SDRMREF_SELFREN						BIT(12)									 // Issue the self refresh entry command
+#define	EBU_SDRMREF_AUTOSELFR					BIT(13)									 // Self refresh while the EBU gives up the external bus
 
-#define	EBU_SDRMCON(n)						MMIO32(EBU_BASE + 0x50 + ((n) * 0x8))
-#define	EBU_SDRMCON_CRAS					GENMASK(3, 0)							 // Row to precharge delay counter
-#define	EBU_SDRMCON_CRAS_SHIFT				0
-#define	EBU_SDRMCON_CRFSH					GENMASK(7, 4)							 // Refresh commands counter
-#define	EBU_SDRMCON_CRFSH_SHIFT				4
-#define	EBU_SDRMCON_CRSC					GENMASK(9, 8)							 // Mode register setup time
-#define	EBU_SDRMCON_CRSC_SHIFT				8
-#define	EBU_SDRMCON_CRP						GENMASK(11, 10)							 // Row precharge time counter
-#define	EBU_SDRMCON_CRP_SHIFT				10
-#define	EBU_SDRMCON_AWIDTH					GENMASK(13, 12)							 // Width of column address
-#define	EBU_SDRMCON_AWIDTH_SHIFT			12
-#define	EBU_SDRMCON_CRCD					GENMASK(15, 14)							 // Row to column delay counter
-#define	EBU_SDRMCON_CRCD_SHIFT				14
-#define	EBU_SDRMCON_CRC						GENMASK(18, 16)							 // Row cycle time counter
-#define	EBU_SDRMCON_CRC_SHIFT				16
-#define	EBU_SDRMCON_PAGEM					GENMASK(21, 19)							 // Mask for page tag
-#define	EBU_SDRMCON_PAGEM_SHIFT				19
-#define	EBU_SDRMCON_BANKM					GENMASK(24, 22)							 // Mask for bank tag
-#define	EBU_SDRMCON_BANKM_SHIFT				22
-#define	EBU_SDRMCON_CRCE					BIT(25)									 // Row cycle time counter extension
+/* EBU SDRAM Control Register */
+#define	EBU_SDRMCON(n)							MMIO32(EBU_BASE + 0x50 + ((n) * 0x8))
+#define	EBU_SDRMCON_CRAS						GENMASK(3, 0)							 // Clock cycles from row activate to precharge
+#define	EBU_SDRMCON_CRAS_SHIFT					0
+#define	EBU_SDRMCON_CRFSH						GENMASK(7, 4)							 // Refresh commands during power-up initialization
+#define	EBU_SDRMCON_CRFSH_SHIFT					4
+#define	EBU_SDRMCON_CRSC						GENMASK(9, 8)							 // NOP cycles after a mode register set command
+#define	EBU_SDRMCON_CRSC_SHIFT					8
+#define	EBU_SDRMCON_CRP							GENMASK(11, 10)							 // NOP cycles after a precharge command
+#define	EBU_SDRMCON_CRP_SHIFT					10
+#define	EBU_SDRMCON_AWIDTH						GENMASK(13, 12)							 // Column address width, depends on the port width
+#define	EBU_SDRMCON_AWIDTH_SHIFT				12
+#define	EBU_SDRMCON_CRCD						GENMASK(15, 14)							 // NOP cycles between row and column address
+#define	EBU_SDRMCON_CRCD_SHIFT					14
+#define	EBU_SDRMCON_CRC							GENMASK(18, 16)							 // NOP cycles between refresh commands during power-up initialization
+#define	EBU_SDRMCON_CRC_SHIFT					16
+#define	EBU_SDRMCON_PAGEM						GENMASK(21, 19)							 // Mask for page tag
+#define	EBU_SDRMCON_PAGEM_SHIFT					19
+#define	EBU_SDRMCON_PAGEM_ALWAYS_MISS			0x0
+#define	EBU_SDRMCON_PAGEM_BITS_26_9				0x80000
+#define	EBU_SDRMCON_PAGEM_BITS_26_10			0x100000
+#define	EBU_SDRMCON_PAGEM_BITS_26_11			0x180000
+#define	EBU_SDRMCON_PAGEM_BITS_26_12			0x200000
+#define	EBU_SDRMCON_PAGEM_BITS_26_13			0x280000
+#define	EBU_SDRMCON_BANKM						GENMASK(24, 22)							 // Mask for bank tag
+#define	EBU_SDRMCON_BANKM_SHIFT					22
+#define	EBU_SDRMCON_BANKM_ALWAYS_MISS			0x0
+#define	EBU_SDRMCON_BANKM_BITS_26_20			0x400000
+#define	EBU_SDRMCON_BANKM_BITS_26_21			0x800000
+#define	EBU_SDRMCON_BANKM_BITS_26_22			0xC00000
+#define	EBU_SDRMCON_BANKM_BITS_26_23			0x1000000
+#define	EBU_SDRMCON_BANKM_BITS_26_24			0x1400000
+#define	EBU_SDRMCON_BANKM_BITS_26_25			0x1800000
+#define	EBU_SDRMCON_BANKM_BIT_26				0x1C00000
+#define	EBU_SDRMCON_CRCE						BIT(25)									 // Row cycle time counter extension
 
-#define	EBU_SDRMOD(n)						MMIO32(EBU_BASE + 0x60 + ((n) * 0x8))
-#define	EBU_SDRMOD_BURSTL					GENMASK(2, 0)							 // Burst length
-#define	EBU_SDRMOD_BURSTL_SHIFT				0
-#define	EBU_SDRMOD_BTYP						BIT(3)									 // Burst type
-#define	EBU_SDRMOD_CASLAT					GENMASK(6, 4)							 // CAS latency
-#define	EBU_SDRMOD_CASLAT_SHIFT				4
-#define	EBU_SDRMOD_OPMODE					GENMASK(13, 7)							 // Operation Mode
-#define	EBU_SDRMOD_OPMODE_SHIFT				7
+/* EBU SDRAM Mode Register */
+#define	EBU_SDRMOD(n)							MMIO32(EBU_BASE + 0x60 + ((n) * 0x8))
+#define	EBU_SDRMOD_BURSTL						GENMASK(2, 0)							 // Locations accessed by a single command
+#define	EBU_SDRMOD_BURSTL_SHIFT					0
+#define	EBU_SDRMOD_BURSTL_1						0x0
+#define	EBU_SDRMOD_BURSTL_8						0x3
+#define	EBU_SDRMOD_BTYP							BIT(3)									 // Burst type
+#define	EBU_SDRMOD_CASLAT						GENMASK(6, 4)							 // Clocks from a READ command to valid data
+#define	EBU_SDRMOD_CASLAT_SHIFT					4
+#define	EBU_SDRMOD_CASLAT_1						0x10
+#define	EBU_SDRMOD_CASLAT_2						0x20
+#define	EBU_SDRMOD_CASLAT_3						0x30
+#define	EBU_SDRMOD_OPMODE						GENMASK(13, 7)							 // Operation mode
+#define	EBU_SDRMOD_OPMODE_SHIFT					7
 
-#define	EBU_SDRSTAT(n)						MMIO32(EBU_BASE + 0x70 + ((n) * 0x8))
-#define	EBU_SDRSTAT_REFERR					BIT(0)									 // SDRAM Refresh Error
-#define	EBU_SDRSTAT_SDRM_BUSY				BIT(1)									 // SDRAM Busy
-#define	EBU_SDRSTAT_UNK8					BIT(8)									 // Undocumented status bit, reads as one
+/* EBU SDRAM Status Register */
+#define	EBU_SDRSTAT(n)							MMIO32(EBU_BASE + 0x70 + ((n) * 0x8))
+#define	EBU_SDRSTAT_REFERR						BIT(0)									 // Refresh request collided with a pending refresh
+#define	EBU_SDRSTAT_SDRM_BUSY					BIT(1)									 // Power-up initialization sequence is running
+#define	EBU_SDRSTAT_UNK8						BIT(8)									 // Undocumented status bit, reads as one
 
-#define	EBU_ADDRSEL(n)						MMIO32(EBU_BASE + 0x80 + ((n) * 0x8))
-#define	EBU_ADDRSEL_REGENAB					BIT(0)									 // Memory Region
-#define	EBU_ADDRSEL_ALTENAB					BIT(1)									 // Alternate Segment Comparison
-#define	EBU_ADDRSEL_MASK					GENMASK(7, 4)							 // Address Mask
-#define	EBU_ADDRSEL_MASK_SHIFT				4
-#define	EBU_ADDRSEL_ALTSEG					GENMASK(11, 8)							 // Alternate Segment
-#define	EBU_ADDRSEL_ALTSEG_SHIFT			8
-#define	EBU_ADDRSEL_BASE					GENMASK(31, 12)							 // Base Address
-#define	EBU_ADDRSEL_BASE_SHIFT				12
+/* EBU Address Select Register */
+#define	EBU_ADDRSEL(n)							MMIO32(EBU_BASE + 0x80 + ((n) * 0x8))
+#define	EBU_ADDRSEL_REGENAB						BIT(0)									 // Memory region enable
+#define	EBU_ADDRSEL_ALTENAB						BIT(1)									 // Compare the alternate segment
+#define	EBU_ADDRSEL_MASK						GENMASK(7, 4)							 // Number of base address bits from bit 26 included in the comparison
+#define	EBU_ADDRSEL_MASK_SHIFT					4
+#define	EBU_ADDRSEL_ALTSEG						GENMASK(11, 8)							 // Alternate segment compared with address bits 31-28
+#define	EBU_ADDRSEL_ALTSEG_SHIFT				8
+#define	EBU_ADDRSEL_BASE						GENMASK(31, 12)							 // Memory region base address
+#define	EBU_ADDRSEL_BASE_SHIFT					12
 
-#define	EBU_BUSCON(n)						MMIO32(EBU_BASE + 0xC0 + ((n) * 0x8))
-#define	EBU_BUSCON_MULTMAP					GENMASK(6, 0)							 // Multiplier map
-#define	EBU_BUSCON_MULTMAP_SHIFT			0
-#define	EBU_BUSCON_UNK7						BIT(7)									 // Undocumented writable field
-#define	EBU_BUSCON_WPRE						BIT(8)									 // Weak prefetch
-#define	EBU_BUSCON_AALIGN					BIT(9)									 // Address alignment
-#define	EBU_BUSCON_CTYPE					GENMASK(11, 10)							 // Cycle Type
-#define	EBU_BUSCON_CTYPE_SHIFT				10
-#define	EBU_BUSCON_CMULT					GENMASK(15, 13)							 // Cycle multiplier
-#define	EBU_BUSCON_CMULT_SHIFT				13
-#define	EBU_BUSCON_ENDIAN					BIT(16)									 // Endian mode
-#define	EBU_BUSCON_DLOAD					BIT(17)									 // Data upload
-#define	EBU_BUSCON_PRE						BIT(18)									 // Prefetch mechanism
-#define	EBU_BUSCON_WAITINV					BIT(19)									 // Reversed polarity at WAIT
-#define	EBU_BUSCON_BCGEN					GENMASK(21, 20)							 // Signal timing mode
-#define	EBU_BUSCON_BCGEN_SHIFT				20
-#define	EBU_BUSCON_PORTW					GENMASK(23, 22)							 // Port width
-#define	EBU_BUSCON_PORTW_SHIFT				22
-#define	EBU_BUSCON_WAIT						GENMASK(25, 24)							 // External wait state
-#define	EBU_BUSCON_WAIT_SHIFT				24
-#define	EBU_BUSCON_XCMDDELAY				GENMASK(27, 26)							 // External command delay
-#define	EBU_BUSCON_XCMDDELAY_SHIFT			26
-#define	EBU_BUSCON_AGEN						GENMASK(30, 28)							 // Address generation
-#define	EBU_BUSCON_AGEN_SHIFT				28
-#define	EBU_BUSCON_AGEN_ASYNC_DEMULTIPLEXED	0x0
-#define	EBU_BUSCON_AGEN_ASYNC_MULTIPLEXED	0x10000000
-#define	EBU_BUSCON_AGEN_BURST_FLASH_0		0x20000000
-#define	EBU_BUSCON_AGEN_SDRAM_0				0x30000000
-#define	EBU_BUSCON_AGEN_SDRAM_1				0x40000000
-#define	EBU_BUSCON_AGEN_BURST_FLASH_1		0x50000000
-#define	EBU_BUSCON_WRITE					BIT(31)									 // Write protection
+/* EBU Bus Configuration Register */
+#define	EBU_BUSCON(n)							MMIO32(EBU_BASE + 0xC0 + ((n) * 0x8))
+#define	EBU_BUSCON_MULTMAP						GENMASK(6, 0)							 // Delay cycle fields that use the CMULT multiplier
+#define	EBU_BUSCON_MULTMAP_SHIFT				0
+#define	EBU_BUSCON_UNK7							BIT(7)									 // Undocumented writable field
+#define	EBU_BUSCON_WPRE							BIT(8)									 // A data access can abort a running prefetch
+#define	EBU_BUSCON_AALIGN						BIT(9)									 // Align the address to the port width
+#define	EBU_BUSCON_CTYPE						GENMASK(11, 10)							 // Address and data bus multiplexing for burst flash
+#define	EBU_BUSCON_CTYPE_SHIFT					10
+#define	EBU_BUSCON_CTYPE_NON_MULTIPLEXED		0x0
+#define	EBU_BUSCON_CTYPE_MULTIPLEXED			0x400
+#define	EBU_BUSCON_CTYPE_TWIN_16BIT_MULTIPLEXED	0x800
+#define	EBU_BUSCON_CMULT						GENMASK(15, 13)							 // Multiplier for the delay cycles selected by MULTMAP
+#define	EBU_BUSCON_CMULT_SHIFT					13
+#define	EBU_BUSCON_CMULT_1						0x0
+#define	EBU_BUSCON_CMULT_4						0x2000
+#define	EBU_BUSCON_CMULT_8						0x4000
+#define	EBU_BUSCON_CMULT_16						0x6000
+#define	EBU_BUSCON_CMULT_32						0x8000
+#define	EBU_BUSCON_ENDIAN						BIT(16)									 // Big endian access mode
+#define	EBU_BUSCON_DLOAD						BIT(17)									 // Data accesses always come from the external bus, not the write buffer
+#define	EBU_BUSCON_PRE							BIT(18)									 // Code accesses use the prefetch buffer
+#define	EBU_BUSCON_WAITINV						BIT(19)									 // WAIT input is active high
+#define	EBU_BUSCON_BCGEN						GENMASK(21, 20)							 // Byte control signal timing
+#define	EBU_BUSCON_BCGEN_SHIFT					20
+#define	EBU_BUSCON_BCGEN_CS						0x0
+#define	EBU_BUSCON_BCGEN_CONTROL				0x100000
+#define	EBU_BUSCON_BCGEN_WRITE_ENABLE			0x200000
+#define	EBU_BUSCON_BCGEN_DQM					0x300000
+#define	EBU_BUSCON_PORTW						GENMASK(23, 22)							 // Port width
+#define	EBU_BUSCON_PORTW_SHIFT					22
+#define	EBU_BUSCON_PORTW_16BIT					0x400000
+#define	EBU_BUSCON_PORTW_32BIT					0x800000
+#define	EBU_BUSCON_WAIT							GENMASK(25, 24)							 // External wait state input
+#define	EBU_BUSCON_WAIT_SHIFT					24
+#define	EBU_BUSCON_WAIT_OFF						0x0
+#define	EBU_BUSCON_WAIT_ASYNC					0x1000000
+#define	EBU_BUSCON_WAIT_SYNC					0x2000000
+#define	EBU_BUSCON_XCMDDELAY					GENMASK(27, 26)							 // External command delay input
+#define	EBU_BUSCON_XCMDDELAY_SHIFT				26
+#define	EBU_BUSCON_XCMDDELAY_OFF				0x0
+#define	EBU_BUSCON_XCMDDELAY_ASYNC				0x4000000
+#define	EBU_BUSCON_XCMDDELAY_SYNC				0x8000000
+#define	EBU_BUSCON_AGEN							GENMASK(30, 28)							 // Address generation
+#define	EBU_BUSCON_AGEN_SHIFT					28
+#define	EBU_BUSCON_AGEN_ASYNC_DEMULTIPLEXED		0x0
+#define	EBU_BUSCON_AGEN_ASYNC_MULTIPLEXED		0x10000000
+#define	EBU_BUSCON_AGEN_BURST_FLASH_0			0x20000000
+#define	EBU_BUSCON_AGEN_SDRAM_0					0x30000000
+#define	EBU_BUSCON_AGEN_SDRAM_1					0x40000000
+#define	EBU_BUSCON_AGEN_BURST_FLASH_1			0x50000000
+#define	EBU_BUSCON_WRITE						BIT(31)									 // Memory region write protection
 
-#define	EBU_BUSAP(n)						MMIO32(EBU_BASE + 0x100 + ((n) * 0x8))
-#define	EBU_BUSAP_DTACS						GENMASK(3, 0)							 // Between different regions
-#define	EBU_BUSAP_DTACS_SHIFT				0
-#define	EBU_BUSAP_DTARDWR					GENMASK(7, 4)							 // Between read and write accesses
-#define	EBU_BUSAP_DTARDWR_SHIFT				4
-#define	EBU_BUSAP_WRRECOVC					GENMASK(10, 8)							 // After write accesses
-#define	EBU_BUSAP_WRRECOVC_SHIFT			8
-#define	EBU_BUSAP_RDRECOVC					GENMASK(13, 11)							 // After read accesses
-#define	EBU_BUSAP_RDRECOVC_SHIFT			11
-#define	EBU_BUSAP_DATAC						GENMASK(15, 14)							 // Write accesses
-#define	EBU_BUSAP_DATAC_SHIFT				14
-#define	EBU_BUSAP_BURSTC					GENMASK(18, 16)							 // During burst accesses
-#define	EBU_BUSAP_BURSTC_SHIFT				16
-#define	EBU_BUSAP_WAITWRC					GENMASK(21, 19)							 // Programmed for wait accesses
-#define	EBU_BUSAP_WAITWRC_SHIFT				19
-#define	EBU_BUSAP_WAITRDC					GENMASK(24, 22)							 // Programmed for read accesses
-#define	EBU_BUSAP_WAITRDC_SHIFT				22
-#define	EBU_BUSAP_CMDDELAY					GENMASK(27, 25)							 // Programmed command
-#define	EBU_BUSAP_CMDDELAY_SHIFT			25
-#define	EBU_BUSAP_AHOLDC					GENMASK(29, 28)							 // Multiplexed accesses
-#define	EBU_BUSAP_AHOLDC_SHIFT				28
-#define	EBU_BUSAP_ADDRC						GENMASK(31, 30)							 // Address Cycles
-#define	EBU_BUSAP_ADDRC_SHIFT				30
+/* EBU Bus Access Parameter Register */
+#define	EBU_BUSAP(n)							MMIO32(EBU_BASE + 0x100 + ((n) * 0x8))
+#define	EBU_BUSAP_DTACS							GENMASK(3, 0)							 // Recovery cycles between accesses to different regions
+#define	EBU_BUSAP_DTACS_SHIFT					0
+#define	EBU_BUSAP_DTARDWR						GENMASK(7, 4)							 // Recovery cycles between read and write accesses
+#define	EBU_BUSAP_DTARDWR_SHIFT					4
+#define	EBU_BUSAP_WRRECOVC						GENMASK(10, 8)							 // Recovery cycles after write accesses
+#define	EBU_BUSAP_WRRECOVC_SHIFT				8
+#define	EBU_BUSAP_RDRECOVC						GENMASK(13, 11)							 // Recovery cycles after read accesses
+#define	EBU_BUSAP_RDRECOVC_SHIFT				11
+#define	EBU_BUSAP_DATAC							GENMASK(15, 14)							 // Data hold cycles for write accesses
+#define	EBU_BUSAP_DATAC_SHIFT					14
+#define	EBU_BUSAP_BURSTC						GENMASK(18, 16)							 // Data cycles during burst accesses
+#define	EBU_BUSAP_BURSTC_SHIFT					16
+#define	EBU_BUSAP_WAITWRC						GENMASK(21, 19)							 // Wait states for write accesses
+#define	EBU_BUSAP_WAITWRC_SHIFT					19
+#define	EBU_BUSAP_WAITRDC						GENMASK(24, 22)							 // Wait states for read accesses
+#define	EBU_BUSAP_WAITRDC_SHIFT					22
+#define	EBU_BUSAP_CMDDELAY						GENMASK(27, 25)							 // Command delay cycles
+#define	EBU_BUSAP_CMDDELAY_SHIFT				25
+#define	EBU_BUSAP_AHOLDC						GENMASK(29, 28)							 // Address hold cycles for multiplexed accesses
+#define	EBU_BUSAP_AHOLDC_SHIFT					28
+#define	EBU_BUSAP_ADDRC							GENMASK(31, 30)							 // Address phase cycles
+#define	EBU_BUSAP_ADDRC_SHIFT					30
 
-#define	EBU_EMUAS							MMIO32(EBU_BASE + 0x160)
-#define	EBU_EMUAS_REGENAB					BIT(0)									 // Memory region
-#define	EBU_EMUAS_ALTENAB					BIT(1)									 // Alternate segment comparison
-#define	EBU_EMUAS_MASK						GENMASK(7, 4)							 // Address mask
-#define	EBU_EMUAS_MASK_SHIFT				4
-#define	EBU_EMUAS_ALTSEG					GENMASK(11, 8)							 // Alternate segment
-#define	EBU_EMUAS_ALTSEG_SHIFT				8
-#define	EBU_EMUAS_BASE						GENMASK(31, 12)							 // Base address
-#define	EBU_EMUAS_BASE_SHIFT				12
+/* EBU Emulator Address Select Register */
+#define	EBU_EMUAS								MMIO32(EBU_BASE + 0x160)
+#define	EBU_EMUAS_REGENAB						BIT(0)									 // Memory region enable
+#define	EBU_EMUAS_ALTENAB						BIT(1)									 // Compare the alternate segment
+#define	EBU_EMUAS_MASK							GENMASK(7, 4)							 // Number of base address bits from bit 26 included in the comparison
+#define	EBU_EMUAS_MASK_SHIFT					4
+#define	EBU_EMUAS_ALTSEG						GENMASK(11, 8)							 // Alternate segment compared with address bits 31-28
+#define	EBU_EMUAS_ALTSEG_SHIFT					8
+#define	EBU_EMUAS_BASE							GENMASK(31, 12)							 // Memory region base address
+#define	EBU_EMUAS_BASE_SHIFT					12
 
-#define	EBU_EMUBC							MMIO32(EBU_BASE + 0x168)
-#define	EBU_EMUBC_MULTMAP					GENMASK(6, 0)							 // Multiplier map
-#define	EBU_EMUBC_MULTMAP_SHIFT				0
-#define	EBU_EMUBC_UNK7						BIT(7)									 // Undocumented writable field
-#define	EBU_EMUBC_WPRE						BIT(8)									 // Weak prefetch
-#define	EBU_EMUBC_AALIGN					BIT(9)									 // Address alignment
-#define	EBU_EMUBC_CTYPE						GENMASK(11, 10)							 // Cycle Type
-#define	EBU_EMUBC_CTYPE_SHIFT				10
-#define	EBU_EMUBC_CMULT						GENMASK(15, 13)							 // Cycle multiplier
-#define	EBU_EMUBC_CMULT_SHIFT				13
-#define	EBU_EMUBC_ENDIAN					BIT(16)									 // Endian mode
-#define	EBU_EMUBC_DLOAD						BIT(17)									 // Data upload
-#define	EBU_EMUBC_PRE						BIT(18)									 // Prefetch mechanism
-#define	EBU_EMUBC_WAITINV					BIT(19)									 // Reversed polarity at WAIT
-#define	EBU_EMUBC_BCGEN						GENMASK(21, 20)							 // Signal timing mode
-#define	EBU_EMUBC_BCGEN_SHIFT				20
-#define	EBU_EMUBC_PORTW						GENMASK(23, 22)							 // Port width
-#define	EBU_EMUBC_PORTW_SHIFT				22
-#define	EBU_EMUBC_WAIT						GENMASK(25, 24)							 // External wait state
-#define	EBU_EMUBC_WAIT_SHIFT				24
-#define	EBU_EMUBC_XCMDDELAY					GENMASK(27, 26)							 // External command delay
-#define	EBU_EMUBC_XCMDDELAY_SHIFT			26
-#define	EBU_EMUBC_AGEN						GENMASK(30, 28)							 // Address generation
-#define	EBU_EMUBC_AGEN_SHIFT				28
-#define	EBU_EMUBC_AGEN_ASYNC_DEMULTIPLEXED	0x0
-#define	EBU_EMUBC_AGEN_ASYNC_MULTIPLEXED	0x10000000
-#define	EBU_EMUBC_AGEN_BURST_FLASH_0		0x20000000
-#define	EBU_EMUBC_AGEN_SDRAM_0				0x30000000
-#define	EBU_EMUBC_AGEN_SDRAM_1				0x40000000
-#define	EBU_EMUBC_AGEN_BURST_FLASH_1		0x50000000
-#define	EBU_EMUBC_WRITE						BIT(31)									 // Write protection
+/* EBU Emulator Bus Configuration Register */
+#define	EBU_EMUBC								MMIO32(EBU_BASE + 0x168)
+#define	EBU_EMUBC_MULTMAP						GENMASK(6, 0)							 // Delay cycle fields that use the CMULT multiplier
+#define	EBU_EMUBC_MULTMAP_SHIFT					0
+#define	EBU_EMUBC_UNK7							BIT(7)									 // Undocumented writable field
+#define	EBU_EMUBC_WPRE							BIT(8)									 // A data access can abort a running prefetch
+#define	EBU_EMUBC_AALIGN						BIT(9)									 // Align the address to the port width
+#define	EBU_EMUBC_CTYPE							GENMASK(11, 10)							 // Address and data bus multiplexing for burst flash
+#define	EBU_EMUBC_CTYPE_SHIFT					10
+#define	EBU_EMUBC_CTYPE_NON_MULTIPLEXED			0x0
+#define	EBU_EMUBC_CTYPE_MULTIPLEXED				0x400
+#define	EBU_EMUBC_CTYPE_TWIN_16BIT_MULTIPLEXED	0x800
+#define	EBU_EMUBC_CMULT							GENMASK(15, 13)							 // Multiplier for the delay cycles selected by MULTMAP
+#define	EBU_EMUBC_CMULT_SHIFT					13
+#define	EBU_EMUBC_CMULT_1						0x0
+#define	EBU_EMUBC_CMULT_4						0x2000
+#define	EBU_EMUBC_CMULT_8						0x4000
+#define	EBU_EMUBC_CMULT_16						0x6000
+#define	EBU_EMUBC_CMULT_32						0x8000
+#define	EBU_EMUBC_ENDIAN						BIT(16)									 // Big endian access mode
+#define	EBU_EMUBC_DLOAD							BIT(17)									 // Data accesses always come from the external bus, not the write buffer
+#define	EBU_EMUBC_PRE							BIT(18)									 // Code accesses use the prefetch buffer
+#define	EBU_EMUBC_WAITINV						BIT(19)									 // WAIT input is active high
+#define	EBU_EMUBC_BCGEN							GENMASK(21, 20)							 // Byte control signal timing
+#define	EBU_EMUBC_BCGEN_SHIFT					20
+#define	EBU_EMUBC_BCGEN_CS						0x0
+#define	EBU_EMUBC_BCGEN_CONTROL					0x100000
+#define	EBU_EMUBC_BCGEN_WRITE_ENABLE			0x200000
+#define	EBU_EMUBC_BCGEN_DQM						0x300000
+#define	EBU_EMUBC_PORTW							GENMASK(23, 22)							 // Port width
+#define	EBU_EMUBC_PORTW_SHIFT					22
+#define	EBU_EMUBC_PORTW_16BIT					0x400000
+#define	EBU_EMUBC_PORTW_32BIT					0x800000
+#define	EBU_EMUBC_WAIT							GENMASK(25, 24)							 // External wait state input
+#define	EBU_EMUBC_WAIT_SHIFT					24
+#define	EBU_EMUBC_WAIT_OFF						0x0
+#define	EBU_EMUBC_WAIT_ASYNC					0x1000000
+#define	EBU_EMUBC_WAIT_SYNC						0x2000000
+#define	EBU_EMUBC_XCMDDELAY						GENMASK(27, 26)							 // External command delay input
+#define	EBU_EMUBC_XCMDDELAY_SHIFT				26
+#define	EBU_EMUBC_XCMDDELAY_OFF					0x0
+#define	EBU_EMUBC_XCMDDELAY_ASYNC				0x4000000
+#define	EBU_EMUBC_XCMDDELAY_SYNC				0x8000000
+#define	EBU_EMUBC_AGEN							GENMASK(30, 28)							 // Address generation
+#define	EBU_EMUBC_AGEN_SHIFT					28
+#define	EBU_EMUBC_AGEN_ASYNC_DEMULTIPLEXED		0x0
+#define	EBU_EMUBC_AGEN_ASYNC_MULTIPLEXED		0x10000000
+#define	EBU_EMUBC_AGEN_BURST_FLASH_0			0x20000000
+#define	EBU_EMUBC_AGEN_SDRAM_0					0x30000000
+#define	EBU_EMUBC_AGEN_SDRAM_1					0x40000000
+#define	EBU_EMUBC_AGEN_BURST_FLASH_1			0x50000000
+#define	EBU_EMUBC_WRITE							BIT(31)									 // Memory region write protection
 
-#define	EBU_EMUBAP							MMIO32(EBU_BASE + 0x170)
-#define	EBU_EMUBAP_DTACS					GENMASK(3, 0)							 // Between different regions
-#define	EBU_EMUBAP_DTACS_SHIFT				0
-#define	EBU_EMUBAP_DTARDWR					GENMASK(7, 4)							 // Between read and write accesses
-#define	EBU_EMUBAP_DTARDWR_SHIFT			4
-#define	EBU_EMUBAP_WRRECOVC					GENMASK(10, 8)							 // After write accesses
-#define	EBU_EMUBAP_WRRECOVC_SHIFT			8
-#define	EBU_EMUBAP_RDRECOVC					GENMASK(13, 11)							 // After read accesses
-#define	EBU_EMUBAP_RDRECOVC_SHIFT			11
-#define	EBU_EMUBAP_DATAC					GENMASK(15, 14)							 // Write accesses
-#define	EBU_EMUBAP_DATAC_SHIFT				14
-#define	EBU_EMUBAP_BURSTC					GENMASK(18, 16)							 // During burst accesses
-#define	EBU_EMUBAP_BURSTC_SHIFT				16
-#define	EBU_EMUBAP_WAITWRC					GENMASK(21, 19)							 // Programmed for wait accesses
-#define	EBU_EMUBAP_WAITWRC_SHIFT			19
-#define	EBU_EMUBAP_WAITRDC					GENMASK(24, 22)							 // Programmed for read accesses
-#define	EBU_EMUBAP_WAITRDC_SHIFT			22
-#define	EBU_EMUBAP_CMDDELAY					GENMASK(27, 25)							 // Programmed command
-#define	EBU_EMUBAP_CMDDELAY_SHIFT			25
-#define	EBU_EMUBAP_AHOLDC					GENMASK(29, 28)							 // Multiplexed accesses
-#define	EBU_EMUBAP_AHOLDC_SHIFT				28
-#define	EBU_EMUBAP_ADDRC					GENMASK(31, 30)							 // Address Cycles
-#define	EBU_EMUBAP_ADDRC_SHIFT				30
+/* EBU Emulator Bus Access Parameter Register */
+#define	EBU_EMUBAP								MMIO32(EBU_BASE + 0x170)
+#define	EBU_EMUBAP_DTACS						GENMASK(3, 0)							 // Recovery cycles between accesses to different regions
+#define	EBU_EMUBAP_DTACS_SHIFT					0
+#define	EBU_EMUBAP_DTARDWR						GENMASK(7, 4)							 // Recovery cycles between read and write accesses
+#define	EBU_EMUBAP_DTARDWR_SHIFT				4
+#define	EBU_EMUBAP_WRRECOVC						GENMASK(10, 8)							 // Recovery cycles after write accesses
+#define	EBU_EMUBAP_WRRECOVC_SHIFT				8
+#define	EBU_EMUBAP_RDRECOVC						GENMASK(13, 11)							 // Recovery cycles after read accesses
+#define	EBU_EMUBAP_RDRECOVC_SHIFT				11
+#define	EBU_EMUBAP_DATAC						GENMASK(15, 14)							 // Data hold cycles for write accesses
+#define	EBU_EMUBAP_DATAC_SHIFT					14
+#define	EBU_EMUBAP_BURSTC						GENMASK(18, 16)							 // Data cycles during burst accesses
+#define	EBU_EMUBAP_BURSTC_SHIFT					16
+#define	EBU_EMUBAP_WAITWRC						GENMASK(21, 19)							 // Wait states for write accesses
+#define	EBU_EMUBAP_WAITWRC_SHIFT				19
+#define	EBU_EMUBAP_WAITRDC						GENMASK(24, 22)							 // Wait states for read accesses
+#define	EBU_EMUBAP_WAITRDC_SHIFT				22
+#define	EBU_EMUBAP_CMDDELAY						GENMASK(27, 25)							 // Command delay cycles
+#define	EBU_EMUBAP_CMDDELAY_SHIFT				25
+#define	EBU_EMUBAP_AHOLDC						GENMASK(29, 28)							 // Address hold cycles for multiplexed accesses
+#define	EBU_EMUBAP_AHOLDC_SHIFT					28
+#define	EBU_EMUBAP_ADDRC						GENMASK(31, 30)							 // Address phase cycles
+#define	EBU_EMUBAP_ADDRC_SHIFT					30
 
-#define	EBU_EMUOVL							MMIO32(EBU_BASE + 0x178)
-#define	EBU_EMUOVL_OVERLAY					GENMASK(7, 0)							 // Overlay chip select
-#define	EBU_EMUOVL_OVERLAY_SHIFT			0
+/* EBU Emulator Overlay Register */
+#define	EBU_EMUOVL								MMIO32(EBU_BASE + 0x178)
+#define	EBU_EMUOVL_OVERLAY						GENMASK(7, 0)							 // Chip selects that also assert CSovl
+#define	EBU_EMUOVL_OVERLAY_SHIFT				0
 
-#define	EBU_USERCON							MMIO32(EBU_BASE + 0x190)
+/* EBU Test/Control Configuration Register */
+#define	EBU_USERCON								MMIO32(EBU_BASE + 0x190)
 
 
 // USART0 [MOD_NUM=0044, MOD_REV=F1, MOD_32BIT=00]
