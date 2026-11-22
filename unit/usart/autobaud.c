@@ -8,6 +8,7 @@
 #define AUTOBAUD_FDV_SCALE 512
 #define AUTOBAUD_STATUS_MASK 0x1F
 #define AUTOBAUD_TIMEOUT_MS 500
+#define AUTOBAUD_ARM_WAIT_MS 10
 #define AUTOBAUD_HANDOFF_FRAME "atREADY"
 #define HOST_TRIGGER '!'
 #define HOST_READY '?'
@@ -94,6 +95,7 @@ static void send_autobaud_frame(const struct autobaud_case *test_case) {
 	printf("# HOST-CMD: EXPECT \"%c\"\n", HOST_READY);
 	printf("# HOST-CMD: FORMAT %s\n", test_case->format);
 	printf("# HOST-CMD: BAUDRATE %lu\n", test_case->baud_rate);
+	printf("# HOST-CMD: WAIT %d\n", AUTOBAUD_ARM_WAIT_MS);
 	printf("# HOST-CMD: SEND \"%s\"\n", test_case->frame);
 	printf("# HOST-CMD: WAIT 100\n");
 	printf("# HOST-CMD: RESTORE\n");
