@@ -140,7 +140,7 @@ static void cmd_write_ram_lz4(void) {
 	usart_putc(USART0, valid ? STATUS_SUCCESS : STATUS_FAILURE);
 }
 
-static void cmd_goto(void) {
+static void __attribute__((noreturn)) cmd_goto(void) {
 	uint32_t address;
 	usart_read(USART0, &address, sizeof(address));
 	usart_putc(USART0, STATUS_SUCCESS);
@@ -148,6 +148,7 @@ static void cmd_goto(void) {
 	cache_sync();
 	dtcm_disable();
 	((payload_entry_t) address)();
+	while (true);
 }
 
 int main(void) {

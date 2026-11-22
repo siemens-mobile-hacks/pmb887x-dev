@@ -24,6 +24,28 @@ _start:
 	msr	cpsr_c, #(PSR_MODE_SYS | PSR_MASKED)
 	ldr	sp, =_stack_sys
 
+	@ Clean D-cache and drain the write buffer while the cache is still on
+1:	mrc	p15, 0, r15, c7, c10, 3
+	bne	1b
+	mov	r0, #0
+	mcr	p15, 0, r0, c7, c10, 4
+
+	@ Low vectors, I-cache, D-cache and MMU off
+	mrc	p15, 0, r0, c1, c0, 0
+	bic	r0, r0, #(1 << 13)
+	bic	r0, r0, #(1 << 12)
+	bic	r0, r0, #(1 << 2)
+	bic	r0, r0, #(1 << 0)
+	mcr	p15, 0, r0, c1, c0, 0
+	nop
+	nop
+	nop
+
+	@ Invalidate I/D caches and TLBs
+	mov	r0, #0
+	mcr	p15, 0, r0, c7, c7, 0
+	mcr	p15, 0, r0, c8, c7, 0
+
 #if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
 	@ Enable 8 KiB ITCM at 0x01000000
 	ldr	r0, =0x01000011

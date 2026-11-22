@@ -6,8 +6,6 @@ import { Preloader } from "./Preloader.ts";
 import { DEFAULT_FORMAT, openPort, waitForUsbDevice } from "./serial.ts";
 import { formatHex } from "./utils.ts";
 
-const BOOT_SPEED = 115200;
-
 export type BootOptions = {
 	payloadPath: string;
 	devicePath: string;
@@ -57,24 +55,33 @@ export async function boot(options: BootOptions) {
 		console.error(`Waiting for USB device ${options.devicePath}...`);
 		await waitForUsbDevice(options.devicePath);
 	}
-	const port = await openPort(options.devicePath, BOOT_SPEED, DEFAULT_FORMAT);
+
+	const port = await openPort(options.devicePath, 115200, DEFAULT_FORMAT);
 	try {
 		await port.flush();
+
 		console.error("Waiting for BootROM...");
-		const preloader = await Preloader.load(port, layout.platform);
-		console.error(`CPU detected: ${preloader.cpu.toUpperCase()}${preloader.secureBoot ? " (secure boot)" : ""}`);
-		if (layout.cpu !== undefined && preloader.cpu != layout.cpu)
-			throw new Error("payload CPU does not match the connected phone");
-		if (options.speed !== undefined)
+		const preloader = new Preloader(port, layout.platform);
+		await preloader.connect();
+		console.error(`Connected via ${preloader.getBootLoader()}${preloader.isSecureBoot() ? " (secure boot)" : ""}`);
+		console.error(`CPU detected: ${preloader.getDetectedCPU().toUpperCase()}`);
+
+		if (layout.cpu !== undefined && preloader.getDetectedCPU() != "pmb887x" && preloader.getDetectedCPU() != layout.cpu)
+			throw new Error(`Payload CPU ${layout.cpu} does not match the ${preloader.getDetectedCPU()}!`);
+
+		if (options.speed !== undefined) {
 			await preloader.setSpeed(options.speed);
-		await preloader.ping();
+			await preloader.ping();
+		}
+
 		console.error("Preloader ready");
 
 		const board = layout.board === undefined ? "" : ` [${layout.board}]`;
 		console.error(`Loading payload: ${options.payloadPath}${board} -> 0x${writeAddress} (${payload.length} bytes)`);
 		await preloader.writePayload(address, payload);
+		await preloader.execute(layout.execAddress);
+
 		console.error("<------- cut here -------");
-		await preloader.goto(layout.execAddress);
 		await forwardOutput(port, options.devicePath);
 	} finally {
 		await port.close();

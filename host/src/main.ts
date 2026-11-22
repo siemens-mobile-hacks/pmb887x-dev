@@ -15,6 +15,7 @@ type Options = {
 	speed: number;
 	writeAddr?: number;
 	execAddr?: number;
+	ign: boolean;
 };
 
 const program = new Command()

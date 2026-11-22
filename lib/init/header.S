@@ -57,7 +57,7 @@ start:
 	b	boot_entry
 #endif
 
-#if !defined(BOOT_FLASH) && (defined(BOARD_PLATFORM_APOXI) || defined(BOARD_PLATFORM_SIEMENS))
+#if !defined(BOOT_FLASH) && !defined(BOOT_CUSTOM)
 # --------------------------------------------------
 .Lpreloader_header:
 #if defined(PMB8875)

@@ -14,7 +14,7 @@ static stopwatch_t start_execution;
 static uint32_t wdt_timeout;
 static stopwatch_t last_wdt_serve;
 static uint32_t wdt_interval;
-static bool wdt_off;
+static bool wdt_off = true;
 
 static uint32_t cpu_wdt_reload_for_ms(uint32_t ms) {
 	uint32_t clock = CPU_OSC_FREQ / WDT_CLOCK_DIVIDER;
@@ -82,6 +82,7 @@ static void cpu_wdt_disable(void) {
 void wdt_init(void) {
 	wdt_init_custom(550);
 }
+
 void wdt_set_interval(uint32_t interval) {
 	wdt_interval = interval != 0 ? interval : 1;
 }
