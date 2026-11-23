@@ -35,10 +35,6 @@ void __attribute__((weak)) reset_handler(void) {
 #if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
 	for (src = &_tcm_loadaddr, dest = &_tcm_start; dest < &_tcm_end; src++, dest++)
 		*dest = *src;
-
-	uint32_t value = 0;
-	__asm__ volatile("mcr p15, 0, %0, c7, c10, 4" : : "r" (value) : "memory");
-	__asm__ volatile("mcr p15, 0, %0, c7, c5, 0" : : "r" (value) : "memory");
 #endif
 
 	dest = &_edata;

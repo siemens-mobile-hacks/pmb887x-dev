@@ -46,6 +46,11 @@ _start:
 	mcr	p15, 0, r0, c7, c7, 0
 	mcr	p15, 0, r0, c8, c7, 0
 
+	@ I-cache on; without the MMU the DCache bit has no effect (ARM926EJ-S TRM, Table 4-3)
+	mrc	p15, 0, r0, c1, c0, 0
+	orr	r0, r0, #(1 << 12)
+	mcr	p15, 0, r0, c1, c0, 0
+
 #if defined(BOOT_INTRAM) || defined(BOOT_EXTRAM) || defined(BOOT_FLASH)
 	@ Enable 8 KiB ITCM at 0x01000000
 	ldr	r0, =0x01000011
