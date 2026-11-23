@@ -4,6 +4,10 @@ model = "VS7"
 platform = "apoxi"
 cpu.type = "pmb8875"
 cpu.rev = 0x05
+aliases = ["panasonic-vs3", "panasonic-mx3", "panasonic-mx7", "panasonic-sa3", "panasonic-sa7"]
+patterns = [
+	{ offset = 0x20C20, pattern = '"NBG_LEOPARD_"' },
+]
 
 [peripheral.SIM_SLOT]
 type = "iso7816-slot"

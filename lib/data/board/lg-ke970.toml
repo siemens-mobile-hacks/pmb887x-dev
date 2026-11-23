@@ -8,6 +8,10 @@ cpu.rev = 0x11
 cpu.uid0 = 0x03157463
 cpu.uid1 = 0x18000283
 cpu.uid2 = 0x00090D0C
+patterns = [
+	{ offset = 0x40C00, pattern = '"DWD_DRIVER_SON80_"' },
+	{ pattern = '"+DDLI:\"KE970\""' },
+]
 
 [rtc]
 format = "calendar"

@@ -7,6 +7,9 @@ cpu.rev = 0x11
 cpu.uid0 = 0x030488E3
 cpu.uid1 = 0x1B040288
 cpu.uid2 = 0x000E0A0B
+patterns = [
+	{ offset = 0x40000, pattern = '"VS70"' },
+]
 
 [peripheral.SIM_SLOT]
 type = "iso7816-slot"

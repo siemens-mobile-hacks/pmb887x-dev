@@ -5,6 +5,10 @@ platform = "apoxi"
 
 cpu.type = "pmb8876"
 cpu.rev = 0x10
+patterns = [
+	{ offset = 0x40C00, pattern = '"DWD_DRIVER_SON80_"' },
+	{ pattern = '"+DDLI:\"KE800\""' },
+]
 
 [rtc]
 format = "calendar"
