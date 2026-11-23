@@ -94,6 +94,10 @@ static void test_break_reception(void) {
 
 int main(void) {
 	test_start("USART0 break test");
+	if (sio_is_usb()) {
+		test_skip("USART0 break test", "host commands reach the USB console, not USART0");
+		return test_finish();
+	}
 	USART_CLC(USART0) = 1 << MOD_CLC_RMC_SHIFT;
 	test_break_reception();
 	return test_finish();

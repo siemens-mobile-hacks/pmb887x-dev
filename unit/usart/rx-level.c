@@ -172,6 +172,10 @@ static void test_one_byte_per_interrupt(const struct usart_configuration *consol
 
 int main(void) {
 	test_start("USART0 RX FIFO request test");
+	if (sio_is_usb()) {
+		test_skip("USART0 RX FIFO request test", "host commands reach the USB console, not USART0");
+		return test_finish();
+	}
 	USART_CLC(USART0) = 1 << MOD_CLC_RMC_SHIFT;
 	struct usart_configuration console = get_usart_configuration();
 	test_cleared_requests_stay_clear(&console);

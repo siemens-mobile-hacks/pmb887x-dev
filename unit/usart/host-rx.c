@@ -229,6 +229,10 @@ int main(void) {
 	};
 
 	test_start("USART0 host receive test");
+	if (sio_is_usb()) {
+		test_skip("USART0 host receive test", "host commands reach the USB console, not USART0");
+		return test_finish();
+	}
 	USART_CLC(USART0) = 1 << MOD_CLC_RMC_SHIFT;
 	crc32_init();
 	struct usart_configuration console = get_usart_configuration();

@@ -89,6 +89,10 @@ static void request_host_frame(void) {
 
 int main(void) {
 	test_start("USART0 firmware-style RX IRQ test");
+	if (sio_is_usb()) {
+		test_skip("USART0 firmware-style RX IRQ test", "host commands reach the USB console, not USART0");
+		return test_finish();
+	}
 	struct usart_configuration console = get_usart_configuration();
 
 	test_category("Bounded FIFO drain with timeout fallback");

@@ -324,6 +324,10 @@ static void test_receive_handoff(const struct usart_configuration *console) {
 
 int main(void) {
 	test_start("USART0 autobaud test");
+	if (sio_is_usb()) {
+		test_skip("USART0 autobaud test", "host commands reach the USB console, not USART0");
+		return test_finish();
+	}
 	struct usart_configuration console = get_usart_configuration();
 
 	VIC_CON(VIC_USART0_ABDET_IRQ) = 1;
