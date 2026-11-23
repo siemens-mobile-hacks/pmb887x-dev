@@ -10,7 +10,7 @@
 		"typecheck": "tsc"
 	},
 	"dependencies": {
-		"@sie-js/serial": "^1.9.1",
+		"@sie-js/serial": "^1.9.2",
 		"commander": "^15.1.0",
 		"lz4js": "^0.2.0",
 		"serialport-bindings-socket": "^1.0.4",

@@ -169,8 +169,8 @@ importers:
   e2e:
     dependencies:
       '@sie-js/serial':
-        specifier: ^1.9.1
-        version: 1.9.1(debug@4.4.3)
+        specifier: ^1.9.2
+        version: 1.9.2(debug@4.4.3)
       undici:
         specifier: ^8.12.4
         version: 8.12.4
@@ -188,8 +188,8 @@ importers:
   host:
     dependencies:
       '@sie-js/serial':
-        specifier: ^1.9.1
-        version: 1.9.1(debug@4.4.3)
+        specifier: ^1.9.2
+        version: 1.9.2(debug@4.4.3)
       commander:
         specifier: ^15.1.0
         version: 15.1.0
@@ -386,8 +386,8 @@ packages:
     resolution: {integrity: sha512-CJaUd5bLvtM9c5dmO9rPBHPXTa9R2UwpkJ0wdh9JCYcbrPWsKz+ErvR0hBLeo7NPeiFdjFO4sonRljiw4d2XiA==}
     engines: {node: ^12.22 || ^14.13 || >=16}
 
-  '@sie-js/serial@1.9.1':
-    resolution: {integrity: sha512-LhENlZPG1ZjLy5VIL2yXt33SKGfF3Oqp6yQkJvSRMpyGuR9CajZI8OM8V/BzrKIsBdsB3t65j5Qcr4KD5Ud/7w==}
+  '@sie-js/serial@1.9.2':
+    resolution: {integrity: sha512-WfKim5TPahxiBF8JnQFMtxFbPXF3PMiQbGe7V4eDsy4KOIW+8xuGNBRs4i6MarLsTUhtzPU4Ppgl8RSC14YlEA==}
     peerDependencies:
       debug: ^4.4.3
 
@@ -684,7 +684,7 @@ snapshots:
 
   '@serialport/bindings-interface@1.2.2': {}
 
-  '@sie-js/serial@1.9.1(debug@4.4.3)':
+  '@sie-js/serial@1.9.2(debug@4.4.3)':
     dependencies:
       '@serialport/bindings-interface': 1.2.2
       debug: 4.4.3

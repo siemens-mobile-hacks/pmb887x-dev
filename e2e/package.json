@@ -9,7 +9,7 @@
 		"typecheck": "tsc"
 	},
 	"dependencies": {
-		"@sie-js/serial": "^1.9.1",
+		"@sie-js/serial": "^1.9.2",
 		"undici": "^8.12.4"
 	},
 	"devDependencies": {
