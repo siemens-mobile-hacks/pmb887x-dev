@@ -238,7 +238,8 @@
 #define	VIC_CIF_UNK0_IRQ		138
 #define	VIC_CIF_UNK1_IRQ		139
 #define	VIC_CIF_UNK2_IRQ		140
-#define	VIC_MCI_IRQ				148
+#define	VIC_MCI_INTR0_IRQ		148
+#define	VIC_MCI_INTR1_IRQ		149
 #define	VIC_I2C_SINGLE_REQ_IRQ	155
 #define	VIC_I2C_BURST_REQ_IRQ	156
 #define	VIC_I2C_ERROR_IRQ		157
@@ -4715,8 +4716,8 @@
 
 /* Response command register */
 #define	MCI_RESPCMD						MMIO32(MCI_BASE + 0x10)
-#define	MCI_RESPCMD_CMDINDEX			GENMASK(5, 0)							 // Command index from the last received response
-#define	MCI_RESPCMD_CMDINDEX_SHIFT		0
+#define	MCI_RESPCMD_RESPCMD				GENMASK(5, 0)							 // Command index from the last received response
+#define	MCI_RESPCMD_RESPCMD_SHIFT		0
 
 /* Card status bits [31:0] for a short response or [127:96] for a long response */
 #define	MCI_RESPONSE0					MMIO32(MCI_BASE + 0x14)
@@ -4740,13 +4741,13 @@
 
 /* Data timeout register */
 #define	MCI_DATATIMER					MMIO32(MCI_BASE + 0x24)
-#define	MCI_DATATIMER_TIMER				GENMASK(31, 0)							 // Data timeout in card bus clock periods
-#define	MCI_DATATIMER_TIMER_SHIFT		0
+#define	MCI_DATATIMER_DATATIME			GENMASK(31, 0)							 // Data timeout in card bus clock periods
+#define	MCI_DATATIMER_DATATIME_SHIFT	0
 
 /* Data length register */
 #define	MCI_DATALENGTH					MMIO32(MCI_BASE + 0x28)
-#define	MCI_DATALENGTH_LENGTH			GENMASK(15, 0)							 // Number of data bytes to transfer
-#define	MCI_DATALENGTH_LENGTH_SHIFT		0
+#define	MCI_DATALENGTH_DATALENGTH		GENMASK(15, 0)							 // Number of data bytes to transfer
+#define	MCI_DATALENGTH_DATALENGTH_SHIFT	0
 
 /* Data path state machine control register */
 #define	MCI_DATACTRL					MMIO32(MCI_BASE + 0x2C)
@@ -4763,8 +4764,8 @@
 
 /* Remaining data counter register */
 #define	MCI_DATACNT						MMIO32(MCI_BASE + 0x30)
-#define	MCI_DATACNT_COUNT				GENMASK(15, 0)							 // Number of data bytes remaining
-#define	MCI_DATACNT_COUNT_SHIFT			0
+#define	MCI_DATACNT_DATACOUNT			GENMASK(15, 0)							 // Number of data bytes remaining
+#define	MCI_DATACNT_DATACOUNT_SHIFT		0
 
 /* Status register */
 #define	MCI_STATUS						MMIO32(MCI_BASE + 0x34)
@@ -4862,8 +4863,8 @@
 
 /* FIFO counter register */
 #define	MCI_FIFOCNT						MMIO32(MCI_BASE + 0x48)
-#define	MCI_FIFOCNT_COUNT				GENMASK(14, 0)							 // Number of FIFO words remaining
-#define	MCI_FIFOCNT_COUNT_SHIFT			0
+#define	MCI_FIFOCNT_DATACOUNT			GENMASK(14, 0)							 // Number of FIFO words remaining
+#define	MCI_FIFOCNT_DATACOUNT_SHIFT		0
 
 /* Data FIFO register */
 #define	MCI_FIFO(n)						MMIO32(MCI_BASE + 0x80 + ((n) * 0x4))
