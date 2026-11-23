@@ -164,6 +164,7 @@ static void test_reset_requests(void) {
 #ifdef PMB8876
 	I2C_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_module_clock("I2C is prepared in a non-reset state", I2C_CLC);
+	I2C_RUNCTRL = 0;
 	I2C_FDIVCFG = 0x0004003D;
 	pulse_reset_request("I2C reset request asserts", SCU_RST_REQ_I2C);
 	test_eq_u32("I2C clock control returns to reset value", MOD_CLC_DISR | MOD_CLC_DISS, I2C_CLC);
