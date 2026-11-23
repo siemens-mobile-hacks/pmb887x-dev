@@ -1,4 +1,4 @@
-/* I2Cv2 module clock source: SCL timing of PASIC reads under different CGU clock trees. */
+/* I2Cv2 module clock source: SCL timing of PMIC reads under different CGU clock trees. */
 
 #include <pmb887x.h>
 
@@ -8,11 +8,21 @@
 
 #ifdef PMB8876
 
-#include <pmic/D1094XX.h>
-
 #define READ_RUNS 4
 #define LONG_READ 8
 #define SCL_BITS_PER_BYTE 9
+
+#if defined(BOARD_PLATFORM_APOXI)
+#include <pmic/PMB6812.h>
+#define PMIC_I2C_ADDR PMB6812_I2C_ADDR
+#define PMIC_READ_REGISTER PMB6812_GEF1
+#elif defined(BOARD_PLATFORM_SIEMENS)
+#include <pmic/D1094XX.h>
+#define PMIC_I2C_ADDR D1094XX_I2C_ADDR
+#define PMIC_READ_REGISTER D1094XX_TURNOFF_REASON
+#else
+#error "i2c-v2-clock test: unsupported PMIC for this board"
+#endif
 
 struct clock_case {
 	const char *name;
@@ -53,7 +63,7 @@ static uint32_t read_ticks(uint32_t size) {
 
 	for (uint32_t i = 0; i < READ_RUNS; i++) {
 		stopwatch_t start = stopwatch_get();
-		if (i2c_v2_smbus_read(D1094XX_I2C_ADDR, D1094XX_TURNOFF_REASON, data, size) != I2C_V2_DONE)
+		if (i2c_v2_smbus_read(PMIC_I2C_ADDR, PMIC_READ_REGISTER, data, size) != I2C_V2_DONE)
 			return 0;
 		uint32_t ticks = (uint32_t) stopwatch_elapsed(start);
 		if (ticks < best)
