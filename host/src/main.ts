@@ -50,6 +50,7 @@ try {
 		speed: options.usb ? undefined : options.speed,
 		writeAddress: options.writeAddr,
 		execAddress: options.execAddr,
+		resetDwdPhones: options.usb ?? false,
 	});
 } catch (error) {
 	console.error(error instanceof Error ? error.message : String(error));

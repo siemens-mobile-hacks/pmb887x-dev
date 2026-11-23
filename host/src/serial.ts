@@ -5,7 +5,6 @@ import { SocketBinding } from "serialport-bindings-socket";
 import { WebUSBBinding } from "serialport-bindings-webusb";
 import { SerialPort } from "serialport-rs";
 
-const USB_WAIT_INTERVAL_MS = 10;
 const START_BITS = 1;
 const STOP_BITS = 1;
 const IDLE_SIGNALS = { dtr: false, rts: false, brk: false };
@@ -54,15 +53,14 @@ export async function findSerialAdapter() {
 	return adapter;
 }
 
-export async function waitForUsbDevice(path: string) {
+export async function isUsbDeviceConnected(path: string) {
 	const selector = [...new URL(path).searchParams];
 	const matches = (portPath: string) => {
 		const params = new URL(portPath).searchParams;
 		return selector.every(([name, value]) => params.get(name)?.toLowerCase() == value.toLowerCase());
 	};
 
-	while (!(await WebUSBBinding.list()).some((port) => matches(port.path)))
-		await delay(USB_WAIT_INTERVAL_MS);
+	return (await WebUSBBinding.list()).some((port) => matches(port.path));
 }
 
 export async function openPort(path: string, baudRate: number, format: SerialFormat) {

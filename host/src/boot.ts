@@ -1,10 +1,15 @@
 import { readFileSync } from "node:fs";
+import { setTimeout as delay } from "node:timers/promises";
 
+import { findDwdPhonePort, resetPhoneViaDwd } from "./dwd.ts";
 import { decodeHeader, type Platform } from "./header.ts";
 import { forwardOutput } from "./hostCommands.ts";
 import { Preloader } from "./Preloader.ts";
-import { DEFAULT_FORMAT, openPort, waitForUsbDevice } from "./serial.ts";
+import { DEFAULT_FORMAT, isUsbDeviceConnected, openPort } from "./serial.ts";
 import { formatHex } from "./utils.ts";
+
+const USB_WAIT_INTERVAL_MS = 100;
+const DWD_POLL_INTERVAL_MS = 500;
 
 export type BootOptions = {
 	payloadPath: string;
@@ -13,6 +18,7 @@ export type BootOptions = {
 	speed: number | undefined;
 	writeAddress: number | undefined;
 	execAddress: number | undefined;
+	resetDwdPhones: boolean;
 };
 
 function resolvePayloadLayout(options: BootOptions, payload: Buffer) {
@@ -53,7 +59,7 @@ export async function boot(options: BootOptions) {
 
 	if (options.devicePath.startsWith("webusb:")) {
 		console.error(`Waiting for USB device ${options.devicePath}...`);
-		await waitForUsbDevice(options.devicePath);
+		await waitForUsbDevice(options.devicePath, options.resetDwdPhones);
 	}
 
 	const port = await openPort(options.devicePath, 115200, DEFAULT_FORMAT);
@@ -85,5 +91,32 @@ export async function boot(options: BootOptions) {
 		await forwardOutput(port, options.devicePath);
 	} finally {
 		await port.close();
+	}
+}
+
+async function waitForUsbDevice(path: string, resetDwdPhones: boolean) {
+	let resetPath: string | undefined;
+	let nextDwdPoll = 0;
+	while (!(await isUsbDeviceConnected(path))) {
+		if (resetDwdPhones && performance.now() >= nextDwdPoll) {
+			resetPath = await resetNewDwdPhone(resetPath);
+			nextDwdPoll = performance.now() + DWD_POLL_INTERVAL_MS;
+		}
+		await delay(USB_WAIT_INTERVAL_MS);
+	}
+}
+
+async function resetNewDwdPhone(resetPath: string | undefined) {
+	const phone = await findDwdPhonePort();
+	if (phone === undefined || phone.path == resetPath)
+		return phone?.path;
+
+	console.error(`Resetting phone via DWD: ${phone.description}`);
+	try {
+		await resetPhoneViaDwd(phone.path);
+		return phone.path;
+	} catch (error) {
+		console.error(`DWD reset failed: ${error instanceof Error ? error.message : String(error)}`);
+		return undefined;
 	}
 }
