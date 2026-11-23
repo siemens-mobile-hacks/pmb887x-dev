@@ -13,6 +13,8 @@ enum sio_channel {
 static enum sio_channel sio_channel;
 
 void sio_init(void) {
+	USART_RXFCON(USART0) = USART_RXFCON_RXFEN | USART_RXFCON_RXFFLU;
+	USART_TXFCON(USART0) = USART_TXFCON_TXFEN | USART_TXFCON_TXFFLU;
 	sio_channel = usb_is_configured() ? SIO_CHANNEL_USB : SIO_CHANNEL_USART;
 }
 

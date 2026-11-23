@@ -85,25 +85,8 @@ static void __attribute__((noreturn)) cmd_goto(void) {
 
 	GPTU_CLC(GPTU0) = 0;
 	GPTU_CLC(GPTU1) = 0;
+	USART_CLC(USART0) = 1 << MOD_CLC_RMC_SHIFT;
 
-	/*
-	 *	SCU_RST_REQ |= SCU_RST_REQ_I2C;
-	 *	GPTU_CLC(GPTU0) = 0;
-	 *	GPTU_CLC(GPTU1) = 0;
-	 *	I2C_CLC = 0;
-	 *
-	 *	uint32_t chip_id = (SCU_CHIPID & SCU_CHIPID_CHIPD) >> SCU_CHIPID_CHIPD_SHIFT;
-	 *	switch (chip_id) {
-	 *		case 0x1A: // PMB8875
-	 *			for (int i = 0; i < 128; i++)
-	 *				VIC_CON(i) = 0;
-	 *			break;
-	 *		case 0x1B: // PMB8876
-	 *			for (int i = 0; i < 128; i++)
-	 *				VIC_CON(i) = 0;
-	 *			break;
-}
-*/
 	cache_sync();
 	((payload_entry_t) address)();
 	while (true);

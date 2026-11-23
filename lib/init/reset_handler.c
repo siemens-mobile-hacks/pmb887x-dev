@@ -18,10 +18,6 @@ void __attribute__((weak)) reset_handler(void) {
 	// Unmount BootROM from 0x00000000
 	SCU_ROMAMCR &= ~SCU_ROMAMCR_MOUNT_BROM;
 
-	// Enable FIFO for USART0
-	USART_RXFCON(USART0) = (USART_RXFCON_RXFEN | USART_RXFCON_RXFFLU);
-	USART_TXFCON(USART0) = (USART_TXFCON_TXFEN | USART_TXFCON_TXFFLU);
-
 	volatile uint32_t *src = &_data_loadaddr;
 	volatile uint32_t *dest = &_data;
 	for (; dest < &_edata; src++, dest++)
