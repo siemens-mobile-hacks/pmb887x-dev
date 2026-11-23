@@ -148,7 +148,11 @@ static void test_reset_requests(void) {
 	test_module_clock("USB is prepared in a non-reset state", USB_CLC);
 	USB_CFG = 3;
 	pulse_reset_request("USB reset request asserts", SCU_RST_REQ_USB);
+#ifdef PMB8875
 	test_eq_u32("USB reset disables its clock", MOD_CLC_DISR | MOD_CLC_DISS, USB_CLC);
+#else
+	test_eq_u32("USB reset keeps its clock", 1 << MOD_CLC_RMC_SHIFT, USB_CLC);
+#endif
 	USB_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("USB wrapper returns to reset value", 0, USB_CFG);
 	USB_CLC = MOD_CLC_DISR;
