@@ -461,8 +461,12 @@ devices = ["generic-pmb8876"]
 [mmci-interrupts]
 devices = ["generic-pmb8876"]
 
+[mmci-dma]
+devices = ["generic-pmb8876"]
+
 [mmci-sdcard]
 devices = ["siemens-e71", "siemens-el71"]
+emulator_args = ["--sdcard", "bsp/unit/mmci/sdcard.img"]
 
 [usif]
 devices = ["generic-pmb8876"]

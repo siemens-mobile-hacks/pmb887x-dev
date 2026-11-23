@@ -22,6 +22,7 @@
 #define	BOARD_HAS_RECEIVER_SPEAKER					1
 #define	BOARD_HAS_RF_HD155165BP						1
 #define	BOARD_HAS_SDRAM_SDRAM						1
+#define	BOARD_HAS_SD_SLOT_SD_SLOT					1
 #define	BOARD_HAS_SIM_SLOT_ISO7816_SLOT				1
 
 // GPIO numbers

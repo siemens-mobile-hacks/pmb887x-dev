@@ -9,6 +9,7 @@ typedef struct {
 	const char *name;
 	uint32_t base;
 	uint32_t gpio;
+	uint32_t gpio_is;
 	uint32_t channel;
 	uint32_t rising_mode;
 	uint32_t falling_mode;
@@ -18,6 +19,8 @@ typedef struct {
 
 static volatile uint32_t *capcom_cc_src(const capcom_t *capcom) {
 	switch (capcom->channel) {
+		case 1:
+			return &CAPCOM_CC1_SRC(capcom->base);
 		case 5:
 			return &CAPCOM_CC5_SRC(capcom->base);
 		case 6:
@@ -28,7 +31,7 @@ static volatile uint32_t *capcom_cc_src(const capcom_t *capcom) {
 }
 
 static void gpio_set_capture_level(const capcom_t *capcom, bool high) {
-	GPIO_PIN(capcom->gpio) = GPIO_IS_ALT2 | GPIO_PS_MANUAL |
+	GPIO_PIN(capcom->gpio) = capcom->gpio_is | GPIO_PS_MANUAL |
 		(high ? GPIO_DATA_HIGH : GPIO_DATA_LOW) | GPIO_DIR_OUT |
 		GPIO_PPEN_PUSHPULL | GPIO_PDPU_NONE | GPIO_ENAQ_OUTPUT_ENABLED;
 	test_spin(1000);
@@ -56,7 +59,10 @@ static void capcom_configure(const capcom_t *capcom, uint32_t mode, bool initial
 	CAPCOM_CC7_SRC(capcom->base) = MOD_SRC_CLRR;
 	gpio_set_capture_level(capcom, initial_level);
 	CAPCOM_PISEL(capcom->base) = 0;
-	CAPCOM_CCM1(capcom->base) = mode;
+	if (capcom->channel < 4)
+		CAPCOM_CCM0(capcom->base) = mode;
+	else
+		CAPCOM_CCM1(capcom->base) = mode;
 	CAPCOM_T0(capcom->base) = 0x1000;
 	CAPCOM_T0REL(capcom->base) = 0;
 	CAPCOM_T01CON(capcom->base) = CAPCOM_T01CON_T0R_ENABLED;
@@ -171,7 +177,7 @@ int main(void) {
 	const capcom_t capcoms[] = {
 #ifdef PMB8875
 		{
-			"CAPCOM0", CAPCOM0, GPIO_USART0_RTS, 6,
+			"CAPCOM0", CAPCOM0, GPIO_USART0_RTS, GPIO_IS_ALT2, 6,
 			CAPCOM_CCM1_MOD6_RISING_EDGE,
 			CAPCOM_CCM1_MOD6_FALLING_EDGE,
 			CAPCOM_CCM1_MOD6_BOTH_EDGES,
@@ -179,7 +185,7 @@ int main(void) {
 		},
 #else
 		{
-			"CAPCOM0", CAPCOM0, GPIO_CLKOUT0, 5,
+			"CAPCOM0", CAPCOM0, GPIO_CLKOUT0, GPIO_IS_ALT2, 5,
 			CAPCOM_CCM1_MOD5_RISING_EDGE,
 			CAPCOM_CCM1_MOD5_FALLING_EDGE,
 			CAPCOM_CCM1_MOD5_BOTH_EDGES,
@@ -187,7 +193,7 @@ int main(void) {
 		},
 #endif
 		{
-			"CAPCOM1", CAPCOM1, GPIO_DSPOUT0, 6,
+			"CAPCOM1", CAPCOM1, GPIO_DSPOUT0, GPIO_IS_ALT2, 6,
 			CAPCOM_CCM1_MOD6_RISING_EDGE,
 			CAPCOM_CCM1_MOD6_FALLING_EDGE,
 			CAPCOM_CCM1_MOD6_BOTH_EDGES,
@@ -198,6 +204,18 @@ int main(void) {
 	test_start("CAPCOM capture test");
 	for (uint32_t index = 0; index < ARRAY_SIZE(capcoms); index++)
 		test_instance(&capcoms[index]);
+
+#ifdef PMB8876
+	const capcom_t FCDP_RB_ROUTE = {
+		"CAPCOM0 CC1 on FCDP_RB", CAPCOM0, GPIO_FCDP_RB, GPIO_IS_ALT3, 1,
+		CAPCOM_CCM0_MOD1_RISING_EDGE,
+		CAPCOM_CCM0_MOD1_FALLING_EDGE,
+		CAPCOM_CCM0_MOD1_BOTH_EDGES,
+		CAPCOM_CCM0_ACC1_T1,
+	};
+	test_category(FCDP_RB_ROUTE.name);
+	test_both_edges(&FCDP_RB_ROUTE);
+#endif
 
 	return test_finish();
 }

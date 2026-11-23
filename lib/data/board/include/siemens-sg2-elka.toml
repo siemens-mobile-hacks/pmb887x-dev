@@ -24,6 +24,11 @@ ram.size = 0x1000000 # 16 Mb
 [peripheral.PMIC]
 out.ON_OFF_OUT = "KP_IN0"
 
+[peripheral.SD_SLOT]
+type = "sd-slot"
+port = { card = "MCI:CARD" }
+out = { cd = "MMC_CD" }
+
 [peripheral.HEADSET_STEREO]
 type = "speaker"
 gain = 1250
@@ -39,6 +44,9 @@ gain = 1250
 [peripheral.RF]
 type = "bright-6pla"
 port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
+
+[quirks]
+MCI = { sync_on_datactrl = true }
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }

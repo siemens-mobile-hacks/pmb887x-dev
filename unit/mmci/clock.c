@@ -10,6 +10,8 @@
 #define MCI_WRITE_GAP_MCLK_CYCLES 4
 #define MCI_COMMAND_BITS 48
 #define MCI_COMMAND_MAX_CYCLES 56
+#define MCI_RMC_TIMEOUT_CYCLES 32768
+#define MCI_RMC_SETTLE_US 5000
 
 #ifdef PMB8876
 /* PL180 TRM: DataCtrl and Command take no new write for three MCLK plus two PCLK periods after a write. */
@@ -170,6 +172,50 @@ static void test_mmci_source_frequencies(void) {
 		}
 	}
 }
+
+static uint32_t measure_mci_timer_hz(uint32_t cycles) {
+	MCI_DATACTRL = 0;
+	MCI_CLEAR = MCI_CLEAR_DATATIMEOUTCLR;
+	MCI_DATATIMER = cycles;
+	MCI_DATALENGTH = 1;
+	stopwatch_usleep_wd(MCI_RMC_SETTLE_US);
+	stopwatch_t start = stopwatch_get();
+	MCI_DATACTRL = MCI_DATACTRL_DIRECTION_READ | MCI_DATACTRL_ENABLE;
+	while ((MCI_STATUS & MCI_STATUS_DATATIMEOUT) == 0 && stopwatch_elapsed_ms(start) < MCI_TIMEOUT_WAIT_MS)
+		test_watchdog_serve();
+	uint32_t ticks = (uint32_t) stopwatch_elapsed(start);
+	bool completed = (MCI_STATUS & MCI_STATUS_DATATIMEOUT) != 0;
+	MCI_DATACTRL = 0;
+	if (!completed || ticks == 0)
+		return 0;
+	return (uint64_t) cycles * cpu_get_stm_freq() / ticks;
+}
+
+static void test_mmci_clc_divider(void) {
+	static const struct mmci_clc_case {
+		uint32_t rmc;
+		uint32_t divider;
+	} CASES[] = {
+		{ 1, 8 }, { 2, 8 }, { 3, 8 }, { 4, 4 }, { 5, 5 }, { 6, 8 }, { 7, 8 }, { 8, 8 }, { 12, 8 },
+	};
+	CGU_CON3 = (CGU_CON3 & ~(CGU_CON3_MMCI_CLKSEL | CGU_CON3_MMCI_CLKDIV)) |
+		CGU_CON3_MMCI_CLKSEL_OSC | CGU_CON3_MMCI_CLKDIV_DIV1;
+
+	for (size_t i = 0; i < ARRAY_SIZE(CASES); i++) {
+		MMCI_CLC = CASES[i].rmc << MOD_CLC_RMC_SHIFT;
+		uint32_t expected_hz = CPU_OSC_FREQ / CASES[i].divider;
+		uint32_t measured_hz = measure_mci_timer_hz(MCI_RMC_TIMEOUT_CYCLES);
+		printf("# MMCI_CLC RMC=%lu: OSC/%lu=%lu Hz, measured=%lu Hz\n", CASES[i].rmc, CASES[i].divider,
+			expected_hz, measured_hz);
+
+		char check[64];
+		snprintf(check, sizeof(check), "MMCI_CLC RMC=%lu clocks the data timer at OSC/%lu", CASES[i].rmc,
+			CASES[i].divider);
+		uint32_t tolerance_hz = expected_hz / 50;
+		test_check(check, test_u32_in_interval(measured_hz, expected_hz - tolerance_hz, expected_hz + tolerance_hz));
+	}
+}
+
 #endif
 
 int main(void) {
@@ -178,6 +224,8 @@ int main(void) {
 #ifdef PMB8876
 	test_category("MMCI source frequencies");
 	test_mmci_source_frequencies();
+	test_category("MMCI_CLC divider");
+	test_mmci_clc_divider();
 #else
 	test_skip("MMCI clock", "PMB8876 only");
 #endif

@@ -39,6 +39,11 @@ out.ON_OFF_OUT = "KP_IN0"
 addr = 0x31
 revision = 0xED
 
+[peripheral.SD_SLOT]
+type = "sd-slot"
+port = { card = "MCI:CARD" }
+out = { cd = "MMC_CD" }
+
 [peripheral.RF]
 type = "hd155153np"
 port = { RFSSC = "TPU:RFSSC0", IQ_TX = "DSP:IQ_RX" }
@@ -59,6 +64,9 @@ gain = 2300
 [peripheral.MUSIC_SET]
 type = "speaker"
 gain = 1400
+
+[quirks]
+MCI = { sync_on_datactrl = true }
 
 [analog]
 M_0 = { type = "resistor", value = 9300 }

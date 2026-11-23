@@ -1,5 +1,6 @@
 #include <pmb887x.h>
 
+#include "dmac.h"
 #include "test.h"
 
 #define MCI_WRITE_GAP_US 10
@@ -9,6 +10,7 @@
 #define MCI_TRANSFER_CLKDIV 0
 #define MCI_DATA_TIMEOUT_CYCLES 0x00FFFFFF
 #define MCI_FIFO_HALF_WORDS 8
+#define MCI_DMA_CHANNEL 0
 
 #define SD_POWER_RAMP_MS 10
 #define SD_INITIALIZATION_CLOCKS_MS 1
@@ -88,6 +90,9 @@ struct sd_card_t {
 	uint8_t cid[16];
 	uint8_t csd[16];
 };
+
+static uint32_t fifo_block[SD_BLOCK_SIZE / 4];
+static uint32_t dma_block[SD_BLOCK_SIZE / 4];
 
 static uint8_t sd_crc7(const uint8_t *data, size_t size) {
 	uint8_t crc = 0;
@@ -269,7 +274,6 @@ static bool test_card_selection(sd_card_t *card) {
 static void test_block_read(void) {
 	test_category("Single block read");
 
-	uint32_t block[SD_BLOCK_SIZE / 4];
 	MCI_CLEAR = MCI_DATA_CLEAR;
 	MCI_DATATIMER = MCI_DATA_TIMEOUT_CYCLES;
 	MCI_DATALENGTH = SD_BLOCK_SIZE;
@@ -282,13 +286,13 @@ static void test_block_read(void) {
 
 	size_t words = 0;
 	stopwatch_t start = stopwatch_get();
-	while (words < ARRAY_SIZE(block)) {
+	while (words < ARRAY_SIZE(fifo_block)) {
 		uint32_t data_status = MCI_STATUS;
 		if ((data_status & MCI_STATUS_RXFIFOHALFFULL) != 0) {
 			for (size_t i = 0; i < MCI_FIFO_HALF_WORDS; i++)
-				block[words++] = MCI_FIFO(0);
+				fifo_block[words++] = MCI_FIFO(0);
 		} else if ((data_status & MCI_STATUS_RXDATAAVLBL) != 0) {
-			block[words++] = MCI_FIFO(0);
+			fifo_block[words++] = MCI_FIFO(0);
 		} else if ((data_status & MCI_DATA_ERRORS) != 0 || stopwatch_elapsed_ms(start) >= MCI_DATA_WAIT_MS) {
 			break;
 		}
@@ -303,18 +307,70 @@ static void test_block_read(void) {
 	printf("# CMD17 data: %lu words, DATACNT=%lu FIFOCNT=%lu\n", (uint32_t) words, MCI_DATACNT, MCI_FIFOCNT);
 	test_eq_u32("block data completes without errors", MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND,
 		data_status & (MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND | MCI_DATA_ERRORS));
-	test_eq_u32("FIFO delivers the whole block", ARRAY_SIZE(block), words);
+	test_eq_u32("FIFO delivers the whole block", ARRAY_SIZE(fifo_block), words);
 	test_eq_u32("receive FIFO is empty after the block", 0, data_status & MCI_STATUS_RXDATAAVLBL);
 	test_eq_u32("DATACNT reaches zero", 0, MCI_DATACNT);
 	test_eq_u32("FIFOCNT reaches zero", 0, MCI_FIFOCNT);
 
-	const uint8_t *bytes = (const uint8_t *) block;
+	const uint8_t *bytes = (const uint8_t *) fifo_block;
 	printf("# block 0 head:");
 	for (size_t i = 0; i < 16; i++)
 		printf(" %02X", bytes[i]);
 	printf("\n");
 	uint32_t signature = (bytes[SD_MBR_SIGNATURE_OFFSET] << 8) | bytes[SD_MBR_SIGNATURE_OFFSET + 1];
 	test_eq_u32("block 0 ends with the 0x55AA boot signature", 0x55AA, signature);
+}
+
+static void dmac_start_rx(void) {
+	DMAC_CONFIG = 0;
+	DMAC_CH_CONFIG(MCI_DMA_CHANNEL) = 0;
+	DMAC_TC_CLEAR = BIT(MCI_DMA_CHANNEL);
+	DMAC_ERR_CLEAR = BIT(MCI_DMA_CHANNEL);
+	DMAC_CONFIG = DMAC_CONFIG_ENABLE;
+	DMAC_SYNC = 0;
+	dmac_request_select(MCI_DMA_RX_REQUEST, MCI_DMA_RX_SELECT);
+
+	DMAC_CH_SRC_ADDR(MCI_DMA_CHANNEL) = (uint32_t) &MCI_FIFO(0);
+	DMAC_CH_DST_ADDR(MCI_DMA_CHANNEL) = (uint32_t) dma_block;
+	DMAC_CH_LLI(MCI_DMA_CHANNEL) = 0;
+	DMAC_CH_CONTROL(MCI_DMA_CHANNEL) = (
+		ARRAY_SIZE(dma_block) | DMAC_CH_CONTROL_SB_SIZE_SZ_8 | DMAC_CH_CONTROL_DB_SIZE_SZ_8 |
+		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD |
+		MCI_DMA_RX_AHB | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+	);
+	DMAC_CH_CONFIG(MCI_DMA_CHANNEL) = (
+		(MCI_DMA_RX_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM_PER |
+		DMAC_CH_CONFIG_ENABLE
+	);
+}
+
+static void test_dma_block_read(void) {
+	test_category("Single block read through DMA");
+
+	dmac_start_rx();
+	MCI_CLEAR = MCI_DATA_CLEAR;
+	MCI_DATATIMER = MCI_DATA_TIMEOUT_CYCLES;
+	MCI_DATALENGTH = SD_BLOCK_SIZE;
+	MCI_DATACTRL = MCI_DATACTRL_ENABLE | MCI_DATACTRL_DIRECTION_READ | MCI_DATACTRL_MODE_BLOCK |
+		MCI_DATACTRL_DMAENABLE | (SD_BLOCK_SIZE_LOG2 << MCI_DATACTRL_BLOCKSIZE_SHIFT);
+	stopwatch_usleep_wd(MCI_WRITE_GAP_US);
+	uint32_t status = mci_execute_command(SD_READ_SINGLE_BLOCK, 0, SD_RESPONSE_SHORT);
+
+	stopwatch_t start = stopwatch_get();
+	while ((DMAC_RAW_TC_STATUS & BIT(MCI_DMA_CHANNEL)) == 0 && stopwatch_elapsed_ms(start) < MCI_DATA_WAIT_MS)
+		test_watchdog_serve();
+	while ((MCI_STATUS & (MCI_STATUS_DATAEND | MCI_DATA_ERRORS)) == 0 &&
+		stopwatch_elapsed_ms(start) < MCI_DATA_WAIT_MS)
+		test_watchdog_serve();
+	uint32_t data_status = MCI_STATUS;
+
+	test_eq_u32("CMD17 response passes the CRC check", MCI_STATUS_CMDRESPEND, status);
+	test_check("last request completes the DMA channel", (DMAC_RAW_TC_STATUS & BIT(MCI_DMA_CHANNEL)) != 0);
+	test_eq_u32("block data completes without errors", MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND,
+		data_status & (MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND | MCI_DATA_ERRORS));
+	test_eq_u32("DMA leaves the receive FIFO empty", 0, data_status & MCI_STATUS_RXDATAAVLBL);
+	test_eq_u32("FIFOCNT reaches zero", 0, MCI_FIFOCNT);
+	test_eq_memory("DMA block matches the FIFO read", fifo_block, dma_block, sizeof(dma_block));
 }
 #endif
 
@@ -325,8 +381,10 @@ int main(void) {
 	if (sd_is_card_present()) {
 		sd_card_t card = { 0 };
 		sd_power_on();
-		if (test_card_identification(&card) && test_card_selection(&card))
+		if (test_card_identification(&card) && test_card_selection(&card)) {
 			test_block_read();
+			test_dma_block_read();
+		}
 	} else {
 		test_skip("SD card", "MMC_CD reports an empty slot");
 	}
