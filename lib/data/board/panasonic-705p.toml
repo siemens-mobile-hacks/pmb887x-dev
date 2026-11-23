@@ -17,7 +17,13 @@ in = { RST = "SIM:CC_RST" }
 type = "cfi-flash"
 bus = "EBU"
 ebu.cs = 0
-flash = { vid = 0x0020, pid = 0x8819 }
+flash = { vid = 0x0001, pid = [0x227E, 0x2230, 0x2200] }
+
+[peripheral.FLASH1]
+type = "cfi-flash"
+bus = "EBU"
+ebu.cs = 2
+flash = { vid = 0x0001, pid = [0x227E, 0x2230, 0x2200] }
 
 [peripheral.SDRAM]
 type = "sdram"
