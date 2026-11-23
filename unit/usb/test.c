@@ -215,7 +215,9 @@ static void test_packed_registers(void) {
 	USB_EP_READY_INT_ENABLE_HIGH = 0x02;
 	test_eq_u32("packed enable reads global, event and transfer done", 0x013C8124, USB_GLOBAL_EVENT_EP_DONE_INT_ENABLE);
 	test_eq_u32("packed enable reads DMA and FIFO ready", 0x02A50242, USB_DMA_EP_READY_INT_ENABLE);
+}
 
+static void test_packed_status(void) {
 	usb_start();
 	USB_EVENT_INT_ENABLE = USB_EVENT_INT_ENABLE_RESET;
 	usb_bus_reset();
@@ -621,6 +623,19 @@ static void test_core_disable(void) {
 	test_eq_u32("core disable keeps the wrapper configuration", USB_CFG_PHY_ENABLE, USB_CFG);
 }
 
+static bool usb_is_bus_connected(void) {
+	return (USB_PHY_CONTROL & USB_PHY_CONTROL_LINE_STATE) == USB_PHY_CONTROL_LINE_STATE_J;
+}
+
+static void test_bus_category(const char *name, void (*test)(void), bool is_bus_connected) {
+	test_category(name);
+	if (is_bus_connected) {
+		test();
+	} else {
+		test_skip(name, "USB data lines are not connected");
+	}
+}
+
 int main(void) {
 	test_start("USB peripheral test");
 	if (sio_is_usb()) {
@@ -658,16 +673,16 @@ int main(void) {
 	test_out_fifo_arming();
 	test_category("Endpoint interrupts");
 	test_endpoint_interrupts();
-	test_category("Interrupt summary");
-	test_interrupt_summary();
-	test_category("Bus reset");
-	test_bus_reset();
-	test_category("Suspend");
-	test_suspend();
-	test_category("Remote wakeup");
-	test_remote_wakeup();
-	test_category("Core disable");
-	test_core_disable();
+
+	usb_start();
+	usb_enable_phy();
+	bool is_bus_connected = usb_is_bus_connected();
+	test_bus_category("Packed status", test_packed_status, is_bus_connected);
+	test_bus_category("Interrupt summary", test_interrupt_summary, is_bus_connected);
+	test_bus_category("Bus reset", test_bus_reset, is_bus_connected);
+	test_bus_category("Suspend", test_suspend, is_bus_connected);
+	test_bus_category("Remote wakeup", test_remote_wakeup, is_bus_connected);
+	test_bus_category("Core disable", test_core_disable, is_bus_connected);
 
 	return test_finish();
 }
