@@ -16,8 +16,13 @@
 #define TEST_EBUCLC2_EBU_PLL_READY (1 << SCU_EBUCLC2_READY_SHIFT)
 #define TEST_PLL_NDIV 3
 #define TEST_PLL_MDIV 0
+#ifdef PMB8876
 #define TEST_PHASE4_K1 2
 #define TEST_PHASE4_K2 1
+#else
+#define TEST_PHASE4_K1 4
+#define TEST_PHASE4_K2 2
+#endif
 
 #if TEST_COLOR
 #define COLOR_RESET "\x1B[0m"
@@ -336,6 +341,7 @@ static __SRAM void test_clocks_select_osc(void) {
 	EBU_SDRMREF(0) |= EBU_SDRMREF_SELFREX;
 	EBU_SDRMREF(0) &= ~EBU_SDRMREF_SELFREX;
 
+#ifdef PMB8876
 	uint32_t con3_mask = (
 		CGU_CON3_AHB_PER_CLKSEL |
 		CGU_CON3_AHB_PER_CLKDIV |
@@ -348,6 +354,9 @@ static __SRAM void test_clocks_select_osc(void) {
 		CGU_CON3_MMCI_CLKSEL_OSC |
 		CGU_CON3_MMCI_CLKDIV_DIV1
 	);
+	CGU_CON3 = (CGU_CON3 & ~con3_mask) | con3;
+#endif
+
 	uint32_t phases_1_3 = (
 		CGU_OSC_PHASE1_POWER_UP |
 		CGU_OSC_PHASE2_POWER_UP |
@@ -356,7 +365,6 @@ static __SRAM void test_clocks_select_osc(void) {
 		CGU_OSC_PHASE2_BYPASS_N |
 		CGU_OSC_PHASE3_BYPASS_N
 	);
-	CGU_CON3 = (CGU_CON3 & ~con3_mask) | con3;
 	CGU_OSC &= ~(CGU_OSC_PLL_BYPASS_N | phases_1_3);
 }
 
@@ -383,7 +391,9 @@ static __SRAM void test_clocks_configure_pll_clk48m(void) {
 	CGU_CON0 = (CGU_CON0 & ~CGU_CON0_PHASE4_CONFIG) | phase4;
 	CGU_OSC |= CGU_OSC_PHASE4_POWER_UP | CGU_OSC_PHASE4_BYPASS_N;
 	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_CLK48M_CLKSEL) | CGU_CON2_CLK48M_CLKSEL_PHASE4;
+#ifdef PMB8876
 	CGU_CON3 = (CGU_CON3 & ~CGU_CON3_CLK48M_CLKDIV) | CGU_CON3_CLK48M_CLKDIV_DIV2;
+#endif
 }
 
 void test_start(const char *name) {
