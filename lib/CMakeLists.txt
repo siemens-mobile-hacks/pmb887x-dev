@@ -16,7 +16,7 @@ set(SUPPORT_WRITEBACK_SPECIFIER OFF)
 set(SUPPORT_LONG_LONG OFF)
 set(USE_DOUBLE_INTERNALLY OFF)
 set(CHECK_FOR_NUL_IN_FORMAT_SPECIFIER OFF)
-set(ALIAS_STANDARD_FUNCTION_NAMES HARD CACHE STRING "" FORCE)
+set(ALIAS_STANDARD_FUNCTION_NAMES NONE CACHE STRING "" FORCE)
 add_subdirectory(../third_party/printf third_party/printf EXCLUDE_FROM_ALL)
 
 add_library(pmb887x OBJECT
@@ -27,6 +27,7 @@ add_library(pmb887x OBJECT
 	init/reset_handler.c
 	usart.c
 	usb.c
+	sio.c
 	i2c.c
 	i2c-v1.c
 	i2c-v2.c
@@ -38,3 +39,9 @@ add_library(pmb887x OBJECT
 	cpu.c
 )
 target_link_libraries(pmb887x PUBLIC printf::printf)
+target_link_options(pmb887x PUBLIC
+	"LINKER:--defsym=sprintf=sprintf_"
+	"LINKER:--defsym=snprintf=snprintf_"
+	"LINKER:--defsym=vsprintf=vsprintf_"
+	"LINKER:--defsym=vsnprintf=vsnprintf_"
+)
