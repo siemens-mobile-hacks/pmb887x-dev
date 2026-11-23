@@ -4,6 +4,9 @@ model = "CL61A"
 platform = "apoxi"
 cpu.type = "pmb8876"
 cpu.rev = 0x10
+patterns = [
+	{ offset = 0x40C00, pattern = '"DRV_MPE_NBG_"' },
+]
 
 [peripheral.LCD0]
 type = "jbt6k71"
