@@ -153,13 +153,14 @@ static const struct clock_mode CLOCK_MODES[] = {
 };
 
 /*
- * Straight-line NOP loops from the I-cache: running on into a code line costs a cycle unless the line is one of the
- * CODE_RECENT_LINES latest; a loop longer than that pays every line it runs on into.
+ * Straight-line NOP loops from the I-cache. With round-robin replacement after an I-cache invalidation, entering each
+ * code line of a loop costs a cycle; with random replacement the cost depends on the ways the lines were allocated to.
  */
 #define CODE_LOOP_START_BYTES 12
 #define CODE_LOOP_END_BYTES 8
-#define CODE_RECENT_LINES 9
+#define CODE_LOOP_16K_BYTES 16384
 #define CODE_LOOP_32K_MCYCLES 4092
+#define CP15_CONTROL_ROUND_ROBIN (1 << 14)
 
 static const struct {
 	const char *name;
@@ -169,7 +170,6 @@ static const struct {
 	{ "256 B code loop", timing_arm_code_loop_256, 256 },
 	{ "288 B code loop", timing_arm_code_loop_288, 288 },
 	{ "1 KiB code loop", timing_arm_code_loop_1k, 1024 },
-	{ "16 KiB code loop", timing_arm_code_loop_16k, 16384 },
 };
 
 enum memory_kind {
@@ -391,6 +391,22 @@ static uint32_t measure_loop_mcycles(void (*fn)(uint32_t iterations, uint32_t *d
 	stopwatch_t ticks = stopwatch_elapsed(start);
 	cpu_enable_irq(!irq_was_disabled);
 	return (uint32_t) (ticks * (cpu_get_freq() / 1000) / (stopwatch_ticks_per_s() / 1000) * 1000 / iterations);
+}
+
+static uint32_t code_loop_lines(uint32_t bytes) {
+	return (CODE_LOOP_START_BYTES + bytes + CODE_LOOP_END_BYTES - 1) / LINE_BYTES + 1;
+}
+
+static uint32_t measure_code_loop_round_robin(void (*fn)(uint32_t iterations, uint32_t *data), uint32_t iterations) {
+	uint32_t control = cp15_control();
+
+	__asm__ volatile(
+		"mcr p15, 0, %0, c1, c0, 0\n"
+		"mcr p15, 0, %1, c7, c5, 0\n"
+		: : "r" (control | CP15_CONTROL_ROUND_ROBIN), "r" (0) : "memory");
+	uint32_t mcycles = measure_loop_mcycles(fn, iterations);
+	__asm__ volatile("mcr p15, 0, %0, c1, c0, 0\n" : : "r" (control) : "memory");
+	return mcycles;
 }
 
 static void check_cycles_within(
@@ -737,12 +753,15 @@ int main(void) {
 	test_category("I-cache capacity, cycles per NOP");
 	for (size_t i = 0; i < ARRAY_SIZE(CODE_LOOPS); i++) {
 		uint32_t nops = CODE_LOOPS[i].bytes / 4;
-		uint32_t lines = (CODE_LOOP_START_BYTES + CODE_LOOPS[i].bytes + CODE_LOOP_END_BYTES - 1) / LINE_BYTES + 1;
-		uint32_t line_cycles = lines > CODE_RECENT_LINES ? lines - 1 : 0;
-		uint32_t expected = (nops + LOOP_OVERHEAD_CYCLES + line_cycles) * 1000 / nops;
-		uint32_t loop = measure_loop_mcycles(CODE_LOOPS[i].fn, 4000000 / nops);
+		uint32_t expected = (nops + LOOP_OVERHEAD_CYCLES + code_loop_lines(CODE_LOOPS[i].bytes)) * 1000 / nops;
+		uint32_t loop = measure_code_loop_round_robin(CODE_LOOPS[i].fn, 4000000 / nops);
 		check_cycles(CODE_LOOPS[i].name, loop / nops, expected, 1);
 	}
+	uint32_t nops_16k = CODE_LOOP_16K_BYTES / 4;
+	uint32_t lines_16k = code_loop_lines(CODE_LOOP_16K_BYTES);
+	uint32_t expected_16k = (nops_16k + LOOP_OVERHEAD_CYCLES + lines_16k - 1) * 1000 / nops_16k;
+	uint32_t loop_16k = measure_loop_mcycles(timing_arm_code_loop_16k, 4000000 / nops_16k);
+	check_cycles("16 KiB code loop", loop_16k / nops_16k, expected_16k, 1);
 	uint32_t nops_32k = 32768 / 4;
 	uint32_t loop_32k = measure_loop_mcycles(timing_arm_code_loop_32k, 4000000 / nops_32k);
 	check_cycles("32 KiB code loop", loop_32k / nops_32k, CODE_LOOP_32K_MCYCLES, 1);
