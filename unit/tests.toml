@@ -458,6 +458,12 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [mmci-clock]
 devices = ["generic-pmb8876"]
 
+[mmci-interrupts]
+devices = ["generic-pmb8876"]
+
+[mmci-sdcard]
+devices = ["siemens-e71", "siemens-el71"]
+
 [usif]
 devices = ["generic-pmb8876"]
 

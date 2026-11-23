@@ -241,6 +241,8 @@ add_peripheral_test(tpu-baseband-clock tpu/baseband-clock.c dsp/dsp-hw.c cgu/clo
 add_peripheral_test(tpu-frame-timing tpu/frame-timing.c)
 add_peripheral_test(tcm tcm/test.c tcm/execution.S)
 add_peripheral_test(mmci-clock mmci/clock.c cgu/clock.c)
+add_peripheral_test(mmci-interrupts mmci/interrupts.c)
+add_peripheral_test(mmci-sdcard mmci/sdcard.c)
 add_peripheral_test(usif usif/test.c usif/usif.c)
 add_peripheral_test(usif-dma usif/test-dma.c usif/usif.c)
 add_peripheral_test(usif-clock usif/clock.c)
