@@ -28,6 +28,12 @@ bus = "EBU"
 ebu.cs = 2
 flash = { vid = 0x0001, pid = [0x227E, 0x2230, 0x2200] }
 
+[peripheral.UMTS]
+type = "bcm2141"
+bus = "EBU"
+ebu.cs = 3
+out = { IRQ = "UMTS_IRQ" }
+
 [peripheral.SDRAM]
 type = "sdram"
 bus = "EBU"
@@ -56,6 +62,9 @@ M_0 = { type = "resistor", value = 9300 }
 M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
 M_7 = { type = "resistor", value = 14800 }
 M_9 = { type = "resistor", value = 15000 }
+
+[gpio.aliases]
+T_OUT8 = "UMTS_IRQ"
 
 [gpio.pull-resistors]
 I2C_SCL = 1
