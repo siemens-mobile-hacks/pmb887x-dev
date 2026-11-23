@@ -621,3 +621,9 @@ devices = ["siemens-cf75"]
 
 [cfi-amd-rw]
 devices = ["siemens-cf75"]
+
+[cfi-amd-protection]
+devices = ["siemens-cf75"]
+
+[cfi-amd-chip-erase]
+devices = ["siemens-cf75"]

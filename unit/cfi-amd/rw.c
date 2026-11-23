@@ -10,17 +10,17 @@
 #define TEST_WORD 0x5AA5
 #define PROTECTED_TEST_WORD 0x1234
 #define ERASE_TEST_OFFSET 0x100
+#define PROGRAM_SUSPEND_OFFSET 0x1000
+#define UNLOCK_BYPASS_OFFSET 0x2000
+#define WIDE_STORE_OFFSET 0x3000
+#define BUFFER_PATTERN 0xC3A5
+#define PROGRAM_SUSPEND_PATTERN 0x3C5A
+#define ERASE_SUSPEND_PATTERN 0x9617
+#define WIDE_STORE_PATTERN 0x6E81
 
-static bool find_flash(struct amd_flash *flash) {
-	for (uint32_t i = 0; i < FLASH_CHIP_SELECT_COUNT; i++) {
-		if (amd_probe(cfi_chip_selects[i], flash)) {
-			cfi_disable_chip_selects();
-			cfi_map(flash->cs, FLASH_WINDOW_BASE, 27 - flash->cfi.size_exponent);
-			return true;
-		}
-	}
-	cfi_disable_chip_selects();
-	return false;
+static void fill_pattern(uint16_t *data, uint32_t words, uint16_t pattern) {
+	for (uint32_t word = 0; word < words; word++)
+		data[word] = (uint16_t) ((word * 0x0101) ^ pattern);
 }
 
 static void test_dyb_protection(const struct amd_flash *flash, uint32_t sector) {
@@ -58,8 +58,7 @@ static void test_program_buffer(const struct amd_flash *flash, uint32_t sector) 
 	uint32_t words = flash->cfi.write_buffer_size / 2;
 	uint32_t address = sector + flash->cfi.write_buffer_size;
 	uint16_t data[words];
-	for (uint32_t word = 0; word < words; word++)
-		data[word] = (uint16_t) ((word * 0x0101) ^ 0xC3A5);
+	fill_pattern(data, words, BUFFER_PATTERN);
 
 	uint32_t toggles;
 	amd_start_program_buffer(flash, sector, address, data, words);
@@ -152,12 +151,144 @@ static void test_erase_suspend(const struct amd_flash *flash, uint32_t sector, u
 	test_check("resumed erase blanks the sector", cfi_range_is_blank(sector, size));
 }
 
+static void test_program_suspend(const struct amd_flash *flash, uint32_t sector) {
+	uint32_t bank = amd_bank_of(flash, sector);
+	uint32_t other_sector = sector - AMD_SAMPLE_WORDS * 2;
+	uint16_t other_data[AMD_SAMPLE_WORDS];
+	memcpy(other_data, (const void *) other_sector, sizeof(other_data));
+	uint32_t words = flash->cfi.write_buffer_size / 2;
+	uint32_t address = sector + PROGRAM_SUSPEND_OFFSET;
+	uint32_t last = address + (words - 1) * 2;
+	uint16_t data[words];
+	fill_pattern(data, words, PROGRAM_SUSPEND_PATTERN);
+
+	uint32_t toggles;
+	amd_start_program_buffer(flash, sector, address, data, words);
+	uint16_t programming_first = MMIO16(last);
+	uint16_t programming_second = MMIO16(last);
+	MMIO16(bank) = AMD_CMD_PROGRAM_SUSPEND;
+	if (((programming_first ^ programming_second) & AMD_STATUS_TOGGLE) == 0) {
+		amd_wait_ready(last, flash->program_timeout_ms, &toggles);
+		test_skip("program suspend", "program completed before suspend");
+		return;
+	}
+
+	enum amd_operation_result suspend = amd_wait_ready(other_sector, flash->program_timeout_ms, &toggles);
+	test_eq_u32("program suspend stops DQ6", AMD_OPERATION_DONE, suspend);
+	test_eq_memory("other sector of the bank reads array while program is suspended", other_data,
+		(const void *) other_sector, sizeof(other_data));
+	amd_command(bank, AMD_CMD_AUTOSELECT);
+	test_eq_u32("autoselect works during program suspend", flash->manufacturer,
+		cfi_read_word(bank, AMD_AUTOSELECT_MANUFACTURER));
+	amd_reset(bank);
+	test_eq_memory("reset returns to program suspend reads", other_data, (const void *) other_sector,
+		sizeof(other_data));
+
+	MMIO16(bank) = AMD_CMD_PROGRAM_RESUME;
+	enum amd_operation_result result = amd_wait_ready(last, flash->program_timeout_ms, &toggles);
+	test_eq_u32("resumed program completes", AMD_OPERATION_DONE, result);
+	test_eq_memory("resumed program writes the buffer", data, (const void *) address, sizeof(data));
+}
+
+static void test_erase_suspend_program(
+	const struct amd_flash *flash,
+	uint32_t sector,
+	uint32_t size,
+	uint32_t spare_sector
+) {
+	uint32_t bank = amd_bank_of(flash, sector);
+	uint32_t words = flash->cfi.write_buffer_size / 2;
+	uint32_t last = spare_sector + (words - 1) * 2;
+	uint16_t data[words];
+	fill_pattern(data, words, ERASE_SUSPEND_PATTERN);
+
+	uint32_t toggles;
+	amd_start_erase_sector(flash, sector);
+	stopwatch_t started = stopwatch_get();
+	bool erase_started = false;
+	while (!erase_started && stopwatch_elapsed_ms(started) <= flash->program_timeout_ms)
+		erase_started = (MMIO16(sector) & AMD_STATUS_ERASE_STARTED) != 0;
+	MMIO16(bank) = AMD_CMD_ERASE_SUSPEND;
+	amd_wait_ready(sector, flash->program_timeout_ms, &toggles);
+
+	amd_start_program_buffer(flash, spare_sector, spare_sector, data, words);
+	enum amd_operation_result program = amd_wait_ready(last, flash->program_timeout_ms, &toggles);
+	test_eq_u32("buffer program completes during erase suspend", AMD_OPERATION_DONE, program);
+	test_eq_memory("buffer program during erase suspend writes the data", data, (const void *) spare_sector,
+		sizeof(data));
+
+	MMIO16(bank) = AMD_CMD_ERASE_RESUME;
+	enum amd_operation_result erase = amd_wait_ready(sector, flash->erase_timeout_ms, &toggles);
+	test_eq_u32("erase resumed after a buffer program completes", AMD_OPERATION_DONE, erase);
+	test_check("erase resumed after a buffer program blanks the sector", cfi_range_is_blank(sector, size));
+}
+
+static void test_unlock_bypass(const struct amd_flash *flash, uint32_t sector) {
+	uint32_t bank = amd_bank_of(flash, sector);
+	uint32_t address = sector + UNLOCK_BYPASS_OFFSET;
+	uint32_t other_sector = sector - AMD_SAMPLE_WORDS * 2;
+	uint16_t other_data[AMD_SAMPLE_WORDS];
+	memcpy(other_data, (const void *) other_sector, sizeof(other_data));
+	static const uint16_t words[] = { 0x1357, 0x2468 };
+
+	amd_command(bank, AMD_CMD_UNLOCK_BYPASS_ENTRY);
+	test_eq_memory("unlock bypass reads array", other_data, (const void *) other_sector, sizeof(other_data));
+	for (uint32_t word = 0; word < ARRAY_SIZE(words); word++) {
+		uint32_t toggles;
+		MMIO16(bank) = AMD_CMD_PROGRAM;
+		MMIO16(address + word * 2) = words[word];
+		enum amd_operation_result result = amd_wait_ready(address + word * 2, flash->program_timeout_ms, &toggles);
+		test_eq_u32("two-cycle unlock bypass program completes", AMD_OPERATION_DONE, result);
+	}
+	test_eq_memory("unlock bypass programs the words", words, (const void *) address, sizeof(words));
+	cfi_enter_query(bank);
+	test_check("CFI query works in unlock bypass", cfi_has_query_signature(bank));
+	amd_reset(bank);
+	MMIO16(bank) = AMD_CMD_UNLOCK_BYPASS_RESET;
+	MMIO16(bank) = AMD_CMD_COMMAND_SET_EXIT_CONFIRM;
+
+	uint32_t after_reset = address + sizeof(words);
+	MMIO16(bank) = AMD_CMD_PROGRAM;
+	MMIO16(after_reset) = TEST_WORD;
+	test_eq_u32("unlock bypass reset requires the unlock cycles again", 0xFFFF, MMIO16(after_reset));
+	test_eq_memory("unlock bypass reset returns to array", other_data, (const void *) other_sector,
+		sizeof(other_data));
+}
+
+static void test_wide_buffer_load(const struct amd_flash *flash, uint32_t sector) {
+	uint32_t words = flash->cfi.write_buffer_size / 2;
+	uint32_t address = sector + WIDE_STORE_OFFSET;
+	uint32_t last = address + (words - 1) * 2;
+	uint16_t data[words];
+	fill_pattern(data, words, WIDE_STORE_PATTERN);
+
+	amd_unlock(amd_bank_of(flash, sector));
+	MMIO16(address) = AMD_CMD_WRITE_TO_BUFFER;
+	MMIO16(address) = words - 1;
+	for (uint32_t word = 0; word < words; word += 2)
+		MMIO32(address + word * 2) = data[word] | ((uint32_t) data[word + 1] << 16);
+	MMIO16(last) = AMD_CMD_PROGRAM_BUFFER_TO_FLASH;
+
+	uint32_t toggles;
+	enum amd_operation_result result = amd_wait_ready(last, flash->program_timeout_ms, &toggles);
+	test_eq_u32("buffer program loaded by 32-bit stores completes", AMD_OPERATION_DONE, result);
+	test_eq_memory("each 32-bit store loads two buffer words", data, (const void *) address, sizeof(data));
+}
+
+static void test_cleanup(const struct amd_flash *flash, uint32_t sector, uint32_t size) {
+	uint32_t toggles;
+	amd_start_erase_sector(flash, sector);
+	enum amd_operation_result result = amd_wait_ready(sector, flash->erase_timeout_ms, &toggles);
+	test_eq_u32("cleanup erase completes", AMD_OPERATION_DONE, result);
+	test_check("cleanup erase blanks the sector", cfi_range_is_blank(sector, size));
+}
+
 int main(void) {
 	test_start("AMD CFI flash program and erase test");
 	EBU_CLC = 1 << MOD_CLC_RMC_SHIFT;
 
 	struct amd_flash flash;
-	if (!find_flash(&flash)) {
+	if (!amd_find_flash(&flash)) {
 		test_skip("AMD CFI flash", "no AMD CFI flash found");
 		return test_finish();
 	}
@@ -171,7 +302,7 @@ int main(void) {
 
 	uint32_t sector;
 	uint32_t size;
-	if (!amd_find_blank_sector(&flash, &sector, &size)) {
+	if (!amd_find_blank_sector(&flash, flash.base, &sector, &size)) {
 		test_skip("AMD program and erase", "no blank sector outside the first bank");
 		return test_finish();
 	}
@@ -189,7 +320,31 @@ int main(void) {
 	test_erase_sector(&flash, sector, size);
 	test_category("Erase suspend");
 	test_erase_suspend(&flash, sector, size);
+	test_category("Program suspend");
+	test_program_suspend(&flash, sector);
+	test_category("Unlock bypass");
+	test_unlock_bypass(&flash, sector);
 
+	uint32_t spare_sector;
+	uint32_t spare_size;
+	bool has_spare = amd_find_blank_sector(&flash, sector + size, &spare_sector, &spare_size);
+	test_category("Buffer program during erase suspend");
+	if (has_spare) {
+		printf("# spare sector %08lX, %lu KiB\n", spare_sector, spare_size >> 10);
+		amd_write_dyb(&flash, spare_sector, AMD_CMD_DYB_CLEAR);
+		test_erase_suspend_program(&flash, sector, size, spare_sector);
+	} else {
+		test_skip("buffer program during erase suspend", "no second blank sector");
+	}
+	test_category("32-bit buffer load");
+	test_wide_buffer_load(&flash, sector);
+
+	test_category("Cleanup");
+	test_cleanup(&flash, sector, size);
+	if (has_spare) {
+		test_cleanup(&flash, spare_sector, spare_size);
+		amd_write_dyb(&flash, spare_sector, AMD_CMD_DYB_SET);
+	}
 	amd_write_dyb(&flash, sector, AMD_CMD_DYB_SET);
 	return test_finish();
 }

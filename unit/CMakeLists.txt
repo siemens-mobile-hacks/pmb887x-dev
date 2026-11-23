@@ -333,3 +333,5 @@ add_peripheral_test(cfi-intel-efa-rw cfi-intel/efa-rw.c cfi-intel/intel.c cfi/cf
 add_peripheral_test(cfi-intel-otp-rw cfi-intel/otp-rw.c cfi-intel/intel.c cfi/cfi.c)
 add_peripheral_test(cfi-amd cfi-amd/test.c cfi-amd/amd.c cfi/cfi.c)
 add_peripheral_test(cfi-amd-rw cfi-amd/rw.c cfi-amd/amd.c cfi/cfi.c)
+add_peripheral_test(cfi-amd-protection cfi-amd/protection.c cfi-amd/amd.c cfi/cfi.c)
+add_peripheral_test(cfi-amd-chip-erase cfi-amd/chip-erase.c cfi-amd/amd.c cfi/cfi.c)

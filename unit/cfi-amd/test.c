@@ -12,6 +12,8 @@
 #define INTEL_READ_IDENTIFIER 0x90
 #define NON_COMMAND_WRITE 0x0000
 #define WRONG_UNLOCK1_ADDRESS 0x554
+#define CONFIGURATION_REGISTER_DEFAULT 0xEFC8
+#define CONFIGURATION_REGISTER_TEST 0x9FC2
 
 static struct amd_flash flashes[FLASH_CHIP_SELECT_COUNT];
 static uint32_t flash_count;
@@ -179,42 +181,63 @@ static void test_single_cycle_exits(const struct amd_flash *flash) {
 	}
 }
 
-static uint16_t read_sector_protection(uint32_t bank, uint32_t sector, enum amd_command entry) {
-	amd_command(bank, entry);
-	uint16_t status = MMIO16(sector);
-	amd_exit_command_set(bank);
-	return status;
-}
-
-static void test_protection_registers(const struct amd_flash *flash) {
+static void test_configuration_register(const struct amd_flash *flash) {
 	uint16_t array[AMD_SAMPLE_WORDS];
 	memcpy(array, (const void *) flash->base, sizeof(array));
 	uint32_t last_bank = amd_bank_base(flash, flash->banks - 1);
-	uint32_t last_sector = flash->base + flash->cfi.size - flash->cfi.erase[flash->cfi.regions - 1].block_size;
 
-	amd_command(flash->base, AMD_CMD_READ_CONFIGURATION_REGISTER);
-	printf("# configuration register: %04X\n", MMIO16(flash->base));
-	amd_reset(flash->base);
+	test_eq_u32("configuration register has the power-up value", CONFIGURATION_REGISTER_DEFAULT,
+		amd_read_configuration_register(flash->base));
+	amd_set_configuration_register(flash->base, CONFIGURATION_REGISTER_TEST);
+	test_eq_u32("set configuration register stores the value", CONFIGURATION_REGISTER_TEST,
+		amd_read_configuration_register(flash->base));
+	test_eq_u32("configuration register is shared by all banks", CONFIGURATION_REGISTER_TEST,
+		amd_read_configuration_register(last_bank));
+	test_eq_memory("asynchronous array reads are unchanged", array, (const void *) flash->base, sizeof(array));
+	amd_set_configuration_register(flash->base, CONFIGURATION_REGISTER_DEFAULT);
+	test_eq_u32("configuration register returns to the power-up value", CONFIGURATION_REGISTER_DEFAULT,
+		amd_read_configuration_register(flash->base));
+}
+
+static void test_lock_register(const struct amd_flash *flash) {
+	uint16_t array[AMD_SAMPLE_WORDS];
+	uint16_t last_array[AMD_SAMPLE_WORDS];
+	uint32_t last_bank = amd_bank_base(flash, flash->banks - 1);
+	memcpy(array, (const void *) flash->base, sizeof(array));
+	memcpy(last_array, (const void *) last_bank, sizeof(last_array));
 
 	amd_command(flash->base, AMD_CMD_LOCK_REGISTER_ENTRY);
-	printf("# lock register: %04X\n", MMIO16(flash->base));
+	uint16_t lock = cfi_read_word(flash->base, AMD_LOCK_REGISTER_WORD);
+	test_eq_memory("other bank reads array in lock register mode", last_array, (const void *) last_bank,
+		sizeof(last_array));
 	amd_exit_command_set(flash->base);
+	printf("# lock register: %04X\n", lock);
+	test_eq_memory("lock register exit returns to array", array, (const void *) flash->base, sizeof(array));
+
+	uint16_t indicator = amd_read_autoselect(flash->base, AMD_AUTOSELECT_INDICATOR_BITS);
+	bool indicator_locked = (indicator & AMD_INDICATOR_CUSTOMER_SECSI_LOCKED) != 0;
+	bool lock_register_locked = (lock & AMD_LOCK_CUSTOMER_SECSI_PROTECTION) == 0;
+	test_eq_u32("lock register and indicator agree on the customer SecSi lock", indicator_locked,
+		lock_register_locked);
+}
+
+static void test_protection_state(const struct amd_flash *flash) {
+	uint16_t array[AMD_SAMPLE_WORDS];
+	memcpy(array, (const void *) flash->base, sizeof(array));
+	uint32_t last_sector = flash->base + flash->cfi.size - flash->cfi.erase[flash->cfi.regions - 1].block_size;
 
 	printf(
 		"# PPB status: first sector %04X, last sector %04X\n",
-		read_sector_protection(flash->base, flash->base, AMD_CMD_PPB_ENTRY),
-		read_sector_protection(last_bank, last_sector, AMD_CMD_PPB_ENTRY)
+		amd_read_ppb(flash, flash->base),
+		amd_read_ppb(flash, last_sector)
 	);
-
-	amd_command(flash->base, AMD_CMD_GLOBAL_PPB_LOCK_ENTRY);
-	printf("# PPB lock bit: %04X\n", MMIO16(flash->base));
-	amd_exit_command_set(flash->base);
-
 	printf(
 		"# DYB status: first sector %04X, last sector %04X\n",
-		read_sector_protection(flash->base, flash->base, AMD_CMD_DYB_ENTRY),
-		read_sector_protection(last_bank, last_sector, AMD_CMD_DYB_ENTRY)
+		amd_read_dyb(flash, flash->base),
+		amd_read_dyb(flash, last_sector)
 	);
+	test_eq_u32("PPB lock bit is clear after power-up", AMD_PROTECTION_CLEAR,
+		amd_read_ppb_lock(flash->base) & AMD_PROTECTION_CLEAR);
 
 	amd_command(flash->base, AMD_CMD_SECSI_SECTOR_ENTRY);
 	printf("# SecSi sector:");
@@ -253,8 +276,12 @@ int main(void) {
 		test_ignored_writes(&flashes[i]);
 		test_category("Single-cycle exits");
 		test_single_cycle_exits(&flashes[i]);
-		test_category("Protection registers");
-		test_protection_registers(&flashes[i]);
+		test_category("Configuration register");
+		test_configuration_register(&flashes[i]);
+		test_category("Lock register");
+		test_lock_register(&flashes[i]);
+		test_category("Protection state");
+		test_protection_state(&flashes[i]);
 	}
 
 	return test_finish();

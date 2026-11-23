@@ -109,6 +109,18 @@ bool amd_probe(uint32_t cs, struct amd_flash *flash) {
 	return true;
 }
 
+bool amd_find_flash(struct amd_flash *flash) {
+	for (uint32_t i = 0; i < FLASH_CHIP_SELECT_COUNT; i++) {
+		if (amd_probe(cfi_chip_selects[i], flash)) {
+			cfi_disable_chip_selects();
+			cfi_map(flash->cs, FLASH_WINDOW_BASE, 27 - flash->cfi.size_exponent);
+			return true;
+		}
+	}
+	cfi_disable_chip_selects();
+	return false;
+}
+
 uint32_t amd_sector_count(const struct amd_flash *flash) {
 	uint32_t sectors = 0;
 	for (uint32_t region = 0; region < flash->cfi.regions; region++)
@@ -145,7 +157,7 @@ uint32_t amd_bank_of(const struct amd_flash *flash, uint32_t address) {
 	return amd_bank_base(flash, bank);
 }
 
-bool amd_find_blank_sector(const struct amd_flash *flash, uint32_t *sector, uint32_t *size) {
+bool amd_find_blank_sector(const struct amd_flash *flash, uint32_t start, uint32_t *sector, uint32_t *size) {
 	uint32_t first_bank_end = flash->banks > 1 ? amd_bank_base(flash, 1) : flash->base;
 	uint32_t address = flash->base;
 	for (uint32_t region = 0; region < flash->cfi.regions; region++) {
@@ -153,6 +165,7 @@ bool amd_find_blank_sector(const struct amd_flash *flash, uint32_t *sector, uint
 		for (uint32_t block = 0; block < erase->blocks; block++) {
 			test_watchdog_reset();
 			bool has_neighbors = (
+				address >= start &&
 				address > first_bank_end &&
 				address + erase->block_size < flash->base + flash->cfi.size
 			);
@@ -189,12 +202,20 @@ enum amd_operation_result amd_wait_ready(uint32_t address, uint32_t timeout_ms, 
 	}
 }
 
-uint16_t amd_read_dyb(const struct amd_flash *flash, uint32_t sector) {
+static uint16_t amd_read_sector_protection(const struct amd_flash *flash, uint32_t sector, enum amd_command entry) {
 	uint32_t bank = amd_bank_of(flash, sector);
-	amd_command(bank, AMD_CMD_DYB_ENTRY);
+	amd_command(bank, entry);
 	uint16_t status = MMIO16(sector);
 	amd_exit_command_set(bank);
 	return status;
+}
+
+uint16_t amd_read_dyb(const struct amd_flash *flash, uint32_t sector) {
+	return amd_read_sector_protection(flash, sector, AMD_CMD_DYB_ENTRY);
+}
+
+uint16_t amd_read_ppb(const struct amd_flash *flash, uint32_t sector) {
+	return amd_read_sector_protection(flash, sector, AMD_CMD_PPB_ENTRY);
 }
 
 void amd_write_dyb(const struct amd_flash *flash, uint32_t sector, enum amd_command command) {
@@ -225,4 +246,59 @@ void amd_start_erase_sector(const struct amd_flash *flash, uint32_t sector) {
 	amd_command(bank, AMD_CMD_ERASE_SETUP);
 	amd_unlock(bank);
 	MMIO16(sector) = AMD_CMD_SECTOR_ERASE;
+}
+
+enum amd_operation_result amd_program_ppb(const struct amd_flash *flash, uint32_t sector) {
+	uint32_t bank = amd_bank_of(flash, sector);
+	amd_command(bank, AMD_CMD_PPB_ENTRY);
+	MMIO16(bank) = AMD_CMD_PROGRAM;
+	MMIO16(sector) = AMD_CMD_PPB_PROGRAM;
+	uint32_t toggles;
+	enum amd_operation_result result = amd_wait_ready(sector, flash->erase_timeout_ms, &toggles);
+	amd_exit_command_set(bank);
+	return result;
+}
+
+enum amd_operation_result amd_erase_all_ppb(const struct amd_flash *flash) {
+	amd_command(flash->base, AMD_CMD_PPB_ENTRY);
+	MMIO16(flash->base) = AMD_CMD_ERASE_SETUP;
+	MMIO16(flash->base) = AMD_CMD_ALL_PPB_ERASE;
+	uint32_t toggles;
+	enum amd_operation_result result = amd_wait_ready(flash->base, flash->erase_timeout_ms, &toggles);
+	amd_exit_command_set(flash->base);
+	return result;
+}
+
+uint16_t amd_read_ppb_lock(uint32_t bank) {
+	amd_command(bank, AMD_CMD_GLOBAL_PPB_LOCK_ENTRY);
+	uint16_t status = MMIO16(bank);
+	amd_exit_command_set(bank);
+	return status;
+}
+
+void amd_set_ppb_lock(uint32_t bank) {
+	amd_command(bank, AMD_CMD_GLOBAL_PPB_LOCK_ENTRY);
+	MMIO16(bank) = AMD_CMD_PROGRAM;
+	MMIO16(bank) = AMD_CMD_PPB_LOCK_BIT_SET;
+	amd_exit_command_set(bank);
+}
+
+uint16_t amd_read_lock_register(uint32_t base) {
+	amd_command(base, AMD_CMD_LOCK_REGISTER_ENTRY);
+	uint16_t value = cfi_read_word(base, AMD_LOCK_REGISTER_WORD);
+	amd_exit_command_set(base);
+	return value;
+}
+
+uint16_t amd_read_configuration_register(uint32_t bank) {
+	amd_command(bank, AMD_CMD_READ_CONFIGURATION_REGISTER);
+	uint16_t value = MMIO16(bank);
+	amd_reset(bank);
+	return value;
+}
+
+void amd_set_configuration_register(uint32_t bank, uint16_t value) {
+	amd_command(bank, AMD_CMD_SET_CONFIGURATION_REGISTER);
+	MMIO16(bank) = value;
+	amd_reset(bank);
 }
