@@ -69,6 +69,10 @@ M_9 = { type = "resistor", value = 15000 }
 [dsp]
 rom_version = 0x0801
 
+[gpio.pull-resistors]
+I2C_SCL = 1
+I2C_SDA = 1
+
 [gpio.aliases]
 CIF_RESET = "MM_INT0"
 

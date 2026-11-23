@@ -57,6 +57,10 @@ M_1 = { type = "resistor_divider", r1 = 330000, r2 = 220000, value = 3700 }
 M_7 = { type = "resistor", value = 14800 }
 M_9 = { type = "resistor", value = 15000 }
 
+[gpio.pull-resistors]
+I2C_SCL = 1
+I2C_SDA = 1
+
 [gpio.inputs]
 # BROM APP PLATFORM (A01)
 PIN102 = 1

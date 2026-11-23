@@ -122,6 +122,10 @@ M_9 = { type = "voltage", value = 1500 } # ~150mV draw
 [dsp]
 rom_version = 0x0801
 
+[gpio.pull-resistors]
+I2C_SCL = 1
+I2C_SDA = 1
+
 [gpio.aliases]
 MMCI_DAT1 = "USB_CHG_EN"
 T_OUT7 = "KP_OUT4"
