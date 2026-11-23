@@ -1,7 +1,8 @@
 [board]
 vendor = "BenQ-Siemens"
-model = "E71"
+model = "EL71"
 extends = "include/siemens-sg2-elka.toml"
+aliases = ["siemens-c1f0"]
 
 [peripheral.LCD0]
 type = "jbt6k71"
