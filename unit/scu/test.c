@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <sio.h>
 
 #include "test.h"
 #include "watchdog.h"
@@ -133,17 +134,7 @@ static void pulse_reset_request(const char *name, uint32_t request) {
 	test_eq_u32(name, request, asserted_requests & request);
 }
 
-static void test_reset_requests(void) {
-	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
-	test_module_clock("DSP clock is enabled for the reset probe", DSP_CLC);
-	DSP_COM_CLEAR = UINT16_MAX;
-	DSP_COM_SET = BIT(15);
-	test_eq_u32("DSP communication flag is prepared set", BIT(15), DSP_COM_STATUS & BIT(15));
-	pulse_reset_request("DSP reset request asserts", SCU_RST_REQ_DSP);
-	test_eq_u32("DSP reset does not affect clock control", 1 << MOD_CLC_RMC_SHIFT, DSP_CLC);
-	test_eq_u32("DSP communication flags return to reset value", 0, DSP_COM_STATUS);
-	DSP_CLC = MOD_CLC_DISR;
-
+static void test_usb_reset_request(void) {
 	USB_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_module_clock("USB is prepared in a non-reset state", USB_CLC);
 	USB_CFG = 3;
@@ -156,6 +147,24 @@ static void test_reset_requests(void) {
 	USB_CLC = 1 << MOD_CLC_RMC_SHIFT;
 	test_eq_u32("USB wrapper returns to reset value", 0, USB_CFG);
 	USB_CLC = MOD_CLC_DISR;
+}
+
+static void test_reset_requests(void) {
+	DSP_CLC = 1 << MOD_CLC_RMC_SHIFT;
+	test_module_clock("DSP clock is enabled for the reset probe", DSP_CLC);
+	DSP_COM_CLEAR = UINT16_MAX;
+	DSP_COM_SET = BIT(15);
+	test_eq_u32("DSP communication flag is prepared set", BIT(15), DSP_COM_STATUS & BIT(15));
+	pulse_reset_request("DSP reset request asserts", SCU_RST_REQ_DSP);
+	test_eq_u32("DSP reset does not affect clock control", 1 << MOD_CLC_RMC_SHIFT, DSP_CLC);
+	test_eq_u32("DSP communication flags return to reset value", 0, DSP_COM_STATUS);
+	DSP_CLC = MOD_CLC_DISR;
+
+	if (sio_is_usb()) {
+		test_skip("USB reset request", "resets the USB controller that carries the console");
+	} else {
+		test_usb_reset_request();
+	}
 
 	DMAC_CH_SRC_ADDR(7) = 0x12345678;
 	pulse_reset_request("DMA1 reset request asserts", SCU_RST_REQ_DMA1);
