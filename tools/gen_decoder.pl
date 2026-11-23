@@ -319,7 +319,7 @@ sub genPeripheralHeader {
 				$str .= "};\n\n";
 			}
 
-			my $field_macro = peripheralFieldMacro($peripheral, $reg_name, $field_name);
+			my $field_macro = $use_macros ? peripheralFieldMacro($peripheral, $reg_name, $field_name) : undef;
 			push @fields, [
 				cString($field->{name}).",",
 				$use_macros ? "$field_macro," : sprintf("0x%08X,", $field->{mask}),
@@ -335,7 +335,7 @@ sub genPeripheralHeader {
 			$str .= "};\n\n";
 		}
 
-		my $reg_macro = $peripheral->{id}."_".$reg_name.($reg->{start} != $reg->{end} ? "(0)" : "");
+		my $reg_macro = $use_macros ? $peripheral->{id}."_".$reg_name.($reg->{start} != $reg->{end} ? "(0)" : "") : undef;
 		push @regs, [
 			cString($reg->{name}).",",
 			$use_macros ? "$reg_macro," : sprintf("0x%X,", $reg->{start}),
