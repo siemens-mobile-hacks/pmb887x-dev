@@ -113,6 +113,10 @@
 #include "board_siemens_s65.h" // IWYU pragma: export
 #endif
 
+#ifdef BOARD_SIEMENS_S66
+#include "board_siemens_s66.h" // IWYU pragma: export
+#endif
+
 #ifdef BOARD_SIEMENS_S68
 #include "board_siemens_s68.h" // IWYU pragma: export
 #endif
