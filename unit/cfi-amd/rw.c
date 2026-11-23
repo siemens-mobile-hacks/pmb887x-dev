@@ -13,10 +13,12 @@
 #define PROGRAM_SUSPEND_OFFSET 0x1000
 #define UNLOCK_BYPASS_OFFSET 0x2000
 #define WIDE_STORE_OFFSET 0x3000
+#define CROSS_BANK_PROGRAM_OFFSET 0x4000
 #define BUFFER_PATTERN 0xC3A5
 #define PROGRAM_SUSPEND_PATTERN 0x3C5A
 #define ERASE_SUSPEND_PATTERN 0x9617
 #define WIDE_STORE_PATTERN 0x6E81
+#define CROSS_BANK_PROGRAM_WORD 0x4B2D
 
 static void fill_pattern(uint16_t *data, uint32_t words, uint16_t pattern) {
 	for (uint32_t word = 0; word < words; word++)
@@ -255,6 +257,17 @@ static void test_unlock_bypass(const struct amd_flash *flash, uint32_t sector) {
 		sizeof(other_data));
 }
 
+static void test_cross_bank_program(const struct amd_flash *flash, uint32_t sector) {
+	uint32_t address = sector + CROSS_BANK_PROGRAM_OFFSET;
+	uint32_t toggles;
+
+	amd_command(flash->base, AMD_CMD_PROGRAM);
+	MMIO16(address) = CROSS_BANK_PROGRAM_WORD;
+	enum amd_operation_result result = amd_wait_ready(address, flash->program_timeout_ms, &toggles);
+	test_eq_u32("program command written to another bank completes", AMD_OPERATION_DONE, result);
+	test_eq_u32("program address selects the programmed bank", CROSS_BANK_PROGRAM_WORD, MMIO16(address));
+}
+
 static void test_wide_buffer_load(const struct amd_flash *flash, uint32_t sector) {
 	uint32_t words = flash->cfi.write_buffer_size / 2;
 	uint32_t address = sector + WIDE_STORE_OFFSET;
@@ -324,6 +337,8 @@ int main(void) {
 	test_program_suspend(&flash, sector);
 	test_category("Unlock bypass");
 	test_unlock_bypass(&flash, sector);
+	test_category("Program command in another bank");
+	test_cross_bank_program(&flash, sector);
 
 	uint32_t spare_sector;
 	uint32_t spare_size;
