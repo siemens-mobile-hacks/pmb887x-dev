@@ -62,6 +62,25 @@ static void test_unused_input_pad(void) {
 	test_eq_u32("GPIO22 configuration is restored", initial, GPIO_PIN(PROBE_PIN));
 }
 
+static void test_i2c_bus_pads(void) {
+	static const struct {
+		const char *name;
+		uint32_t pin;
+	} lines[] = {
+		{ "SCL", GPIO_I2C_SCL },
+		{ "SDA", GPIO_I2C_SDA },
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(lines); i++) {
+		char name[96];
+
+		GPIO_PIN(lines[i].pin) = GPIO_PS_MANUAL | GPIO_DIR_IN | GPIO_PPEN_OPENDRAIN | GPIO_PDPU_PULLDOWN;
+		test_spin(1000);
+		sprintf(name, "I2C %s external pullup overrides the internal pulldown", lines[i].name);
+		test_check(name, (GPIO_PIN(lines[i].pin) & GPIO_DATA) != 0);
+	}
+}
+
 int main(void) {
 	test_start("GPIO peripheral test");
 
@@ -73,6 +92,8 @@ int main(void) {
 	test_pad_register_width();
 	test_category("Unused input pad");
 	test_unused_input_pad();
+	test_category("I2C bus pads");
+	test_i2c_bus_pads();
 
 	return test_finish();
 }
