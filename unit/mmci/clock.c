@@ -7,8 +7,16 @@
 #define MCI_TIMEOUT_MIN_CYCLES 512
 #define MCI_TIMEOUT_MAX_CYCLES 262144
 #define MCI_TIMEOUT_WAIT_MS 2000
+#define MCI_WRITE_GAP_MCLK_CYCLES 4
+#define MCI_COMMAND_BITS 48
+#define MCI_COMMAND_MAX_CYCLES 56
 
 #ifdef PMB8876
+/* PL180 TRM: DataCtrl and Command take no new write for three MCLK plus two PCLK periods after a write. */
+static void mci_wait_write_gap(uint32_t mclk_hz) {
+	stopwatch_usleep_wd(MCI_WRITE_GAP_MCLK_CYCLES * 1000000 / mclk_hz + 1);
+}
+
 static uint32_t benchmark_stm_ticks(void) {
 	test_rtc_init();
 	stopwatch_t first_stm = stopwatch_get();
@@ -32,12 +40,10 @@ static bool measure_mmci_frequency(
 		timeout_cycles = MCI_TIMEOUT_MAX_CYCLES;
 
 	MCI_DATACTRL = 0;
-	stopwatch_usleep_wd(1000);
 	MCI_CLEAR = MCI_CLEAR_DATATIMEOUTCLR;
-	stopwatch_usleep_wd(1000);
 	MCI_DATATIMER = timeout_cycles;
 	MCI_DATALENGTH = 1;
-	stopwatch_usleep_wd(1000);
+	mci_wait_write_gap(expected_hz);
 	stopwatch_t start = stopwatch_get();
 	MCI_DATACTRL = MCI_DATACTRL_DIRECTION_READ | MCI_DATACTRL_ENABLE;
 	while ((MCI_STATUS & MCI_STATUS_DATATIMEOUT) == 0 && stopwatch_elapsed_ms(start) < MCI_TIMEOUT_WAIT_MS)
@@ -75,9 +81,10 @@ static bool mmci_measure_time_base(uint32_t *stm_counter_hz, uint32_t *stm_rtc_h
 		(uint64_t) counter_hz * 102 / 100);
 }
 
-static bool probe_mci_command_progress(uint32_t *elapsed_ticks) {
+static bool probe_mci_command_progress(uint32_t mclk_hz, uint32_t *elapsed_ticks) {
 	MCI_COMMAND = 0;
 	MCI_CLEAR = MCI_CLEAR_CMDSENTCLR;
+	mci_wait_write_gap(mclk_hz);
 	stopwatch_t start = stopwatch_get();
 	MCI_COMMAND = MCI_COMMAND_ENABLE;
 	while ((MCI_STATUS & MCI_STATUS_CMDSENT) == 0 && stopwatch_elapsed_ms(start) < MCI_TIMEOUT_WAIT_MS)
@@ -146,15 +153,14 @@ static void test_mmci_source_frequencies(void) {
 				test_u32_in_interval(measured_hz, expected_hz - tolerance_hz, expected_hz + tolerance_hz);
 			if (is_slowest_mode) {
 				test_check("MMCI CLK32K DIV8 data timer follows the CGU model", frequency_matches);
-				if (test_is_qemu()) {
-					test_skip("MMCI CLK32K DIV8 command engine stalls", "requires physical clock-domain timing");
-					continue;
-				}
 				uint32_t command_ticks = 0;
-				bool command_completed = probe_mci_command_progress(&command_ticks);
-				printf("# MCI CLK32K DIV8 command progress: completed=%lu elapsed=%lu STM ticks\n",
-					(uint32_t) command_completed, command_ticks);
-				test_check("MMCI CLK32K DIV8 command engine stalls", !command_completed);
+				bool command_completed = probe_mci_command_progress(expected_hz, &command_ticks);
+				uint32_t command_cycles = (uint64_t) command_ticks * expected_hz / stm_counter_hz;
+				printf("# MCI CLK32K DIV8 command: completed=%lu, %lu STM ticks = %lu MCLK cycles\n",
+					(uint32_t) command_completed, command_ticks, command_cycles);
+				bool is_command_on_mclk = command_completed &&
+					test_u32_in_interval(command_cycles, MCI_COMMAND_BITS, MCI_COMMAND_MAX_CYCLES);
+				test_check("MMCI CLK32K DIV8 command shifts its 48 bits at MCLK", is_command_on_mclk);
 				continue;
 			}
 			char check[64];
