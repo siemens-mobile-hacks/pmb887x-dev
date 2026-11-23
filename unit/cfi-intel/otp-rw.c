@@ -97,6 +97,10 @@ int main(void) {
 
 	struct flash_device flash = {0};
 	test_category("Discovery");
+	if (!cfi_has_intel_flash()) {
+		test_skip("Intel/ST CFI flash", "no Intel/ST CFI flash found");
+		return test_finish();
+	}
 	bool found = find_flash(&flash);
 	test_check("CFI flash with protection registers is found", found);
 	if (!found) {

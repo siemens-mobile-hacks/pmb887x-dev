@@ -178,6 +178,15 @@ bool cfi_probe(uint32_t cs, struct flash_device *flash) {
 	);
 }
 
+bool cfi_has_intel_flash(void) {
+	struct flash_device flash;
+	bool found = false;
+	for (uint32_t i = 0; i < FLASH_CHIP_SELECT_COUNT && !found; i++)
+		found = cfi_probe(cfi_chip_selects[i], &flash);
+	cfi_disable_chip_selects();
+	return found;
+}
+
 static bool cfi_select_erase_block(struct flash_device *flash, uint32_t blank_offset, uint32_t alignment) {
 	uint32_t offset = 0;
 	for (uint32_t region = 0; region < flash->cfi.regions; region++) {

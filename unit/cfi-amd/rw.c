@@ -157,8 +157,10 @@ int main(void) {
 	EBU_CLC = 1 << MOD_CLC_RMC_SHIFT;
 
 	struct amd_flash flash;
-	if (!test_check("AMD CFI flash found", find_flash(&flash)))
+	if (!find_flash(&flash)) {
+		test_skip("AMD CFI flash", "no AMD CFI flash found");
 		return test_finish();
+	}
 	printf(
 		"# CS%lu: %lu MiB, program timeout %lu ms, erase timeout %lu ms\n",
 		flash.cs,

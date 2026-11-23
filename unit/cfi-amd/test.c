@@ -233,7 +233,10 @@ int main(void) {
 
 	test_category("Scan");
 	scan_flashes();
-	test_check("at least one AMD CFI flash found", flash_count > 0);
+	if (flash_count == 0) {
+		test_skip("AMD CFI flash", "no AMD CFI flash found");
+		return test_finish();
+	}
 	configure_flash_map();
 
 	for (uint32_t i = 0; i < flash_count; i++) {

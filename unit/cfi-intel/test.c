@@ -808,7 +808,10 @@ int main(void) {
 	test_category("Scan");
 	scan_flashes();
 	merge_split_flashes();
-	test_check("at least one CFI flash found", flash_count > 0);
+	if (flash_count == 0) {
+		test_skip("Intel/ST CFI flash", "no Intel/ST CFI flash found");
+		return test_finish();
+	}
 	bool flash_map_valid = configure_flash_map();
 	test_check("all flash windows fit EBU address space", flash_map_valid);
 	if (!flash_map_valid) {

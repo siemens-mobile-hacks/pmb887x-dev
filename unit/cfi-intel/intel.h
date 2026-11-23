@@ -74,6 +74,7 @@ void cfi_enter_read_array(uint32_t base);
 void cfi_enter_id(uint32_t base);
 void cfi_enter_status(uint32_t base);
 bool cfi_probe(uint32_t cs, struct flash_device *flash);
+bool cfi_has_intel_flash(void);
 void cfi_sample_map(struct flash_device *flash);
 bool cfi_find_blank_block(struct flash_device *flash, uint32_t alignment);
 uint16_t cfi_wait_ready(uint32_t address);
