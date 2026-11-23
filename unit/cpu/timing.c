@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <sio.h>
 #include <stopwatch.h>
 
 #include "cgu/clock.h"
@@ -461,7 +462,7 @@ static void fpi1_select_pll(uint32_t divider) {
 	uint32_t old_khz = cpu_get_fpi1_freq() / 1000;
 	uint32_t console_divider = USART_BG(USART0) + 1;
 
-	usart_flush(USART0);
+	sio_flush();
 	stopwatch_usleep(100);
 	cgu_fpi1_select(CGU_FPI1_PLL_DIV_2, divider);
 	USART_BG(USART0) = console_divider * (cpu_get_fpi1_freq() / 1000) / old_khz - 1;

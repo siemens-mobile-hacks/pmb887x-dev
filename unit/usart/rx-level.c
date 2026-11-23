@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <sio.h>
 #include <stopwatch.h>
 
 #include "test.h"
@@ -64,12 +65,12 @@ static void request_host_trigger(void) {
 	printf("# HOST-CMD: BEGIN\n");
 	printf("# HOST-CMD: SEND \"%c\"\n", HOST_TRIGGER);
 	printf("# HOST-CMD: END\n");
-	usart_flush(USART0);
+	sio_flush();
 	wait_for_host_trigger();
 }
 
 static void request_host_frame(void) {
-	usart_flush(USART0);
+	sio_flush();
 	USART_RXFCON(USART0) |= USART_RXFCON_RXFFLU;
 	printf("# HOST-CMD: BEGIN\n");
 	printf("# HOST-CMD: SEND \"%c\"\n", HOST_TRIGGER);
@@ -81,7 +82,7 @@ static void request_host_frame(void) {
 	printf("# HOST-CMD: WAIT 100\n");
 	printf("# HOST-CMD: RESTORE\n");
 	printf("# HOST-CMD: END\n");
-	usart_flush(USART0);
+	sio_flush();
 	wait_for_host_trigger();
 }
 

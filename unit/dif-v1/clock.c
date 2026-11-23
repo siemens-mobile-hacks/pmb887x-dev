@@ -67,7 +67,7 @@ static uint32_t burst_ticks(uint32_t words) {
 
 static void test_clock_case(const struct clock_case *clock) {
 	if (clock->pll)
-		cgu_pll_set(3, 0);
+		cgu_pll_enable();
 	CGU_CON1 = (CGU_CON1 & ~clock->con1_mask) | clock->con1;
 	stopwatch_update();
 	stopwatch_usleep_wd(2000);

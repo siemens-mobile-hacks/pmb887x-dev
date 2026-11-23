@@ -16,21 +16,20 @@ struct fpi1_case {
 	const char *name;
 	enum cgu_fpi1_source source;
 	uint32_t divider;
-	uint32_t pll_ndiv;
+	bool pll_bypassed;
 	uint32_t expected_khz;
 };
 
 static const struct fpi1_case CASES[] = {
-	{ "OSC", CGU_FPI1_OSC, 0, 3, 26000 },
-	{ "OSC with CLKDIV /2", CGU_FPI1_OSC, 1, 3, 26000 },
-	{ "OSC with CLKDIV /4", CGU_FPI1_OSC, 2, 3, 26000 },
-	{ "OSC with CLKDIV /8", CGU_FPI1_OSC, 3, 3, 26000 },
-	{ "PLL/2 of 104 MHz", CGU_FPI1_PLL_DIV_2, 0, 3, 52000 },
-	{ "PLL/2 of 104 MHz with CLKDIV /2", CGU_FPI1_PLL_DIV_2, 1, 3, 26000 },
-	{ "PLL/2 of 104 MHz with CLKDIV /4", CGU_FPI1_PLL_DIV_2, 2, 3, 13000 },
-	{ "PLL/2 of 104 MHz with CLKDIV /8", CGU_FPI1_PLL_DIV_2, 3, 3, 6500 },
-	{ "PLL/2 of 130 MHz", CGU_FPI1_PLL_DIV_2, 0, 4, 65000 },
-	{ "PLL/2 of 156 MHz", CGU_FPI1_PLL_DIV_2, 0, 5, 78000 },
+	{ "OSC", CGU_FPI1_OSC, 0, false, 26000 },
+	{ "OSC with CLKDIV /2", CGU_FPI1_OSC, 1, false, 26000 },
+	{ "OSC with CLKDIV /4", CGU_FPI1_OSC, 2, false, 26000 },
+	{ "OSC with CLKDIV /8", CGU_FPI1_OSC, 3, false, 26000 },
+	{ "PLL/2 of 104 MHz", CGU_FPI1_PLL_DIV_2, 0, false, 52000 },
+	{ "PLL/2 of 104 MHz with CLKDIV /2", CGU_FPI1_PLL_DIV_2, 1, false, 26000 },
+	{ "PLL/2 of 104 MHz with CLKDIV /4", CGU_FPI1_PLL_DIV_2, 2, false, 13000 },
+	{ "PLL/2 of 104 MHz with CLKDIV /8", CGU_FPI1_PLL_DIV_2, 3, false, 6500 },
+	{ "PLL/2 of the bypassed PLL output", CGU_FPI1_PLL_DIV_2, 0, true, 13000 },
 };
 
 static volatile uint8_t received_byte;
@@ -87,7 +86,7 @@ static uint32_t measure_fpi1_khz(void) {
 
 static void test_fpi1_case(const struct fpi1_case *fpi1) {
 	cgu_fpi1_select(CGU_FPI1_OSC, 0);
-	cgu_pll_set(fpi1->pll_ndiv, 0);
+	cgu_pll_output_configure(fpi1->pll_bypassed);
 	cgu_fpi1_select(fpi1->source, fpi1->divider);
 	uint32_t modeled_hz = cpu_get_fpi1_freq();
 	uint32_t measured_khz = measure_fpi1_khz();

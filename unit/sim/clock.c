@@ -142,7 +142,7 @@ int main(void) {
 	test_start("SIM clock");
 
 	cgu_fpi1_select(CGU_FPI1_DISABLED, 0);
-	cgu_pll_set(3, 0);
+	cgu_pll_enable();
 	cgu_fpi1_select(CGU_FPI1_OSC, 0);
 	test_tx_configs();
 	for (size_t i = 0; i < ARRAY_SIZE(CLOCK_CASES); i++)

@@ -1,6 +1,7 @@
 #include "test.h"
 
 #include <pmb887x.h>
+#include <sio.h>
 #include <stopwatch.h>
 #include <string.h>
 
@@ -11,6 +12,12 @@
 #define RTC_SECOND_COUNTER 0x3FF
 #define RTC_CLOCK_CONTROL (RTC_CTRL_PU32K | RTC_CTRL_CLK32KEN)
 #define RTC_SYNC_CONTROL (RTC_CLOCK_CONTROL | RTC_CTRL_CLK_SEL)
+#define TEST_EBUCLC2_EBU_PLL (1 << SCU_EBUCLC2_FLAG1_SHIFT)
+#define TEST_EBUCLC2_EBU_PLL_READY (1 << SCU_EBUCLC2_READY_SHIFT)
+#define TEST_PLL_NDIV 3
+#define TEST_PLL_MDIV 0
+#define TEST_PHASE4_K1 2
+#define TEST_PHASE4_K2 1
 
 #if TEST_COLOR
 #define COLOR_RESET "\x1B[0m"
@@ -289,7 +296,99 @@ static bool report(const char *name, bool passed) {
 	return passed;
 }
 
+/* The EBU clock switch puts the SDRAM into self-refresh. */
+static __SRAM void test_clocks_select_osc(void) {
+	bool is_ebu_on_pll = (CGU_CON2 & CGU_CON2_EBU_CLKSEL) == CGU_CON2_EBU_CLKSEL_PLL;
+	uint32_t con1_mask = (
+		CGU_CON1_AHB_CLKSEL |
+		CGU_CON1_FSYS_CLKSEL |
+		CGU_CON1_FPI1_CLKSEL |
+		CGU_CON1_FPI1_CLKDIV |
+		CGU_CON1_FPI2_OSC_DISABLE |
+		CGU_CON1_FPI2_CLKSEL |
+		CGU_CON1_FPI2_CLKDIV
+	);
+	uint32_t con1 = (
+		CGU_CON1_AHB_CLKSEL_BYPASS |
+		CGU_CON1_FSYS_CLKSEL_BYPASS |
+		CGU_CON1_FPI1_CLKSEL_OSC |
+		CGU_CON1_FPI1_CLKDIV_DIV1 |
+		CGU_CON1_FPI2_CLKSEL_OSC |
+		CGU_CON1_FPI2_CLKDIV_DIV1
+	);
+	uint32_t con2_mask = (
+		CGU_CON2_DSP_CLKSEL |
+		CGU_CON2_EBU_CLKSEL |
+		CGU_CON2_CPU_DIV_EN |
+		CGU_CON2_CPU_DIV |
+		CGU_CON2_MS_CLKSEL
+	);
+	uint32_t con2 = CGU_CON2_DSP_CLKSEL_OSC | CGU_CON2_EBU_CLKSEL_OSC | CGU_CON2_MS_CLKSEL_CLK_IN;
+
+	EBU_SDRMREF(0) |= EBU_SDRMREF_SELFREN;
+	EBU_SDRMREF(0) &= ~EBU_SDRMREF_SELFREN;
+	CGU_CON1 = (CGU_CON1 & ~con1_mask) | con1;
+	if (is_ebu_on_pll) {
+		SCU_EBUCLC2 &= ~TEST_EBUCLC2_EBU_PLL;
+		while ((SCU_EBUCLC2 & TEST_EBUCLC2_EBU_PLL_READY) == 0);
+	}
+	CGU_CON2 = (CGU_CON2 & ~con2_mask) | con2;
+	EBU_SDRMREF(0) |= EBU_SDRMREF_SELFREX;
+	EBU_SDRMREF(0) &= ~EBU_SDRMREF_SELFREX;
+
+	uint32_t con3_mask = (
+		CGU_CON3_AHB_PER_CLKSEL |
+		CGU_CON3_AHB_PER_CLKDIV |
+		CGU_CON3_MMCI_CLKSEL |
+		CGU_CON3_MMCI_CLKDIV
+	);
+	uint32_t con3 = (
+		CGU_CON3_AHB_PER_CLKSEL_OSC |
+		CGU_CON3_AHB_PER_CLKDIV_DIV1 |
+		CGU_CON3_MMCI_CLKSEL_OSC |
+		CGU_CON3_MMCI_CLKDIV_DIV1
+	);
+	uint32_t phases_1_3 = (
+		CGU_OSC_PHASE1_POWER_UP |
+		CGU_OSC_PHASE2_POWER_UP |
+		CGU_OSC_PHASE3_POWER_UP |
+		CGU_OSC_PHASE1_BYPASS_N |
+		CGU_OSC_PHASE2_BYPASS_N |
+		CGU_OSC_PHASE3_BYPASS_N
+	);
+	CGU_CON3 = (CGU_CON3 & ~con3_mask) | con3;
+	CGU_OSC &= ~(CGU_OSC_PLL_BYPASS_N | phases_1_3);
+}
+
+/*
+ * The DWD USB boot loader leaves the same PLL core and PHASE4 divider, so on a USB console these
+ * writes change nothing and CLK48M never stops.
+ */
+static __SRAM void test_clocks_configure_pll_clk48m(void) {
+	uint32_t pll_core_mask = CGU_OSC_NDIV | CGU_OSC_MDIV | CGU_OSC_PLL_POWER_UP;
+	uint32_t pll_core = (
+		(TEST_PLL_NDIV << CGU_OSC_NDIV_SHIFT) |
+		(TEST_PLL_MDIV << CGU_OSC_MDIV_SHIFT) |
+		CGU_OSC_PLL_POWER_UP
+	);
+	bool is_pll_core_ready = (CGU_OSC & pll_core_mask) == pll_core && (CGU_STAT & CGU_STAT_LOCK) != 0;
+	if (!is_pll_core_ready) {
+		uint32_t osc = (CGU_OSC & ~pll_core_mask) | pll_core;
+		CGU_OSC = osc & ~CGU_OSC_PLL_POWER_UP;
+		CGU_OSC = osc;
+		while ((CGU_STAT & CGU_STAT_LOCK) == 0);
+	}
+
+	uint32_t phase4 = (TEST_PHASE4_K1 << CGU_CON0_PHASE4_K1_SHIFT) | (TEST_PHASE4_K2 << CGU_CON0_PHASE4_K2_SHIFT);
+	CGU_CON0 = (CGU_CON0 & ~CGU_CON0_PHASE4_CONFIG) | phase4;
+	CGU_OSC |= CGU_OSC_PHASE4_POWER_UP | CGU_OSC_PHASE4_BYPASS_N;
+	CGU_CON2 = (CGU_CON2 & ~CGU_CON2_CLK48M_CLKSEL) | CGU_CON2_CLK48M_CLKSEL_PHASE4;
+	CGU_CON3 = (CGU_CON3 & ~CGU_CON3_CLK48M_CLKDIV) | CGU_CON3_CLK48M_CLKDIV_DIV2;
+}
+
 void test_start(const char *name) {
+	test_clocks_select_osc();
+	test_clocks_configure_pll_clk48m();
 	state = (struct test_state) {0};
 	wdt_init();
 	reset_timeout();
@@ -314,7 +413,7 @@ int test_finish(void) {
 		state.failures
 	);
 
-	usart_putc(USART0, 0);
+	sio_putc(0);
 
 	return state.failures ? 1 : 0;
 }
@@ -446,12 +545,12 @@ void test_heartbeat(void) {
 	if (now - last < (uint64_t) TEST_HEARTBEAT_MS * test_stm_ticks_per_ms())
 		return;
 	last = now;
-	usart_putc(USART0, '.');
+	sio_putc('.');
 }
 
 /* Ends a heartbeat line a caller started with "# ". */
 void test_heartbeat_end(void) {
-	usart_putc(USART0, '\n');
+	sio_putc('\n');
 }
 
 void test_watchdog_serve(void) {

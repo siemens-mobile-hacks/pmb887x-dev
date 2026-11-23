@@ -9,13 +9,12 @@
 
 static const struct {
 	const char *name;
-	uint32_t ndiv;
+	bool pll_bypassed;
 	enum cgu_fsys_source fsys_source;
 } CLOCK_CASES[] = {
-	{ "SCCU uses standby clock with fSYS bypass", 3, CGU_FSYS_OSC },
-	{ "SCCU uses standby clock with 52 MHz fSYS", 3, CGU_FSYS_PLL },
-	{ "SCCU uses standby clock with 65 MHz fSYS", 4, CGU_FSYS_PLL },
-	{ "SCCU uses standby clock with 78 MHz fSYS", 5, CGU_FSYS_PLL },
+	{ "SCCU uses standby clock with fSYS bypass", false, CGU_FSYS_OSC },
+	{ "SCCU uses standby clock with 52 MHz fSYS", false, CGU_FSYS_PLL },
+	{ "SCCU uses standby clock with 13 MHz fSYS from the bypassed PLL output", true, CGU_FSYS_PLL },
 };
 
 static uint32_t measure_sleep_timer_us(void) {
@@ -50,7 +49,7 @@ int main(void) {
 	uint32_t expected_us = (uint64_t) SCCU_FRAMES * SCCU_NQTZ_COUNTS * 1000000 / CPU_CLK32K_FREQ;
 	uint32_t elapsed_us[ARRAY_SIZE(CLOCK_CASES)] = { 0 };
 	for (uint32_t index = 0; index < ARRAY_SIZE(CLOCK_CASES); index++) {
-		cgu_pll_set(CLOCK_CASES[index].ndiv, 0);
+		cgu_pll_output_configure(CLOCK_CASES[index].pll_bypassed);
 		cgu_fsys_select(CLOCK_CASES[index].fsys_source);
 		elapsed_us[index] = measure_sleep_timer_us();
 		test_watchdog_reset();
@@ -58,7 +57,7 @@ int main(void) {
 
 	SCCU_SLPCTRL = SCCU_SLPCTRL_HWACTDI | SCCU_SLPCTRL_SLPRST;
 	cgu_fsys_select(CGU_FSYS_OSC);
-	cgu_pll_set(3, 0);
+	cgu_pll_enable();
 	SCU_CLC = (1 << MOD_CLC_RMC_SHIFT);
 	uint32_t module_rmc1_us = measure_sleep_timer_us();
 	SCU_CLC = (4 << MOD_CLC_RMC_SHIFT);

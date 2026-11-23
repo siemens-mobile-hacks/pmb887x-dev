@@ -9,13 +9,12 @@
 
 static const struct {
 	const char *name;
-	uint32_t ndiv;
+	bool pll_bypassed;
 	uint32_t fsys_source;
 } CLOCK_CASES[] = {
-	{ "WDT uses OSC with fSYS bypass", 3, CGU_CON1_FSYS_CLKSEL_BYPASS },
-	{ "WDT uses OSC with 52 MHz fSYS", 3, CGU_CON1_FSYS_CLKSEL_PLL },
-	{ "WDT uses OSC with 65 MHz fSYS", 4, CGU_CON1_FSYS_CLKSEL_PLL },
-	{ "WDT uses OSC with 78 MHz fSYS", 5, CGU_CON1_FSYS_CLKSEL_PLL },
+	{ "WDT uses OSC with fSYS bypass", false, CGU_CON1_FSYS_CLKSEL_BYPASS },
+	{ "WDT uses OSC with 52 MHz fSYS", false, CGU_CON1_FSYS_CLKSEL_PLL },
+	{ "WDT uses OSC with 13 MHz fSYS from the bypassed PLL output", true, CGU_CON1_FSYS_CLKSEL_PLL },
 };
 
 static const struct {
@@ -70,22 +69,23 @@ static uint32_t stm_clc_with_rmc(uint32_t clc, uint32_t rmc) {
 
 int main(void) {
 	test_start("CGU watchdog clock test");
+	wdt_disable();
 
 	uint32_t initial_stm_clc = STM_CLC;
 	uint32_t bypass_con1 = CGU_CON1 & ~CGU_CON1_FSYS_CLKSEL;
 	uint32_t measured_hz[ARRAY_SIZE(CLOCK_CASES)] = { 0 };
 	for (uint32_t index = 0; index < ARRAY_SIZE(CLOCK_CASES); index++) {
-		cgu_pll_set(CLOCK_CASES[index].ndiv, 0);
+		cgu_pll_output_configure(CLOCK_CASES[index].pll_bypassed);
 		measured_hz[index] = measure_selected_clock_hz(bypass_con1 | CLOCK_CASES[index].fsys_source,
 			bypass_con1);
 		test_watchdog_reset();
 	}
 
+	cgu_pll_enable();
 	uint32_t ahb_hz = measure_selected_clock_hz(bypass_con1 | CGU_CON1_AHB_CLKSEL_PLL, bypass_con1);
 	uint32_t fpi1_hz = measure_selected_clock_hz(
 		(bypass_con1 & ~CGU_CON1_FPI1_CLKSEL) | CGU_CON1_FPI1_CLKSEL_PLL_DIV_2, bypass_con1);
 
-	cgu_pll_set(3, 0);
 	uint32_t base_con1 = bypass_con1 &
 		~(CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV);
 	uint32_t rtc_wdt_hz[ARRAY_SIZE(DIVIDER_CASES)];
@@ -100,10 +100,10 @@ int main(void) {
 		test_watchdog_reset();
 	}
 
-	cgu_pll_set(5, 0);
+	cgu_pll_output_bypass();
 	scu_watchdog_configure(0, 0, true);
 	CGU_CON1 = base_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2;
-	uint32_t pll156_wdt_hz = measure_watchdog_with_rtc();
+	uint32_t bypassed_wdt_hz = measure_watchdog_with_rtc();
 	CGU_CON1 = bypass_con1;
 	scu_watchdog_configure(SCU_WDTCON1_WDTDR, 0, true);
 	test_watchdog_reset();
@@ -115,7 +115,7 @@ int main(void) {
 		test_check(CLOCK_CASES[index].name,
 			test_u32_in_interval(measured_hz[index], expected_hz * 98 / 100, expected_hz * 102 / 100));
 	}
-	printf("# WDT with AHB=156 MHz: %lu Hz; with FPI1=78 MHz: %lu Hz\n",
+	printf("# WDT with AHB=PLL: %lu Hz; with FPI1=PLL/2: %lu Hz\n",
 		ahb_hz, fpi1_hz);
 	test_check("AHB and ARM clock do not select the watchdog clock",
 		test_u32_in_interval(ahb_hz, expected_hz * 98 / 100, expected_hz * 102 / 100));
@@ -129,10 +129,10 @@ int main(void) {
 			test_u32_in_interval(rtc_wdt_hz[mode], selected_hz * 98 / 100, selected_hz * 102 / 100));
 	}
 
-	uint32_t expected_pll156_hz = 156000000 / (4 * 8 * WDT_FPI2_DIVIDER);
-	printf("# WDT FPI2 PLL /4 with PLL 156 MHz: expected=%lu Hz measured=%lu Hz\n",
-		expected_pll156_hz, pll156_wdt_hz);
+	uint32_t expected_bypassed_hz = CPU_OSC_FREQ / (4 * 8 * WDT_FPI2_DIVIDER);
+	printf("# WDT FPI2 PLL /4 with the bypassed PLL output: expected=%lu Hz measured=%lu Hz\n",
+		expected_bypassed_hz, bypassed_wdt_hz);
 	test_check("WDT FPI2 divider follows the selected PLL output",
-		test_u32_in_interval(pll156_wdt_hz, expected_pll156_hz * 98 / 100, expected_pll156_hz * 102 / 100));
+		test_u32_in_interval(bypassed_wdt_hz, expected_bypassed_hz * 98 / 100, expected_bypassed_hz * 102 / 100));
 	return test_finish();
 }

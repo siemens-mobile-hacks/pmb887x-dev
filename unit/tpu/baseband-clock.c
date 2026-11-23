@@ -164,7 +164,7 @@ int main(void) {
 	}
 
 	test_category("104 MHz PLL clock source");
-	cgu_pll_set(3, 0);
+	cgu_pll_enable();
 	cgu_fsys_select(CGU_FSYS_PLL);
 	for (size_t i = 0; i < ARRAY_SIZE(SIGNALS); i++) {
 		const struct baseband_signal *signal = &SIGNALS[i];

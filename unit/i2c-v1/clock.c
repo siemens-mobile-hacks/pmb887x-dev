@@ -66,7 +66,7 @@ static struct clock_result measure_case(const struct clock_case *clock) {
 	struct clock_result result = {0};
 
 	if (clock->pll)
-		cgu_pll_set(3, 0);
+		cgu_pll_enable();
 	CGU_CON1 = (CGU_CON1 & ~clock->con1_mask) | clock->con1;
 	stopwatch_update();
 	stopwatch_usleep_wd(2000);

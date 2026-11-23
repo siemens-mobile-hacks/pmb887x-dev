@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <sio.h>
 
 #include "cgu/clock.h"
 #include "test.h"
@@ -622,6 +623,10 @@ static void test_core_disable(void) {
 
 int main(void) {
 	test_start("USB peripheral test");
+	if (sio_is_usb()) {
+		test_skip("USB peripheral test", "resets the USB controller that carries the console");
+		return test_finish();
+	}
 	cgu_pll_set(7, 1);
 	cgu_phases_enable(CGU_PHASE4);
 	cgu_phase_set_divider(4, 4, 2);

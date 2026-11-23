@@ -79,7 +79,7 @@ int main(void) {
 	uint32_t osc_con3 = CGU_CON3 & ~(CGU_CON3_AHB_PER_CLKSEL | CGU_CON3_AHB_PER_CLKDIV);
 	uint32_t pll_con3 = osc_con3 | CGU_CON3_AHB_PER_CLKSEL_PLL_DIV_2;
 #endif
-	cgu_pll_set(3, 0);
+	cgu_pll_enable();
 
 	for (uint32_t index = 0; index < ARRAY_SIZE(capcoms); index++) {
 		uint32_t mode = 0;

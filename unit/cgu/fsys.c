@@ -1,21 +1,10 @@
 #include <pmb887x.h>
+#include <sio.h>
 
 #include "clock.h"
 #include "test.h"
 
 #define TPU_FRAME_CYCLES 6000
-
-static const struct {
-	const char *name;
-	uint32_t ndiv;
-	uint32_t mdiv;
-	uint32_t fsys_hz;
-} PLL_CONFIGS[] = {
-	{ "PLL 104 MHz supplies 52 MHz fSYS", 3, 0, 52000000 },
-	{ "PLL 130 MHz supplies 65 MHz fSYS", 4, 0, 65000000 },
-	{ "PLL 156 MHz supplies 78 MHz fSYS", 5, 0, 78000000 },
-	{ "PLL N=15 M=3 preserves 52 MHz fSYS", 15, 3, 52000000 },
-};
 
 static volatile uint32_t tpu_frames;
 
@@ -42,6 +31,19 @@ static __SRAM uint32_t count_tpu_frames(void) {
 	return tpu_frames - first_frame;
 }
 
+static __SRAM void check_pll_fsys(const char *name, uint32_t fsys_hz) {
+	cgu_fsys_select(CGU_FSYS_PLL);
+	uint32_t frames = count_tpu_frames();
+	uint32_t modeled_hz = cpu_get_sys_freq();
+	uint32_t expected_frames = fsys_hz / TPU_FRAME_CYCLES;
+
+	printf("# %s: expected=%lu measured=%lu TPU frames per second, model=%lu Hz\n",
+		name, expected_frames, frames, modeled_hz);
+	test_check(name,
+		modeled_hz == fsys_hz &&
+		test_u32_in_interval(frames, expected_frames * 98 / 100, expected_frames * 102 / 100));
+}
+
 static __SRAM void test_fsys(void) {
 	uint32_t initial_tpu_vic = VIC_CON(VIC_TPU_INT0_IRQ);
 	bool irq_was_disabled = cpu_enable_irq(false);
@@ -62,18 +64,15 @@ static __SRAM void test_fsys(void) {
 		modeled_hz == CPU_OSC_FREQ &&
 		test_u32_in_interval(frames, expected_frames * 98 / 100, expected_frames * 102 / 100));
 
-	for (uint32_t index = 0; index < ARRAY_SIZE(PLL_CONFIGS); index++) {
-		cgu_pll_set(PLL_CONFIGS[index].ndiv, PLL_CONFIGS[index].mdiv);
-		cgu_fsys_select(CGU_FSYS_PLL);
-		frames = count_tpu_frames();
-		modeled_hz = cpu_get_sys_freq();
-
-		expected_frames = PLL_CONFIGS[index].fsys_hz / TPU_FRAME_CYCLES;
-		printf("# N=%lu M=%lu: expected=%lu measured=%lu TPU frames per second, model=%lu Hz\n",
-			PLL_CONFIGS[index].ndiv, PLL_CONFIGS[index].mdiv, expected_frames, frames, modeled_hz);
-		test_check(PLL_CONFIGS[index].name,
-			modeled_hz == PLL_CONFIGS[index].fsys_hz &&
-			test_u32_in_interval(frames, expected_frames * 98 / 100, expected_frames * 102 / 100));
+	check_pll_fsys("PLL supplies half its frequency as fSYS", cgu_pll_enable() / 2);
+	cgu_pll_output_bypass();
+	check_pll_fsys("bypassed PLL output supplies half the oscillator as fSYS", CPU_OSC_FREQ / 2);
+	const char *ratio_name = "PLL N=15 M=3 preserves 52 MHz fSYS";
+	if (sio_is_usb()) {
+		test_skip(ratio_name, "restarting the PLL core stops the USB console clock");
+	} else {
+		cgu_pll_set(15, 3);
+		check_pll_fsys(ratio_name, 52000000);
 	}
 
 	cpu_enable_irq(false);

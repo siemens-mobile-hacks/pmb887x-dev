@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 enum cgu_fsys_source {
@@ -33,6 +34,9 @@ enum cgu_phase_mask {
 };
 
 void cgu_pll_set(uint32_t ndiv, uint32_t mdiv);
+void cgu_pll_output_bypass(void);
+uint32_t cgu_pll_enable(void);
+void cgu_pll_output_configure(bool is_bypassed);
 void cgu_firmware_pll_enable(void);
 void cgu_phases_enable(uint32_t phases);
 void cgu_phase_set_divider(uint32_t phase, uint32_t k1, uint32_t k2);

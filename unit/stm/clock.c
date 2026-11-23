@@ -3,6 +3,8 @@
 #include "cgu/clock.h"
 #include "test.h"
 
+#define FPI2_PLL_DIV2_DIVIDER 4
+
 static const struct {
 	const char *oscillator_test;
 	const char *pll_test;
@@ -51,6 +53,7 @@ int main(void) {
 		~(CGU_CON1_FPI2_OSC_DISABLE | CGU_CON1_FPI2_CLKSEL | CGU_CON1_FPI2_CLKDIV);
 
 	test_category("PLL source");
+	cgu_pll_output_bypass();
 	for (uint32_t index = 0; index < ARRAY_SIZE(FPI2_DIVIDERS); index++) {
 		uint32_t divider = FPI2_DIVIDERS[index];
 		uint32_t con1 = base_con1 | CGU_CON1_FPI2_CLKSEL_PLL | (divider << CGU_CON1_FPI2_CLKDIV_SHIFT);
@@ -68,7 +71,7 @@ int main(void) {
 	}
 
 	test_category("STM CLC source-dependent dividers");
-	cgu_pll_set(3, 0);
+	uint32_t pll_hz = cgu_pll_enable();
 	uint32_t pll_con1 = base_con1 | CGU_CON1_FPI2_CLKSEL_PLL | CGU_CON1_FPI2_CLKDIV_DIV2;
 	for (uint32_t index = 0; index < ARRAY_SIZE(DIVIDER_CASES); index++) {
 		uint32_t clc = stm_clc_with_dividers(initial_clc, DIVIDER_CASES[index].rmc, DIVIDER_CASES[index].rmc2);
@@ -79,7 +82,8 @@ int main(void) {
 		uint32_t pll_model_hz = cpu_get_stm_freq();
 		uint32_t pll_khz = measure_stm_khz();
 		uint32_t expected_oscillator_hz = CPU_OSC_FREQ / DIVIDER_CASES[index].rmc;
-		uint32_t expected_pll_hz = CPU_OSC_FREQ / (DIVIDER_CASES[index].rmc + DIVIDER_CASES[index].rmc2);
+		uint32_t pll_divider = DIVIDER_CASES[index].rmc + DIVIDER_CASES[index].rmc2;
+		uint32_t expected_pll_hz = pll_hz / FPI2_PLL_DIV2_DIVIDER / pll_divider;
 		uint32_t expected_oscillator_khz = expected_oscillator_hz / 1000;
 		uint32_t expected_pll_khz = expected_pll_hz / 1000;
 

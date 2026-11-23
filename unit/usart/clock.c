@@ -104,7 +104,7 @@ int main(void) {
 	test_start("USART clock test");
 
 	cgu_fpi1_select(CGU_FPI1_DISABLED, 0);
-	cgu_pll_set(3, 0);
+	cgu_pll_enable();
 	cgu_fpi1_select(CGU_FPI1_OSC, 0);
 	VIC_CON(VIC_USART1_RX_IRQ) = 1;
 	cpu_enable_irq(true);

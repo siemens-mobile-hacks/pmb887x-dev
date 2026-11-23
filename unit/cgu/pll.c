@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <sio.h>
 
 #include "test.h"
 
@@ -42,6 +43,12 @@ static void restore_irq(uint32_t src, uint32_t vic_con, bool irq_was_disabled) {
 	cpu_enable_irq(!irq_was_disabled);
 }
 
+static void skip_pll_power_checks(const char *reason) {
+	test_skip("power down clears PLL lock", reason);
+	test_skip("power up reacquires PLL lock", reason);
+	test_skip("PLL lock raises CGU IRQ", reason);
+}
+
 static void test_pll_lock(void) {
 	uint32_t initial_osc = CGU_OSC;
 	uint32_t ebu_source = CGU_CON2 & CGU_CON2_EBU_CLKSEL;
@@ -49,10 +56,12 @@ static void test_pll_lock(void) {
 		(CGU_CON1 & CGU_CON1_AHB_CLKSEL) == CGU_CON1_AHB_CLKSEL_BYPASS &&
 		(CGU_CON1 & CGU_CON1_FSYS_CLKSEL) == CGU_CON1_FSYS_CLKSEL_BYPASS &&
 		(ebu_source == CGU_CON2_EBU_CLKSEL_OSC || ebu_source == CGU_CON2_EBU_CLKSEL_AHB);
+	if (sio_is_usb()) {
+		skip_pll_power_checks("powering the PLL down stops the USB console clock");
+		return;
+	}
 	if (!safe_clock_tree) {
-		test_skip("power down clears PLL lock", "boot clock tree depends on the PLL");
-		test_skip("power up reacquires PLL lock", "boot clock tree depends on the PLL");
-		test_skip("PLL lock raises CGU IRQ", "boot clock tree depends on the PLL");
+		skip_pll_power_checks("boot clock tree depends on the PLL");
 		return;
 	}
 

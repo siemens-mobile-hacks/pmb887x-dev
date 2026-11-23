@@ -47,25 +47,26 @@ static __SRAM void test_ebu_source_read_latency(void) {
 	uint32_t ticks[EBU_SOURCE_COUNT] = { 0 };
 	uint32_t con2_base = CGU_CON2 & ~CGU_CON2_EBU_CLKSEL;
 	bool irq_was_disabled = cpu_enable_irq(false);
-	cgu_pll_set(7, 1);
-	cgu_phases_enable(CGU_PHASE_ALL);
-	cgu_phase_set_divider(1, 2, 1);
+	uint32_t source_hz[EBU_SOURCE_COUNT];
+	source_hz[EBU_SOURCE_PLL] = cgu_pll_enable();
+	source_hz[EBU_SOURCE_PHASE4] = cpu_get_phase_freq(4);
+	cgu_phase_set_divider(1, 5, 0);
 	cgu_phase_set_divider(2, 4, 2);
 	cgu_phase_set_divider(3, 4, 3);
-	cgu_phase_set_divider(4, 5, 0);
+	cgu_phases_enable(CGU_PHASE1 | CGU_PHASE2 | CGU_PHASE3);
+	source_hz[EBU_SOURCE_PHASE1] = cpu_get_phase_freq(1);
+	source_hz[EBU_SOURCE_PHASE2] = cpu_get_phase_freq(2);
+	source_hz[EBU_SOURCE_PHASE3] = cpu_get_phase_freq(3);
+	source_hz[EBU_SOURCE_OSC] = CPU_OSC_FREQ;
 
 	CGU_CON2 = con2_base | CGU_CON2_EBU_CLKSEL_PLL;
 	SCU_EBUCLC2 |= (1 << SCU_EBUCLC2_FLAG1_SHIFT);
 	bool transition_ready = wait_for_ebu_clock_transition();
 
-	bool source_order = true;
-
 	if (transition_ready) {
 		for (uint32_t index = 0; index < ARRAY_SIZE(ebu_sources); index++) {
 			CGU_CON2 = con2_base | ebu_sources[index];
 			ticks[index] = measure_flash_read_ticks();
-			if (index != 0)
-				source_order = source_order && ticks[index - 1] < ticks[index];
 		}
 	}
 
@@ -74,9 +75,20 @@ static __SRAM void test_ebu_source_read_latency(void) {
 
 	test_check("asynchronous EBU clock transition becomes ready", transition_ready);
 	if (transition_ready) {
+		bool source_order = true;
+		for (uint32_t first = 0; first < EBU_SOURCE_COUNT; first++) {
+			for (uint32_t second = 0; second < EBU_SOURCE_COUNT; second++) {
+				if (source_hz[first] > source_hz[second])
+					source_order = source_order && ticks[first] < ticks[second];
+			}
+		}
+
 		printf("# EBU flash reads: OSC=%lu PLL=%lu PHASE1=%lu PHASE2=%lu PHASE3=%lu PHASE4=%lu ticks\n",
 			ticks[EBU_SOURCE_OSC], ticks[EBU_SOURCE_PLL], ticks[EBU_SOURCE_PHASE1],
 			ticks[EBU_SOURCE_PHASE2], ticks[EBU_SOURCE_PHASE3], ticks[EBU_SOURCE_PHASE4]);
+		printf("# EBU sources: OSC=%lu PLL=%lu PHASE1=%lu PHASE2=%lu PHASE3=%lu PHASE4=%lu Hz\n",
+			source_hz[EBU_SOURCE_OSC], source_hz[EBU_SOURCE_PLL], source_hz[EBU_SOURCE_PHASE1],
+			source_hz[EBU_SOURCE_PHASE2], source_hz[EBU_SOURCE_PHASE3], source_hz[EBU_SOURCE_PHASE4]);
 		test_check("EBU access timing follows the selected source", source_order);
 	}
 }

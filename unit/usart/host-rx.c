@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <sio.h>
 #include <stopwatch.h>
 
 #include "test.h"
@@ -95,12 +96,12 @@ static void request_host_trigger(void) {
 	printf("# HOST-CMD: BEGIN\n");
 	printf("# HOST-CMD: SEND \"%c\"\n", HOST_TRIGGER);
 	printf("# HOST-CMD: END\n");
-	usart_flush(USART0);
+	sio_flush();
 	wait_for_host_trigger();
 }
 
 static void send_payload(const struct receive_case *test_case) {
-	usart_flush(USART0);
+	sio_flush();
 	USART_RXFCON(USART0) |= USART_RXFCON_RXFFLU;
 	printf("# HOST-CMD: BEGIN\n");
 	printf("# HOST-CMD: SEND \"%c\"\n", HOST_TRIGGER);
@@ -117,12 +118,12 @@ static void send_payload(const struct receive_case *test_case) {
 	printf("# HOST-CMD: WAIT 500\n");
 	printf("# HOST-CMD: RESTORE\n");
 	printf("# HOST-CMD: END\n");
-	usart_flush(USART0);
+	sio_flush();
 	wait_for_host_trigger();
 }
 
 static void send_text(uint32_t baud_rate, const char *text) {
-	usart_flush(USART0);
+	sio_flush();
 	USART_RXFCON(USART0) |= USART_RXFCON_RXFFLU;
 	printf("# HOST-CMD: BEGIN\n");
 	printf("# HOST-CMD: SEND \"%c\"\n", HOST_TRIGGER);
@@ -134,7 +135,7 @@ static void send_text(uint32_t baud_rate, const char *text) {
 	printf("# HOST-CMD: WAIT 500\n");
 	printf("# HOST-CMD: RESTORE\n");
 	printf("# HOST-CMD: END\n");
-	usart_flush(USART0);
+	sio_flush();
 	wait_for_host_trigger();
 }
 

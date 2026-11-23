@@ -3,14 +3,43 @@
 #include "clock.h"
 
 __SRAM void cgu_pll_set(uint32_t ndiv, uint32_t mdiv) {
-	uint32_t pll_mask = CGU_OSC_NDIV | CGU_OSC_MDIV | CGU_OSC_PLL_POWER_UP | CGU_OSC_PLL_BYPASS_N;
-	uint32_t osc = (CGU_OSC & ~pll_mask) | (ndiv << CGU_OSC_NDIV_SHIFT) | (mdiv << CGU_OSC_MDIV_SHIFT);
+	uint32_t core_mask = CGU_OSC_NDIV | CGU_OSC_MDIV | CGU_OSC_PLL_POWER_UP;
+	uint32_t core = (ndiv << CGU_OSC_NDIV_SHIFT) | (mdiv << CGU_OSC_MDIV_SHIFT) | CGU_OSC_PLL_POWER_UP;
+	uint32_t osc = (CGU_OSC & ~(core_mask | CGU_OSC_PLL_BYPASS_N)) | core;
 
 	CGU_CON1 &= ~(CGU_CON1_AHB_CLKSEL | CGU_CON1_FSYS_CLKSEL);
-	CGU_OSC = osc;
-	CGU_OSC = osc | CGU_OSC_PLL_POWER_UP;
-	while ((CGU_STAT & CGU_STAT_LOCK) == 0);
-	CGU_OSC = osc | CGU_OSC_PLL_POWER_UP | CGU_OSC_PLL_BYPASS_N;
+	bool is_core_running = (CGU_OSC & core_mask) == core && (CGU_STAT & CGU_STAT_LOCK) != 0;
+	if (!is_core_running) {
+		CGU_OSC = osc & ~CGU_OSC_PLL_POWER_UP;
+		CGU_OSC = osc;
+		while ((CGU_STAT & CGU_STAT_LOCK) == 0);
+	}
+	CGU_OSC = osc | CGU_OSC_PLL_BYPASS_N;
+}
+
+/* Bypassing only the main PLL output keeps the core and the phase outputs, including CLK48M, running. */
+__SRAM void cgu_pll_output_bypass(void) {
+	CGU_CON1 &= ~(CGU_CON1_AHB_CLKSEL | CGU_CON1_FSYS_CLKSEL);
+	CGU_OSC &= ~CGU_OSC_PLL_BYPASS_N;
+}
+
+__SRAM uint32_t cgu_pll_enable(void) {
+	bool is_core_running = (CGU_OSC & CGU_OSC_PLL_POWER_UP) != 0 && (CGU_STAT & CGU_STAT_LOCK) != 0;
+	if (is_core_running) {
+		CGU_CON1 &= ~(CGU_CON1_AHB_CLKSEL | CGU_CON1_FSYS_CLKSEL);
+		CGU_OSC |= CGU_OSC_PLL_BYPASS_N;
+	} else {
+		cgu_pll_set(3, 0);
+	}
+	return cpu_get_pll_freq();
+}
+
+void cgu_pll_output_configure(bool is_bypassed) {
+	if (is_bypassed) {
+		cgu_pll_output_bypass();
+	} else {
+		cgu_pll_enable();
+	}
 }
 
 __SRAM void cgu_firmware_pll_enable(void) {

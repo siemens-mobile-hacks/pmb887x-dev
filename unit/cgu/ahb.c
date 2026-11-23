@@ -1,4 +1,5 @@
 #include <pmb887x.h>
+#include <sio.h>
 
 #include "clock.h"
 #include "test.h"
@@ -6,6 +7,7 @@
 /* Matches the NOP block in cgu_itcm_source_loop() in measure.S. */
 #define MEASURE_NOPS 512
 #define MEASURE_ITERATIONS 5000
+#define CGU_USB_CONSOLE_PHASE 4
 
 struct phase_case {
 	const char *name;
@@ -67,20 +69,28 @@ int main(void) {
 	check_frequency("AHB bypass selects the 26 MHz oscillator", 26000,
 		measure_ahb_khz(base_con1, base_con1), cpu_get_ahb_freq());
 
-	cgu_pll_set(3, 0);
+	uint32_t pll_hz = cgu_pll_enable();
 	cgu_phases_enable(CGU_PHASE_ALL);
 
-	check_frequency("AHB PLL source", 104000,
+	check_frequency("AHB PLL source", pll_hz / 1000,
 		measure_ahb_khz(base_con1 | CGU_CON1_AHB_CLKSEL_PLL, base_con1), cpu_get_pll_freq());
 
 	for (uint32_t index = 0; index < ARRAY_SIZE(PHASE_CASES); index++) {
 		const struct phase_case *phase = &PHASE_CASES[index];
+		if (phase->phase == CGU_USB_CONSOLE_PHASE && sio_is_usb()) {
+			test_skip(phase->name, "the PHASE4 divider clocks the USB console");
+			continue;
+		}
 		cgu_phase_set_divider(phase->phase, phase->k1, phase->k2);
 		check_frequency(phase->name, phase->expected_khz,
 			measure_ahb_khz(base_con1 | phase->source, base_con1), cpu_get_phase_freq(phase->phase));
 	}
 
 	for (uint32_t index = 0; index < ARRAY_SIZE(PLL_RATIO_CASES); index++) {
+		if (sio_is_usb()) {
+			test_skip(PLL_RATIO_CASES[index].name, "restarting the PLL core stops the USB console clock");
+			continue;
+		}
 		cgu_pll_set(PLL_RATIO_CASES[index].ndiv, PLL_RATIO_CASES[index].mdiv);
 		uint32_t measured_khz = measure_ahb_khz(base_con1 | CGU_CON1_AHB_CLKSEL_PLL, base_con1);
 		check_frequency(PLL_RATIO_CASES[index].name, 104000, measured_khz, cpu_get_pll_freq());

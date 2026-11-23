@@ -9,21 +9,20 @@ struct fpi2_case {
 	const char *name;
 	uint32_t source;
 	uint32_t divider;
-	uint32_t pll_ndiv;
+	bool pll_bypassed;
 	uint32_t expected_khz;
 };
 
 static const struct fpi2_case CASES[] = {
-	{ "OSC", CGU_CON1_FPI2_CLKSEL_OSC, 0, 3, 26000 },
-	{ "OSC with CLKDIV /2", CGU_CON1_FPI2_CLKSEL_OSC, 1, 3, 26000 },
-	{ "OSC with CLKDIV /4", CGU_CON1_FPI2_CLKSEL_OSC, 2, 3, 26000 },
-	{ "OSC with CLKDIV /8", CGU_CON1_FPI2_CLKSEL_OSC, 3, 3, 26000 },
-	{ "PLL/2 of 104 MHz", CGU_CON1_FPI2_CLKSEL_PLL, 0, 3, 52000 },
-	{ "PLL/2 of 104 MHz with CLKDIV /2", CGU_CON1_FPI2_CLKSEL_PLL, 1, 3, 26000 },
-	{ "PLL/2 of 104 MHz with CLKDIV /4", CGU_CON1_FPI2_CLKSEL_PLL, 2, 3, 13000 },
-	{ "PLL/2 of 104 MHz with CLKDIV /8", CGU_CON1_FPI2_CLKSEL_PLL, 3, 3, 6500 },
-	{ "PLL/2 of 130 MHz with CLKDIV /2", CGU_CON1_FPI2_CLKSEL_PLL, 1, 4, 32500 },
-	{ "PLL/2 of 156 MHz with CLKDIV /2", CGU_CON1_FPI2_CLKSEL_PLL, 1, 5, 39000 },
+	{ "OSC", CGU_CON1_FPI2_CLKSEL_OSC, 0, false, 26000 },
+	{ "OSC with CLKDIV /2", CGU_CON1_FPI2_CLKSEL_OSC, 1, false, 26000 },
+	{ "OSC with CLKDIV /4", CGU_CON1_FPI2_CLKSEL_OSC, 2, false, 26000 },
+	{ "OSC with CLKDIV /8", CGU_CON1_FPI2_CLKSEL_OSC, 3, false, 26000 },
+	{ "PLL/2 of 104 MHz", CGU_CON1_FPI2_CLKSEL_PLL, 0, false, 52000 },
+	{ "PLL/2 of 104 MHz with CLKDIV /2", CGU_CON1_FPI2_CLKSEL_PLL, 1, false, 26000 },
+	{ "PLL/2 of 104 MHz with CLKDIV /4", CGU_CON1_FPI2_CLKSEL_PLL, 2, false, 13000 },
+	{ "PLL/2 of 104 MHz with CLKDIV /8", CGU_CON1_FPI2_CLKSEL_PLL, 3, false, 6500 },
+	{ "PLL/2 of the bypassed PLL output with CLKDIV /2", CGU_CON1_FPI2_CLKSEL_PLL, 1, true, 6500 },
 };
 
 static void configure_fpi2(uint32_t con1, uint32_t stm_clc) {
@@ -63,7 +62,7 @@ int main(void) {
 		uint32_t con1 = base_con1 | fpi2->source | (fpi2->divider << CGU_CON1_FPI2_CLKDIV_SHIFT);
 
 		configure_fpi2(base_con1, fpi2_cycle_stm_clc);
-		cgu_pll_set(fpi2->pll_ndiv, 0);
+		cgu_pll_output_configure(fpi2->pll_bypassed);
 		configure_fpi2(con1, fpi2_cycle_stm_clc);
 		uint32_t modeled_hz = cpu_get_fpi2_freq();
 		uint32_t measured_khz = measure_stm_khz();

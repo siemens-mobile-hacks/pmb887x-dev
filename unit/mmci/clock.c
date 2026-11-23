@@ -97,15 +97,15 @@ static void test_mmci_source_frequencies(void) {
 	if (!time_base_valid)
 		return;
 
-	static const struct {
+	cgu_pll_enable();
+	const struct {
 		const char *name;
-		const char *test_name;
 		uint32_t source;
 		uint32_t frequency_hz;
-	} SOURCES[] = {
-		{ "OSC", "OSC source and divider rates", CGU_CON3_MMCI_CLKSEL_OSC, CPU_OSC_FREQ },
-		{ "CLK32K", "CLK32K source and divider rates", CGU_CON3_MMCI_CLKSEL_CLK32K, CPU_CLK32K_FREQ },
-		{ "PHASE4", "phase 4 source and divider rates", CGU_CON3_MMCI_CLKSEL_PHASE4, 96000000 },
+	} sources[] = {
+		{ "OSC", CGU_CON3_MMCI_CLKSEL_OSC, CPU_OSC_FREQ },
+		{ "CLK32K", CGU_CON3_MMCI_CLKSEL_CLK32K, CPU_CLK32K_FREQ },
+		{ "PHASE4", CGU_CON3_MMCI_CLKSEL_PHASE4, cpu_get_phase_freq(4) },
 	};
 	static const uint32_t DIVIDERS[] = {
 		CGU_CON3_MMCI_CLKDIV_DIV1,
@@ -113,9 +113,6 @@ static void test_mmci_source_frequencies(void) {
 		CGU_CON3_MMCI_CLKDIV_DIV4,
 		CGU_CON3_MMCI_CLKDIV_DIV8,
 	};
-	cgu_pll_set(7, 1);
-	cgu_phases_enable(CGU_PHASE4);
-	cgu_phase_set_divider(4, 2, 1);
 	MMCI_CLC = (1 << MOD_CLC_RMC_SHIFT);
 	MCI_POWER = MCI_POWER_CTRL_POWER_UP;
 	MCI_CLOCK = MCI_CLOCK_BYPASS | MCI_CLOCK_ENABLE;
@@ -125,16 +122,12 @@ static void test_mmci_source_frequencies(void) {
 	MCI_TCR = MCI_TCR_ITEN;
 	MCI_ITIP = MCI_ITIP_DATIN | MCI_ITIP_CMDIN;
 
-	bool source_matches[ARRAY_SIZE(SOURCES)] = { false };
-	bool slowest_data_timer_matches = false;
-	bool slowest_command_stopped = false;
-	for (size_t source = 0; source < ARRAY_SIZE(SOURCES); source++) {
-		source_matches[source] = true;
+	for (size_t source = 0; source < ARRAY_SIZE(sources); source++) {
 		for (size_t divider = 0; divider < ARRAY_SIZE(DIVIDERS); divider++) {
 			CGU_CON3 = (CGU_CON3 & ~(CGU_CON3_MMCI_CLKSEL | CGU_CON3_MMCI_CLKDIV)) |
-				SOURCES[source].source | DIVIDERS[divider];
+				sources[source].source | DIVIDERS[divider];
 			stopwatch_usleep_wd(2000);
-			uint32_t mmci_hz = SOURCES[source].frequency_hz >> divider;
+			uint32_t mmci_hz = sources[source].frequency_hz >> divider;
 			uint32_t expected_hz = mmci_hz / 8;
 			uint32_t measured_hz = 0;
 			uint32_t rtc_referenced_hz = 0;
@@ -143,36 +136,32 @@ static void test_mmci_source_frequencies(void) {
 				&measured_hz, &rtc_referenced_hz, &elapsed_ticks);
 
 			printf("# MMCI %s /%lu: source=%lu Hz MCLK=%lu Hz measured=%lu Hz RTC=%lu Hz, %lu STM ticks\n",
-				SOURCES[source].name, (uint32_t) (1U << divider), mmci_hz,
+				sources[source].name, (uint32_t) (1U << divider), mmci_hz,
 				expected_hz, measured_hz,
 				rtc_referenced_hz, elapsed_ticks);
-			bool is_slowest_mode = SOURCES[source].source == CGU_CON3_MMCI_CLKSEL_CLK32K &&
+			bool is_slowest_mode = sources[source].source == CGU_CON3_MMCI_CLKSEL_CLK32K &&
 				DIVIDERS[divider] == CGU_CON3_MMCI_CLKDIV_DIV8;
 			uint32_t tolerance_hz = expected_hz / 50;
 			bool frequency_matches = measured &&
 				test_u32_in_interval(measured_hz, expected_hz - tolerance_hz, expected_hz + tolerance_hz);
 			if (is_slowest_mode) {
-				slowest_data_timer_matches = frequency_matches;
-				if (!test_is_qemu()) {
-					uint32_t command_ticks = 0;
-					bool command_completed = probe_mci_command_progress(&command_ticks);
-					printf("# MCI CLK32K DIV8 command progress: completed=%lu elapsed=%lu STM ticks\n",
-						(uint32_t) command_completed, command_ticks);
-					slowest_command_stopped = !command_completed;
+				test_check("MMCI CLK32K DIV8 data timer follows the CGU model", frequency_matches);
+				if (test_is_qemu()) {
+					test_skip("MMCI CLK32K DIV8 command engine stalls", "requires physical clock-domain timing");
+					continue;
 				}
+				uint32_t command_ticks = 0;
+				bool command_completed = probe_mci_command_progress(&command_ticks);
+				printf("# MCI CLK32K DIV8 command progress: completed=%lu elapsed=%lu STM ticks\n",
+					(uint32_t) command_completed, command_ticks);
+				test_check("MMCI CLK32K DIV8 command engine stalls", !command_completed);
 				continue;
 			}
-			source_matches[source] = source_matches[source] && frequency_matches;
+			char check[64];
+			snprintf(check, sizeof(check), "MMCI follows %s /%lu", sources[source].name,
+				(uint32_t) (1U << divider));
+			test_check(check, frequency_matches);
 		}
-	}
-
-	for (size_t source = 0; source < ARRAY_SIZE(SOURCES); source++)
-		test_check(SOURCES[source].test_name, source_matches[source]);
-	test_check("MMCI CLK32K DIV8 data timer follows the CGU model", slowest_data_timer_matches);
-	if (test_is_qemu()) {
-		test_skip("MMCI CLK32K DIV8 command engine stalls", "requires physical clock-domain timing");
-	} else {
-		test_check("MMCI CLK32K DIV8 command engine stalls", slowest_command_stopped);
 	}
 }
 #endif
