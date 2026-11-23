@@ -6,6 +6,7 @@ lib/data_eg/
 *.elf
 *.bin
 !boot/preloader-*.bin
+!boot/dwd-usb-preloader-*.bin
 */bin/*
 # Original DSP User ROM containers are inputs for unit/dsp/build_images.pl.
 !rom/dsp/*/*/container.bin
