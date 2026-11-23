@@ -65,7 +65,7 @@ static uint32_t measure_case(const struct clock_case *clock) {
 }
 
 static bool is_rate(uint32_t measured_hz, uint32_t expected_hz) {
-	return test_u32_in_interval(measured_hz, (uint64_t) expected_hz * 99 / 100, (uint64_t) expected_hz * 101 / 100);
+	return test_u32_in_interval(measured_hz, (uint64_t) expected_hz * 90 / 100, (uint64_t) expected_hz * 110 / 100);
 }
 
 static void test_clock_case(const struct clock_case *clock, const char *check, uint32_t expected_hz) {

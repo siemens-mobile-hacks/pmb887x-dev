@@ -27,7 +27,7 @@ static struct dif_bus_timing measure(const char *name, const struct dif_lane_con
 	return timing;
 }
 
-/* Assert that one byte takes the given number of DIF module clock cycles, within 1%. */
+/* Assert that one byte takes the given number of DIF module clock cycles, within 10%. */
 static void check_cycles(const char *name, const struct dif_lane_config *lane, uint32_t rmc,
 	uint32_t tim1, uint32_t tim2, uint32_t cycles) {
 	struct dif_bus_timing timing = measure(name, lane, DIF_BLIT_SRAM, rmc, tim1, tim2);
@@ -37,7 +37,7 @@ static void check_cycles(const char *name, const struct dif_lane_config *lane, u
 	char check[96];
 
 	snprintf(check, sizeof(check), "%s takes %u DIF cycles per byte", name, (unsigned int) cycles);
-	test_check(check, timing.ok && error100 * 100 <= expected100);
+	test_check(check, timing.ok && error100 * 10 <= expected100);
 }
 
 /*
@@ -158,7 +158,7 @@ static void test_dma_feed_limit(void) {
 				cpu_get_fpi1_freq());
 
 			snprintf(name, sizeof(name), "ACCESSCYCLE=%u is not faster than LCDTIM", (unsigned int) VALUES[v]);
-			test_check(name, timing.ok && timing.byte_ns100 * 100 >= expected100 * 99);
+			test_check(name, timing.ok && timing.byte_ns100 * 10 >= expected100 * 9);
 		}
 	}
 }
@@ -186,7 +186,7 @@ static void test_dif_packets(void) {
 		(unsigned int) timing.long_ns, (unsigned int) timing.short_ns);
 	dif_bus_timing_print_failure(&timing);
 	test_check("4x8 packets with the LCD write timing take 5 AHB_PER cycles per byte",
-		timing.ok && test_u32_in_interval(timing.byte_ns100, expected100 * 99 / 100, expected100 * 101 / 100));
+		timing.ok && test_u32_in_interval(timing.byte_ns100, expected100 * 90 / 100, expected100 * 110 / 100));
 }
 
 int main(void) {

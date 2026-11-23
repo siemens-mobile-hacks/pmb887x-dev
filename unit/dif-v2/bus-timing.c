@@ -10,6 +10,7 @@
 #define DMA_TX_CHANNEL 1
 #define LONG_WORDS 4092
 #define SHORT_WORDS 1020
+#define BLIT_RUNS 4
 /* Internal SRAM: 96 KB at 0x00080000, unused above the linked .sram section. */
 #define SRAM_END 0x00098000
 
@@ -17,7 +18,8 @@
  * Every measurement streams the same DMA blit twice, LONG_WORDS and SHORT_WORDS 32-bit TXD writes, with
  * no chip select active. The difference between the two removes DMA setup and FIFO drain latency, so
  * the slope is the steady-state parallel bus time per byte. Internal SRAM feeds DMAC faster than
- * external RAM.
+ * external RAM. Each length keeps the shortest of BLIT_RUNS blits: on hardware, unrelated bus
+ * activity delays single blits by up to 0.5 ms and never shortens them.
  */
 extern uint32_t _sram_end;
 
@@ -186,15 +188,35 @@ static uint32_t blit(
 	return ok ? (uint32_t) (elapsed * 1000000000ULL / stopwatch_ticks_per_s()) : 0;
 }
 
+static uint32_t blit_shortest(
+	const struct dif_lane_config *lane,
+	const uint32_t *source,
+	uint32_t words,
+	uint32_t clc,
+	uint32_t tim1,
+	uint32_t tim2,
+	struct dif_bus_timing *timing
+) {
+	uint32_t shortest_ns = 0;
+
+	for (uint32_t run = 0; run < BLIT_RUNS; run++) {
+		configure_dif(lane, clc, tim1, tim2);
+		uint32_t ns = blit(lane, source, words, timing);
+		if (ns == 0)
+			return 0;
+		shortest_ns = run == 0 ? ns : MIN(shortest_ns, ns);
+	}
+
+	return shortest_ns;
+}
+
 struct dif_bus_timing dif_bus_timing_measure(const struct dif_lane_config *lane, enum dif_blit_source source,
 	uint32_t clc, uint32_t tim1, uint32_t tim2) {
 	struct dif_bus_timing timing = { 0 };
 	const uint32_t *buffer = source == DIF_BLIT_SRAM ? sram_tx : extram_tx;
 
-	configure_dif(lane, clc, tim1, tim2);
-	timing.long_ns = blit(lane, buffer, LONG_WORDS, &timing);
-	configure_dif(lane, clc, tim1, tim2);
-	timing.short_ns = blit(lane, buffer, SHORT_WORDS, &timing);
+	timing.long_ns = blit_shortest(lane, buffer, LONG_WORDS, clc, tim1, tim2, &timing);
+	timing.short_ns = blit_shortest(lane, buffer, SHORT_WORDS, clc, tim1, tim2, &timing);
 	timing.ok = timing.long_ns > timing.short_ns && timing.short_ns != 0;
 	if (timing.ok) {
 		uint32_t bytes = (LONG_WORDS - SHORT_WORDS) * 4;
