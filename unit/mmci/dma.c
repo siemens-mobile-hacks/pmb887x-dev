@@ -10,6 +10,8 @@
 #define MCI_DMA_WAIT_US 200
 #define MCI_TX_WORDS 16
 #define MCI_TX_BLOCK_SIZE_LOG2 6
+#define MCI_FIFO_WINDOW_BASE 0xF7304000
+#define MCI_FIFO_WINDOW_SIZE 0x4000
 
 #ifdef PMB8876
 static uint32_t tx_source[MCI_TX_WORDS];
@@ -85,6 +87,29 @@ static void test_tx_request(uint32_t request, uint32_t select, bool is_routed) {
 		test_check("channel keeps waiting for a request", is_channel_enabled && !is_complete);
 	}
 }
+
+static void test_tx_window(uint32_t address) {
+	char category[48];
+	snprintf(category, sizeof(category), "Transmit FIFO window at %08lX", address);
+	test_category(category);
+
+	MCI_DATACTRL = 0;
+	MCI_DATATIMER = MCI_DATA_TIMEOUT_CYCLES;
+	MCI_DATALENGTH = MCI_TX_WORDS * 4;
+	stopwatch_usleep_wd(MCI_WRITE_GAP_US);
+	MCI_DATACTRL = MCI_DATACTRL_ENABLE | MCI_DATACTRL_DIRECTION_WRITE | MCI_DATACTRL_MODE_BLOCK |
+		(MCI_TX_BLOCK_SIZE_LOG2 << MCI_DATACTRL_BLOCKSIZE_SHIFT);
+
+	volatile uint32_t *window = (volatile uint32_t *) address;
+	for (size_t i = 0; i < MCI_TX_WORDS; i++)
+		window[i] = tx_source[i];
+	uint32_t status = MCI_STATUS;
+	uint32_t fifo_count = MCI_FIFOCNT;
+	MCI_DATACTRL = 0;
+
+	printf("# STATUS=%08lX FIFOCNT=%lu\n", status, fifo_count);
+	test_eq_u32("window writes fill the transmit FIFO", MCI_STATUS_TXFIFOFULL, status & MCI_STATUS_TXFIFOFULL);
+}
 #endif
 
 int main(void) {
@@ -98,6 +123,8 @@ int main(void) {
 	test_tx_request(MCI_DMA_RX_REQUEST, MCI_DMA_RX_SELECT, true);
 	test_tx_request(MCI_DMA_TX_REQUEST, !MCI_DMA_TX_SELECT, false);
 	test_tx_request(MCI_DMA_RX_REQUEST, !MCI_DMA_RX_SELECT, false);
+	test_tx_window(MCI_FIFO_WINDOW_BASE);
+	test_tx_window(MCI_FIFO_WINDOW_BASE + MCI_FIFO_WINDOW_SIZE - (MCI_TX_WORDS * 4));
 #else
 	test_skip("MMCI DMA", "PMB8876 only");
 #endif

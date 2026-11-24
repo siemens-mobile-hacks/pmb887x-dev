@@ -11,18 +11,23 @@
 #define MCI_DATA_TIMEOUT_CYCLES 0x00FFFFFF
 #define MCI_FIFO_HALF_WORDS 8
 #define MCI_DMA_CHANNEL 0
+#define MCI_FIFO_WINDOW_BASE 0xF7304000
+#define MCI_DMA_GUARD_WORDS 8
+#define MCI_DMA_GUARD_PATTERN 0xDEADBEEF
 
 #define SD_POWER_RAMP_MS 10
 #define SD_INITIALIZATION_CLOCKS_MS 1
 #define SD_READY_WAIT_MS 1000
 #define SD_BLOCK_SIZE 512
 #define SD_BLOCK_SIZE_LOG2 9
+#define SD_MULTI_BLOCK_COUNT 2
 #define SD_CMD8_CHECK_PATTERN 0x1AA
 #define SD_CMD8_ECHO_MASK 0xFFF
 #define SD_OCR_VOLTAGE_WINDOW 0x00FF8000
 #define SD_OCR_HCS BIT(30)
 #define SD_OCR_BUSY BIT(31)
 #define SD_R1_APP_CMD BIT(5)
+#define SD_R1_ILLEGAL_COMMAND BIT(22)
 #define SD_R1_CURRENT_STATE GENMASK(12, 9)
 #define SD_R1_CURRENT_STATE_SHIFT 9
 #define SD_RESPONSE_RESERVED_INDEX 0x3F
@@ -62,8 +67,11 @@ enum sd_command {
 	SD_SELECT_CARD = 7,
 	SD_SEND_IF_COND = 8,
 	SD_SEND_CSD = 9,
+	SD_STOP_TRANSMISSION = 12,
+	SD_SEND_STATUS = 13,
 	SD_SET_BLOCKLEN = 16,
 	SD_READ_SINGLE_BLOCK = 17,
+	SD_READ_MULTIPLE_BLOCK = 18,
 	SD_APP_SEND_OP_COND = 41,
 	SD_APP_CMD = 55,
 };
@@ -77,6 +85,7 @@ enum sd_response {
 enum sd_card_state {
 	SD_STATE_STBY = 3,
 	SD_STATE_TRAN = 4,
+	SD_STATE_DATA = 5,
 };
 
 #if defined(PMB8876) && defined(GPIO_MMC_VCC_EN)
@@ -91,8 +100,19 @@ struct sd_card_t {
 	uint8_t csd[16];
 };
 
+typedef struct mci_block_read_t mci_block_read_t;
+
+struct mci_block_read_t {
+	uint32_t command_status;
+	uint32_t r1;
+	uint32_t data_status;
+	size_t words;
+};
+
 static uint32_t fifo_block[SD_BLOCK_SIZE / 4];
-static uint32_t dma_block[SD_BLOCK_SIZE / 4];
+static uint32_t second_block[SD_BLOCK_SIZE / 4];
+static uint32_t window_block[SD_BLOCK_SIZE / 4];
+static uint32_t dma_words[SD_MULTI_BLOCK_COUNT * SD_BLOCK_SIZE / 4 + MCI_DMA_GUARD_WORDS];
 
 static uint8_t sd_crc7(const uint8_t *data, size_t size) {
 	uint8_t crc = 0;
@@ -271,9 +291,12 @@ static bool test_card_selection(sd_card_t *card) {
 	return status == MCI_STATUS_CMDRESPEND;
 }
 
-static void test_block_read(void) {
-	test_category("Single block read");
-
+static mci_block_read_t mci_read_block_pio(
+	uint32_t address,
+	uint32_t *block,
+	volatile uint32_t *source,
+	size_t stride
+) {
 	MCI_CLEAR = MCI_DATA_CLEAR;
 	MCI_DATATIMER = MCI_DATA_TIMEOUT_CYCLES;
 	MCI_DATALENGTH = SD_BLOCK_SIZE;
@@ -281,18 +304,21 @@ static void test_block_read(void) {
 		(SD_BLOCK_SIZE_LOG2 << MCI_DATACTRL_BLOCKSIZE_SHIFT);
 	stopwatch_usleep_wd(MCI_WRITE_GAP_US);
 
-	uint32_t status = mci_execute_command(SD_READ_SINGLE_BLOCK, 0, SD_RESPONSE_SHORT);
-	uint32_t r1 = MCI_RESPONSE0;
+	mci_block_read_t result = { 0 };
+	result.command_status = mci_execute_command(SD_READ_SINGLE_BLOCK, address, SD_RESPONSE_SHORT);
+	result.r1 = MCI_RESPONSE0;
 
-	size_t words = 0;
 	stopwatch_t start = stopwatch_get();
-	while (words < ARRAY_SIZE(fifo_block)) {
+	while (result.words < SD_BLOCK_SIZE / 4) {
 		uint32_t data_status = MCI_STATUS;
 		if ((data_status & MCI_STATUS_RXFIFOHALFFULL) != 0) {
-			for (size_t i = 0; i < MCI_FIFO_HALF_WORDS; i++)
-				fifo_block[words++] = MCI_FIFO(0);
+			for (size_t i = 0; i < MCI_FIFO_HALF_WORDS; i++) {
+				block[result.words] = source[result.words * stride];
+				result.words++;
+			}
 		} else if ((data_status & MCI_STATUS_RXDATAAVLBL) != 0) {
-			fifo_block[words++] = MCI_FIFO(0);
+			block[result.words] = source[result.words * stride];
+			result.words++;
 		} else if ((data_status & MCI_DATA_ERRORS) != 0 || stopwatch_elapsed_ms(start) >= MCI_DATA_WAIT_MS) {
 			break;
 		}
@@ -300,15 +326,22 @@ static void test_block_read(void) {
 	while ((MCI_STATUS & (MCI_STATUS_DATAEND | MCI_DATA_ERRORS)) == 0 &&
 		stopwatch_elapsed_ms(start) < MCI_DATA_WAIT_MS)
 		test_watchdog_serve();
-	uint32_t data_status = MCI_STATUS;
+	result.data_status = MCI_STATUS;
+	return result;
+}
 
-	test_eq_u32("CMD17 response passes the CRC check", MCI_STATUS_CMDRESPEND, status);
-	test_eq_u32("CMD17 is received in the transfer state", SD_STATE_TRAN, sd_r1_get_state(r1));
-	printf("# CMD17 data: %lu words, DATACNT=%lu FIFOCNT=%lu\n", (uint32_t) words, MCI_DATACNT, MCI_FIFOCNT);
+static void test_block_read(void) {
+	test_category("Single block read");
+
+	mci_block_read_t read = mci_read_block_pio(0, fifo_block, &MCI_FIFO(0), 0);
+
+	test_eq_u32("CMD17 response passes the CRC check", MCI_STATUS_CMDRESPEND, read.command_status);
+	test_eq_u32("CMD17 is received in the transfer state", SD_STATE_TRAN, sd_r1_get_state(read.r1));
+	printf("# CMD17 data: %lu words, DATACNT=%lu FIFOCNT=%lu\n", (uint32_t) read.words, MCI_DATACNT, MCI_FIFOCNT);
 	test_eq_u32("block data completes without errors", MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND,
-		data_status & (MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND | MCI_DATA_ERRORS));
-	test_eq_u32("FIFO delivers the whole block", ARRAY_SIZE(fifo_block), words);
-	test_eq_u32("receive FIFO is empty after the block", 0, data_status & MCI_STATUS_RXDATAAVLBL);
+		read.data_status & (MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND | MCI_DATA_ERRORS));
+	test_eq_u32("FIFO delivers the whole block", ARRAY_SIZE(fifo_block), read.words);
+	test_eq_u32("receive FIFO is empty after the block", 0, read.data_status & MCI_STATUS_RXDATAAVLBL);
 	test_eq_u32("DATACNT reaches zero", 0, MCI_DATACNT);
 	test_eq_u32("FIFOCNT reaches zero", 0, MCI_FIFOCNT);
 
@@ -321,7 +354,26 @@ static void test_block_read(void) {
 	test_eq_u32("block 0 ends with the 0x55AA boot signature", 0x55AA, signature);
 }
 
-static void dmac_start_rx(void) {
+static void test_window_block_read(void) {
+	test_category("Single block read through the FIFO window");
+
+	volatile uint32_t *window = (volatile uint32_t *) MCI_FIFO_WINDOW_BASE;
+	mci_block_read_t read = mci_read_block_pio(0, window_block, window, 1);
+
+	test_eq_u32("CMD17 response passes the CRC check", MCI_STATUS_CMDRESPEND, read.command_status);
+	printf("# window data: %lu words, DATACNT=%lu FIFOCNT=%lu STATUS=%08lX\n", (uint32_t) read.words, MCI_DATACNT,
+		MCI_FIFOCNT, read.data_status);
+	test_eq_u32("block data completes without errors", MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND,
+		read.data_status & (MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND | MCI_DATA_ERRORS));
+	test_eq_u32("window delivers the whole block", ARRAY_SIZE(window_block), read.words);
+	test_eq_u32("FIFOCNT reaches zero", 0, MCI_FIFOCNT);
+	test_eq_memory("window block matches the FIFO read", fifo_block, window_block, sizeof(window_block));
+}
+
+static void mci_start_dma_read(uint32_t source, uint32_t source_increment, size_t blocks) {
+	for (size_t i = 0; i < ARRAY_SIZE(dma_words); i++)
+		dma_words[i] = MCI_DMA_GUARD_PATTERN;
+
 	DMAC_CONFIG = 0;
 	DMAC_CH_CONFIG(MCI_DMA_CHANNEL) = 0;
 	DMAC_TC_CLEAR = BIT(MCI_DMA_CHANNEL);
@@ -330,47 +382,86 @@ static void dmac_start_rx(void) {
 	DMAC_SYNC = 0;
 	dmac_request_select(MCI_DMA_RX_REQUEST, MCI_DMA_RX_SELECT);
 
-	DMAC_CH_SRC_ADDR(MCI_DMA_CHANNEL) = (uint32_t) &MCI_FIFO(0);
-	DMAC_CH_DST_ADDR(MCI_DMA_CHANNEL) = (uint32_t) dma_block;
+	DMAC_CH_SRC_ADDR(MCI_DMA_CHANNEL) = source;
+	DMAC_CH_DST_ADDR(MCI_DMA_CHANNEL) = (uint32_t) dma_words;
 	DMAC_CH_LLI(MCI_DMA_CHANNEL) = 0;
 	DMAC_CH_CONTROL(MCI_DMA_CHANNEL) = (
-		ARRAY_SIZE(dma_block) | DMAC_CH_CONTROL_SB_SIZE_SZ_8 | DMAC_CH_CONTROL_DB_SIZE_SZ_8 |
+		(blocks * SD_BLOCK_SIZE / 4) | DMAC_CH_CONTROL_SB_SIZE_SZ_8 | DMAC_CH_CONTROL_DB_SIZE_SZ_8 |
 		DMAC_CH_CONTROL_S_WIDTH_DWORD | DMAC_CH_CONTROL_D_WIDTH_DWORD |
-		MCI_DMA_RX_AHB | DMAC_CH_CONTROL_D_AHB1 | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
+		MCI_DMA_RX_AHB | DMAC_CH_CONTROL_D_AHB1 | source_increment | DMAC_CH_CONTROL_DI | DMAC_CH_CONTROL_I
 	);
 	DMAC_CH_CONFIG(MCI_DMA_CHANNEL) = (
 		(MCI_DMA_RX_REQUEST << DMAC_CH_CONFIG_SRC_PERIPH_SHIFT) | DMAC_CH_CONFIG_FLOW_CTRL_PER2MEM_PER |
 		DMAC_CH_CONFIG_ENABLE
 	);
-}
 
-static void test_dma_block_read(void) {
-	test_category("Single block read through DMA");
-
-	dmac_start_rx();
 	MCI_CLEAR = MCI_DATA_CLEAR;
 	MCI_DATATIMER = MCI_DATA_TIMEOUT_CYCLES;
-	MCI_DATALENGTH = SD_BLOCK_SIZE;
+	MCI_DATALENGTH = blocks * SD_BLOCK_SIZE;
 	MCI_DATACTRL = MCI_DATACTRL_ENABLE | MCI_DATACTRL_DIRECTION_READ | MCI_DATACTRL_MODE_BLOCK |
 		MCI_DATACTRL_DMAENABLE | (SD_BLOCK_SIZE_LOG2 << MCI_DATACTRL_BLOCKSIZE_SHIFT);
 	stopwatch_usleep_wd(MCI_WRITE_GAP_US);
-	uint32_t status = mci_execute_command(SD_READ_SINGLE_BLOCK, 0, SD_RESPONSE_SHORT);
+}
 
+static uint32_t mci_wait_dma_read(void) {
 	stopwatch_t start = stopwatch_get();
 	while ((DMAC_RAW_TC_STATUS & BIT(MCI_DMA_CHANNEL)) == 0 && stopwatch_elapsed_ms(start) < MCI_DATA_WAIT_MS)
 		test_watchdog_serve();
 	while ((MCI_STATUS & (MCI_STATUS_DATAEND | MCI_DATA_ERRORS)) == 0 &&
 		stopwatch_elapsed_ms(start) < MCI_DATA_WAIT_MS)
 		test_watchdog_serve();
-	uint32_t data_status = MCI_STATUS;
+	return MCI_STATUS;
+}
+
+static void test_dma_block_read(const char *category, uint32_t source, uint32_t source_increment) {
+	test_category(category);
+
+	mci_start_dma_read(source, source_increment, 1);
+	uint32_t status = mci_execute_command(SD_READ_SINGLE_BLOCK, 0, SD_RESPONSE_SHORT);
+	uint32_t data_status = mci_wait_dma_read();
 
 	test_eq_u32("CMD17 response passes the CRC check", MCI_STATUS_CMDRESPEND, status);
 	test_check("last request completes the DMA channel", (DMAC_RAW_TC_STATUS & BIT(MCI_DMA_CHANNEL)) != 0);
+	printf("# DMA stopped at SRC=%08lX DST=%08lX, buffer at %08lX\n", DMAC_CH_SRC_ADDR(MCI_DMA_CHANNEL),
+		DMAC_CH_DST_ADDR(MCI_DMA_CHANNEL), (uint32_t) dma_words);
+	test_check("DMA stops after the block", dma_words[ARRAY_SIZE(fifo_block)] == MCI_DMA_GUARD_PATTERN);
 	test_eq_u32("block data completes without errors", MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND,
 		data_status & (MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND | MCI_DATA_ERRORS));
 	test_eq_u32("DMA leaves the receive FIFO empty", 0, data_status & MCI_STATUS_RXDATAAVLBL);
 	test_eq_u32("FIFOCNT reaches zero", 0, MCI_FIFOCNT);
-	test_eq_memory("DMA block matches the FIFO read", fifo_block, dma_block, sizeof(dma_block));
+	test_eq_memory("DMA block matches the FIFO read", fifo_block, dma_words, sizeof(fifo_block));
+}
+
+static void test_multi_block_read(sd_card_t *card) {
+	test_category("Multiple block read with commands during the transfer");
+
+	uint32_t second_address = card->is_high_capacity ? 1 : SD_BLOCK_SIZE;
+	mci_block_read_t read = mci_read_block_pio(second_address, second_block, &MCI_FIFO(0), 0);
+	test_eq_u32("block 1 reads through the FIFO", MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND,
+		read.data_status & (MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND | MCI_DATA_ERRORS));
+
+	mci_start_dma_read((uint32_t) &MCI_FIFO(0), 0, SD_MULTI_BLOCK_COUNT);
+	uint32_t read_status = mci_execute_command(SD_READ_MULTIPLE_BLOCK, 0, SD_RESPONSE_SHORT);
+	uint32_t other_rca = card->rca == 1 ? 2 : 1;
+	uint32_t other_card_status = mci_execute_command(SD_SEND_STATUS, other_rca << 16, SD_RESPONSE_SHORT);
+	uint32_t illegal_status = mci_execute_command(SD_READ_SINGLE_BLOCK, 0, SD_RESPONSE_SHORT);
+	uint32_t poll_status = mci_execute_command(SD_SEND_STATUS, card->rca << 16, SD_RESPONSE_SHORT);
+	uint32_t poll_r1 = MCI_RESPONSE0;
+	uint32_t data_status = mci_wait_dma_read();
+	uint32_t stop_status = mci_execute_command(SD_STOP_TRANSMISSION, 0, SD_RESPONSE_SHORT);
+
+	test_eq_u32("CMD18 response passes the CRC check", MCI_STATUS_CMDRESPEND, read_status);
+	test_eq_u32("CMD13 for another RCA gets no response", MCI_STATUS_CMDTIMEOUT, other_card_status);
+	test_eq_u32("CMD17 during the transfer gets no response", MCI_STATUS_CMDTIMEOUT, illegal_status);
+	test_eq_u32("CMD13 response passes the CRC check", MCI_STATUS_CMDRESPEND, poll_status);
+	test_eq_u32("CMD13 during the transfer reports the data state", SD_STATE_DATA, sd_r1_get_state(poll_r1));
+	test_eq_u32("CMD13 reports the illegal CMD17", SD_R1_ILLEGAL_COMMAND, poll_r1 & SD_R1_ILLEGAL_COMMAND);
+	test_eq_u32("both blocks complete without errors", MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND,
+		data_status & (MCI_STATUS_DATAEND | MCI_STATUS_DATABLOCKEND | MCI_DATA_ERRORS));
+	test_eq_memory("first DMA block matches block 0", fifo_block, dma_words, sizeof(fifo_block));
+	test_eq_memory("second DMA block matches block 1", second_block, &dma_words[ARRAY_SIZE(fifo_block)],
+		sizeof(second_block));
+	test_eq_u32("CMD12 response passes the CRC check", MCI_STATUS_CMDRESPEND, stop_status);
 }
 #endif
 
@@ -383,7 +474,11 @@ int main(void) {
 		sd_power_on();
 		if (test_card_identification(&card) && test_card_selection(&card)) {
 			test_block_read();
-			test_dma_block_read();
+			test_dma_block_read("Single block read through DMA", (uint32_t) &MCI_FIFO(0), 0);
+			test_multi_block_read(&card);
+			test_window_block_read();
+			test_dma_block_read("Single block read through the FIFO window by DMA", MCI_FIFO_WINDOW_BASE,
+				DMAC_CH_CONTROL_SI);
 		}
 	} else {
 		test_skip("SD card", "MMC_CD reports an empty slot");
