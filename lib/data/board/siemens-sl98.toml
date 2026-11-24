@@ -88,38 +88,44 @@ USART0_RTS = "AC_CTS"
 AC_RTS = 1
 AC_RX = 1
 
-[keyboard]
-# [KP_IN, KP_OUT, ..., KP_OUT]
-NAV_UP		= [0, 3]
-NAV_RIGHT	= [1, 3]
-NAV_CENTER	= [2, 3]
-NAV_LEFT	= [3, 3]
-NAV_DOWN	= [4, 3]
+[peripheral.END_KEY]
+type = "key-switch"
+key = "END_CALL"
+level = 1
+out = { out = "PMIC:ON" }
 
-SEND		= [0, 5]
-SOFT_LEFT	= [3, 5]
-SOFT_RIGHT	= [4, 5]
+[peripheral.KEYPAD_MATRIX]
+type = "key-matrix"
+in = { in0 = "KP_OUT0", in1 = "KP_OUT1", in2 = "KP_OUT2", in3 = "KP_OUT3", in5 = "KP_IN6" }
+out = { out0 = "KP_IN0", out1 = "KP_IN1", out2 = "KP_IN2", out3 = "KP_IN3", out4 = "KP_IN4" }
+# keys.NAME = [out, in]
+keys.NAV_UP		= [0, 3]
+keys.NAV_RIGHT	= [1, 3]
+keys.NAV_CENTER	= [2, 3]
+keys.NAV_LEFT	= [3, 3]
+keys.NAV_DOWN	= [4, 3]
 
-NUM1		= [0, 0]
-NUM2		= [0, 1]
-NUM3		= [0, 2]
+keys.SEND		= [0, 5]
+keys.SOFT_LEFT	= [3, 5]
+keys.SOFT_RIGHT	= [4, 5]
 
-NUM4		= [1, 0]
-NUM5		= [1, 1]
-NUM6		= [1, 2]
+keys.NUM1		= [0, 0]
+keys.NUM2		= [0, 1]
+keys.NUM3		= [0, 2]
 
-NUM7		= [2, 0]
-NUM8		= [2, 1]
-NUM9		= [2, 2]
+keys.NUM4		= [1, 0]
+keys.NUM5		= [1, 1]
+keys.NUM6		= [1, 2]
 
-STAR		= [3, 0]
-NUM0		= [3, 1]
-HASH		= [3, 2]
+keys.NUM7		= [2, 0]
+keys.NUM8		= [2, 1]
+keys.NUM9		= [2, 2]
 
-END_CALL	= [4, 0]
+keys.STAR		= [3, 0]
+keys.NUM0		= [3, 1]
+keys.HASH		= [3, 2]
 
-[keyboard.gpio]
-END_CALL = [{ target = "PMIC:ON" }]
+keys.END_CALL	= [4, 0]
 
 [startup.ONLINE]
 duration = 5

@@ -582,7 +582,10 @@ sub parseModule {
 				} elsif ($key eq 'irq') {
 					push @{$module->{irqs_needed}}, $value || "";
 				} elsif ($key eq 'gpio') {
-					push @{$module->{gpio_lines}}, $value || "";
+					my ($gpio_line, $gpio_pull) = split(/\s+/, $value || "");
+					die("Invalid GPIO line pull: '$line'") if defined($gpio_pull) && $gpio_pull !~ /^(pullup|pulldown)$/;
+					push @{$module->{gpio_lines}}, $gpio_line;
+					$module->{gpio_line_pulls}->{$gpio_line} = $gpio_pull if defined($gpio_pull);
 				} else {
 					if ($key eq "type" || $key eq "name" || $key eq "descr" || $key eq "qemu" || $key eq "qemu_dir") {
 						$module->{$key} = $value;

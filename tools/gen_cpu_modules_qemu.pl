@@ -15,6 +15,12 @@ my %GPIO_DIRECTIONS = (
 	IO	=> "PMB887X_GPIO_DIR_IN | PMB887X_GPIO_DIR_OUT",
 );
 
+my %GPIO_PULLS = (
+	""			=> "PMB887X_GPIO_PULL_NONE",
+	pullup		=> "PMB887X_GPIO_PULL_UP",
+	pulldown	=> "PMB887X_GPIO_PULL_DOWN",
+);
+
 print qq|#include "hw/arm/pmb887x/gen/cpu_modules.h"
 
 #include "hw/arm/pmb887x/gen/cpu_meta.h"
@@ -88,11 +94,13 @@ sub genCpuModulesList {
 
 				next if $alt_module->{name} ne $module->{name};
 
+				my $gpio_pull = $alt_module->{gpio_line_pulls}->{$alt_pin} // "";
 				push @module_gpios, [
 					'"'.$alt_pin.'",',
 					uc($cpu_meta->{name})."_GPIO_".$gpio->{name}.",",
 					($alt->{id} - 1).",",
-					$GPIO_DIRECTIONS{$alt->{flags}},
+					$GPIO_DIRECTIONS{$alt->{flags}}.",",
+					$GPIO_PULLS{$gpio_pull},
 				];
 			}
 		}

@@ -36,17 +36,17 @@ HW_DET_BAND_SEL = 0
 HALL_1 = 1
 HALL_2 = 1
 
-[keyboard]
+[peripheral.KEYPAD_MATRIX]
 # The MMI board gets only KP_IN0..4 and KP_OUT3 over X2750, so the
 # joystick takes KP_OUT3 and its three remaining keys ground a whole KP_IN row,
 # the way the on/off key grounds KP_IN1.
-SEND		= [2, 0, 1, 2, 3, 4, 5, 6, 7, 8]
-SOFT_LEFT	= [3, 0, 1, 2, 3, 4, 5, 6, 7, 8]
-SOFT_RIGHT	= [4, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+keys.SEND			= [2, 10]
+keys.SOFT_LEFT		= [3, 10]
+keys.SOFT_RIGHT		= [4, 10]
 
 # Side keys, all three on KP_IN4. PTT is the memo key - the closest spare name the emulator has.
 # From the idle screen Vol+ and the memo key both open the dictaphone and Vol- does nothing,
 # this is verified to match a real phone
-VOLUME_UP	= [4, 0]
-VOLUME_DOWN	= [4, 1]
-PTT		    = [4, 2]
+keys.VOLUME_UP		= [4, 0]
+keys.VOLUME_DOWN	= [4, 1]
+keys.PTT			= [4, 2]

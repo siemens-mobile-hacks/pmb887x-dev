@@ -80,37 +80,43 @@ PIN102 = 1
 PIN32 = 0
 PIN33 = 0
 
-[keyboard]
-# [KP_IN, KP_OUT, ..., KP_OUT], comments give the APOXI KeyCode
-NAV_UP		= [3, 3]	# 0x10
-NAV_RIGHT	= [0, 6]	# 0x13
-NAV_CENTER	= [2, 3]	# 0x41
-NAV_LEFT	= [0, 5]	# 0x12
-NAV_DOWN	= [7, 6]	# 0x0F
+[peripheral.END_KEY]
+type = "key-switch"
+key = "END_CALL"
+level = 1
+out = { out = "PMIC:ON" }
 
-SOFT_LEFT	= [2, 5]	# 0x2A
-SOFT_RIGHT	= [3, 6]	# 0xB4
-SEND		= [1, 3]	# 0xBD
-END_CALL	= [5, 1]	# 0x15
-CLEAR		= [0, 3]	# 0x40
+[peripheral.KEYPAD_MATRIX]
+type = "key-matrix"
+in = { in0 = "KP_OUT0", in1 = "KP_OUT1", in2 = "KP_OUT2", in3 = "KP_OUT3", in5 = "KP_IN6", in6 = "KP_IN5" }
+out = { out0 = "KP_IN0", out1 = "KP_IN1", out2 = "KP_IN2", out3 = "KP_IN3", out5 = "DIF_RESET2", out7 = "T_OUT6" }
+# keys.NAME = [out, in]
+keys.NAV_UP		= [3, 3]	# 0x10
+keys.NAV_RIGHT	= [0, 6]	# 0x13
+keys.NAV_CENTER	= [2, 3]	# 0x41
+keys.NAV_LEFT	= [0, 5]	# 0x12
+keys.NAV_DOWN	= [7, 6]	# 0x0F
 
-NUM1		= [3, 0]
-NUM2		= [3, 1]
-NUM3		= [3, 2]
-NUM4		= [2, 0]
-NUM5		= [2, 1]
-NUM6		= [2, 2]
-NUM7		= [1, 0]
-NUM8		= [1, 1]
-NUM9		= [1, 2]
-STAR		= [0, 0]	# 0x1C
-NUM0		= [0, 1]	# 0x0A
-HASH		= [0, 2]	# 0x0E
+keys.SOFT_LEFT	= [2, 5]	# 0x2A
+keys.SOFT_RIGHT	= [3, 6]	# 0xB4
+keys.SEND		= [1, 3]	# 0xBD
+keys.END_CALL	= [5, 1]	# 0x15
+keys.CLEAR		= [0, 3]	# 0x40
+
+keys.NUM1		= [3, 0]
+keys.NUM2		= [3, 1]
+keys.NUM3		= [3, 2]
+keys.NUM4		= [2, 0]
+keys.NUM5		= [2, 1]
+keys.NUM6		= [2, 2]
+keys.NUM7		= [1, 0]
+keys.NUM8		= [1, 1]
+keys.NUM9		= [1, 2]
+keys.STAR		= [0, 0]	# 0x1C
+keys.NUM0		= [0, 1]	# 0x0A
+keys.HASH		= [0, 2]	# 0x0E
 
 # Unidentified keys: [4, 0] 0x1E, [2, 6] 0xD2, [2, 7] 0x0B, [3, 7] 0xD3
-
-[keyboard.gpio]
-END_CALL = [{ target = "PMIC:ON" }]
 
 [startup.ONLINE]
 duration = 5
