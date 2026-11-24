@@ -334,6 +334,9 @@ devices = ["generic-pmb8875", "generic-pmb8876"]
 [keypad]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
+[keypad-scan]
+devices = ["generic-pmb8876"]
+
 [mod]
 devices = ["generic-pmb8875", "generic-pmb8876"]
 
