@@ -99,7 +99,7 @@ I2S1_CLK1 = "LED_FL_TRIG"
 I2S1_RX = "BT_PCM_OUT"
 I2S1_TX = "BT_PCM_IN"
 I2S1_WA0 = "BT_PCM_SYNC"
-KP_IN5 = "KP_OUT6"
+KP_IN5 = "KP_IN5_OUT6"
 
 [gpio.inputs]
 # HWID 407
@@ -158,7 +158,7 @@ out = { out = "PMIC:ON_OFF" }
 
 [peripheral.KEYPAD_MATRIX]
 type = "key-matrix"
-in = { in0 = "KP_OUT0", in1 = "KP_OUT1", in2 = "KP_OUT2", in3 = "KP_OUT3", in6 = "KP_OUT6", in10 = "GND" }
+in = { in0 = "KP_OUT0", in1 = "KP_OUT1", in2 = "KP_OUT2", in3 = "KP_OUT3", in6 = "KP_IN5_OUT6", in10 = "GND" }
 out = { out0 = "KP_IN0", out1 = "KP_IN1", out2 = "KP_IN2", out3 = "KP_IN3", out4 = "KP_IN4" }
 # keys.NAME = [out, in]
 keys.NAV_UP			= [0, 3]

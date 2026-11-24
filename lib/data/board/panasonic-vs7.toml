@@ -73,6 +73,18 @@ DIF_RESET = "AP_RST"
 T_OUT1 = "DISP_IRQ"
 T_OUT8 = "LCD_SCS"
 RSTOUT_N = "DISP_IRQ"
+KP_IN0 = "KEYIN0"
+KP_IN1 = "KEYIN1"
+KP_IN2 = "KEYIN2"
+KP_IN3 = "KEYIN3"
+SSC2_SCLK = "KEYIN4"
+KP_OUT0 = "KEYOUT0"
+KP_OUT1 = "KEYOUT1"
+KP_OUT2 = "KEYOUT2"
+KP_OUT3 = "KEYOUT3"
+KP_IN6 = "KEYOUT5"
+KP_IN5 = "KEYOUT6"
+KP_IN4 = "KEYOUT7"
 
 [peripheral.END_KEY]
 type = "key-switch"
@@ -82,8 +94,8 @@ out = { out = "PMIC:ON" }
 
 [peripheral.KEYPAD_MATRIX]
 type = "key-matrix"
-in = { in0 = "KP_OUT0", in1 = "KP_OUT1", in2 = "KP_OUT2", in3 = "KP_OUT3", in5 = "KP_IN6", in6 = "KP_IN5", in7 = "KP_IN4" }
-out = { out0 = "KP_IN0", out1 = "KP_IN1", out2 = "KP_IN2", out3 = "KP_IN3", out4 = "SSC2_SCLK" }
+in = { in0 = "KEYOUT0", in1 = "KEYOUT1", in2 = "KEYOUT2", in3 = "KEYOUT3", in5 = "KEYOUT5", in6 = "KEYOUT6", in7 = "KEYOUT7" }
+out = { out0 = "KEYIN0", out1 = "KEYIN1", out2 = "KEYIN2", out3 = "KEYIN3", out4 = "KEYIN4" }
 # keys.NAME = [out, in]
 keys.SOFT_LEFT		= [3, 5]
 keys.SOFT_RIGHT		= [2, 6]

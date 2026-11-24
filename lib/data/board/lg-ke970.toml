@@ -203,8 +203,8 @@ keys.NUM0			= [4, 1]	# 510
 keys.HASH			= [4, 2]	# KB_SHA
 
 keys.MUSIC			= [4, 3]	# KB_BGM
-keys.PTT			= [5, 3]    # shutter
-keys.CAMERA			= [5, 4]	# KB_CAM (side / shutter)
+keys.PTT			= [5, 3]	# KB_CAM AF (half press)
+keys.CAMERA			= [5, 4]	# KB_CAM SHUTTER
 keys.VOLUME_UP		= [2, 3]	# KB_UP
 keys.VOLUME_DOWN	= [3, 3]	# KB_DOWN
 
