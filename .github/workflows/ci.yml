@@ -1,6 +1,9 @@
 name: Disassembler files
 
 on:
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
 permissions:
