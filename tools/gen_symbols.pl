@@ -80,8 +80,11 @@ sub genModuleSymbols {
 		}
 	}
 	
+	my $last_reg_offset = max(map { $_->{end} } values %{$module->{regs}});
+	return "" if !defined $last_reg_offset;
+
 	my $symbols = [];
-	for (my $i = 0; $i < $module->{size}; $i += 4) {
+	for (my $i = 0; $i <= $last_reg_offset; $i += 4) {
 		if ($gen_idc) {
 			push @$symbols, sprintf("\tMakeName(0x%08X, \"%s_%02X\"); SetType(0x%08X, \"volatile unsigned int\");", $module->{base} + $i, $module->{name}, $i, $module->{base} + $i);
 		} else {
