@@ -168,8 +168,6 @@ keys.NAV_LEFT		= [3, 3]
 keys.NAV_DOWN		= [4, 3]
 
 keys.SEND			= [0, 6]
-keys.MUSIC			= [1, 6]
-keys.PLAY_PAUSE		= [2, 6]
 keys.SOFT_LEFT		= [3, 6]
 keys.SOFT_RIGHT		= [4, 6]
 
@@ -188,11 +186,6 @@ keys.NUM9			= [3, 2]
 keys.STAR			= [4, 0]
 keys.NUM0			= [4, 1]
 keys.HASH			= [4, 2]
-
-keys.CAMERA			= [1, 10]
-keys.PTT			= [2, 10]
-keys.VOLUME_UP		= [3, 10]
-keys.VOLUME_DOWN	= [4, 10]
 
 
 [startup.ONLINE]

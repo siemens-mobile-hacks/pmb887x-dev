@@ -94,8 +94,22 @@ out = { out = "PMIC:ON" }
 
 [peripheral.KEYPAD_MATRIX]
 type = "key-matrix"
-in = { in0 = "KEYOUT0", in1 = "KEYOUT1", in2 = "KEYOUT2", in3 = "KEYOUT3", in5 = "KEYOUT5", in6 = "KEYOUT6", in7 = "KEYOUT7" }
-out = { out0 = "KEYIN0", out1 = "KEYIN1", out2 = "KEYIN2", out3 = "KEYIN3", out4 = "KEYIN4" }
+in = {
+	in0 = "KEYOUT0",
+	in1 = "KEYOUT1",
+	in2 = "KEYOUT2",
+	in3 = "KEYOUT3",
+	in5 = "KEYOUT5",
+	in6 = "KEYOUT6",
+	in7 = "KEYOUT7",
+}
+out = {
+	out0 = "KEYIN0",
+	out1 = "KEYIN1",
+	out2 = "KEYIN2",
+	out3 = "KEYIN3",
+	out4 = "KEYIN4",
+}
 # keys.NAME = [out, in]
 keys.SOFT_LEFT		= [3, 5]
 keys.SOFT_RIGHT		= [2, 6]

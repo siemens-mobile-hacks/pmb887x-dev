@@ -25,3 +25,7 @@ HW_DET_EXT_STEPUP = 0
 
 # LCD detect
 DISPLAY_CS1 = 1
+
+[peripheral.KEYPAD_MATRIX]
+keys.VOLUME_UP		= [4, 10]
+keys.VOLUME_DOWN	= [3, 10]

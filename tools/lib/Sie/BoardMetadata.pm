@@ -108,7 +108,6 @@ sub loadBoard {
 	my $file = getDataDir().'/board/'.$board.'.toml';
 	
 	$self->{name} = $board;
-	$self->{keys} = {};
 	
 	my $toml_type = sub {
 		my ($r) = @_;
@@ -193,32 +192,6 @@ sub loadBoard {
 			my $gpio_value = $cfg->{gpio}->{inputs}->{$gpio_cpu_name};
 			$self->{gpios}->{$gpio_cpu_name}->{mode} = 'input';
 			$self->{gpios}->{$gpio_cpu_name}->{value} = $gpio_value;
-		}
-	}
-	
-	if (exists $cfg->{keyboard}) {
-		for my $kp_name (keys %{$cfg->{keyboard}}) {
-			next if $kp_name eq 'gpio';
-
-			my @arr = @{$cfg->{keyboard}->{$kp_name}};
-			my @kp_in_arr = shift @arr;
-			my @kp_out_arr = @arr;
-
-			my $keycode = 0;
-			
-			for my $kp_in (@kp_in_arr) {
-				$keycode |= 1 << $kp_in;
-			}
-			
-			for my $kp_out (@kp_out_arr) {
-				$keycode |= 1 << (8 + $kp_out);
-			}
-			
-			$self->{keys}->{$kp_name} = {
-				in			=> \@kp_in_arr,
-				out			=> \@kp_out_arr,
-				code		=> $keycode,
-			};
 		}
 	}
 	

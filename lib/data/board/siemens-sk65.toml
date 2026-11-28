@@ -41,6 +41,115 @@ type = "d1094xx"
 port = { I2C = "I2C", I2S_RX = "DSP:I2S2_TX", I2S_TX = "DSP:I2S2_RX" }
 addr = 0x31
 revision = 0xDB
+out.ON_OFF_OUT = ["PM_ON_OFF", "KEYPAD_EXPANDER:PX_IN0"]
+
+[peripheral.END_KEY]
+type = "key-switch"
+key = "END_CALL"
+level = 0
+out = { out = "PMIC:ON_OFF" }
+
+# Sheet 34: a COP8TAC5XLQ8 (D3401) scans the phone keypad and the slide-out QWERTY
+[peripheral.KEYPAD_EXPANDER]
+type = "siemens-keypad-expander"
+bus = "I2C"
+addr = 0x51
+in = { PX_RESET = "PEXT_WAKE_UP" }
+out = { PX_INT_OUT = "PEXT_INT" }
+
+# Sheet 9, OPEN_CLOSE_DETECTION: two TLE4913 Hall switches (S3251, S3252) under the rotating keyboard magnet
+[peripheral.SLIDER]
+type = "slider-sensor"
+out = { open = "SLIDER_SW2", closed = "SLIDER_SW1" }
+
+[peripheral.KEYPAD_MATRIX]
+type = "key-matrix"
+in = {
+	in0 = "KEYPAD_EXPANDER:PX_OUT0",
+	in1 = "KEYPAD_EXPANDER:PX_OUT1",
+	in2 = "KEYPAD_EXPANDER:PX_OUT2",
+	in3 = "KEYPAD_EXPANDER:PX_OUT3",
+	in4 = "KEYPAD_EXPANDER:PX_OUT4",
+	in5 = "KEYPAD_EXPANDER:PX_OUT5",
+	in6 = "KEYPAD_EXPANDER:PX_OUT6",
+	in7 = "KEYPAD_EXPANDER:PX_OUT7",
+	in10 = "GND",
+}
+out = {
+	out0 = "KEYPAD_EXPANDER:PX_IN0",
+	out1 = "KEYPAD_EXPANDER:PX_IN1",
+	out2 = "KEYPAD_EXPANDER:PX_IN2",
+	out3 = "KEYPAD_EXPANDER:PX_IN3",
+	out4 = "KEYPAD_EXPANDER:PX_IN4",
+	out5 = "KEYPAD_EXPANDER:PX_IN5",
+	out6 = "KEYPAD_EXPANDER:PX_IN6",
+	out7 = "KEYPAD_EXPANDER:PX_IN7",
+}
+# keys.NAME = [out, in]
+keys.SOFT_LEFT			= [6, 5]
+keys.SOFT_RIGHT			= [6, 7]
+
+keys.NAV_UP				= [6, 6]
+keys.NAV_RIGHT			= [5, 7]
+keys.NAV_CENTER			= [5, 6]
+keys.NAV_LEFT			= [5, 5]
+keys.NAV_DOWN			= [4, 6]
+
+keys.SEND				= [4, 5]
+
+keys.NUM1				= [3, 5]
+keys.NUM2				= [3, 6]
+keys.NUM3				= [3, 7]
+keys.NUM4				= [2, 5]
+keys.NUM5				= [2, 6]
+keys.NUM6				= [2, 7]
+keys.NUM7				= [1, 5]
+keys.NUM8				= [1, 6]
+keys.NUM9				= [1, 7]
+keys.STAR				= [0, 5]
+keys.NUM0				= [0, 6]
+keys.HASH				= [0, 7]
+
+keys.VOLUME_DOWN		= [1, 10]
+keys.VOLUME_UP			= [2, 10]
+
+keys.QWERTY_Q			= [6, 2]
+keys.QWERTY_W			= [6, 0]
+keys.QWERTY_E			= [7, 0]
+keys.QWERTY_R			= [6, 1]
+keys.QWERTY_T			= [7, 1]
+keys.QWERTY_Y			= [7, 2]
+keys.QWERTY_U			= [6, 3]
+keys.QWERTY_I			= [7, 3]
+keys.QWERTY_O			= [6, 4]
+keys.QWERTY_P			= [7, 4]
+keys.QWERTY_A			= [4, 2]
+keys.QWERTY_S			= [4, 0]
+keys.QWERTY_D			= [5, 0]
+keys.QWERTY_F			= [4, 1]
+keys.QWERTY_G			= [5, 1]
+keys.QWERTY_H			= [5, 2]
+keys.QWERTY_J			= [4, 3]
+keys.QWERTY_K			= [5, 3]
+keys.QWERTY_L			= [4, 4]
+keys.QWERTY_BACKSPACE	= [5, 4]
+keys.QWERTY_Z			= [2, 0]
+keys.QWERTY_X			= [3, 0]
+keys.QWERTY_C			= [2, 1]
+keys.QWERTY_V			= [3, 1]
+keys.QWERTY_B			= [3, 2]
+keys.QWERTY_N			= [2, 3]
+keys.QWERTY_M			= [3, 3]
+keys.QWERTY_COMMA		= [2, 4]
+keys.QWERTY_DOT			= [3, 4]
+keys.QWERTY_BLUE		= [2, 2]
+keys.QWERTY_QUESTION	= [1, 3]
+keys.QWERTY_ENTER		= [1, 4]
+keys.QWERTY_SPACE		= [1, 2]
+keys.QWERTY_SPACE_BACKSPACE	= [1, 1]
+keys.QWERTY_SHIFT_LEFT	= [0, 0]
+keys.QWERTY_ALT			= [0, 1]
+keys.QWERTY_SHIFT_RIGHT	= [0, 4]
 
 [peripheral.LOUDSPEAKER]
 type = "speaker"
@@ -89,7 +198,9 @@ USART0_RXD = "AC_RX"
 USART0_CTS = "AC_RTS"
 USART0_RTS = "AC_CTS"
 
+KP_IN1 = "PM_ON_OFF"
 KP_OUT0 = "PEXT_INT"
+KP_IN3 = "SLIDER_SW1"
 KP_IN5 = "SLIDER_SW2"
 KP_IN6 = "BT_WAKEUP_GSM"
 
@@ -97,6 +208,8 @@ PIPESTAT0 = "HW_DET_MOB_TYPE1"
 PIPESTAT1 = "HW_DET_MOB_TYPE2"
 PIPESTAT2 = "HW_DET_MOB_TYPE3"
 TRACEPKT0 = "HW_DET_MOB_TYPE4"
+
+I2S3_TX = "PEXT_WAKE_UP"
 
 [gpio.inputs]
 # Default state
@@ -112,6 +225,6 @@ HW_DET_MOB_TYPE2 = 1
 HW_DET_MOB_TYPE3 = 1
 HW_DET_MOB_TYPE4 = 1
 
-# The keypad matrix is not wired to the CPU: every key (both the rotary MMI
-# board and the slide-out QWERTY) is scanned by the COP8TAC5XLQ8 expander on
-# sheet 34 and read over I2C, which the emulator does not model.
+[startup.ONLINE]
+duration = 5
+keys = ["END_CALL"]

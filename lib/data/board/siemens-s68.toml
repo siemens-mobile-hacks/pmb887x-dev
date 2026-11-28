@@ -39,3 +39,12 @@ HW_DET_MOB_TYPE3=1
 HW_DET_MOB_TYPE4=0
 HW_DET_BLUETOOTH=0
 HW_DET_BAND_SEL=0
+
+[peripheral.KEYPAD_MATRIX]
+keys.MUSIC			= [1, 6]
+keys.PLAY_PAUSE		= [2, 6]
+
+keys.VOLUME_DOWN	= [1, 10]
+keys.VOLUME_UP		= [2, 10]
+keys.CAMERA			= [3, 10]
+keys.PTT			= [4, 10]

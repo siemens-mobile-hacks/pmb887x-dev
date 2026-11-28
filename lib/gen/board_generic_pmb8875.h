@@ -13,6 +13,3 @@
 #define	BOARD_HAS_SIM_SLOT_ISO7816_SLOT	1
 
 // GPIO numbers
-
-
-// Keypad

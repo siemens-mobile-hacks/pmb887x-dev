@@ -43,7 +43,7 @@
 #define	GPIO_I2S1_TX	37
 #define	GPIO_I2S1_WA0	38
 #define	GPIO_PIN39		39
-#define	GPIO_PIN40		40
+#define	GPIO_I2S3_TX	40
 #define	GPIO_PIN41		41
 #define	GPIO_PIN42		42
 #define	GPIO_T_OUT0		43

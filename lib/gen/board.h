@@ -129,6 +129,10 @@
 #include "board_siemens_sk65.h" // IWYU pragma: export
 #endif
 
+#ifdef BOARD_SIEMENS_SK65RU
+#include "board_siemens_sk65ru.h" // IWYU pragma: export
+#endif
+
 #ifdef BOARD_SIEMENS_SL65
 #include "board_siemens_sl65.h" // IWYU pragma: export
 #endif

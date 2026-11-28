@@ -108,10 +108,6 @@ for my $board (@{Sie::BoardMetadata::getBoards()}) {
 	$str .= getGpioHeader($board_meta->gpios(), 0);
 	$str .= "\n";
 	
-	$str .= "// Keypad\n";
-	$str .= getKeysHeader($board_meta->{keys});
-	$str .= "\n";
-	
 	$board_str .= "#ifdef BOARD_".$board_name."\n";
 	$board_str .= "#include \"board_".$board_file.".h\" // IWYU pragma: export\n";
 	$board_str .= "#endif\n\n";
@@ -224,16 +220,6 @@ sub getCommonRegsHeader {
 		regs		=> $regs,
 		common		=> 1
 	});
-}
-
-sub getKeysHeader {
-	my ($keys) = @_;
-	my @header;
-	for my $kp_name (getSortedKeys($keys, 'code')) {
-		my $kp = $keys->{$kp_name};
-		push @header, ["#define", "KP_".$kp_name, sprintf("0x%08X", $kp->{code})];
-	}
-	return printTable(\@header)."\n";
 }
 
 sub getBoardPeripheralsHeader {

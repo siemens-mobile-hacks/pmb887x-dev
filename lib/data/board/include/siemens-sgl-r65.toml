@@ -185,8 +185,6 @@ keys.NUM0			= [0, 1]
 keys.HASH			= [0, 2]
 
 keys.BROWSER		= [0, 10]
-keys.VOLUME_UP		= [4, 10]
-keys.VOLUME_DOWN	= [3, 10]
 
 
 [startup.ONLINE]

@@ -225,8 +225,6 @@ keys.HASH			= [4, 2]
 
 keys.VOLUME_UP		= [2, 10]
 keys.VOLUME_DOWN	= [1, 10]
-keys.CAMERA			= [3, 10]
-keys.PLAY_PAUSE		= [4, 10]
 
 
 [startup.ONLINE]

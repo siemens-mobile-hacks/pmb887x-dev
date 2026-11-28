@@ -10,6 +10,3 @@
 // Peripherals
 
 // GPIO numbers
-
-
-// Keypad

@@ -42,7 +42,6 @@ if ($raw) {
 		$json->{boards}->{$board} = {
 			cpu		=> $board_meta->cpu()->{name},
 			memory	=> $board_meta->{memory},
-			keys	=> $board_meta->{keys},
 			vendor	=> $board_meta->{vendor},
 			model	=> $board_meta->{model},
 			display	=> $board_meta->{display},

@@ -11,6 +11,3 @@
 
 // GPIO numbers
 #define	GPIO_PM_WADOG	GPIO_DSPOUT1
-
-
-// Keypad
